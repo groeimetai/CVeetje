@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { decrypt } from '@/lib/encryption';
-import { generateCVStyle, createLinkedInSummary } from '@/lib/ai/style-generator';
+import { generateCVStyle, createLinkedInSummary, StyleGenerationProgress } from '@/lib/ai/style-generator';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -15,6 +15,9 @@ export const maxDuration = 120; // seconds
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if client wants streaming response
+    const acceptsStream = request.headers.get('Accept')?.includes('text/event-stream');
+
     // Get auth token from cookie or header
     const cookieStore = await cookies();
     const token = cookieStore.get('firebase-token')?.value ||
@@ -88,7 +91,62 @@ export async function POST(request: NextRequest) {
     // Create a summary of LinkedIn data for style generation
     const linkedInSummary = createLinkedInSummary(linkedInData);
 
-    // Generate style configuration using AI
+    // If streaming is requested, use Server-Sent Events
+    if (acceptsStream) {
+      const encoder = new TextEncoder();
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          // Progress callback that sends SSE events
+          const onProgress = (progress: StyleGenerationProgress) => {
+            const data = JSON.stringify(progress);
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          };
+
+          try {
+            // Generate style with progress callback
+            const { styleConfig, usage } = await generateCVStyle(
+              linkedInSummary,
+              jobVacancy,
+              provider,
+              apiKey,
+              model,
+              userPreferences,
+              creativityLevel,
+              onProgress
+            );
+
+            // Send final result
+            const result = JSON.stringify({
+              type: 'complete',
+              success: true,
+              styleConfig,
+              usage,
+            });
+            controller.enqueue(encoder.encode(`data: ${result}\n\n`));
+            controller.close();
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to generate style';
+            const errorResult = JSON.stringify({
+              type: 'error',
+              error: errorMessage,
+            });
+            controller.enqueue(encoder.encode(`data: ${errorResult}\n\n`));
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    // Non-streaming response (fallback)
     const { styleConfig, usage } = await generateCVStyle(
       linkedInSummary,
       jobVacancy,

@@ -112,6 +112,12 @@ const fontFamilyMap: Record<FontFamily, string> = {
   'source-sans': "'Source Sans 3', sans-serif",
   'playfair': "'Playfair Display', serif",
   'open-sans': "'Open Sans', sans-serif",
+  'lato': "'Lato', sans-serif",
+  'montserrat': "'Montserrat', sans-serif",
+  'raleway': "'Raleway', sans-serif",
+  'poppins': "'Poppins', sans-serif",
+  'nunito': "'Nunito', sans-serif",
+  'work-sans': "'Work Sans', sans-serif",
 };
 
 const googleFontUrls: Record<FontFamily, string> = {
@@ -122,6 +128,12 @@ const googleFontUrls: Record<FontFamily, string> = {
   'source-sans': 'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap',
   'playfair': 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap',
   'open-sans': 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap',
+  'lato': 'https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap',
+  'montserrat': 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap',
+  'raleway': 'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+  'poppins': 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap',
+  'nunito': 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap',
+  'work-sans': 'https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap',
 };
 
 // Generate a default style config based on color scheme for when AI-generated style is missing

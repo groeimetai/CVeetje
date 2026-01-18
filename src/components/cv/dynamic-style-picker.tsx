@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SVGDecorationToggle } from './svg-decoration-toggle';
+import { StyleGenerationProgress } from './style-generation-progress';
 import type {
   CVStyleConfig,
   ParsedLinkedIn,
@@ -53,6 +54,11 @@ export function DynamicStylePicker({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Progress tracking state
+  const [currentStep, setCurrentStep] = useState(0);
+  const [stepResults, setStepResults] = useState<Record<number, string>>({});
+  const [isComplete, setIsComplete] = useState(false);
+
   // Creativity level options
   const creativityLevels = [
     {
@@ -81,14 +87,21 @@ export function DynamicStylePicker({
     },
   ];
 
-  const handleGenerateStyle = async () => {
+  const handleGenerateStyle = useCallback(async () => {
     setIsGenerating(true);
     setError(null);
+    setCurrentStep(0);
+    setStepResults({});
+    setIsComplete(false);
+    setStyleConfig(null);
 
     try {
       const response = await fetch('/api/cv/style', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
         body: JSON.stringify({
           linkedInData,
           jobVacancy,
@@ -97,24 +110,73 @@ export function DynamicStylePicker({
         }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to generate style');
+        const errorResult = await response.json();
+        throw new Error(errorResult.error || 'Failed to generate style');
       }
 
-      // Report token usage if available
-      if (result.usage && onTokenUsage) {
-        onTokenUsage(result.usage);
+      // Handle SSE stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No response body');
       }
 
-      setStyleConfig(result.styleConfig);
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              // Handle progress update
+              if (data.step && data.stepName) {
+                if (data.status === 'started') {
+                  setCurrentStep(data.step);
+                } else if (data.status === 'completed' && data.result) {
+                  setStepResults(prev => ({ ...prev, [data.step]: data.result }));
+                }
+              }
+
+              // Handle completion
+              if (data.type === 'complete' && data.styleConfig) {
+                setIsComplete(true);
+                setStyleConfig(data.styleConfig);
+                if (data.usage && onTokenUsage) {
+                  onTokenUsage(data.usage);
+                }
+              }
+
+              // Handle error
+              if (data.type === 'error') {
+                throw new Error(data.error || 'Failed to generate style');
+              }
+            } catch (parseError) {
+              // Ignore parse errors for incomplete data
+              if (parseError instanceof SyntaxError) continue;
+              throw parseError;
+            }
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      setCurrentStep(0);
+      setIsComplete(false);
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [linkedInData, jobVacancy, userPreferences, creativityLevel, onTokenUsage]);
 
   const handleContinue = () => {
     if (styleConfig) {
@@ -213,26 +275,36 @@ export function DynamicStylePicker({
           </Alert>
         )}
 
+        {/* Progress Indicator - Show during generation */}
+        {isGenerating && currentStep > 0 && (
+          <StyleGenerationProgress
+            currentStep={currentStep}
+            stepResults={stepResults}
+            isComplete={isComplete}
+          />
+        )}
+
         {/* Generate Button */}
-        {!styleConfig && (
+        {!styleConfig && !isGenerating && (
           <Button
             onClick={handleGenerateStyle}
             disabled={isGenerating}
             className="w-full"
             size="lg"
           >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Style...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate AI Style
-              </>
-            )}
+            <Sparkles className="mr-2 h-4 w-4" />
+            Generate AI Style
           </Button>
+        )}
+
+        {/* Loading state before first step starts */}
+        {isGenerating && currentStep === 0 && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-primary/5 border border-primary/20">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm font-medium text-primary">Initialiseren...</span>
+            </div>
+          </div>
         )}
 
         {/* Style Preview */}

@@ -148,9 +148,80 @@ export type FontFamily =
   | 'merriweather'
   | 'source-sans'
   | 'playfair'
-  | 'open-sans';
+  | 'open-sans'
+  | 'lato'
+  | 'montserrat'
+  | 'raleway'
+  | 'poppins'
+  | 'nunito'
+  | 'work-sans';
 
-// Layout options - simplified to single-column only for reliable PDF rendering
+// ============ Layout Types ============
+
+// Column layout options
+export type ColumnLayout = 'single' | 'sidebar-left' | 'sidebar-right';
+
+// Page margin options
+export type PageMargins = 'narrow' | 'normal' | 'wide';
+
+// Content density options
+export type ContentDensity = 'dense' | 'balanced' | 'airy';
+
+// Section spacing options
+export type SectionSpacing = 'tight' | 'normal' | 'relaxed' | 'generous';
+
+// Item spacing options
+export type ItemSpacing = 'compact' | 'normal' | 'comfortable';
+
+// Date position options
+export type DatePosition = 'right-aligned' | 'inline' | 'above' | 'below';
+
+// Location display options
+export type LocationDisplay = 'with-company' | 'with-date' | 'separate-line' | 'hidden';
+
+// Photo position options
+export type PhotoPosition = 'header-left' | 'header-right' | 'header-center' | 'beside-name';
+
+// Photo size options
+export type PhotoSize = 'small' | 'medium' | 'large';
+
+// Photo shape options
+export type PhotoShape = 'circle' | 'rounded-square' | 'square';
+
+// Bullet style options
+export type BulletStyle = 'disc' | 'circle' | 'square' | 'dash' | 'arrow' | 'checkmark' | 'none';
+
+// Section title position options
+export type SectionTitlePosition = 'left' | 'center' | 'left-with-line';
+
+// Sidebar width options
+export type SidebarWidth = 'narrow' | 'medium' | 'wide';
+
+// Sidebar content options
+export type SidebarContentItem = 'contact' | 'skills' | 'languages' | 'certifications' | 'photo';
+
+// Experience layout options
+export type ExperienceLayout = 'stacked' | 'timeline' | 'cards';
+
+// Education layout options
+export type EducationLayout = 'stacked' | 'compact' | 'cards';
+
+// Whitespace strategy options
+export type WhitespaceStrategy = 'minimal' | 'balanced' | 'generous';
+
+// Paragraph spacing options
+export type ParagraphSpacing = 'tight' | 'normal' | 'relaxed';
+
+// Contact layout options
+export type ContactLayout = 'single-line' | 'two-lines' | 'stacked' | 'icons-only';
+
+// Contact position options
+export type ContactPosition = 'header' | 'sidebar' | 'footer';
+
+// Grid columns options
+export type GridColumns = '8' | '12' | '16';
+
+// Layout style (backward compatibility)
 export type LayoutStyle = 'single-column';
 
 // Expanded header styles for more creative freedom
@@ -161,7 +232,8 @@ export type HeaderStyle =
   | 'full-width-accent'  // Accent bar over full header width
   | 'split'              // Name left, contact right
   | 'minimal'            // Ultra clean, no borders
-  | 'bold-name';         // Oversized name, small details
+  | 'bold-name'          // Oversized name, small details
+  | 'card';              // Modern card-style with subtle background
 
 // Creative styling options - expanded for visual variety
 export type ItemStyle =
@@ -170,9 +242,10 @@ export type ItemStyle =
   | 'card-bordered'
   | 'accent-left'        // Colored line on the left
   | 'timeline'           // Timeline style with vertical line
-  | 'minimal-dots';      // Dots as markers
+  | 'minimal-dots'       // Dots as markers
+  | 'numbered';          // Numbered items (01, 02, 03)
 
-export type HeaderAccent = 'none' | 'underline' | 'side-bar' | 'gradient-bar';
+export type HeaderAccent = 'none' | 'underline' | 'side-bar' | 'gradient-bar' | 'bottom-border' | 'top-border' | 'double-line';
 
 // Expanded divider styles
 export type SectionDividerStyle =
@@ -180,7 +253,7 @@ export type SectionDividerStyle =
   | 'dots'
   | 'none'
   | 'accent-bar'
-  | 'gradient'           // Gradient line
+  | 'gradient-line'      // Gradient line
   | 'double-line';       // Double line
 
 export type SkillDisplayStyle = 'tags' | 'list' | 'bars' | 'grid' | 'chips' | 'categories-with-icons' | 'progress-dots';
@@ -204,18 +277,19 @@ export interface CVStyleTypography {
 }
 
 // Header gradient angle options for full-width-accent headers
-export type HeaderGradientAngle = '45' | '90' | '135' | '180';
+export type HeaderGradientAngle = '0' | '45' | '90' | '135' | '180' | '225' | '270' | '315';
 
 // Header padding options
-export type HeaderPaddingSize = 'compact' | 'normal' | 'spacious';
+export type HeaderPaddingSize = 'compact' | 'normal' | 'spacious' | 'asymmetric';
 
 // Skill tag visual variants
 export type SkillTagVariant = 'filled' | 'outlined' | 'ghost' | 'gradient';
 
 // Border width for accent-left items
-export type ItemBorderWidth = 'thin' | 'normal' | 'thick';
+export type ItemBorderWidth = 'none' | 'thin' | 'normal' | 'thick';
 
 export interface CVStyleLayout {
+  // === Core Layout (backward compatibility) ===
   style: LayoutStyle;
   headerStyle: HeaderStyle;
   sectionOrder: string[];   // Order of sections
@@ -225,6 +299,55 @@ export interface CVStyleLayout {
   showPhoto: boolean;
   headerGradientAngle?: HeaderGradientAngle; // Gradient angle for full-width-accent
   headerPadding?: HeaderPaddingSize;         // Padding size for header
+
+  // === Page Structure (new) ===
+  pageMargins?: PageMargins;
+  contentDensity?: ContentDensity;
+
+  // === Section Organization (new) ===
+  sectionSpacing?: SectionSpacing;
+
+  // === Item Layout (new) ===
+  itemSpacing?: ItemSpacing;
+  datePosition?: DatePosition;
+  locationDisplay?: LocationDisplay;
+
+  // === Photo Settings (new) ===
+  photoPosition?: PhotoPosition;
+  photoSize?: PhotoSize;
+  photoShape?: PhotoShape;
+
+  // === Visual Hierarchy (new) ===
+  bulletStyle?: BulletStyle;
+  sectionTitlePosition?: SectionTitlePosition;
+
+  // === Column Layout (extended) ===
+  columnLayout?: ColumnLayout;
+  sidebarWidth?: SidebarWidth;
+  sidebarContent?: SidebarContentItem[];
+
+  // === Content Flow (extended) ===
+  experienceLayout?: ExperienceLayout;
+  educationLayout?: EducationLayout;
+
+  // === Whitespace Strategy (extended) ===
+  whitespaceStrategy?: WhitespaceStrategy;
+  paragraphSpacing?: ParagraphSpacing;
+
+  // === Contact Info (extended) ===
+  contactLayout?: ContactLayout;
+  contactPosition?: ContactPosition;
+  showContactIcons?: boolean;
+
+  // === Experimental Features ===
+  asymmetricLayout?: boolean;
+  overlappingElements?: boolean;
+  sectionNumbering?: boolean;
+  progressIndicators?: boolean;
+  highlightKeywords?: boolean;
+  pullQuotes?: boolean;
+  useGridSystem?: boolean;
+  gridColumns?: GridColumns;
 }
 
 // SVG Decoration Types
@@ -263,7 +386,7 @@ export interface CVStyleDecorations {
   intensity: 'subtle' | 'moderate' | 'bold';
   useBorders: boolean;
   useBackgrounds: boolean;
-  iconStyle: 'none' | 'minimal' | 'filled';
+  iconStyle: 'none' | 'minimal' | 'filled' | 'outlined' | 'duotone';
   cornerStyle: 'sharp' | 'rounded' | 'pill';
   // New creative options for better visual appeal
   itemStyle?: ItemStyle;         // How experience/education items are styled
