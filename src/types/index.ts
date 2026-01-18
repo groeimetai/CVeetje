@@ -322,6 +322,7 @@ export interface CV {
   styleConfig: CVStyleConfig | null;  // Dynamic AI-generated style
   avatarUrl: string | null;           // Optional profile photo
   generatedContent: GeneratedCVContent | null;
+  elementOverrides?: CVElementOverrides | null; // User's manual element edits
   pdfUrl: string | null;
   status: CVStatus;
   llmProvider: string | null;
@@ -399,6 +400,31 @@ export interface StepTokenUsage {
   cost: TokenCost;
   modelId: string;
   timestamp: Date;
+}
+
+// ============ Element Override Types (Interactive Preview Editing) ============
+
+export type EditableElementType =
+  | 'section'           // Whole section (experience, skills, etc.)
+  | 'experience-item'   // Individual job
+  | 'education-item'    // Individual education entry
+  | 'skill-tag'         // Individual skill
+  | 'language-item'     // Individual language
+  | 'certification-item' // Individual certification
+  | 'summary'           // Summary text
+  | 'header';           // CV header
+
+export interface ElementOverride {
+  elementId: string;            // Unique identifier (e.g., "experience-0", "skill-react")
+  elementType: EditableElementType;
+  hidden: boolean;              // Whether element is hidden
+  colorOverride?: string;       // Override text/accent color
+  backgroundOverride?: string;  // Override background color
+}
+
+export interface CVElementOverrides {
+  overrides: ElementOverride[];
+  lastModified: Date;
 }
 
 // ============ API Types ============

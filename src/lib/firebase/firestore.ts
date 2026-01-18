@@ -263,6 +263,18 @@ export async function updateCVPdfUrl(
   });
 }
 
+export async function updateCV(
+  userId: string,
+  cvId: string,
+  updates: Partial<CV>
+): Promise<void> {
+  const cvRef = doc(db, 'users', userId, 'cvs', cvId);
+  await updateDoc(cvRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function deleteCV(userId: string, cvId: string): Promise<void> {
   const cvRef = doc(db, 'users', userId, 'cvs', cvId);
   await deleteDoc(cvRef);

@@ -10,8 +10,8 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { CVPreview } from '@/components/cv/cv-preview';
 import { useAuth } from '@/components/auth/auth-context';
-import { getCV } from '@/lib/firebase/firestore';
-import type { CV, GeneratedCVContent, CVStyleConfig } from '@/types';
+import { getCV, updateCV } from '@/lib/firebase/firestore';
+import type { CV, GeneratedCVContent, CVStyleConfig, CVElementOverrides } from '@/types';
 
 // Create a default style config from legacy colorScheme
 function createDefaultStyleConfig(cv: CV): CVStyleConfig {
@@ -62,9 +62,25 @@ export default function CVDetailPage() {
   const [cv, setCV] = useState<CV | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cvId = params.id as string;
+
+  // Handle saving element overrides
+  const handleUpdateOverrides = async (overrides: CVElementOverrides) => {
+    if (!firebaseUser || !cvId) return;
+
+    setIsSaving(true);
+    try {
+      await updateCV(firebaseUser.uid, cvId, { elementOverrides: overrides });
+      setCV(prev => prev ? { ...prev, elementOverrides: overrides } : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save changes');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchCV() {
@@ -207,6 +223,8 @@ export default function CVDetailPage() {
           isDownloading={isDownloading}
           isRegenerating={false}
           credits={credits}
+          elementOverrides={cv.elementOverrides}
+          onUpdateOverrides={handleUpdateOverrides}
         />
       ) : (
         <Card>

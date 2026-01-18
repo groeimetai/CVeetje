@@ -11,6 +11,8 @@ import type {
   CVColorScheme,
   FontFamily,
   SVGDecorationResult,
+  CVElementOverrides,
+  ElementOverride,
 } from '@/types';
 import { generateSVGDecorations } from '@/lib/svg/decorations';
 
@@ -177,6 +179,129 @@ export function getDefaultStyleConfig(colorScheme: CVColorScheme): CVStyleConfig
   };
 }
 
+// Helper to get override for an element
+function getOverride(overrides: CVElementOverrides | null | undefined, elementId: string): ElementOverride | undefined {
+  return overrides?.overrides.find(o => o.elementId === elementId);
+}
+
+// Generate inline style from override
+function getOverrideStyle(override: ElementOverride | undefined): string {
+  if (!override) return '';
+  const styles: string[] = [];
+  if (override.hidden) styles.push('display: none !important');
+  if (override.colorOverride) styles.push(`color: ${override.colorOverride} !important`);
+  if (override.backgroundOverride) styles.push(`background-color: ${override.backgroundOverride} !important`);
+  return styles.length > 0 ? `style="${styles.join('; ')}"` : '';
+}
+
+// Generate edit mode script for interactive preview
+function generateEditModeScript(): string {
+  return `
+    <script>
+      (function() {
+        let editMode = false;
+        let selectedElement = null;
+
+        // Listen for edit mode toggle from parent
+        window.addEventListener('message', function(e) {
+          if (e.data.type === 'setEditMode') {
+            editMode = e.data.enabled;
+            document.body.classList.toggle('cv-edit-mode', editMode);
+            if (!editMode && selectedElement) {
+              selectedElement.classList.remove('cv-selected');
+              selectedElement = null;
+            }
+          }
+        });
+
+        // Handle element clicks in edit mode
+        document.addEventListener('click', function(e) {
+          if (!editMode) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Find closest editable element
+          const editable = e.target.closest('[data-element-id]');
+          if (!editable) return;
+
+          // Deselect previous
+          if (selectedElement) {
+            selectedElement.classList.remove('cv-selected');
+          }
+
+          // Select new element
+          selectedElement = editable;
+          selectedElement.classList.add('cv-selected');
+
+          // Send selection to parent
+          window.parent.postMessage({
+            type: 'elementSelected',
+            elementId: editable.dataset.elementId,
+            elementType: editable.dataset.elementType,
+            elementLabel: editable.dataset.elementLabel || editable.textContent.slice(0, 50)
+          }, '*');
+        });
+
+        // Handle deselection
+        document.addEventListener('click', function(e) {
+          if (!editMode) return;
+          if (!e.target.closest('[data-element-id]')) {
+            if (selectedElement) {
+              selectedElement.classList.remove('cv-selected');
+              selectedElement = null;
+              window.parent.postMessage({ type: 'elementDeselected' }, '*');
+            }
+          }
+        });
+      })();
+    </script>
+  `;
+}
+
+// Generate edit mode CSS
+function generateEditModeCSS(): string {
+  return `
+    /* Edit mode styles */
+    .cv-edit-mode [data-element-id] {
+      cursor: pointer;
+      transition: outline 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .cv-edit-mode [data-element-id]:hover {
+      outline: 2px dashed #3b82f6;
+      outline-offset: 2px;
+    }
+
+    .cv-edit-mode [data-element-id].cv-selected {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Hidden elements in edit mode show as faded */
+    .cv-edit-mode [data-element-id][style*="display: none"] {
+      display: block !important;
+      opacity: 0.3;
+      position: relative;
+    }
+
+    .cv-edit-mode [data-element-id][style*="display: none"]::after {
+      content: 'HIDDEN';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(239, 68, 68, 0.9);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+  `;
+}
+
 /**
  * Generate complete HTML for CV - used by both preview and PDF
  */
@@ -185,7 +310,9 @@ export function generateCVHTML(
   style: CVStyleConfig,
   fullName: string,
   avatarUrl?: string | null,
-  headline?: string | null
+  headline?: string | null,
+  elementOverrides?: CVElementOverrides | null,
+  editModeEnabled?: boolean
 ): string {
   const css = generateDynamicStyles(style);
   const fontLinks = getFontLinks(style);
@@ -202,20 +329,20 @@ export function generateCVHTML(
   const sections = style.layout.sectionOrder.map(sectionId => {
     switch (sectionId) {
       case 'summary':
-        return generateSummarySection(content.summary, style);
+        return generateSummarySection(content.summary, style, elementOverrides);
       case 'experience':
-        return generateExperienceSection(content.experience, style);
+        return generateExperienceSection(content.experience, style, elementOverrides);
       case 'education':
-        return generateEducationSection(content.education, style);
+        return generateEducationSection(content.education, style, elementOverrides);
       case 'skills':
-        return generateSkillsSection(content.skills, style);
+        return generateSkillsSection(content.skills, style, elementOverrides);
       case 'languages':
         return content.languages.length > 0
-          ? generateLanguagesSection(content.languages, style)
+          ? generateLanguagesSection(content.languages, style, elementOverrides)
           : '';
       case 'certifications':
         return content.certifications.length > 0
-          ? generateCertificationsSection(content.certifications, style)
+          ? generateCertificationsSection(content.certifications, style, elementOverrides)
           : '';
       default:
         return '';
@@ -223,7 +350,11 @@ export function generateCVHTML(
   }).filter(Boolean).join('\n');
 
   // Always use single-column layout for reliable PDF rendering
-  const header = generateHeader(fullName, style, avatarUrl, headline);
+  const header = generateHeader(fullName, style, avatarUrl, headline, elementOverrides);
+
+  // Generate edit mode CSS and script if enabled
+  const editModeCSS = editModeEnabled ? generateEditModeCSS() : '';
+  const editModeScript = editModeEnabled ? generateEditModeScript() : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -235,6 +366,7 @@ export function generateCVHTML(
   <style>
     ${css}
     ${svgDecorationsCSS}
+    ${editModeCSS}
   </style>
 </head>
 <body>
@@ -245,6 +377,7 @@ export function generateCVHTML(
       ${sections}
     </div>
   </div>
+  ${editModeScript}
 </body>
 </html>`;
 }
@@ -964,13 +1097,16 @@ function generateHeader(
   fullName: string,
   style: CVStyleConfig,
   avatarUrl?: string | null,
-  headline?: string | null
+  headline?: string | null,
+  elementOverrides?: CVElementOverrides | null
 ): string {
   const headerClass = style.layout.headerStyle;
   const showAvatar = style.layout.showPhoto && avatarUrl;
+  const override = getOverride(elementOverrides, 'header');
+  const overrideStyle = getOverrideStyle(override);
 
   return `
-    <header class="cv-header ${headerClass}">
+    <header class="cv-header ${headerClass}" data-element-id="header" data-element-type="header" data-element-label="Header" ${overrideStyle}>
       ${showAvatar ? `<div class="avatar-container" style="margin-bottom: 10pt;"><img src="${avatarUrl}" alt="${fullName}" class="avatar" /></div>` : ''}
       <h1 class="name">${fullName}</h1>
       ${headline ? `<p class="headline">${headline}</p>` : ''}
@@ -978,26 +1114,38 @@ function generateHeader(
   `;
 }
 
-function generateSummarySection(summary: string, _style: CVStyleConfig): string {
+function generateSummarySection(summary: string, _style: CVStyleConfig, elementOverrides?: CVElementOverrides | null): string {
+  const sectionOverride = getOverride(elementOverrides, 'section-summary');
+  const summaryOverride = getOverride(elementOverrides, 'summary');
+  const sectionStyle = getOverrideStyle(sectionOverride);
+  const summaryStyle = getOverrideStyle(summaryOverride);
+
   return `
-    <section class="cv-section">
+    <section class="cv-section" data-element-id="section-summary" data-element-type="section" data-element-label="Summary Section" ${sectionStyle}>
       <h2 class="section-title">Professional Summary</h2>
-      <p class="summary">${summary}</p>
+      <p class="summary" data-element-id="summary" data-element-type="summary" data-element-label="Summary Text" ${summaryStyle}>${summary}</p>
     </section>
   `;
 }
 
 function generateExperienceSection(
   experience: GeneratedCVContent['experience'],
-  style: CVStyleConfig
+  style: CVStyleConfig,
+  elementOverrides?: CVElementOverrides | null
 ): string {
   // Default to 'card-subtle' for better visual appeal instead of plain 'inline'
   const itemStyleClass = style.decorations.itemStyle || 'card-subtle';
+  const sectionOverride = getOverride(elementOverrides, 'section-experience');
+  const sectionStyle = getOverrideStyle(sectionOverride);
+
   return `
-    <section class="cv-section">
+    <section class="cv-section" data-element-id="section-experience" data-element-type="section" data-element-label="Experience Section" ${sectionStyle}>
       <h2 class="section-title">Experience</h2>
-      ${experience.map(exp => `
-        <div class="item ${itemStyleClass}">
+      ${experience.map((exp, i) => {
+        const itemOverride = getOverride(elementOverrides, `experience-${i}`);
+        const itemStyle = getOverrideStyle(itemOverride);
+        return `
+        <div class="item ${itemStyleClass}" data-element-id="experience-${i}" data-element-type="experience-item" data-element-label="${exp.title} @ ${exp.company}" ${itemStyle}>
           <div class="item-header">
             <div class="item-title-company">
               <h3 class="item-title">${exp.title}</h3>
@@ -1009,22 +1157,29 @@ function generateExperienceSection(
             ${exp.highlights.map(h => `<li>${h}</li>`).join('')}
           </ul>
         </div>
-      `).join('')}
+      `}).join('')}
     </section>
   `;
 }
 
 function generateEducationSection(
   education: GeneratedCVContent['education'],
-  style: CVStyleConfig
+  style: CVStyleConfig,
+  elementOverrides?: CVElementOverrides | null
 ): string {
   // Default to 'card-subtle' for better visual appeal instead of plain 'inline'
   const itemStyleClass = style.decorations.itemStyle || 'card-subtle';
+  const sectionOverride = getOverride(elementOverrides, 'section-education');
+  const sectionStyle = getOverrideStyle(sectionOverride);
+
   return `
-    <section class="cv-section">
+    <section class="cv-section" data-element-id="section-education" data-element-type="section" data-element-label="Education Section" ${sectionStyle}>
       <h2 class="section-title">Education</h2>
-      ${education.map(edu => `
-        <div class="item ${itemStyleClass}">
+      ${education.map((edu, i) => {
+        const itemOverride = getOverride(elementOverrides, `education-${i}`);
+        const itemStyle = getOverrideStyle(itemOverride);
+        return `
+        <div class="item ${itemStyleClass}" data-element-id="education-${i}" data-element-type="education-item" data-element-label="${edu.degree} @ ${edu.institution}" ${itemStyle}>
           <div class="item-header">
             <div class="item-title-institution">
               <h3 class="item-title">${edu.degree}</h3>
@@ -1034,46 +1189,62 @@ function generateEducationSection(
           </div>
           ${edu.details ? `<p class="item-details">${edu.details}</p>` : ''}
         </div>
-      `).join('')}
+      `}).join('')}
     </section>
   `;
 }
 
 function generateSkillsSection(
   skills: GeneratedCVContent['skills'],
-  style: CVStyleConfig
+  style: CVStyleConfig,
+  elementOverrides?: CVElementOverrides | null
 ): string {
-  const renderSkills = (skillList: string[], issoft = false) => {
+  const sectionOverride = getOverride(elementOverrides, 'section-skills');
+  const sectionStyle = getOverrideStyle(sectionOverride);
+
+  const renderSkills = (skillList: string[], issoft = false, category: string) => {
     switch (style.layout.skillDisplay) {
       case 'list':
-        return skillList.map(skill => `<div class="skill-item">${skill}</div>`).join('');
+        return skillList.map((skill, i) => {
+          const skillId = `skill-${category}-${i}`;
+          const override = getOverride(elementOverrides, skillId);
+          const overrideStyle = getOverrideStyle(override);
+          return `<div class="skill-item" data-element-id="${skillId}" data-element-type="skill-tag" data-element-label="${skill}" ${overrideStyle}>${skill}</div>`;
+        }).join('');
       case 'bars':
-        return skillList.map((skill, i) => `
-          <div class="skill-bar-item">
+        return skillList.map((skill, i) => {
+          const skillId = `skill-${category}-${i}`;
+          const override = getOverride(elementOverrides, skillId);
+          const overrideStyle = getOverrideStyle(override);
+          return `
+          <div class="skill-bar-item" data-element-id="${skillId}" data-element-type="skill-tag" data-element-label="${skill}" ${overrideStyle}>
             <span class="skill-name">${skill}</span>
             <div class="skill-bar">
               <div class="skill-bar-fill" style="width: ${100 - (i * 10)}%"></div>
             </div>
           </div>
-        `).join('');
+        `}).join('');
       case 'tags':
       case 'grid':
       default:
-        return skillList.map(skill =>
-          `<span class="skill-tag${issoft ? ' soft' : ''}">${skill}</span>`
-        ).join('');
+        return skillList.map((skill, i) => {
+          const skillId = `skill-${category}-${i}`;
+          const override = getOverride(elementOverrides, skillId);
+          const overrideStyle = getOverrideStyle(override);
+          return `<span class="skill-tag${issoft ? ' soft' : ''}" data-element-id="${skillId}" data-element-type="skill-tag" data-element-label="${skill}" ${overrideStyle}>${skill}</span>`;
+        }).join('');
     }
   };
 
   return `
-    <section class="cv-section">
+    <section class="cv-section" data-element-id="section-skills" data-element-type="section" data-element-label="Skills Section" ${sectionStyle}>
       <h2 class="section-title">Skills</h2>
       <div class="skills-container">
         ${skills.technical.length > 0 ? `
           <div class="skills-category">
             <h4 class="skills-label">Technical</h4>
             <div class="skills-list">
-              ${renderSkills(skills.technical)}
+              ${renderSkills(skills.technical, false, 'technical')}
             </div>
           </div>
         ` : ''}
@@ -1081,7 +1252,7 @@ function generateSkillsSection(
           <div class="skills-category">
             <h4 class="skills-label">Soft Skills</h4>
             <div class="skills-list">
-              ${renderSkills(skills.soft, true)}
+              ${renderSkills(skills.soft, true, 'soft')}
             </div>
           </div>
         ` : ''}
@@ -1092,18 +1263,25 @@ function generateSkillsSection(
 
 function generateLanguagesSection(
   languages: GeneratedCVContent['languages'],
-  _style: CVStyleConfig
+  _style: CVStyleConfig,
+  elementOverrides?: CVElementOverrides | null
 ): string {
+  const sectionOverride = getOverride(elementOverrides, 'section-languages');
+  const sectionStyle = getOverrideStyle(sectionOverride);
+
   return `
-    <section class="cv-section">
+    <section class="cv-section" data-element-id="section-languages" data-element-type="section" data-element-label="Languages Section" ${sectionStyle}>
       <h2 class="section-title">Languages</h2>
       <div class="languages-list">
-        ${languages.map(lang => `
-          <div class="language-item">
+        ${languages.map((lang, i) => {
+          const itemOverride = getOverride(elementOverrides, `language-${i}`);
+          const itemStyle = getOverrideStyle(itemOverride);
+          return `
+          <div class="language-item" data-element-id="language-${i}" data-element-type="language-item" data-element-label="${lang.language}" ${itemStyle}>
             <span class="language-name">${lang.language}</span>
             <span class="language-level">${lang.level}</span>
           </div>
-        `).join('')}
+        `}).join('')}
       </div>
     </section>
   `;
@@ -1111,13 +1289,21 @@ function generateLanguagesSection(
 
 function generateCertificationsSection(
   certifications: string[],
-  _style: CVStyleConfig
+  _style: CVStyleConfig,
+  elementOverrides?: CVElementOverrides | null
 ): string {
+  const sectionOverride = getOverride(elementOverrides, 'section-certifications');
+  const sectionStyle = getOverrideStyle(sectionOverride);
+
   return `
-    <section class="cv-section">
+    <section class="cv-section" data-element-id="section-certifications" data-element-type="section" data-element-label="Certifications Section" ${sectionStyle}>
       <h2 class="section-title">Certifications</h2>
       <ul class="certifications-list">
-        ${certifications.map(cert => `<li>${cert}</li>`).join('')}
+        ${certifications.map((cert, i) => {
+          const itemOverride = getOverride(elementOverrides, `certification-${i}`);
+          const itemStyle = getOverrideStyle(itemOverride);
+          return `<li data-element-id="certification-${i}" data-element-type="certification-item" data-element-label="${cert}" ${itemStyle}>${cert}</li>`;
+        }).join('')}
       </ul>
     </section>
   `;

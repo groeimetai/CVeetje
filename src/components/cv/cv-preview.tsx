@@ -1,13 +1,20 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, RefreshCw, FileText, Coins, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
-import type { GeneratedCVContent, CVStyleConfig } from '@/types';
+import { Download, RefreshCw, FileText, Coins, Sparkles, Maximize2, Minimize2, Pencil, Save } from 'lucide-react';
+import type { GeneratedCVContent, CVStyleConfig, CVElementOverrides, ElementOverride, EditableElementType } from '@/types';
 import { generateCVHTML } from '@/lib/cv/html-generator';
+import { ElementEditor } from './element-editor';
+
+interface SelectedElement {
+  elementId: string;
+  elementType: EditableElementType;
+  elementLabel: string;
+}
 
 interface CVPreviewProps {
   content: GeneratedCVContent;
@@ -20,6 +27,8 @@ interface CVPreviewProps {
   isDownloading: boolean;
   isRegenerating: boolean;
   credits: number;
+  elementOverrides?: CVElementOverrides | null;
+  onUpdateOverrides?: (overrides: CVElementOverrides) => void;
 }
 
 export function CVPreview({
@@ -33,17 +42,95 @@ export function CVPreview({
   isDownloading,
   isRegenerating,
   credits,
+  elementOverrides: initialOverrides,
+  onUpdateOverrides,
 }: CVPreviewProps) {
   const [activeTab, setActiveTab] = useState('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
+  const [localOverrides, setLocalOverrides] = useState<CVElementOverrides>(
+    initialOverrides || { overrides: [], lastModified: new Date() }
+  );
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { colors, typography, layout, decorations } = styleConfig;
 
-  // Generate exact same HTML as PDF - this ensures WYSIWYG
+  // Update local overrides when prop changes
+  useEffect(() => {
+    if (initialOverrides) {
+      setLocalOverrides(initialOverrides);
+    }
+  }, [initialOverrides]);
+
+  // Handle messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'elementSelected') {
+        setSelectedElement({
+          elementId: event.data.elementId,
+          elementType: event.data.elementType as EditableElementType,
+          elementLabel: event.data.elementLabel,
+        });
+      } else if (event.data.type === 'elementDeselected') {
+        setSelectedElement(null);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Toggle edit mode in iframe
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'setEditMode', enabled: editMode }, '*');
+    }
+  }, [editMode]);
+
+  // Handle override updates
+  const handleUpdateOverride = useCallback((override: ElementOverride) => {
+    setLocalOverrides(prev => {
+      const existing = prev.overrides.findIndex(o => o.elementId === override.elementId);
+      const newOverrides = [...prev.overrides];
+
+      if (existing >= 0) {
+        newOverrides[existing] = override;
+      } else {
+        newOverrides.push(override);
+      }
+
+      return {
+        overrides: newOverrides,
+        lastModified: new Date(),
+      };
+    });
+    setHasUnsavedChanges(true);
+  }, []);
+
+  // Handle remove override
+  const handleRemoveOverride = useCallback((elementId: string) => {
+    setLocalOverrides(prev => ({
+      overrides: prev.overrides.filter(o => o.elementId !== elementId),
+      lastModified: new Date(),
+    }));
+    setHasUnsavedChanges(true);
+  }, []);
+
+  // Save overrides
+  const handleSaveOverrides = useCallback(() => {
+    if (onUpdateOverrides) {
+      onUpdateOverrides(localOverrides);
+      setHasUnsavedChanges(false);
+    }
+  }, [localOverrides, onUpdateOverrides]);
+
+  // Generate HTML with edit mode and overrides
   const cvHTML = useMemo(() =>
-    generateCVHTML(content, styleConfig, fullName, avatarUrl, headline),
-    [content, styleConfig, fullName, avatarUrl, headline]
+    generateCVHTML(content, styleConfig, fullName, avatarUrl, headline, localOverrides, editMode),
+    [content, styleConfig, fullName, avatarUrl, headline, localOverrides, editMode]
   );
 
   // Auto-resize iframe to content height
@@ -85,6 +172,31 @@ export function CVPreview({
               <Coins className="h-3 w-3" />
               {credits} credits
             </Badge>
+            {/* Edit Mode Toggle */}
+            <Button
+              variant={editMode ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                setEditMode(!editMode);
+                if (editMode) setSelectedElement(null);
+              }}
+              className="h-8 text-xs"
+            >
+              <Pencil className="h-3 w-3 mr-1" />
+              {editMode ? 'Exit Edit' : 'Edit'}
+            </Button>
+            {/* Save Changes Button */}
+            {hasUnsavedChanges && onUpdateOverrides && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSaveOverrides}
+                className="h-8 text-xs bg-green-600 hover:bg-green-700"
+              >
+                <Save className="h-3 w-3 mr-1" />
+                Save
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -109,24 +221,55 @@ export function CVPreview({
           </TabsList>
 
           <TabsContent value="preview">
-            <div className="border rounded-lg bg-white overflow-hidden">
-              {/* Info banner */}
-              <div className="bg-muted/50 px-4 py-2 border-b text-xs text-muted-foreground flex items-center gap-2">
-                <Sparkles className="h-3 w-3" />
-                <span>This preview shows exactly what your PDF will look like</span>
+            <div className="flex gap-4">
+              {/* Main Preview */}
+              <div className={`border rounded-lg bg-white overflow-hidden ${editMode ? 'flex-1' : 'w-full'}`}>
+                {/* Info banner */}
+                <div className={`px-4 py-2 border-b text-xs flex items-center gap-2 ${editMode ? 'bg-blue-50 text-blue-700' : 'bg-muted/50 text-muted-foreground'}`}>
+                  {editMode ? (
+                    <>
+                      <Pencil className="h-3 w-3" />
+                      <span>Click on any element to select and edit it. Changes are applied in real-time.</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3" />
+                      <span>This preview shows exactly what your PDF will look like</span>
+                    </>
+                  )}
+                </div>
+                {/* Hidden elements count */}
+                {localOverrides.overrides.filter(o => o.hidden).length > 0 && (
+                  <div className="bg-amber-50 px-4 py-1 border-b text-xs text-amber-700 flex items-center gap-2">
+                    <span>{localOverrides.overrides.filter(o => o.hidden).length} element(s) hidden</span>
+                  </div>
+                )}
+                {/* Iframe with exact PDF HTML */}
+                <iframe
+                  ref={iframeRef}
+                  srcDoc={cvHTML}
+                  className="w-full border-0 bg-white"
+                  style={{
+                    minHeight: '800px',
+                    display: 'block',
+                  }}
+                  title="CV Preview"
+                  sandbox="allow-same-origin allow-scripts"
+                />
               </div>
-              {/* Iframe with exact PDF HTML */}
-              <iframe
-                ref={iframeRef}
-                srcDoc={cvHTML}
-                className="w-full border-0 bg-white"
-                style={{
-                  minHeight: '800px',
-                  display: 'block',
-                }}
-                title="CV Preview"
-                sandbox="allow-same-origin"
-              />
+
+              {/* Element Editor Panel - Only shown in edit mode */}
+              {editMode && (
+                <div className="w-80 flex-shrink-0">
+                  <ElementEditor
+                    selectedElement={selectedElement}
+                    elementOverrides={localOverrides}
+                    onUpdateOverride={handleUpdateOverride}
+                    onRemoveOverride={handleRemoveOverride}
+                    onClose={() => setSelectedElement(null)}
+                  />
+                </div>
+              )}
             </div>
           </TabsContent>
 
