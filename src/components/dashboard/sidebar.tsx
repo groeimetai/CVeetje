@@ -12,6 +12,8 @@ import {
   User,
   Users,
 } from 'lucide-react';
+import { ThemeSwitcher } from '@/components/theme-switcher';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
@@ -61,11 +63,15 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-card">
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b px-6">
+      {/* Logo & Theme/Language */}
+      <div className="flex h-16 items-center justify-between border-b px-4">
         <Link href="/dashboard">
           <Logo size="sm" />
         </Link>
+        <div className="flex items-center gap-1">
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
       </div>
 
       {/* Navigation */}

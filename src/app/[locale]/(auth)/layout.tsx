@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import { Logo } from '@/components/ui/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 import { setRequestLocale } from 'next-intl/server';
 
 type Props = {
@@ -20,7 +21,10 @@ export default async function AuthLayout({ children, params }: Props) {
           <Link href="/">
             <Logo size="sm" />
           </Link>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <ThemeSwitcher />
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 

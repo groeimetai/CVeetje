@@ -1,4 +1,10 @@
 {
+  "theme": {
+    "toggle": "Thema wisselen",
+    "light": "Licht",
+    "dark": "Donker",
+    "system": "Systeem"
+  },
   "common": {
     "loading": "Laden...",
     "error": "Fout",

@@ -24,6 +24,7 @@ import { Logo } from '@/components/ui/logo';
 import { WebsiteStructuredData, FAQStructuredData } from '@/components/seo/structured-data';
 import { CVShowcase, ProfileSelectionMockup, JobAnalysisMockup, StyleGeneratorMockup } from '@/components/landing/cv-showcase';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -88,7 +89,8 @@ export default async function LandingPage({ params }: Props) {
             <Link href="/">
               <Logo size="sm" />
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <ThemeSwitcher />
               <LanguageSwitcher />
               <Link href="/login">
                 <Button variant="ghost">{locale === 'nl' ? 'Inloggen' : 'Sign In'}</Button>
