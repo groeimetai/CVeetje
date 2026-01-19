@@ -14,11 +14,13 @@ interface TokenUsageDisplayProps {
 }
 
 const STEP_LABELS: Record<StepTokenUsage['step'], string> = {
-  linkedin: 'LinkedIn Parse',
-  job: 'Job Parse',
-  style: 'Style',
-  generate: 'Generate',
-  regenerate: 'Regenerate',
+  'profile-parse': 'Profiel Parse',
+  'profile-enrich': 'Profiel Verrijken',
+  'linkedin-export': 'LinkedIn Export',
+  job: 'Vacature Parse',
+  style: 'Stijl',
+  generate: 'CV Genereren',
+  regenerate: 'CV Regenereren',
   motivation: 'Motivatiebrief',
 };
 

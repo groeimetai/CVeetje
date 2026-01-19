@@ -1,4 +1,12 @@
 {
+  "cookieConsent": {
+    "title": "Cookies & Privacy",
+    "description": "Wij gebruiken cookies om je ervaring te verbeteren en onze website te analyseren. Door te accepteren ga je akkoord met het gebruik van analytische cookies.",
+    "accept": "Accepteren",
+    "decline": "Weigeren",
+    "learnMore": "Meer informatie",
+    "close": "Sluiten"
+  },
   "theme": {
     "toggle": "Thema wisselen",
     "light": "Licht",
@@ -367,7 +375,19 @@
       "notSet": "Niet ingesteld",
       "email": "E-mail",
       "createdAt": "Account Aangemaakt",
-      "unknown": "Onbekend"
+      "unknown": "Onbekend",
+      "dangerZone": "Gevarenzone",
+      "deleteDescription": "Verwijder permanent je account en al je gegevens",
+      "deleteWarning": "Let op: deze actie kan niet ongedaan worden gemaakt. Dit zal permanent verwijderen:",
+      "deleteItem1": "Je account en profielgegevens",
+      "deleteItem2": "Al je opgeslagen CVs",
+      "deleteItem3": "Al je opgeslagen profielen",
+      "deleteItem4": "Je gekochte credits (niet restitueerbaar)",
+      "typeDelete": "Typ DELETE om te bevestigen",
+      "deleteButton": "Account Permanent Verwijderen",
+      "deleting": "Verwijderen...",
+      "deleteConfirmationError": "Typ DELETE om te bevestigen",
+      "deleteError": "Er ging iets mis bij het verwijderen van je account"
     },
     "messages": {
       "apiKeySaved": "API key succesvol opgeslagen",
@@ -560,7 +580,7 @@
       },
       "contact": {
         "title": "13. Contact",
-        "content": "Voor vragen over deze Voorwaarden of de Dienst kun je contact met ons opnemen via:\n\nE-mail: support@cveetje.nl\n\nWij streven ernaar om binnen 5 werkdagen te reageren op alle verzoeken."
+        "content": "Voor vragen over deze Voorwaarden of de Dienst kun je contact met ons opnemen:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nNederland\n\nKvK-nummer: 90102304\nBTW-nummer: NL004787305B79\nE-mail: info@groeimetai.io\n\nWij streven ernaar om binnen 5 werkdagen te reageren op alle verzoeken."
       },
       "severability": {
         "title": "14. Scheidbaarheid",
@@ -578,7 +598,7 @@
       },
       "dataController": {
         "title": "2. Verwerkingsverantwoordelijke",
-        "content": "CVeetje is de verwerkingsverantwoordelijke voor de persoonsgegevens die via onze dienst worden verzameld.\n\nContactgegevens:\nE-mail: support@cveetje.nl\n\nVoor vragen over dit privacybeleid of de verwerking van je persoonsgegevens kun je contact met ons opnemen via bovenstaand e-mailadres."
+        "content": "CVeetje is een dienst van GroeimetAI en is de verwerkingsverantwoordelijke voor de persoonsgegevens die via onze dienst worden verzameld.\n\nBedrijfsgegevens:\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nNederland\n\nKvK-nummer: 90102304\nBTW-nummer: NL004787305B79\nE-mail: info@groeimetai.io\n\nVoor vragen over dit privacybeleid of de verwerking van je persoonsgegevens kun je contact met ons opnemen via bovenstaand e-mailadres."
       },
       "dataCollection": {
         "title": "3. Welke Gegevens Verzamelen Wij",
@@ -620,7 +640,7 @@
       },
       "yourRights": {
         "title": "10. Jouw Rechten",
-        "content": "Onder de AVG (GDPR) heb je de volgende rechten met betrekking tot je persoonsgegevens:\n\n• Recht op inzage: Je kunt opvragen welke gegevens wij van je verwerken.\n\n• Recht op rectificatie: Je kunt onjuiste gegevens laten corrigeren.\n\n• Recht op verwijdering: Je kunt verzoeken om verwijdering van je gegevens (\"recht om vergeten te worden\").\n\n• Recht op beperking: Je kunt verzoeken de verwerking van je gegevens te beperken.\n\n• Recht op overdraagbaarheid: Je kunt je gegevens in een gestructureerd formaat opvragen om over te dragen aan een andere dienst.\n\n• Recht van bezwaar: Je kunt bezwaar maken tegen verwerking op basis van gerechtvaardigd belang.\n\n• Recht om toestemming in te trekken: Je kunt eerder gegeven toestemming op elk moment intrekken.\n\nVoor het uitoefenen van deze rechten kun je contact met ons opnemen via support@cveetje.nl. Wij reageren binnen 30 dagen op je verzoek.\n\nJe hebt ook het recht om een klacht in te dienen bij de Autoriteit Persoonsgegevens (https://autoriteitpersoonsgegevens.nl)."
+        "content": "Onder de AVG (GDPR) heb je de volgende rechten met betrekking tot je persoonsgegevens:\n\n• Recht op inzage: Je kunt opvragen welke gegevens wij van je verwerken.\n\n• Recht op rectificatie: Je kunt onjuiste gegevens laten corrigeren.\n\n• Recht op verwijdering: Je kunt verzoeken om verwijdering van je gegevens (\"recht om vergeten te worden\").\n\n• Recht op beperking: Je kunt verzoeken de verwerking van je gegevens te beperken.\n\n• Recht op overdraagbaarheid: Je kunt je gegevens in een gestructureerd formaat opvragen om over te dragen aan een andere dienst.\n\n• Recht van bezwaar: Je kunt bezwaar maken tegen verwerking op basis van gerechtvaardigd belang.\n\n• Recht om toestemming in te trekken: Je kunt eerder gegeven toestemming op elk moment intrekken.\n\nVoor het uitoefenen van deze rechten kun je contact met ons opnemen via info@groeimetai.io. Wij reageren binnen 30 dagen op je verzoek.\n\nJe hebt ook het recht om een klacht in te dienen bij de Autoriteit Persoonsgegevens (https://autoriteitpersoonsgegevens.nl)."
       },
       "dataTransfers": {
         "title": "11. Internationale Doorgifte",
@@ -640,7 +660,7 @@
       },
       "contact": {
         "title": "15. Contact",
-        "content": "Voor vragen, opmerkingen of verzoeken met betrekking tot dit privacybeleid of de verwerking van je persoonsgegevens kun je contact met ons opnemen:\n\nE-mail: support@cveetje.nl\n\nWij streven ernaar binnen 5 werkdagen te reageren op algemene vragen en binnen 30 dagen op verzoeken met betrekking tot je rechten onder de AVG."
+        "content": "Voor vragen, opmerkingen of verzoeken met betrekking tot dit privacybeleid of de verwerking van je persoonsgegevens kun je contact met ons opnemen:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nNederland\n\nKvK-nummer: 90102304\nBTW-nummer: NL004787305B79\nE-mail: info@groeimetai.io\n\nWij streven ernaar binnen 5 werkdagen te reageren op algemene vragen en binnen 30 dagen op verzoeken met betrekking tot je rechten onder de AVG."
       }
     }
   }

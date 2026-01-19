@@ -1,4 +1,12 @@
 {
+  "cookieConsent": {
+    "title": "Cookies & Privacy",
+    "description": "We use cookies to improve your experience and analyze our website. By accepting, you agree to the use of analytical cookies.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "learnMore": "Learn more",
+    "close": "Close"
+  },
   "theme": {
     "toggle": "Toggle theme",
     "light": "Light",
@@ -367,7 +375,19 @@
       "notSet": "Not set",
       "email": "Email",
       "createdAt": "Account Created",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "dangerZone": "Danger Zone",
+      "deleteDescription": "Permanently delete your account and all your data",
+      "deleteWarning": "Warning: This action cannot be undone. This will permanently delete:",
+      "deleteItem1": "Your account and profile information",
+      "deleteItem2": "All your saved CVs",
+      "deleteItem3": "All your saved profiles",
+      "deleteItem4": "Your purchased credits (non-refundable)",
+      "typeDelete": "Type DELETE to confirm",
+      "deleteButton": "Permanently Delete Account",
+      "deleting": "Deleting...",
+      "deleteConfirmationError": "Type DELETE to confirm",
+      "deleteError": "Something went wrong while deleting your account"
     },
     "messages": {
       "apiKeySaved": "API key saved successfully",
@@ -560,7 +580,7 @@
       },
       "contact": {
         "title": "13. Contact",
-        "content": "For questions about these Terms or the Service you can contact us at:\n\nEmail: support@cveetje.nl\n\nWe aim to respond to all requests within 5 business days."
+        "content": "For questions about these Terms or the Service you can contact us:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nThe Netherlands\n\nChamber of Commerce (KvK): 90102304\nVAT number: NL004787305B79\nEmail: info@groeimetai.io\n\nWe aim to respond to all requests within 5 business days."
       },
       "severability": {
         "title": "14. Severability",
@@ -578,7 +598,7 @@
       },
       "dataController": {
         "title": "2. Data Controller",
-        "content": "CVeetje is the data controller for the personal data collected through our service.\n\nContact details:\nEmail: support@cveetje.nl\n\nFor questions about this privacy policy or the processing of your personal data, you can contact us at the email address above."
+        "content": "CVeetje is a service of GroeimetAI and is the data controller for the personal data collected through our service.\n\nBusiness details:\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nThe Netherlands\n\nChamber of Commerce (KvK): 90102304\nVAT number: NL004787305B79\nEmail: info@groeimetai.io\n\nFor questions about this privacy policy or the processing of your personal data, you can contact us at the email address above."
       },
       "dataCollection": {
         "title": "3. What Data We Collect",
@@ -620,7 +640,7 @@
       },
       "yourRights": {
         "title": "10. Your Rights",
-        "content": "Under the GDPR, you have the following rights regarding your personal data:\n\n• Right of access: You can request what data we process about you.\n\n• Right to rectification: You can have incorrect data corrected.\n\n• Right to erasure: You can request deletion of your data (\"right to be forgotten\").\n\n• Right to restriction: You can request restriction of the processing of your data.\n\n• Right to portability: You can request your data in a structured format to transfer to another service.\n\n• Right to object: You can object to processing based on legitimate interest.\n\n• Right to withdraw consent: You can withdraw previously given consent at any time.\n\nTo exercise these rights, you can contact us at support@cveetje.nl. We will respond to your request within 30 days.\n\nYou also have the right to file a complaint with the Dutch Data Protection Authority (https://autoriteitpersoonsgegevens.nl) or your local supervisory authority."
+        "content": "Under the GDPR, you have the following rights regarding your personal data:\n\n• Right of access: You can request what data we process about you.\n\n• Right to rectification: You can have incorrect data corrected.\n\n• Right to erasure: You can request deletion of your data (\"right to be forgotten\").\n\n• Right to restriction: You can request restriction of the processing of your data.\n\n• Right to portability: You can request your data in a structured format to transfer to another service.\n\n• Right to object: You can object to processing based on legitimate interest.\n\n• Right to withdraw consent: You can withdraw previously given consent at any time.\n\nTo exercise these rights, you can contact us at info@groeimetai.io. We will respond to your request within 30 days.\n\nYou also have the right to file a complaint with the Dutch Data Protection Authority (https://autoriteitpersoonsgegevens.nl) or your local supervisory authority."
       },
       "dataTransfers": {
         "title": "11. International Transfers",
@@ -640,7 +660,7 @@
       },
       "contact": {
         "title": "15. Contact",
-        "content": "For questions, comments or requests regarding this privacy policy or the processing of your personal data, you can contact us:\n\nEmail: support@cveetje.nl\n\nWe aim to respond to general questions within 5 business days and to requests regarding your rights under GDPR within 30 days."
+        "content": "For questions, comments or requests regarding this privacy policy or the processing of your personal data, you can contact us:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nThe Netherlands\n\nChamber of Commerce (KvK): 90102304\nVAT number: NL004787305B79\nEmail: info@groeimetai.io\n\nWe aim to respond to general questions within 5 business days and to requests regarding your rights under GDPR within 30 days."
       }
     }
   }

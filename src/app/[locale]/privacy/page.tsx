@@ -178,7 +178,7 @@ export default async function PrivacyPage({ params }: Props) {
                 ? 'Heb je vragen over ons privacybeleid?'
                 : 'Have questions about our privacy policy?'}
             </p>
-            <Link href="mailto:support@cveetje.nl">
+            <Link href="mailto:info@groeimetai.io">
               <Button variant="outline">
                 {locale === 'nl' ? 'Neem contact op' : 'Contact us'}
               </Button>

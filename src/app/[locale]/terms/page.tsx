@@ -190,7 +190,7 @@ export default async function TermsPage({ params }: Props) {
                 ? 'Heb je vragen over onze voorwaarden?'
                 : 'Have questions about our terms?'}
             </p>
-            <Link href="mailto:support@cveetje.nl">
+            <Link href="mailto:info@groeimetai.io">
               <Button variant="outline">
                 {locale === 'nl' ? 'Neem contact op' : 'Contact us'}
               </Button>

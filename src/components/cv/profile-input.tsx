@@ -81,9 +81,11 @@ import type {
 import type { ModelInfo } from '@/lib/ai/models-registry';
 import { supportsFileInput } from '@/lib/ai/models-registry';
 
+type ProfileTokenStep = 'profile-parse' | 'profile-enrich' | 'linkedin-export';
+
 interface ProfileInputProps {
   onParsed: (data: ParsedLinkedIn) => void;
-  onTokenUsage?: (usage: TokenUsage) => void;
+  onTokenUsage?: (step: ProfileTokenStep, usage: TokenUsage) => void;
   initialData?: ParsedLinkedIn | null;
   initialAvatarUrl?: string | null;
   onAvatarChange?: (url: string | null) => void;
@@ -438,7 +440,7 @@ export function ProfileInput({
 
         // Report token usage if available
         if (result.usage && onTokenUsage) {
-          onTokenUsage(result.usage);
+          onTokenUsage('profile-enrich', result.usage);
         }
       }
     } catch (err) {
@@ -491,7 +493,7 @@ export function ProfileInput({
 
         // Report token usage if available
         if (result.usage && onTokenUsage) {
-          onTokenUsage(result.usage);
+          onTokenUsage('linkedin-export', result.usage);
         }
       }
     } catch (err) {
@@ -699,7 +701,7 @@ export function ProfileInput({
 
       // Report token usage if available
       if (result.usage && onTokenUsage) {
-        onTokenUsage(result.usage);
+        onTokenUsage('profile-parse', result.usage);
       }
 
       setParsed(result.data);

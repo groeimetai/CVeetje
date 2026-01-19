@@ -564,7 +564,7 @@ export function CVWizard() {
       {currentStep === 'linkedin' && (
         <ProfileInput
           onParsed={handleLinkedInParsed}
-          onTokenUsage={(usage) => addTokenUsage('linkedin', usage)}
+          onTokenUsage={(step, usage) => addTokenUsage(step, usage)}
           initialData={linkedInData}
           initialAvatarUrl={avatarUrl}
           onAvatarChange={setAvatarUrl}

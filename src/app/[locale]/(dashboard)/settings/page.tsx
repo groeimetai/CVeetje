@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { Key, Trash2, Save, Eye, EyeOff, User, Shield, Loader2, ExternalLink, Cpu, DollarSign } from 'lucide-react';
+import { Key, Trash2, Save, Eye, EyeOff, User, Shield, Loader2, ExternalLink, Cpu, DollarSign, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,11 +54,13 @@ function formatPrice(price: number): string {
 }
 
 export default function SettingsPage() {
-  const { userData, firebaseUser, refreshUserData } = useAuth();
+  const { userData, firebaseUser, refreshUserData, logout } = useAuth();
   const t = useTranslations('settings');
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Dynamic providers state
@@ -194,6 +196,37 @@ export default function SettingsPage() {
 
   const getProviderKeyUrl = (providerId: string) => {
     return providerKeyUrls[providerId] || null;
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== 'DELETE') {
+      setMessage({ type: 'error', text: t('account.deleteConfirmationError') });
+      return;
+    }
+
+    setDeletingAccount(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/settings/account', {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete account');
+      }
+
+      // Logout and redirect to home
+      await logout();
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : t('account.deleteError'),
+      });
+      setDeletingAccount(false);
+    }
   };
 
   return (
@@ -477,6 +510,58 @@ export default function SettingsPage() {
                   {userData?.createdAt?.toDate?.()?.toLocaleDateString() || t('account.unknown')}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Delete Account - Danger Zone */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                {t('account.dangerZone')}
+              </CardTitle>
+              <CardDescription>{t('account.deleteDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {message && message.type === 'error' && (
+                <Alert variant="destructive">
+                  {message.text}
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {t('account.deleteWarning')}
+                </p>
+                <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                  <li>{t('account.deleteItem1')}</li>
+                  <li>{t('account.deleteItem2')}</li>
+                  <li>{t('account.deleteItem3')}</li>
+                  <li>{t('account.deleteItem4')}</li>
+                </ul>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="deleteConfirmation">{t('account.typeDelete')}</Label>
+                <Input
+                  id="deleteConfirmation"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder="DELETE"
+                  className="max-w-xs"
+                />
+              </div>
+
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount || deleteConfirmation !== 'DELETE'}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {deletingAccount ? t('account.deleting') : t('account.deleteButton')}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

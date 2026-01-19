@@ -9,7 +9,7 @@ import {
   ReactNode,
 } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
-import { onAuthStateChange } from '@/lib/firebase/auth';
+import { onAuthStateChange, signOut as firebaseSignOut } from '@/lib/firebase/auth';
 import { getUserData, getUserCredits, getUserCreditsBreakdown, type CreditBreakdown } from '@/lib/firebase/firestore';
 import { checkAndResetMonthlyCredits } from '@/lib/credits/manager';
 import type { User } from '@/types';
@@ -24,6 +24,7 @@ interface AuthContextType {
   refreshCredits: () => Promise<void>;
   refreshUserData: () => Promise<void>;
   refreshToken: () => Promise<string | null>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,6 +77,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPurchasedCredits(breakdown.purchased);
     }
   };
+
+  // Logout function
+  const logout = useCallback(async () => {
+    try {
+      // Sign out from Firebase
+      await firebaseSignOut();
+      // Clear cookies
+      document.cookie = 'firebase-token=; path=/; max-age=0';
+      document.cookie = 'session=; path=/; max-age=0';
+      // Clear state
+      setUserData(null);
+      setCredits(0);
+      setFreeCredits(0);
+      setPurchasedCredits(0);
+      // Redirect to home
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  }, []);
 
   // Auth state change listener
   useEffect(() => {
@@ -140,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshCredits,
         refreshUserData,
         refreshToken,
+        logout,
       }}
     >
       {children}

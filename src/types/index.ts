@@ -808,7 +808,7 @@ export interface TokenCost {
 }
 
 export interface StepTokenUsage {
-  step: 'linkedin' | 'job' | 'style' | 'generate' | 'regenerate' | 'motivation';
+  step: 'profile-parse' | 'profile-enrich' | 'linkedin-export' | 'job' | 'style' | 'generate' | 'regenerate' | 'motivation';
   usage: TokenUsage;
   cost: TokenCost;
   modelId: string;
