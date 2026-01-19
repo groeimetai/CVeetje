@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/ui/logo';
 import { WebsiteStructuredData, FAQStructuredData } from '@/components/seo/structured-data';
-import { CVShowcase, ProfileSelectionMockup, JobAnalysisMockup, StyleGeneratorMockup } from '@/components/landing/cv-showcase';
+import { CVShowcase, ProfileSelectionMockup, JobAnalysisMockup, StyleGeneratorMockup, LinkedInExportMockup } from '@/components/landing/cv-showcase';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 
@@ -382,6 +382,49 @@ export default async function LandingPage({ params }: Props) {
                       <span>{t('styleGenerator.adjustColors')}</span>
                     </li>
                   </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* LinkedIn Export Feature */}
+          <section className="py-20 bg-muted/30">
+            <div className="container mx-auto px-4">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                  <Badge className="mb-4" variant="secondary">
+                    <Linkedin className="mr-1 h-3 w-3" />
+                    {t('linkedInExport.badge')}
+                  </Badge>
+                  <h2 className="text-3xl font-bold mb-4">
+                    {t('linkedInExport.title')}
+                    <br />
+                    <span className="text-primary">{t('linkedInExport.titleHighlight')}</span>
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    {t('linkedInExport.description')}
+                  </p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>{t('linkedInExport.headline')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>{t('linkedInExport.about')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>{t('linkedInExport.experience')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>{t('linkedInExport.tips')}</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="lg:pl-8">
+                  <LinkedInExportMockup />
                 </div>
               </div>
             </div>

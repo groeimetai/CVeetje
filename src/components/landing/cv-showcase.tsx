@@ -448,6 +448,116 @@ export function StyleGeneratorMockup() {
   );
 }
 
+// LinkedIn Export mockup showing generated LinkedIn content
+export function LinkedInExportMockup() {
+  return (
+    <div className="bg-muted rounded-lg border shadow-xl overflow-hidden">
+      {/* Browser top bar */}
+      <div className="bg-muted-foreground/10 px-4 py-2 flex items-center gap-2 border-b">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-400" />
+          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+          <div className="w-3 h-3 rounded-full bg-green-400" />
+        </div>
+        <div className="flex-1 mx-4">
+          <div className="bg-background rounded px-3 py-1 text-xs text-muted-foreground text-center">
+            cveetje.nl/profiles
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="bg-background p-4 md:p-6">
+        <Card className="max-w-md mx-auto">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-[#0077b5] flex items-center justify-center">
+                <span className="text-white font-bold text-sm">in</span>
+              </div>
+              <div>
+                <CardTitle className="text-base">LinkedIn Profiel Content</CardTitle>
+                <p className="text-xs text-muted-foreground">Geoptimaliseerd voor zoekvindingbaarheid</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Headline */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Headline</span>
+                <button className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <span>📋</span> Kopieer
+                </button>
+              </div>
+              <div className="rounded-lg bg-muted p-3 text-sm">
+                Senior Marketing Manager | Digital Strategy & Brand Growth | Helping companies increase engagement by 40%+
+              </div>
+            </div>
+
+            {/* About preview */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Over mij</span>
+                <button className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <span>📋</span> Kopieer
+                </button>
+              </div>
+              <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground line-clamp-3">
+                🚀 Ik help bedrijven groeien door data-gedreven marketing strategieën.
+
+                Met 8+ jaar ervaring in digitale marketing heb ik teams geleid die...
+              </div>
+              <span className="text-xs text-muted-foreground">+ 800 tekens meer</span>
+            </div>
+
+            {/* Experience description */}
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Werkervaring beschrijvingen</span>
+              <div className="space-y-2">
+                <div className="rounded-lg border p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium text-sm">Senior Marketing Manager</span>
+                    <button className="text-xs text-primary hover:underline">📋</button>
+                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    • Leidde digitale transformatie resulterend in 40% groei in online engagement
+                    • Beheerde €2M+ marketing budget met 150% ROI...
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Skills */}
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Aanbevolen skills</span>
+              <div className="flex flex-wrap gap-1">
+                {['Digital Marketing', 'SEO', 'Content Strategy', 'Team Leadership', 'Analytics'].map((skill) => (
+                  <Badge key={skill} variant="secondary" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+                <Badge variant="outline" className="text-xs">+5 meer</Badge>
+              </div>
+            </div>
+
+            {/* Tips */}
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span>💡</span>
+                <span className="font-medium text-sm text-amber-800">Profiel tips</span>
+              </div>
+              <ul className="text-xs text-amber-700 space-y-1">
+                <li>• Voeg een professionele profielfoto toe</li>
+                <li>• Vraag 3+ aanbevelingen aan ex-collega&apos;s</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // Keep the old DashboardMockup for backwards compatibility, but make it an alias
 export function DashboardMockup() {
   return <StyleGeneratorMockup />;

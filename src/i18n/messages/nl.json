@@ -137,6 +137,16 @@
       "unlimitedRegenerate": "Onbeperkt regenereren zonder extra kosten",
       "adjustColors": "Kleuren achteraf aanpasbaar"
     },
+    "linkedInExport": {
+      "badge": "LinkedIn Export",
+      "title": "Je Werk Verzameld,",
+      "titleHighlight": "LinkedIn-Ready",
+      "description": "Al je ervaringen staan al in je profiel. Laat AI geoptimaliseerde LinkedIn content genereren met een klik. Professionele headline, impactvolle beschrijvingen, en aanbevolen skills - klaar om te kopiëren.",
+      "headline": "Keyword-rijke headline die opvalt",
+      "about": "Over mij sectie met sterke hook en structuur",
+      "experience": "Werkervaring met CAR-methode beschrijvingen",
+      "tips": "Gepersonaliseerde profiel verbeter-tips"
+    },
     "features": {
       "title": "Waarom CVeetje?",
       "subtitle": "Alles om sneller en beter te solliciteren",

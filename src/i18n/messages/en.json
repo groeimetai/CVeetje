@@ -137,6 +137,16 @@
       "unlimitedRegenerate": "Unlimited regeneration at no extra cost",
       "adjustColors": "Colors adjustable afterwards"
     },
+    "linkedInExport": {
+      "badge": "LinkedIn Export",
+      "title": "Your Work Collected,",
+      "titleHighlight": "LinkedIn-Ready",
+      "description": "All your experiences are already in your profile. With one click, generate LinkedIn-optimized content: a compelling headline, a strong about section, and CAR-method job descriptions.",
+      "headline": "Keyword-rich headline that stands out",
+      "about": "About section with strong hook and structure",
+      "experience": "Work experience with CAR-method descriptions",
+      "tips": "Personalized profile improvement tips"
+    },
     "features": {
       "title": "Why CVeetje?",
       "subtitle": "Everything to apply faster and better",
