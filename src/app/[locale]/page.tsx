@@ -85,20 +85,23 @@ export default async function LandingPage({ params }: Props) {
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <Link href="/">
+          <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-full overflow-x-hidden">
+            <Link href="/" className="flex-shrink-0">
               <Logo size="sm" />
             </Link>
-            <div className="flex items-center gap-2">
+            <nav className="flex items-center gap-1 sm:gap-2">
               <ThemeSwitcher />
               <LanguageSwitcher />
               <Link href="/login">
-                <Button variant="ghost">{locale === 'nl' ? 'Inloggen' : 'Sign In'}</Button>
+                <Button variant="ghost" size="sm">
+                  <User className="h-4 w-4 sm:hidden" />
+                  <span className="hidden sm:inline">{locale === 'nl' ? 'Inloggen' : 'Sign In'}</span>
+                </Button>
               </Link>
               <Link href="/register">
-                <Button>{t('ctaStart')}</Button>
+                <Button size="sm" className="text-xs sm:text-sm whitespace-nowrap">{t('ctaStart')}</Button>
               </Link>
-            </div>
+            </nav>
           </div>
         </header>
 
