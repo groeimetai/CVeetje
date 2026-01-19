@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { CreditCard, Check, Clock, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,8 @@ import type { CreditTransaction } from '@/types';
 export default function CreditsPage() {
   const searchParams = useSearchParams();
   const { firebaseUser, credits, refreshCredits } = useAuth();
+  const t = useTranslations('credits');
+  const tCommon = useTranslations('common');
 
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,9 +75,9 @@ export default function CreditsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Credits</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="text-muted-foreground">
-          Manage your credits and purchase more to download CVs
+          {t('subtitle')}
         </p>
       </div>
 
@@ -82,7 +85,7 @@ export default function CreditsPage() {
         <Alert className="bg-green-50 border-green-200">
           <Check className="h-4 w-4 text-green-600" />
           <span className="ml-2 text-green-700">
-            Payment successful! Your credits have been added to your account.
+            {t('paymentSuccess')}
           </span>
         </Alert>
       )}
@@ -98,22 +101,22 @@ export default function CreditsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Your Balance
+            {t('balance.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-5xl font-bold">{credits}</p>
-              <p className="text-muted-foreground">credits available</p>
+              <p className="text-muted-foreground">{t('balance.available')}</p>
             </div>
             <div className="text-right">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span>Free credits reset in {daysUntilReset} days</span>
+                <span>{t('balance.resetIn', { days: daysUntilReset })}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Next reset: {nextResetDate}
+                {t('balance.nextReset', { date: nextResetDate })}
               </p>
             </div>
           </div>
@@ -125,11 +128,10 @@ export default function CreditsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            Buy Credits
+            {t('buy.title')}
           </CardTitle>
           <CardDescription>
-            Purchase credits to download more CVs. Pay securely with iDEAL,
-            credit card, or other payment methods via Mollie.
+            {t('buy.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -141,12 +143,12 @@ export default function CreditsPage() {
               >
                 {pkg.id === 'pack_15' && (
                   <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-green-500">
-                    Popular
+                    {t('buy.popular')}
                   </Badge>
                 )}
                 <div className="text-center">
                   <p className="text-3xl font-bold">{pkg.credits}</p>
-                  <p className="text-muted-foreground">credits</p>
+                  <p className="text-muted-foreground">{t('buy.credits')}</p>
                 </div>
                 <Separator className="my-4" />
                 <div className="text-center">
@@ -160,7 +162,7 @@ export default function CreditsPage() {
                   onClick={() => handlePurchase(pkg.id)}
                   disabled={purchasing !== null}
                 >
-                  {purchasing === pkg.id ? 'Processing...' : 'Buy Now'}
+                  {purchasing === pkg.id ? t('buy.processing') : t('buy.buyNow')}
                 </Button>
               </div>
             ))}
@@ -171,17 +173,17 @@ export default function CreditsPage() {
       {/* Transaction History */}
       <Card>
         <CardHeader>
-          <CardTitle>Transaction History</CardTitle>
+          <CardTitle>{t('history.title')}</CardTitle>
           <CardDescription>
-            Your recent credit transactions
+            {t('history.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center text-muted-foreground py-4">Loading...</p>
+            <p className="text-center text-muted-foreground py-4">{tCommon('loading')}</p>
           ) : transactions.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
-              No transactions yet
+              {t('history.noTransactions')}
             </p>
           ) : (
             <div className="space-y-3">
@@ -193,7 +195,7 @@ export default function CreditsPage() {
                   <div>
                     <p className="font-medium">{tx.description}</p>
                     <p className="text-sm text-muted-foreground">
-                      {tx.createdAt?.toDate?.()?.toLocaleDateString() || 'Recently'}
+                      {tx.createdAt?.toDate?.()?.toLocaleDateString() || tCommon('recently')}
                     </p>
                   </div>
                   <div className="text-right">
@@ -203,7 +205,7 @@ export default function CreditsPage() {
                       }`}
                     >
                       {tx.amount > 0 ? '+' : ''}
-                      {tx.amount} credits
+                      {tx.amount} {t('history.credits')}
                     </p>
                     <Badge variant="outline" className="text-xs">
                       {tx.type.replace('_', ' ')}

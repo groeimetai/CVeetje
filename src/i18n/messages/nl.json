@@ -427,6 +427,22 @@
     "allPages": "Alle Pagina's",
     "creditCost": "1 credit voor download"
   },
+  "cvList": {
+    "title": "Mijn CVs",
+    "subtitle": "Beheer en download je CVs",
+    "allCvs": "Alle CVs",
+    "cvsCreated": "{count} CV(s) gemaakt",
+    "noCvs": "Nog geen CVs gemaakt",
+    "createFirst": "Maak je eerste CV om te beginnen",
+    "createCv": "CV Maken",
+    "view": "Bekijken",
+    "downloadPdf": "Download PDF",
+    "deleteConfirm": "Weet je zeker dat je deze CV wilt verwijderen?"
+  },
+  "cvNew": {
+    "title": "Nieuwe CV Maken",
+    "subtitle": "Volg de stappen om je professionele CV te genereren"
+  },
   "errors": {
     "unauthorized": "Je bent niet gemachtigd voor deze actie",
     "invalidToken": "Ongeldige sessie, log opnieuw in",

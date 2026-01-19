@@ -238,7 +238,7 @@ export function MotivationLetterSection({
             <div className="space-y-4">
               {/* Letter preview with copy protection */}
               <div
-                className="bg-white border rounded-lg p-6 shadow-sm relative overflow-hidden select-none"
+                className="bg-card border rounded-lg p-6 shadow-sm relative overflow-hidden select-none"
                 onContextMenu={(e) => e.preventDefault()}
                 onCopy={(e) => e.preventDefault()}
                 onCut={(e) => e.preventDefault()}
@@ -258,7 +258,7 @@ export function MotivationLetterSection({
                     {Array(20).fill(null).map((_, i) => (
                       <span
                         key={i}
-                        className="text-gray-400/10 text-lg font-bold whitespace-nowrap px-8 py-6"
+                        className="text-muted-foreground/10 text-lg font-bold whitespace-nowrap px-8 py-6"
                         style={{ letterSpacing: '4px' }}
                       >
                         CVeetje PREVIEW
@@ -267,7 +267,7 @@ export function MotivationLetterSection({
                   </div>
                 </div>
                 {/* Letter content */}
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed relative z-0">
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed relative z-0 text-foreground">
                   {letter.fullText}
                 </pre>
               </div>

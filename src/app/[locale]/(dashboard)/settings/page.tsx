@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import { Key, Trash2, Save, Eye, EyeOff, User, Shield, Loader2, ExternalLink, Cpu, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,7 @@ function formatPrice(price: number): string {
 
 export default function SettingsPage() {
   const { userData, firebaseUser, refreshUserData } = useAuth();
+  const t = useTranslations('settings');
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -140,11 +142,11 @@ export default function SettingsPage() {
       }
 
       await refreshUserData();
-      setMessage({ type: 'success', text: 'API key saved successfully' });
+      setMessage({ type: 'success', text: t('messages.apiKeySaved') });
     } catch (err) {
       setMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to save API key',
+        text: err instanceof Error ? err.message : t('messages.apiKeySaved'),
       });
     } finally {
       setSaving(false);
@@ -152,7 +154,7 @@ export default function SettingsPage() {
   };
 
   const handleRemoveApiKey = async () => {
-    if (!confirm('Are you sure you want to remove your API key?')) return;
+    if (!confirm(t('messages.confirmRemove'))) return;
 
     setRemoving(true);
     setMessage(null);
@@ -168,11 +170,11 @@ export default function SettingsPage() {
       }
 
       await refreshUserData();
-      setMessage({ type: 'success', text: 'API key removed successfully' });
+      setMessage({ type: 'success', text: t('messages.apiKeyRemoved') });
     } catch (err) {
       setMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to remove API key',
+        text: err instanceof Error ? err.message : t('messages.apiKeyRemoved'),
       });
     } finally {
       setRemoving(false);
@@ -197,9 +199,9 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="text-muted-foreground">
-          Manage your account and API configuration
+          {t('subtitle')}
         </p>
       </div>
 
@@ -207,11 +209,11 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="api-key">
             <Key className="mr-2 h-4 w-4" />
-            API Key
+            {t('tabs.apiKey')}
           </TabsTrigger>
           <TabsTrigger value="account">
             <User className="mr-2 h-4 w-4" />
-            Account
+            {t('tabs.account')}
           </TabsTrigger>
         </TabsList>
 
@@ -222,16 +224,16 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5 text-green-600" />
-                  Current Configuration
+                  {t('currentConfig.title')}
                 </CardTitle>
                 <CardDescription>
-                  Your API key is configured and ready to use
+                  {t('currentConfig.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Provider</p>
+                    <p className="text-sm font-medium">{t('currentConfig.provider')}</p>
                     <p className="text-muted-foreground capitalize">
                       {providers.find(p => p.id === userData.apiKey?.provider)?.name || userData.apiKey.provider}
                     </p>
@@ -243,7 +245,7 @@ export default function SettingsPage() {
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">Model</p>
+                    <p className="text-sm font-medium">{t('currentConfig.model')}</p>
                     <p className="text-muted-foreground">{userData.apiKey.model}</p>
                   </div>
                 </div>
@@ -255,7 +257,7 @@ export default function SettingsPage() {
                   disabled={removing}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {removing ? 'Removing...' : 'Remove API Key'}
+                  {removing ? t('currentConfig.removing') : t('currentConfig.removeApiKey')}
                 </Button>
               </CardContent>
             </Card>
@@ -266,11 +268,10 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
-                {userData?.apiKey ? 'Update' : 'Configure'} API Key
+                {userData?.apiKey ? t('configureApiKey.updateTitle') : t('configureApiKey.title')}
               </CardTitle>
               <CardDescription>
-                Your API key is stored securely and encrypted. CVeetje uses your
-                own API key to generate CVs, so you only pay for what you use.
+                {t('configureApiKey.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -286,18 +287,18 @@ export default function SettingsPage() {
               {loadingProviders ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">Loading providers...</span>
+                  <span className="ml-2 text-muted-foreground">{t('configureApiKey.loadingProviders')}</span>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="provider">AI Provider</Label>
+                    <Label htmlFor="provider">{t('configureApiKey.provider')}</Label>
                     <Select
                       value={watchedProvider}
                       onValueChange={handleProviderChange}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select provider" />
+                        <SelectValue placeholder={t('configureApiKey.selectProvider')} />
                       </SelectTrigger>
                       <SelectContent>
                         {providers.map((provider) => (
@@ -305,7 +306,7 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-2">
                               <span>{provider.name}</span>
                               <Badge variant="outline" className="text-xs">
-                                {provider.models.length} models
+                                {provider.models.length} {t('configureApiKey.models')}
                               </Badge>
                             </div>
                           </SelectItem>
@@ -318,13 +319,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="model">Model</Label>
+                    <Label htmlFor="model">{t('currentConfig.model')}</Label>
                     <Select
                       value={watchedModel}
                       onValueChange={(value) => setValue('model', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select model" />
+                        <SelectValue placeholder={t('configureApiKey.selectModel')} />
                       </SelectTrigger>
                       <SelectContent>
                         {currentProviderModels.map((model) => (
@@ -350,7 +351,7 @@ export default function SettingsPage() {
                           {selectedModelInfo.limits.context > 0 && (
                             <div className="flex items-center gap-1">
                               <Cpu className="h-4 w-4 text-muted-foreground" />
-                              <span>{(selectedModelInfo.limits.context / 1000).toFixed(0)}k context</span>
+                              <span>{(selectedModelInfo.limits.context / 1000).toFixed(0)}k {t('configureApiKey.context')}</span>
                             </div>
                           )}
                           {selectedModelInfo.pricing.input > 0 && (
@@ -367,22 +368,22 @@ export default function SettingsPage() {
                           )}
                         </div>
                         <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground font-medium">Capabilities</p>
+                          <p className="text-xs text-muted-foreground font-medium">{t('configureApiKey.capabilities')}</p>
                           <div className="flex flex-wrap gap-1">
                             <Badge variant={selectedModelInfo.capabilities.structuredOutput ? "default" : "outline"} className="text-xs">
-                              {selectedModelInfo.capabilities.structuredOutput ? "✓" : "✗"} Structured Output
+                              {selectedModelInfo.capabilities.structuredOutput ? "✓" : "✗"} {t('configureApiKey.structuredOutput')}
                             </Badge>
                             <Badge variant={selectedModelInfo.capabilities.toolCall ? "default" : "outline"} className="text-xs">
-                              {selectedModelInfo.capabilities.toolCall ? "✓" : "✗"} Tool Call
+                              {selectedModelInfo.capabilities.toolCall ? "✓" : "✗"} {t('configureApiKey.toolCall')}
                             </Badge>
                             <Badge variant={selectedModelInfo.capabilities.reasoning ? "default" : "outline"} className="text-xs">
-                              {selectedModelInfo.capabilities.reasoning ? "✓" : "✗"} Reasoning
+                              {selectedModelInfo.capabilities.reasoning ? "✓" : "✗"} {t('configureApiKey.reasoning')}
                             </Badge>
                           </div>
                         </div>
                         {selectedModelInfo.modalities?.input && (
                           <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground font-medium">Input Types</p>
+                            <p className="text-xs text-muted-foreground font-medium">{t('configureApiKey.inputTypes')}</p>
                             <div className="flex flex-wrap gap-1">
                               {selectedModelInfo.modalities.input.map((modality) => (
                                 <Badge key={modality} variant="secondary" className="text-xs capitalize">
@@ -392,7 +393,7 @@ export default function SettingsPage() {
                             </div>
                             {(selectedModelInfo.modalities.input.includes('image') || selectedModelInfo.modalities.input.includes('pdf')) && (
                               <p className="text-xs text-green-600 mt-1">
-                                ✓ Supports LinkedIn PDF/image upload
+                                ✓ {t('configureApiKey.supportsUpload')}
                               </p>
                             )}
                           </div>
@@ -402,12 +403,12 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="apiKey">API Key</Label>
+                    <Label htmlFor="apiKey">{t('configureApiKey.apiKey')}</Label>
                     <div className="relative">
                       <Input
                         id="apiKey"
                         type={showApiKey ? 'text' : 'password'}
-                        placeholder={`Enter your ${providers.find(p => p.id === selectedProvider)?.name || 'provider'} API key`}
+                        placeholder={t('configureApiKey.enterApiKey', { provider: providers.find(p => p.id === selectedProvider)?.name || 'provider' })}
                         {...register('apiKey')}
                       />
                       <Button
@@ -429,7 +430,7 @@ export default function SettingsPage() {
                     )}
                     {getProviderKeyUrl(selectedProvider) && (
                       <p className="text-xs text-muted-foreground">
-                        Get your API key from:{' '}
+                        {t('configureApiKey.getApiKey')}{' '}
                         <a
                           href={getProviderKeyUrl(selectedProvider)!.url}
                           target="_blank"
@@ -445,7 +446,7 @@ export default function SettingsPage() {
 
                   <Button type="submit" disabled={saving}>
                     <Save className="mr-2 h-4 w-4" />
-                    {saving ? 'Saving...' : 'Save API Key'}
+                    {saving ? t('configureApiKey.saving') : t('configureApiKey.saveApiKey')}
                   </Button>
                 </form>
               )}
@@ -456,24 +457,24 @@ export default function SettingsPage() {
         <TabsContent value="account" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Account Information</CardTitle>
-              <CardDescription>Your account details</CardDescription>
+              <CardTitle>{t('account.title')}</CardTitle>
+              <CardDescription>{t('account.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Name</p>
-                <p>{userData?.displayName || 'Not set'}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('account.name')}</p>
+                <p>{userData?.displayName || t('account.notSet')}</p>
               </div>
               <Separator />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('account.email')}</p>
                 <p>{firebaseUser?.email}</p>
               </div>
               <Separator />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Account Created</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('account.createdAt')}</p>
                 <p>
-                  {userData?.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}
+                  {userData?.createdAt?.toDate?.()?.toLocaleDateString() || t('account.unknown')}
                 </p>
               </div>
             </CardContent>
