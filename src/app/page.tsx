@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/ui/logo';
 import { WebsiteStructuredData, FAQStructuredData } from '@/components/seo/structured-data';
+import { CVShowcase, DashboardMockup } from '@/components/landing/cv-showcase';
 
 export const metadata: Metadata = {
   title: 'CVeetje - CV Automatisch Gefit op Elke Vacature | Stop het Priegelwerk',
@@ -183,6 +184,94 @@ export default function LandingPage() {
                     Download je CV als PDF. Voeg optioneel een
                     <strong className="text-foreground"> AI-gegenereerde motivatiebrief</strong> toe.
                   </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CV Preview Showcase */}
+          <section className="py-20 bg-accent/30 overflow-hidden">
+            <div className="container mx-auto px-4">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                  <Badge className="mb-4" variant="secondary">
+                    Preview
+                  </Badge>
+                  <h2 className="text-3xl font-bold mb-4">
+                    Professioneel Resultaat,
+                    <br />
+                    <span className="text-primary">Automatisch Gegenereerd</span>
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Je ontvangt een volledig opgemaakte CV met jouw gegevens, geoptimaliseerd
+                    voor de vacature waar je op solliciteert. Inclusief professionele styling,
+                    duidelijke secties, en ATS-vriendelijke opmaak.
+                  </p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Keywords uit de vacature automatisch verwerkt</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Ervaring en skills geprioriteerd op relevantie</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Stijl passend bij jouw industrie en functie</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Direct klaar om te downloaden als PDF</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="lg:pl-8">
+                  <CVShowcase />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Dashboard Preview */}
+          <section className="py-20">
+            <div className="container mx-auto px-4">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div className="order-2 lg:order-1 lg:pr-8">
+                  <DashboardMockup />
+                </div>
+                <div className="order-1 lg:order-2">
+                  <Badge className="mb-4" variant="secondary">
+                    Dashboard
+                  </Badge>
+                  <h2 className="text-3xl font-bold mb-4">
+                    Stap voor Stap
+                    <br />
+                    <span className="text-primary">Begeleid naar je CV</span>
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Onze wizard begeleidt je door elk stap. Van het invoeren van je profiel,
+                    tot het plakken van de vacature, het kiezen van een stijl, en het downloaden
+                    van je perfecte CV.
+                  </p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Intuïtieve stap-voor-stap wizard</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Meerdere stijlen om uit te kiezen</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Live preview voordat je download</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Tekst aanpassen waar nodig</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
