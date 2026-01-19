@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/ui/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -58,9 +59,8 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col border-r bg-card">
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center space-x-2">
-          <FileText className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold">CVeetje</span>
+        <Link href="/dashboard">
+          <Logo size="sm" />
         </Link>
       </div>
 

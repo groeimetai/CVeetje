@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
+import { Logo } from '@/components/ui/logo';
 
 export default function AuthLayout({
   children,
@@ -11,9 +11,8 @@ export default function AuthLayout({
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 h-16 flex items-center">
-          <Link href="/" className="flex items-center space-x-2">
-            <FileText className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">CVeetje</span>
+          <Link href="/">
+            <Logo size="sm" />
           </Link>
         </div>
       </header>
