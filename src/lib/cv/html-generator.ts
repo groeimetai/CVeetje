@@ -172,7 +172,14 @@ export function generateCVHTML(
   const randomSeed = Math.floor(Math.random() * 10000); // Additional random component
   const decorationSeed = nameSeed + timeSeed + randomSeed;
   const decorationsHTML = tokens.decorations !== 'none'
-    ? generateDecorationsHTML(tokens.colors.primary, tokens.colors.accent, tokens.decorations, decorationSeed)
+    ? generateDecorationsHTML(
+        tokens.colors.primary,
+        tokens.colors.accent,
+        tokens.decorations,
+        decorationSeed,
+        tokens.decorationTheme,  // Pass theme for creative/experimental modes
+        tokens.customDecorations  // Pass custom decorations for experimental mode
+      )
     : '';
 
   // Preview protection features

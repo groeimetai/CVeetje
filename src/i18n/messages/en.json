@@ -194,9 +194,10 @@
       "apiKey": {
         "title": "Your Data, Your Key",
         "description": "Use your own AI API key",
-        "providers": "OpenAI, Anthropic or Google",
-        "payForUse": "Only pay for AI costs you incur",
-        "encrypted": "Stored encrypted",
+        "providers": "20+ providers: OpenAI, Anthropic, Google, Groq, and more",
+        "transparent": "Fully transparent: see exact token usage and costs",
+        "payForUse": "Only pay for AI costs you actually incur",
+        "encrypted": "API key stored encrypted",
         "fullControl": "Fully in your control"
       }
     },

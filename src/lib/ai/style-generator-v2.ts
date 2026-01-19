@@ -192,6 +192,15 @@ ${creativityLevel === 'creative' ? `
 - decorations: MUST be 'moderate' (adds noticeable background shapes for visual appeal - this is creative mode!)
 - contactLayout: 'double-row' or 'double-column' for visual balance
 - headerGradient: 'subtle' (elegant gradient adds sophistication)
+
+DECORATION THEME (Required for creative mode):
+Choose a decorationTheme that matches the target industry/job:
+- 'geometric': Best for IT, Tech, Engineering - circuits, hexagons, grid patterns
+- 'organic': Best for Healthcare, Pharma, Nature - soft curves, leaves, waves
+- 'minimal': Best for Finance, Consulting, Legal - subtle lines, clean accents
+- 'tech': Best for Software, Data, AI - code brackets, nodes, digital patterns
+- 'creative': Best for Design, Marketing, Art - bold shapes, splashes
+- 'abstract': General use - balanced geometric patterns
 ` : ''}
 ${creativityLevel === 'experimental' ? `
 *** EXPERIMENTAL MODE - MAXIMUM VISUAL IMPACT ***
@@ -214,6 +223,23 @@ REQUIRED settings for experimental:
 - decorations: MUST be 'abundant' (bold background shapes for maximum visual impact)
 - contactLayout: 'double-column' for modern grid layout, or 'double-row' for elegant spacing
 - headerGradient: 'radial' for luxurious glow effect, or 'subtle' for elegant depth
+
+DECORATION THEME (Required):
+Choose a decorationTheme matching the industry (same as creative mode).
+
+CUSTOM DECORATIONS (Required for experimental mode):
+Generate 2-5 unique customDecorations tailored to the JOB and INDUSTRY.
+These should be ABSTRACT shapes that SUBTLY represent the field - NOT literal icons!
+
+Examples by profession:
+- Software Developer: code-bracket (curly brace shape), terminal-cursor (blinking line), git-branch (forking lines)
+- Data Scientist: scatter-dots (clustered points), neural-node (connected circles), data-flow (flowing lines)
+- Marketing Manager: trend-arrow (upward curve), speech-bubble (rounded shape), target-ring (concentric circles)
+- Finance Analyst: growth-chart (rising bars), pie-segment (curved wedge), currency-wave (wavy line)
+- Healthcare Professional: pulse-line (heartbeat wave), molecule (hexagon with dots), care-plus (soft cross)
+- Designer: grid-dots (dot matrix), shape-morph (abstract blob), palette-swatches (overlapping rectangles)
+
+IMPORTANT: Make them SUBTLE and ABSTRACT, not literal clipart! They should enhance, not distract.
 
 COLOR SELECTION APPROACH:
 1. Only use brand colors if you're 100% CERTAIN (don't guess!)
@@ -321,9 +347,18 @@ export async function generateDesignTokens(
   try {
     console.log(`[Style Gen] Starting LLM call: creativity=${creativityLevel}, hasPhoto=${hasPhoto}, temp=${temperature}`);
 
+    // Select schema based on creativity level
+    const schema = creativityLevel === 'experimental'
+      ? experimentalTokensSchema
+      : creativityLevel === 'creative'
+        ? creativeTokensSchema
+        : designTokensSchema;
+
+    console.log(`[Style Gen] Using schema: ${creativityLevel === 'experimental' ? 'experimental' : creativityLevel === 'creative' ? 'creative' : 'base'}`);
+
     const result = await generateObject({
       model: aiProvider(modelId),
-      schema: designTokensSchema,
+      schema,
       system: systemPrompt,
       prompt: userPrompt,
       temperature,
@@ -334,7 +369,7 @@ export async function generateDesignTokens(
     // Validate and fix the generated tokens
     const tokens = validateAndFixTokens(result.object as CVDesignTokens, creativityLevel);
 
-    console.log(`[Style Gen] After validation: theme=${tokens.themeBase}, header=${tokens.headerVariant}, photo=${tokens.showPhoto}, primary=${tokens.colors.primary}`);
+    console.log(`[Style Gen] After validation: theme=${tokens.themeBase}, header=${tokens.headerVariant}, photo=${tokens.showPhoto}, primary=${tokens.colors.primary}, decorationTheme=${tokens.decorationTheme || 'none'}, customDecorations=${tokens.customDecorations?.length || 0}`);
 
     // Extract usage (Vercel AI SDK uses inputTokens/outputTokens)
     const usage: TokenUsage = {
@@ -396,6 +431,35 @@ function validateAndFixTokens(
   if ((creativityLevel === 'creative' || creativityLevel === 'experimental') && tokens.decorations === 'none') {
     tokens.decorations = constraints.defaultDecorations;
     console.log(`[Style Gen] Forcing decorations to ${tokens.decorations} for ${creativityLevel} mode (was 'none')`);
+  }
+
+  // Validate decorationTheme for creative and experimental modes
+  if (creativityLevel === 'creative' || creativityLevel === 'experimental') {
+    const validThemes = ['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract'];
+    if (!tokens.decorationTheme || !validThemes.includes(tokens.decorationTheme)) {
+      // Default to 'abstract' if not set or invalid
+      tokens.decorationTheme = 'abstract';
+      console.log(`[Style Gen] Setting default decorationTheme to 'abstract' for ${creativityLevel} mode`);
+    }
+  }
+
+  // Validate customDecorations for experimental mode
+  if (creativityLevel === 'experimental') {
+    if (!tokens.customDecorations || tokens.customDecorations.length === 0) {
+      console.log(`[Style Gen] No customDecorations provided for experimental mode`);
+    } else {
+      // Validate each custom decoration
+      tokens.customDecorations = tokens.customDecorations
+        .filter(d => d.name && d.description && d.placement && d.size && d.quantity)
+        .map(d => ({
+          name: d.name,
+          description: d.description,
+          placement: ['corner', 'edge', 'scattered'].includes(d.placement) ? d.placement : 'corner',
+          size: ['small', 'medium', 'large'].includes(d.size) ? d.size : 'medium',
+          quantity: Math.min(Math.max(d.quantity, 1), 5),
+        }));
+      console.log(`[Style Gen] Validated ${tokens.customDecorations.length} customDecorations`);
+    }
   }
 
   // Validate contactLayout - default to single-row if not set or invalid
@@ -484,6 +548,16 @@ function getFallbackTokens(
     };
     const colors = industryColors[industry || ''] || industryColors.default;
 
+    // Map industry to decoration theme
+    const industryToTheme: Record<string, 'geometric' | 'organic' | 'minimal' | 'tech' | 'creative' | 'abstract'> = {
+      technology: 'tech',
+      finance: 'minimal',
+      creative: 'creative',
+      healthcare: 'organic',
+      consulting: 'minimal',
+    };
+    const decorationTheme = industryToTheme[industry || ''] || 'abstract';
+
     return {
       styleName: 'Bold Experimental',
       styleRationale: 'A bold, colorful design that stands out.',
@@ -507,6 +581,7 @@ function getFallbackTokens(
       roundedCorners: true,
       headerFullBleed: true,
       decorations: 'abundant',
+      decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
     };
   }
@@ -514,6 +589,16 @@ function getFallbackTokens(
   // Creative mode gets modern fallback with moderate decorations
   if (creativityLevel === 'creative') {
     const defaults = themeDefaults['creative'];
+    // Map industry to decoration theme
+    const industryToTheme: Record<string, 'geometric' | 'organic' | 'minimal' | 'tech' | 'creative' | 'abstract'> = {
+      technology: 'tech',
+      finance: 'minimal',
+      creative: 'creative',
+      healthcare: 'organic',
+      consulting: 'minimal',
+    };
+    const decorationTheme = industryToTheme[industry || ''] || 'creative';
+
     return {
       styleName: 'Creative Modern',
       styleRationale: 'A creative design with visual impact.',
@@ -533,6 +618,7 @@ function getFallbackTokens(
       roundedCorners: true,
       headerFullBleed: true,
       decorations: 'moderate',
+      decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
     };
   }

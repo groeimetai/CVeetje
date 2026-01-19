@@ -5,7 +5,7 @@
  * Used primarily in creative/experimental style modes.
  */
 
-import type { DecorationIntensity } from '@/types/design-tokens';
+import type { DecorationIntensity, DecorationTheme, CustomDecoration } from '@/types/design-tokens';
 
 // Available decoration shapes
 export const decorationShapes = {
@@ -78,6 +78,136 @@ export const decorationShapes = {
 
 export type DecorationShape = keyof typeof decorationShapes;
 
+// Theme-specific shape mappings - each theme uses a curated selection of shapes
+export const themeShapes: Record<DecorationTheme, DecorationShape[]> = {
+  geometric: ['hexagon', 'triangle', 'square', 'diamond', 'dots'],
+  organic: ['circle', 'wave', 'arc', 'ring'],
+  minimal: ['ring', 'arc', 'dots'],
+  tech: ['square', 'hexagon', 'dots', 'cross'],
+  creative: ['star', 'diamond', 'circle', 'triangle', 'wave'],
+  abstract: ['circle', 'ring', 'square', 'diamond', 'triangle', 'hexagon', 'dots', 'wave', 'arc'],
+};
+
+// Custom decoration generators - converts LLM descriptions to SVG shapes
+export const customDecorationGenerators: Record<string, (size: number, color: string, opacity: number) => string> = {
+  // Software/Tech
+  'code-bracket': (size, color, opacity) => `
+    <path d="M${size * 0.3},${size * 0.2} L${size * 0.15},${size * 0.5} L${size * 0.3},${size * 0.8}"
+          fill="none" stroke="${color}" stroke-width="2" stroke-opacity="${opacity}" stroke-linecap="round"/>
+    <path d="M${size * 0.7},${size * 0.2} L${size * 0.85},${size * 0.5} L${size * 0.7},${size * 0.8}"
+          fill="none" stroke="${color}" stroke-width="2" stroke-opacity="${opacity}" stroke-linecap="round"/>
+  `,
+  'terminal-cursor': (size, color, opacity) => `
+    <rect x="${size * 0.3}" y="${size * 0.3}" width="${size * 0.4}" height="${size * 0.4}"
+          fill="${color}" fill-opacity="${opacity * 0.8}"/>
+  `,
+  'git-branch': (size, color, opacity) => `
+    <circle cx="${size * 0.3}" cy="${size * 0.3}" r="${size * 0.08}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.7}" cy="${size * 0.3}" r="${size * 0.08}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.5}" cy="${size * 0.7}" r="${size * 0.08}" fill="${color}" fill-opacity="${opacity}"/>
+    <path d="M${size * 0.3},${size * 0.38} L${size * 0.3},${size * 0.5} Q${size * 0.3},${size * 0.7} ${size * 0.42},${size * 0.7}"
+          fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity}"/>
+    <path d="M${size * 0.7},${size * 0.38} L${size * 0.7},${size * 0.5} Q${size * 0.7},${size * 0.7} ${size * 0.58},${size * 0.7}"
+          fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity}"/>
+  `,
+  // Data Science
+  'scatter-dots': (size, color, opacity) => `
+    <circle cx="${size * 0.2}" cy="${size * 0.6}" r="${size * 0.06}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.35}" cy="${size * 0.4}" r="${size * 0.05}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.5}" cy="${size * 0.55}" r="${size * 0.07}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.65}" cy="${size * 0.35}" r="${size * 0.04}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.8}" cy="${size * 0.25}" r="${size * 0.06}" fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  'neural-node': (size, color, opacity) => `
+    <circle cx="${size * 0.5}" cy="${size * 0.5}" r="${size * 0.15}" fill="none" stroke="${color}" stroke-width="2" stroke-opacity="${opacity}"/>
+    <line x1="${size * 0.5}" y1="${size * 0.35}" x2="${size * 0.5}" y2="${size * 0.1}" stroke="${color}" stroke-width="1" stroke-opacity="${opacity * 0.6}"/>
+    <line x1="${size * 0.35}" y1="${size * 0.5}" x2="${size * 0.1}" y2="${size * 0.5}" stroke="${color}" stroke-width="1" stroke-opacity="${opacity * 0.6}"/>
+    <line x1="${size * 0.65}" y1="${size * 0.5}" x2="${size * 0.9}" y2="${size * 0.5}" stroke="${color}" stroke-width="1" stroke-opacity="${opacity * 0.6}"/>
+    <line x1="${size * 0.5}" y1="${size * 0.65}" x2="${size * 0.5}" y2="${size * 0.9}" stroke="${color}" stroke-width="1" stroke-opacity="${opacity * 0.6}"/>
+  `,
+  'data-flow': (size, color, opacity) => `
+    <path d="M${size * 0.1},${size * 0.5} Q${size * 0.3},${size * 0.3} ${size * 0.5},${size * 0.5} Q${size * 0.7},${size * 0.7} ${size * 0.9},${size * 0.5}"
+          fill="none" stroke="${color}" stroke-width="2" stroke-opacity="${opacity}"/>
+    <circle cx="${size * 0.1}" cy="${size * 0.5}" r="${size * 0.04}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.9}" cy="${size * 0.5}" r="${size * 0.04}" fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  // Marketing
+  'trend-arrow': (size, color, opacity) => `
+    <path d="M${size * 0.1},${size * 0.8} Q${size * 0.4},${size * 0.6} ${size * 0.6},${size * 0.4} L${size * 0.9},${size * 0.15}"
+          fill="none" stroke="${color}" stroke-width="2" stroke-opacity="${opacity}"/>
+    <polygon points="${size * 0.85},${size * 0.1} ${size * 0.95},${size * 0.2} ${size * 0.82},${size * 0.22}"
+             fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  'speech-bubble': (size, color, opacity) => `
+    <path d="M${size * 0.2},${size * 0.3} Q${size * 0.2},${size * 0.15} ${size * 0.4},${size * 0.15}
+             L${size * 0.6},${size * 0.15} Q${size * 0.8},${size * 0.15} ${size * 0.8},${size * 0.3}
+             L${size * 0.8},${size * 0.5} Q${size * 0.8},${size * 0.65} ${size * 0.6},${size * 0.65}
+             L${size * 0.4},${size * 0.65} L${size * 0.25},${size * 0.85} L${size * 0.35},${size * 0.65}
+             Q${size * 0.2},${size * 0.65} ${size * 0.2},${size * 0.5} Z"
+          fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity}"/>
+  `,
+  'target-ring': (size, color, opacity) => `
+    <circle cx="${size * 0.5}" cy="${size * 0.5}" r="${size * 0.4}" fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity * 0.5}"/>
+    <circle cx="${size * 0.5}" cy="${size * 0.5}" r="${size * 0.25}" fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity * 0.7}"/>
+    <circle cx="${size * 0.5}" cy="${size * 0.5}" r="${size * 0.1}" fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  // Finance
+  'growth-chart': (size, color, opacity) => `
+    <rect x="${size * 0.15}" y="${size * 0.6}" width="${size * 0.12}" height="${size * 0.25}" fill="${color}" fill-opacity="${opacity * 0.6}"/>
+    <rect x="${size * 0.35}" y="${size * 0.45}" width="${size * 0.12}" height="${size * 0.4}" fill="${color}" fill-opacity="${opacity * 0.8}"/>
+    <rect x="${size * 0.55}" y="${size * 0.3}" width="${size * 0.12}" height="${size * 0.55}" fill="${color}" fill-opacity="${opacity}"/>
+    <rect x="${size * 0.75}" y="${size * 0.15}" width="${size * 0.12}" height="${size * 0.7}" fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  'pie-segment': (size, color, opacity) => `
+    <path d="M${size * 0.5},${size * 0.5} L${size * 0.5},${size * 0.1} A${size * 0.4},${size * 0.4} 0 0,1 ${size * 0.85},${size * 0.65} Z"
+          fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  'currency-wave': (size, color, opacity) => `
+    <path d="M${size * 0.1},${size * 0.5} Q${size * 0.25},${size * 0.3} ${size * 0.4},${size * 0.5} Q${size * 0.55},${size * 0.7} ${size * 0.7},${size * 0.5} Q${size * 0.85},${size * 0.3} ${size * 0.95},${size * 0.5}"
+          fill="none" stroke="${color}" stroke-width="2" stroke-opacity="${opacity}"/>
+  `,
+  // Healthcare
+  'pulse-line': (size, color, opacity) => `
+    <polyline points="${size * 0.05},${size * 0.5} ${size * 0.25},${size * 0.5} ${size * 0.35},${size * 0.2} ${size * 0.45},${size * 0.8} ${size * 0.55},${size * 0.3} ${size * 0.65},${size * 0.6} ${size * 0.75},${size * 0.5} ${size * 0.95},${size * 0.5}"
+              fill="none" stroke="${color}" stroke-width="2" stroke-opacity="${opacity}" stroke-linecap="round" stroke-linejoin="round"/>
+  `,
+  'molecule': (size, color, opacity) => `
+    <circle cx="${size * 0.5}" cy="${size * 0.5}" r="${size * 0.12}" fill="${color}" fill-opacity="${opacity}"/>
+    <circle cx="${size * 0.25}" cy="${size * 0.35}" r="${size * 0.08}" fill="${color}" fill-opacity="${opacity * 0.7}"/>
+    <circle cx="${size * 0.75}" cy="${size * 0.35}" r="${size * 0.08}" fill="${color}" fill-opacity="${opacity * 0.7}"/>
+    <circle cx="${size * 0.35}" cy="${size * 0.75}" r="${size * 0.08}" fill="${color}" fill-opacity="${opacity * 0.7}"/>
+    <circle cx="${size * 0.65}" cy="${size * 0.75}" r="${size * 0.08}" fill="${color}" fill-opacity="${opacity * 0.7}"/>
+    <line x1="${size * 0.38}" y1="${size * 0.42}" x2="${size * 0.3}" y2="${size * 0.4}" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity * 0.5}"/>
+    <line x1="${size * 0.62}" y1="${size * 0.42}" x2="${size * 0.7}" y2="${size * 0.4}" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity * 0.5}"/>
+    <line x1="${size * 0.42}" y1="${size * 0.6}" x2="${size * 0.38}" y2="${size * 0.7}" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity * 0.5}"/>
+    <line x1="${size * 0.58}" y1="${size * 0.6}" x2="${size * 0.62}" y2="${size * 0.7}" stroke="${color}" stroke-width="1.5" stroke-opacity="${opacity * 0.5}"/>
+  `,
+  'care-plus': (size, color, opacity) => `
+    <rect x="${size * 0.4}" y="${size * 0.2}" width="${size * 0.2}" height="${size * 0.6}" rx="${size * 0.03}" fill="${color}" fill-opacity="${opacity}"/>
+    <rect x="${size * 0.2}" y="${size * 0.4}" width="${size * 0.6}" height="${size * 0.2}" rx="${size * 0.03}" fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  // Design
+  'grid-dots': (size, color, opacity) => `
+    ${[0.2, 0.4, 0.6, 0.8].map(x =>
+      [0.2, 0.4, 0.6, 0.8].map(y =>
+        `<circle cx="${size * x}" cy="${size * y}" r="${size * 0.03}" fill="${color}" fill-opacity="${opacity}"/>`
+      ).join('')
+    ).join('')}
+  `,
+  'shape-morph': (size, color, opacity) => `
+    <path d="M${size * 0.3},${size * 0.2} Q${size * 0.7},${size * 0.1} ${size * 0.8},${size * 0.4}
+             Q${size * 0.9},${size * 0.7} ${size * 0.5},${size * 0.85}
+             Q${size * 0.2},${size * 0.75} ${size * 0.15},${size * 0.5}
+             Q${size * 0.1},${size * 0.3} ${size * 0.3},${size * 0.2} Z"
+          fill="${color}" fill-opacity="${opacity}"/>
+  `,
+  'palette-swatches': (size, color, opacity) => `
+    <rect x="${size * 0.15}" y="${size * 0.25}" width="${size * 0.3}" height="${size * 0.5}" rx="${size * 0.02}" fill="${color}" fill-opacity="${opacity * 0.5}"/>
+    <rect x="${size * 0.35}" y="${size * 0.2}" width="${size * 0.3}" height="${size * 0.5}" rx="${size * 0.02}" fill="${color}" fill-opacity="${opacity * 0.7}"/>
+    <rect x="${size * 0.55}" y="${size * 0.3}" width="${size * 0.3}" height="${size * 0.5}" rx="${size * 0.02}" fill="${color}" fill-opacity="${opacity}"/>
+  `,
+};
+
 // Decoration configuration
 export interface DecorationConfig {
   shape: DecorationShape;
@@ -102,7 +232,9 @@ export function generateDecorations(
   primaryColor: string,
   accentColor: string,
   intensity: DecorationIntensity = 'moderate',
-  seed: number = Date.now()
+  seed: number = Date.now(),
+  theme?: DecorationTheme,
+  customDecorations?: CustomDecoration[]
 ): DecorationConfig[] {
   // Return empty for 'none'
   if (intensity === 'none') {
@@ -120,11 +252,10 @@ export function generateDecorations(
   const { min, max } = countMap[intensity];
   const count = Math.floor(random() * (max - min + 1)) + min;
 
-  // Available shapes with more variety
-  const shapes: DecorationShape[] = [
-    'circle', 'ring', 'square', 'diamond', 'triangle',
-    'hexagon', 'dots', 'arc', 'wave', 'cross', 'star',
-  ];
+  // Use theme-specific shapes if a theme is provided, otherwise use all shapes
+  const shapes: DecorationShape[] = theme
+    ? themeShapes[theme]
+    : ['circle', 'ring', 'square', 'diamond', 'triangle', 'hexagon', 'dots', 'arc', 'wave', 'cross', 'star'];
 
   // Colors to use (mix primary, accent, and variations)
   const colors = [primaryColor, accentColor, primaryColor, accentColor];
@@ -227,23 +358,130 @@ export function decorationToSVG(config: DecorationConfig): string {
   `;
 }
 
+// Generate SVG for a custom decoration
+export function customDecorationToSVG(
+  decoration: CustomDecoration,
+  primaryColor: string,
+  accentColor: string,
+  x: number,
+  y: number,
+  rotation: number
+): string {
+  // Map size to pixel values
+  const sizeMap = { small: 30, medium: 50, large: 70 };
+  const size = sizeMap[decoration.size];
+
+  // Try to find a matching custom generator, fallback to basic shape
+  const normalizedName = decoration.name.toLowerCase().replace(/[^a-z-]/g, '');
+  const generator = customDecorationGenerators[normalizedName];
+
+  // Use accent color for variety
+  const color = Math.random() > 0.5 ? primaryColor : accentColor;
+  const opacity = 0.12 + Math.random() * 0.08; // 12-20% opacity
+
+  let shapeContent: string;
+  if (generator) {
+    shapeContent = generator(size, color, opacity);
+  } else {
+    // Fallback: generate a simple circle if no matching generator
+    shapeContent = `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 3}" fill="${color}" fill-opacity="${opacity}"/>`;
+  }
+
+  return `
+    <svg class="cv-decoration cv-custom-decoration"
+         style="position: absolute; left: ${x}%; top: ${y}%; width: ${size}px; height: ${size}px; transform: translate(-50%, -50%) rotate(${rotation}deg); pointer-events: none; z-index: 0;"
+         viewBox="0 0 ${size} ${size}"
+         xmlns="http://www.w3.org/2000/svg">
+      ${shapeContent}
+    </svg>
+  `;
+}
+
+// Generate custom decorations based on placement
+function generateCustomDecorationsHTML(
+  customDecorations: CustomDecoration[],
+  primaryColor: string,
+  accentColor: string,
+  seed: number = Date.now()
+): string {
+  const random = seededRandom(seed);
+  const results: string[] = [];
+
+  // Placement zones for each type
+  const placementZones = {
+    corner: [
+      { xMin: 0, xMax: 20, yMin: 0, yMax: 15 },    // Top-left
+      { xMin: 80, xMax: 100, yMin: 0, yMax: 15 },  // Top-right
+      { xMin: 0, xMax: 20, yMin: 85, yMax: 100 },  // Bottom-left
+      { xMin: 80, xMax: 100, yMin: 85, yMax: 100 },// Bottom-right
+    ],
+    edge: [
+      { xMin: 20, xMax: 80, yMin: 0, yMax: 10 },   // Top edge
+      { xMin: 20, xMax: 80, yMin: 90, yMax: 100 }, // Bottom edge
+      { xMin: 0, xMax: 12, yMin: 15, yMax: 85 },   // Left edge
+      { xMin: 88, xMax: 100, yMin: 15, yMax: 85 }, // Right edge
+    ],
+    scattered: [
+      { xMin: 0, xMax: 25, yMin: 25, yMax: 75 },   // Left side
+      { xMin: 75, xMax: 100, yMin: 25, yMax: 75 }, // Right side
+      { xMin: 25, xMax: 75, yMin: 0, yMax: 20 },   // Top area
+      { xMin: 25, xMax: 75, yMin: 80, yMax: 100 }, // Bottom area
+    ],
+  };
+
+  for (const decoration of customDecorations) {
+    const zones = placementZones[decoration.placement];
+
+    for (let i = 0; i < decoration.quantity; i++) {
+      // Pick a random zone
+      const zone = zones[Math.floor(random() * zones.length)];
+
+      // Random position within zone
+      const x = zone.xMin + random() * (zone.xMax - zone.xMin);
+      const y = zone.yMin + random() * (zone.yMax - zone.yMin);
+      const rotation = Math.floor(random() * 360);
+
+      results.push(customDecorationToSVG(decoration, primaryColor, accentColor, x, y, rotation));
+    }
+  }
+
+  return results.join('\n');
+}
+
 // Generate all decorations HTML
 export function generateDecorationsHTML(
   primaryColor: string,
   accentColor: string,
   intensity: DecorationIntensity = 'moderate',
-  seed?: number
+  seed?: number,
+  theme?: DecorationTheme,
+  customDecorations?: CustomDecoration[]
 ): string {
   if (intensity === 'none') {
     return '';
   }
-  const decorations = generateDecorations(primaryColor, accentColor, intensity, seed);
-  if (decorations.length === 0) {
+
+  const decorationSeed = seed ?? Date.now();
+  let decorationsContent = '';
+
+  // Generate standard theme-based decorations
+  const decorations = generateDecorations(primaryColor, accentColor, intensity, decorationSeed, theme);
+  if (decorations.length > 0) {
+    decorationsContent += decorations.map(d => decorationToSVG(d)).join('\n');
+  }
+
+  // Add custom decorations for experimental mode
+  if (customDecorations && customDecorations.length > 0) {
+    decorationsContent += generateCustomDecorationsHTML(customDecorations, primaryColor, accentColor, decorationSeed + 1000);
+  }
+
+  if (!decorationsContent) {
     return '';
   }
+
   return `
     <div class="cv-decorations" aria-hidden="true">
-      ${decorations.map(d => decorationToSVG(d)).join('\n')}
+      ${decorationsContent}
     </div>
   `;
 }

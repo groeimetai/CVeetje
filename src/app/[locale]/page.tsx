@@ -602,6 +602,10 @@ export default async function LandingPage({ params }: Props) {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        {t('features.apiKey.transparent')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
                         {t('features.apiKey.payForUse')}
                       </li>
                       <li className="flex items-center gap-2">

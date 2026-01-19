@@ -194,9 +194,10 @@
       "apiKey": {
         "title": "Jouw Data, Jouw Key",
         "description": "Gebruik je eigen AI API key",
-        "providers": "OpenAI, Anthropic of Google",
-        "payForUse": "Betaal alleen AI-kosten die je maakt",
-        "encrypted": "Versleuteld opgeslagen",
+        "providers": "20+ providers: OpenAI, Anthropic, Google, Groq, en meer",
+        "transparent": "Volledig transparant: zie exact je tokenverbruik en kosten",
+        "payForUse": "Betaal alleen AI-kosten die je daadwerkelijk maakt",
+        "encrypted": "API key versleuteld opgeslagen",
         "fullControl": "Volledig in jouw controle"
       }
     },
