@@ -27,6 +27,8 @@ import {
   Star,
   MoreVertical,
   User,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -159,6 +161,16 @@ export function ProfileInput({
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Enrichment state
+  const [showEnrichDialog, setShowEnrichDialog] = useState(false);
+  const [enrichmentText, setEnrichmentText] = useState('');
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichmentPreview, setEnrichmentPreview] = useState<{
+    enrichedProfile: ParsedLinkedIn;
+    changes: string[];
+    changesSummary: string;
+  } | null>(null);
 
   // Handle avatar changes
   const handleAvatarChange = (url: string | null) => {
@@ -366,6 +378,62 @@ export function ProfileInput({
     } finally {
       setIsSavingProfile(false);
     }
+  };
+
+  // Handle profile enrichment
+  const handleEnrichProfile = async () => {
+    if (!selectedProfileId || !enrichmentText.trim()) return;
+
+    setIsEnriching(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/profiles/${selectedProfileId}/enrich`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrichmentText: enrichmentText.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Verrijking mislukt');
+      }
+
+      if (result.success) {
+        setEnrichmentPreview({
+          enrichedProfile: result.enrichedProfile,
+          changes: result.changes,
+          changesSummary: result.changesSummary,
+        });
+
+        // Report token usage if available
+        if (result.usage && onTokenUsage) {
+          onTokenUsage(result.usage);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verrijking mislukt');
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
+  // Accept enrichment preview
+  const handleAcceptEnrichment = () => {
+    if (enrichmentPreview) {
+      setParsed(enrichmentPreview.enrichedProfile);
+      setEnrichmentPreview(null);
+      setShowEnrichDialog(false);
+      setEnrichmentText('');
+    }
+  };
+
+  // Cancel enrichment
+  const handleCancelEnrichment = () => {
+    setEnrichmentPreview(null);
+    setShowEnrichDialog(false);
+    setEnrichmentText('');
   };
 
   // Check if file input is supported by the model
@@ -1256,6 +1324,14 @@ export function ProfileInput({
                   Profiel bijwerken
                 </Button>
                 <Button
+                  variant="outline"
+                  onClick={() => setShowEnrichDialog(true)}
+                  className="border-primary/50 text-primary hover:bg-primary/5"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  AI Verrijken
+                </Button>
+                <Button
                   variant="ghost"
                   onClick={() => {
                     setSaveProfileName(parsed?.fullName || '');
@@ -1343,6 +1419,190 @@ export function ProfileInput({
                 </>
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Enrichment Dialog */}
+      <Dialog open={showEnrichDialog} onOpenChange={(open) => {
+        if (!open) handleCancelEnrichment();
+        else setShowEnrichDialog(open);
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Profiel Verrijken met AI
+            </DialogTitle>
+            <DialogDescription>
+              Beschrijf wat je wilt toevoegen aan je profiel. AI analyseert je tekst en voegt automatisch
+              nieuwe ervaringen, vaardigheden of opleidingen toe.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!enrichmentPreview ? (
+            // Input phase
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="enrichment-text">Wat wil je toevoegen?</Label>
+                <Textarea
+                  id="enrichment-text"
+                  placeholder={`Bijv: "Ik heb de afgelopen maanden CVeetje gebouwd, een AI-powered CV generator met Next.js, TypeScript en Firebase. Ik heb geleerd over AI integratie, PDF generatie en moderne web development."\n\nOf: "Ik heb een cursus Machine Learning gevolgd bij Coursera en ben nu gecertificeerd in TensorFlow."`}
+                  value={enrichmentText}
+                  onChange={(e) => setEnrichmentText(e.target.value)}
+                  rows={6}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Beschrijf projecten, cursussen, certificaten of nieuwe ervaring die je wilt toevoegen.
+                  AI bepaalt automatisch de juiste sectie.
+                </p>
+              </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="ml-2">{error}</span>
+                </Alert>
+              )}
+
+              <div className="bg-muted/50 rounded-lg p-3 text-sm">
+                <p className="font-medium mb-2">Tips voor betere resultaten:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Vermeld specifieke technologieën en tools</li>
+                  <li>• Geef tijdsperiodes aan (bijv. "sinds januari 2024")</li>
+                  <li>• Beschrijf concrete resultaten of leerdoelen</li>
+                  <li>• Voor certificaten: vermeld de uitgever en datum</li>
+                </ul>
+              </div>
+            </div>
+          ) : (
+            // Preview phase
+            <div className="space-y-4 py-4">
+              <Alert className="border-green-200 bg-green-50">
+                <Check className="h-4 w-4 text-green-600" />
+                <div className="ml-2">
+                  <p className="font-medium text-green-800">Wijzigingen gevonden</p>
+                  <p className="text-sm text-green-700 mt-1">{enrichmentPreview.changesSummary}</p>
+                </div>
+              </Alert>
+
+              <div className="space-y-2">
+                <Label>Wat wordt toegevoegd:</Label>
+                <div className="border rounded-lg p-3 space-y-2">
+                  {enrichmentPreview.changes.map((change, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span>{change}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview new experience */}
+              {enrichmentPreview.enrichedProfile.experience.length > (parsed?.experience.length || 0) && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nieuwe Werkervaring</Label>
+                  {enrichmentPreview.enrichedProfile.experience
+                    .slice(0, enrichmentPreview.enrichedProfile.experience.length - (parsed?.experience.length || 0))
+                    .map((exp, idx) => (
+                      <div key={idx} className="border border-green-200 bg-green-50/50 rounded-lg p-3">
+                        <p className="font-medium">{exp.title}</p>
+                        <p className="text-sm text-muted-foreground">{exp.company}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {exp.startDate} - {exp.endDate || 'heden'}
+                        </p>
+                        {exp.description && (
+                          <p className="text-sm mt-2">{exp.description}</p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Preview new skills */}
+              {enrichmentPreview.enrichedProfile.skills.length > (parsed?.skills.length || 0) && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nieuwe Vaardigheden</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {enrichmentPreview.enrichedProfile.skills
+                      .filter(skill => !parsed?.skills.some(s => s.name.toLowerCase() === skill.name.toLowerCase()))
+                      .map((skill, idx) => (
+                        <Badge key={idx} variant="secondary" className="bg-green-100 text-green-800">
+                          <Plus className="h-3 w-3 mr-1" />
+                          {skill.name}
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Preview new education */}
+              {enrichmentPreview.enrichedProfile.education.length > (parsed?.education.length || 0) && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nieuwe Opleidingen</Label>
+                  {enrichmentPreview.enrichedProfile.education
+                    .slice(0, enrichmentPreview.enrichedProfile.education.length - (parsed?.education.length || 0))
+                    .map((edu, idx) => (
+                      <div key={idx} className="border border-green-200 bg-green-50/50 rounded-lg p-3">
+                        <p className="font-medium">{edu.degree || 'Opleiding'}</p>
+                        <p className="text-sm text-muted-foreground">{edu.school}</p>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Preview new certifications */}
+              {enrichmentPreview.enrichedProfile.certifications.length > (parsed?.certifications.length || 0) && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nieuwe Certificaten</Label>
+                  {enrichmentPreview.enrichedProfile.certifications
+                    .slice(0, enrichmentPreview.enrichedProfile.certifications.length - (parsed?.certifications.length || 0))
+                    .map((cert, idx) => (
+                      <div key={idx} className="border border-green-200 bg-green-50/50 rounded-lg p-3">
+                        <p className="font-medium">{cert.name}</p>
+                        {cert.issuer && <p className="text-sm text-muted-foreground">{cert.issuer}</p>}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            {!enrichmentPreview ? (
+              <>
+                <Button variant="outline" onClick={handleCancelEnrichment}>
+                  Annuleren
+                </Button>
+                <Button
+                  onClick={handleEnrichProfile}
+                  disabled={!enrichmentText.trim() || isEnriching}
+                >
+                  {isEnriching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Analyseren...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Analyseren
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setEnrichmentPreview(null)}>
+                  Terug
+                </Button>
+                <Button onClick={handleAcceptEnrichment}>
+                  <Check className="h-4 w-4 mr-2" />
+                  Toepassen
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
