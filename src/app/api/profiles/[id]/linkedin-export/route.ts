@@ -77,9 +77,14 @@ export async function POST(
     const userDoc = await db.collection('users').doc(userId).get();
     const userData = userDoc.data();
 
+    // Support both new (free/purchased) and legacy (balance) credit systems
     const freeCredits = userData?.credits?.free ?? 0;
     const purchasedCredits = userData?.credits?.purchased ?? 0;
-    const totalCredits = freeCredits + purchasedCredits;
+    const legacyBalance = userData?.credits?.balance ?? 0;
+    // Use new system if available, otherwise fall back to legacy
+    const totalCredits = (freeCredits > 0 || purchasedCredits > 0 || userData?.credits?.free !== undefined)
+      ? freeCredits + purchasedCredits
+      : legacyBalance;
 
     if (!userData || totalCredits < 1) {
       return NextResponse.json(
@@ -199,21 +204,30 @@ INSTRUCTIES VOOR LINKEDIN OPTIMALISATIE:
         prompt: linkedInPrompt,
       });
 
-      // Deduct credit (use free credits first, then purchased)
+      // Deduct credit (use free credits first, then purchased, or legacy balance)
+      let creditSource: string;
       if (freeCredits >= 1) {
         await db.collection('users').doc(userId).update({
           'credits.free': FieldValue.increment(-1),
           updatedAt: new Date(),
         });
-      } else {
+        creditSource = 'free';
+      } else if (purchasedCredits >= 1) {
         await db.collection('users').doc(userId).update({
           'credits.purchased': FieldValue.increment(-1),
           updatedAt: new Date(),
         });
+        creditSource = 'purchased';
+      } else {
+        // Legacy balance fallback
+        await db.collection('users').doc(userId).update({
+          'credits.balance': FieldValue.increment(-1),
+          updatedAt: new Date(),
+        });
+        creditSource = 'balance';
       }
 
       // Log transaction
-      const creditSource = freeCredits >= 1 ? 'free' : 'purchased';
       await db.collection('users').doc(userId).collection('transactions').add({
         amount: -1,
         type: 'linkedin_export',
