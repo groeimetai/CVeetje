@@ -58,8 +58,12 @@ export interface UserApiKey {
 }
 
 export interface UserCredits {
-  balance: number;
+  free: number;           // Monthly free credits (resets to 5 each month)
+  purchased: number;      // Purchased credits (never expires, accumulates)
   lastFreeReset: Timestamp;
+
+  // Deprecated: kept for backward compatibility during migration
+  balance?: number;
 }
 
 export interface User {

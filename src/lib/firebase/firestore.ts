@@ -64,7 +64,32 @@ export async function removeUserApiKey(userId: string): Promise<void> {
 
 export async function getUserCredits(userId: string): Promise<number> {
   const userData = await getUserData(userId);
-  return userData?.credits?.balance ?? 0;
+  // Return total: free + purchased (backward compatible with old balance field)
+  const free = userData?.credits?.free ?? 0;
+  const purchased = userData?.credits?.purchased ?? 0;
+  const legacyBalance = userData?.credits?.balance ?? 0;
+  // If new fields exist, use them; otherwise fall back to legacy balance
+  if (free > 0 || purchased > 0 || (userData?.credits?.free !== undefined)) {
+    return free + purchased;
+  }
+  return legacyBalance;
+}
+
+export interface CreditBreakdown {
+  free: number;
+  purchased: number;
+  total: number;
+}
+
+export async function getUserCreditsBreakdown(userId: string): Promise<CreditBreakdown> {
+  const userData = await getUserData(userId);
+  const free = userData?.credits?.free ?? 0;
+  const purchased = userData?.credits?.purchased ?? 0;
+  return {
+    free,
+    purchased,
+    total: free + purchased,
+  };
 }
 
 export async function deductCredit(
@@ -73,21 +98,38 @@ export async function deductCredit(
   cvId: string
 ): Promise<boolean> {
   const userData = await getUserData(userId);
-  if (!userData || !userData.credits || userData.credits.balance < amount) {
+  const freeCredits = userData?.credits?.free ?? 0;
+  const purchasedCredits = userData?.credits?.purchased ?? 0;
+  const totalCredits = freeCredits + purchasedCredits;
+
+  if (!userData || totalCredits < amount) {
     return false;
   }
 
   const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, {
-    'credits.balance': userData.credits.balance - amount,
-    updatedAt: serverTimestamp(),
-  });
+
+  // Deduct from free credits first, then purchased
+  if (freeCredits >= amount) {
+    await updateDoc(userRef, {
+      'credits.free': freeCredits - amount,
+      updatedAt: serverTimestamp(),
+    });
+  } else {
+    // Use all free credits and deduct remainder from purchased
+    const remainingToDeduct = amount - freeCredits;
+    await updateDoc(userRef, {
+      'credits.free': 0,
+      'credits.purchased': purchasedCredits - remainingToDeduct,
+      updatedAt: serverTimestamp(),
+    });
+  }
 
   // Log transaction
+  const creditSource = freeCredits >= amount ? 'free' : 'mixed';
   await addCreditTransaction(userId, {
     amount: -amount,
     type: 'cv_generation',
-    description: 'CV PDF generation',
+    description: `CV PDF generation (${creditSource} credit)`,
     molliePaymentId: null,
     cvId,
     createdAt: Timestamp.now(),
@@ -104,11 +146,11 @@ export async function addCredits(
   const userData = await getUserData(userId);
   if (!userData) return;
 
-  const currentBalance = userData.credits?.balance ?? 0;
+  const currentPurchased = userData.credits?.purchased ?? 0;
 
   const userRef = doc(db, 'users', userId);
   await updateDoc(userRef, {
-    'credits.balance': currentBalance + amount,
+    'credits.purchased': currentPurchased + amount,
     updatedAt: serverTimestamp(),
   });
 
@@ -125,21 +167,32 @@ export async function addCredits(
 
 export async function resetMonthlyCredits(userId: string): Promise<void> {
   const userRef = doc(db, 'users', userId);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data();
+
+  const FREE_CREDITS_AMOUNT = 5;
+  const currentFree = userData?.credits?.free ?? 0;
+
+  // Reset free credits to 5 (this is a separate bucket from purchased)
+  // Purchased credits are never touched
   await updateDoc(userRef, {
-    'credits.balance': 5,
+    'credits.free': FREE_CREDITS_AMOUNT,
     'credits.lastFreeReset': serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
-  // Log transaction
-  await addCreditTransaction(userId, {
-    amount: 5,
-    type: 'monthly_free',
-    description: 'Monthly free credits reset',
-    molliePaymentId: null,
-    cvId: null,
-    createdAt: Timestamp.now(),
-  });
+  // Log transaction with credits added (5 minus what they had left)
+  const creditsAdded = FREE_CREDITS_AMOUNT - currentFree;
+  if (creditsAdded > 0) {
+    await addCreditTransaction(userId, {
+      amount: creditsAdded,
+      type: 'monthly_free',
+      description: `Monthly free credits reset (${currentFree} → ${FREE_CREDITS_AMOUNT})`,
+      molliePaymentId: null,
+      cvId: null,
+      createdAt: Timestamp.now(),
+    });
+  }
 }
 
 // ============ Transaction Operations ============

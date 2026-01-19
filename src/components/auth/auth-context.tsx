@@ -10,14 +10,16 @@ import {
 } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { onAuthStateChange } from '@/lib/firebase/auth';
-import { getUserData, getUserCredits } from '@/lib/firebase/firestore';
+import { getUserData, getUserCredits, getUserCreditsBreakdown, type CreditBreakdown } from '@/lib/firebase/firestore';
 import { checkAndResetMonthlyCredits } from '@/lib/credits/manager';
 import type { User } from '@/types';
 
 interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   userData: User | null;
-  credits: number;
+  credits: number;          // Total credits (free + purchased)
+  freeCredits: number;      // Monthly free credits
+  purchasedCredits: number; // Purchased credits
   loading: boolean;
   refreshCredits: () => Promise<void>;
   refreshUserData: () => Promise<void>;
@@ -30,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
   const [credits, setCredits] = useState(0);
+  const [freeCredits, setFreeCredits] = useState(0);
+  const [purchasedCredits, setPurchasedCredits] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Helper to set the token cookie
@@ -56,16 +60,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (firebaseUser) {
       const data = await getUserData(firebaseUser.uid);
       setUserData(data);
-      if (data?.credits?.balance !== undefined) {
-        setCredits(data.credits.balance);
-      }
+      // Update credits from the new breakdown
+      const breakdown = await getUserCreditsBreakdown(firebaseUser.uid);
+      setCredits(breakdown.total);
+      setFreeCredits(breakdown.free);
+      setPurchasedCredits(breakdown.purchased);
     }
   };
 
   const refreshCredits = async () => {
     if (firebaseUser) {
-      const balance = await getUserCredits(firebaseUser.uid);
-      setCredits(balance);
+      const breakdown = await getUserCreditsBreakdown(firebaseUser.uid);
+      setCredits(breakdown.total);
+      setFreeCredits(breakdown.free);
+      setPurchasedCredits(breakdown.purchased);
     }
   };
 
@@ -86,17 +94,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Check for monthly credit reset
         await checkAndResetMonthlyCredits(user.uid);
 
-        // Fetch user data
+        // Fetch user data and credits
         const data = await getUserData(user.uid);
         setUserData(data);
-        if (data?.credits?.balance !== undefined) {
-          setCredits(data.credits.balance);
-        }
+        const breakdown = await getUserCreditsBreakdown(user.uid);
+        setCredits(breakdown.total);
+        setFreeCredits(breakdown.free);
+        setPurchasedCredits(breakdown.purchased);
       } else {
         // Clear the token cookie on logout
         document.cookie = 'firebase-token=; path=/; max-age=0';
         setUserData(null);
         setCredits(0);
+        setFreeCredits(0);
+        setPurchasedCredits(0);
       }
 
       setLoading(false);
@@ -123,6 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebaseUser,
         userData,
         credits,
+        freeCredits,
+        purchasedCredits,
         loading,
         refreshCredits,
         refreshUserData,
