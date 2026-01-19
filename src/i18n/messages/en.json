@@ -453,6 +453,87 @@
     "dashboard": {
       "title": "Dashboard",
       "description": "Manage your CVs and profiles"
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "description": "Read our terms of service for using CVeetje"
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: {date}",
+    "sections": {
+      "introduction": {
+        "title": "1. Introduction and Acceptance",
+        "content": "Welcome to CVeetje. These Terms of Service (\"Terms\") apply to the use of the CVeetje website and services (together the \"Service\"), operated by CVeetje (\"we\", \"us\" or \"our\").\n\nBy creating an account, using the Service or purchasing credits, you agree to these Terms. If you do not agree to these Terms, you may not use the Service.\n\nWe reserve the right to modify these Terms at any time. Changes become effective as soon as they are published on the website. It is your responsibility to regularly review these Terms. Continued use of the Service after changes constitutes acceptance of the modified Terms."
+      },
+      "serviceDescription": {
+        "title": "2. Description of the Service",
+        "content": "CVeetje is an AI-powered CV generator that helps users create professional CVs. The Service includes:\n\n• Parsing and storing profile information (such as LinkedIn data)\n• Analyzing job postings\n• Generating tailored CVs using AI\n• Generating visual styles and formatting\n• Downloading CVs as PDF\n• Optionally generating cover letters\n• Exporting LinkedIn-optimized content\n\nThe Service uses external AI providers (such as OpenAI, Anthropic, Google) via API keys provided by the user. CVeetje is not an AI provider and does not offer direct AI models."
+      },
+      "accountRegistration": {
+        "title": "3. Account and Registration",
+        "content": "To use the Service you must create an account. By registering you agree to:\n\n• Provide accurate, current and complete information\n• Keep your account credentials confidential\n• Notify us immediately of any unauthorized use of your account\n• Be responsible for all activities that occur under your account\n\nYou must be at least 16 years old to use the Service. If you are under 18 years old, you must have permission from a parent or guardian.\n\nWe reserve the right to refuse, terminate or suspend accounts at our sole discretion, particularly in case of violation of these Terms."
+      },
+      "creditsAndPayments": {
+        "title": "4. Credits and Payments",
+        "subtitle1": "4.1 Credit System",
+        "content1": "CVeetje operates with a credit system:\n\n• Each new user receives 5 free credits per month\n• Free credits are reset on the first day of each month\n• Unused free credits expire at the end of the month\n• Purchased credits do not expire and are added to your balance\n• Downloading a CV costs 1 credit\n• Generating a cover letter costs 1 extra credit\n• Generating LinkedIn export content costs 1 credit",
+        "subtitle2": "4.2 Purchases",
+        "content2": "Credits can be purchased via Mollie, our payment provider. Available packages:\n\n• 5 credits for €4.99\n• 15 credits for €12.99\n• 30 credits for €22.99\n\nAll prices include VAT. Payments are processed in euros.",
+        "subtitle3": "4.3 Refund Policy",
+        "content3": "Purchased credits are non-refundable, except in the following cases:\n\n• Technical errors on our part that make it impossible to use purchased credits\n• Duplicate charges due to a payment error\n\nRefund requests must be submitted within 14 days of purchase via our contact form. Free credits are not eligible for refund or compensation."
+      },
+      "apiKeys": {
+        "title": "5. API Keys and External Services",
+        "content": "The Service requires you to provide your own API key from a supported AI provider (such as OpenAI, Anthropic or Google).\n\nBy providing an API key:\n\n• You confirm that you are authorized to use the relevant API\n• You agree to the terms and conditions of the relevant AI provider\n• You understand that you are responsible for all costs arising from the use of your API key via our Service\n• You understand that the quality of AI-generated content depends on the chosen AI provider and model\n\nYour API key is stored encrypted and is only used to generate content on your behalf. We do not have access to the unencrypted key and cannot view it."
+      },
+      "userContent": {
+        "title": "6. User Content and Data",
+        "subtitle1": "6.1 Your Content",
+        "content1": "You retain all rights to the content you upload or enter into the Service, including:\n\n• Profile data and work experience\n• Uploaded images and documents\n• Job posting texts you paste\n\nBy uploading content, you grant us a non-exclusive, worldwide license to process this content for the purpose of providing the Service to you.",
+        "subtitle2": "6.2 Generated Content",
+        "content2": "CVs, cover letters and other content generated by the Service are owned by you. You may use, modify and distribute generated content at your discretion.\n\nWe do not retain copies of generated content after it has been delivered to you, unless you choose to save your CV in your account.",
+        "subtitle3": "6.3 Data Storage",
+        "content3": "Your account data and saved profiles are stored in Firebase (Google Cloud). You can at any time:\n\n• View and delete your saved profiles\n• Delete your account and all associated data\n\nSee our Privacy Policy for more information about how we process your data."
+      },
+      "intellectualProperty": {
+        "title": "7. Intellectual Property",
+        "content": "The Service, including the software, website, logos, and all associated intellectual property rights, are owned by CVeetje or its licensors.\n\nYou receive a limited, non-exclusive, non-transferable license to use the Service for personal, non-commercial purposes.\n\nIt is not permitted to:\n\n• Copy, modify or reverse-engineer the source code of the Service\n• Use the Service to build a competing service\n• Resell or sublicense the Service\n• Use our trademarks or logos without written permission"
+      },
+      "prohibitedUse": {
+        "title": "8. Prohibited Use",
+        "content": "You agree not to use the Service for:\n\n• Creating fraudulent, misleading or false CVs\n• Infringing the rights of third parties, including intellectual property rights\n• Uploading illegal, harmful or offensive content\n• Circumventing security measures or disrupting the Service\n• Automated access to the Service (scraping, bots) without our permission\n• Reselling credits or account access to third parties\n• Sharing your account with others\n\nViolation of these provisions may result in immediate termination of your account without refund."
+      },
+      "disclaimers": {
+        "title": "9. Disclaimers and Limitations",
+        "subtitle1": "9.1 Service \"As Is\"",
+        "content1": "The Service is provided \"as is\" and \"as available\" without any warranties, express or implied. We do not guarantee that:\n\n• The Service will operate uninterrupted or error-free\n• AI-generated content is accurate, complete or suitable for any purpose\n• The Service will meet your specific expectations",
+        "subtitle2": "9.2 AI-Generated Content",
+        "content2": "Content generated by AI models may contain errors, inaccuracies or inappropriate formulations. It is your responsibility to:\n\n• Review all generated content before using it\n• Verify factual information\n• Adjust content where necessary\n\nWe are not responsible for the outcomes of job applications or for decisions made based on content generated by the Service.",
+        "subtitle3": "9.3 Limitation of Liability",
+        "content3": "To the extent permitted by law, CVeetje is not liable for:\n\n• Indirect, incidental, special or consequential damages\n• Loss of data, profits or business opportunities\n• Damage resulting from the use of or inability to use the Service\n• Costs arising from API use with third parties\n\nOur total liability is limited to the amount you have paid us for the Service in the preceding 12 months."
+      },
+      "termination": {
+        "title": "10. Termination",
+        "content": "You can terminate your account at any time by contacting us or by deleting your account in the settings.\n\nWe may terminate or suspend your account:\n\n• In case of violation of these Terms\n• In case of suspected fraudulent or unauthorized use\n• If the Service is discontinued\n\nUpon termination:\n\n• You lose access to your account and stored data\n• Unused credits expire (both free and purchased)\n• Your personal data is deleted in accordance with our Privacy Policy"
+      },
+      "changes": {
+        "title": "11. Changes to the Service",
+        "content": "We reserve the right to at any time:\n\n• Add, modify or remove features\n• Adjust prices (changes do not apply to already purchased credits)\n• Temporarily or permanently discontinue the Service\n\nIn case of significant changes we will inform you via email or via the Service."
+      },
+      "governingLaw": {
+        "title": "12. Governing Law and Disputes",
+        "content": "These Terms are governed by Dutch law.\n\nDisputes arising from or related to these Terms or the Service shall be submitted to the competent court in the Netherlands.\n\nBefore initiating a dispute, we request that you first contact us to try to resolve the dispute through mutual agreement."
+      },
+      "contact": {
+        "title": "13. Contact",
+        "content": "For questions about these Terms or the Service you can contact us at:\n\nEmail: support@cveetje.nl\n\nWe aim to respond to all requests within 5 business days."
+      },
+      "severability": {
+        "title": "14. Severability",
+        "content": "If any provision of these Terms is declared invalid or unenforceable, the remaining provisions shall remain in full force and effect. The invalid provision shall be replaced by a valid provision that most closely approximates the original intent."
+      }
     }
   }
 }

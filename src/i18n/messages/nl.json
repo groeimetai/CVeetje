@@ -453,6 +453,87 @@
     "dashboard": {
       "title": "Dashboard",
       "description": "Beheer je CVs en profielen"
+    },
+    "terms": {
+      "title": "Algemene Voorwaarden",
+      "description": "Lees onze algemene voorwaarden voor het gebruik van CVeetje"
+    }
+  },
+  "terms": {
+    "title": "Algemene Voorwaarden",
+    "lastUpdated": "Laatst bijgewerkt: {date}",
+    "sections": {
+      "introduction": {
+        "title": "1. Inleiding en Aanvaarding",
+        "content": "Welkom bij CVeetje. Deze Algemene Voorwaarden (\"Voorwaarden\") zijn van toepassing op het gebruik van de CVeetje website en diensten (samen de \"Dienst\"), geëxploiteerd door CVeetje (\"wij\", \"ons\" of \"onze\").\n\nDoor een account aan te maken, de Dienst te gebruiken of credits te kopen, ga je akkoord met deze Voorwaarden. Als je niet akkoord gaat met deze Voorwaarden, mag je de Dienst niet gebruiken.\n\nWij behouden ons het recht voor om deze Voorwaarden op elk moment te wijzigen. Wijzigingen worden van kracht zodra ze op de website worden gepubliceerd. Het is jouw verantwoordelijkheid om deze Voorwaarden regelmatig te controleren. Voortgezet gebruik van de Dienst na wijzigingen houdt aanvaarding van de gewijzigde Voorwaarden in."
+      },
+      "serviceDescription": {
+        "title": "2. Beschrijving van de Dienst",
+        "content": "CVeetje is een AI-ondersteunde CV-generator die gebruikers helpt bij het maken van professionele CV's. De Dienst omvat:\n\n• Het parseren en opslaan van profielgegevens (zoals LinkedIn-informatie)\n• Het analyseren van vacatureteksten\n• Het genereren van op maat gemaakte CV's met behulp van AI\n• Het genereren van visuele stijlen en opmaak\n• Het downloaden van CV's als PDF\n• Het optioneel genereren van motivatiebrieven\n• Het exporteren van LinkedIn-geoptimaliseerde content\n\nDe Dienst maakt gebruik van externe AI-providers (zoals OpenAI, Anthropic, Google) via API-sleutels die door de gebruiker worden verstrekt. CVeetje is geen AI-provider en biedt geen directe AI-modellen aan."
+      },
+      "accountRegistration": {
+        "title": "3. Account en Registratie",
+        "content": "Om de Dienst te gebruiken moet je een account aanmaken. Bij registratie stem je ermee in om:\n\n• Accurate, actuele en volledige informatie te verstrekken\n• Je accountgegevens vertrouwelijk te houden\n• Ons onmiddellijk op de hoogte te stellen van ongeautoriseerd gebruik van je account\n• Verantwoordelijk te zijn voor alle activiteiten die onder je account plaatsvinden\n\nJe moet minimaal 16 jaar oud zijn om de Dienst te gebruiken. Als je jonger bent dan 18 jaar, moet je toestemming hebben van een ouder of voogd.\n\nWij behouden ons het recht voor om accounts te weigeren, te beëindigen of op te schorten naar eigen goeddunken, met name bij schending van deze Voorwaarden."
+      },
+      "creditsAndPayments": {
+        "title": "4. Credits en Betalingen",
+        "subtitle1": "4.1 Credit Systeem",
+        "content1": "CVeetje werkt met een credit-systeem:\n\n• Elke nieuwe gebruiker ontvangt 5 gratis credits per maand\n• Gratis credits worden op de eerste dag van elke maand gereset\n• Niet-gebruikte gratis credits vervallen aan het einde van de maand\n• Gekochte credits vervallen niet en worden opgeteld bij je saldo\n• Het downloaden van een CV kost 1 credit\n• Het genereren van een motivatiebrief kost 1 extra credit\n• Het genereren van LinkedIn-export content kost 1 credit",
+        "subtitle2": "4.2 Aankopen",
+        "content2": "Credits kunnen worden gekocht via Mollie, onze betalingsprovider. Beschikbare pakketten:\n\n• 5 credits voor €4,99\n• 15 credits voor €12,99\n• 30 credits voor €22,99\n\nAlle prijzen zijn inclusief BTW. Betalingen worden verwerkt in euro's.",
+        "subtitle3": "4.3 Restitutiebeleid",
+        "content3": "Gekochte credits zijn niet-restitueerbaar, behalve in de volgende gevallen:\n\n• Technische fouten aan onze kant die het gebruik van gekochte credits onmogelijk maken\n• Dubbele aanrekening door een betalingsfout\n\nRestitutieverzoeken moeten binnen 14 dagen na aankoop worden ingediend via ons contactformulier. Gratis credits komen niet in aanmerking voor restitutie of vergoeding."
+      },
+      "apiKeys": {
+        "title": "5. API-Sleutels en Externe Diensten",
+        "content": "De Dienst vereist dat je je eigen API-sleutel verstrekt van een ondersteunde AI-provider (zoals OpenAI, Anthropic of Google).\n\nDoor een API-sleutel te verstrekken:\n\n• Bevestig je dat je gemachtigd bent om de betreffende API te gebruiken\n• Ga je akkoord met de algemene voorwaarden van de betreffende AI-provider\n• Begrijp je dat je verantwoordelijk bent voor alle kosten die voortvloeien uit het gebruik van je API-sleutel via onze Dienst\n• Begrijp je dat de kwaliteit van AI-gegenereerde content afhangt van de gekozen AI-provider en model\n\nJe API-sleutel wordt versleuteld opgeslagen en wordt alleen gebruikt voor het genereren van content in jouw naam. Wij hebben geen toegang tot de onversleutelde sleutel en kunnen deze niet inzien."
+      },
+      "userContent": {
+        "title": "6. Gebruikersinhoud en Data",
+        "subtitle1": "6.1 Jouw Content",
+        "content1": "Je behoudt alle rechten op de content die je uploadt of invoert in de Dienst, inclusief:\n\n• Profielgegevens en werkervaring\n• Geüploade afbeeldingen en documenten\n• Vacatureteksten die je plakt\n\nDoor content te uploaden, verleen je ons een niet-exclusieve, wereldwijde licentie om deze content te verwerken ten behoeve van het leveren van de Dienst aan jou.",
+        "subtitle2": "6.2 Gegenereerde Content",
+        "content2": "CV's, motivatiebrieven en andere content die door de Dienst wordt gegenereerd zijn eigendom van jou. Je mag gegenereerde content naar eigen inzicht gebruiken, aanpassen en distribueren.\n\nWij behouden geen kopieën van gegenereerde content nadat deze aan jou is geleverd, tenzij je ervoor kiest om je CV op te slaan in je account.",
+        "subtitle3": "6.3 Dataopslag",
+        "content3": "Je accountgegevens en opgeslagen profielen worden opgeslagen in Firebase (Google Cloud). Je kunt op elk moment:\n\n• Je opgeslagen profielen bekijken en verwijderen\n• Je account en alle bijbehorende data verwijderen\n\nZie ons Privacybeleid voor meer informatie over hoe wij je gegevens verwerken."
+      },
+      "intellectualProperty": {
+        "title": "7. Intellectueel Eigendom",
+        "content": "De Dienst, inclusief de software, website, logo's, en alle bijbehorende intellectuele eigendomsrechten, zijn eigendom van CVeetje of haar licentiegevers.\n\nJe ontvangt een beperkte, niet-exclusieve, niet-overdraagbare licentie om de Dienst te gebruiken voor persoonlijke, niet-commerciële doeleinden.\n\nHet is niet toegestaan om:\n\n• De broncode van de Dienst te kopiëren, wijzigen of reverse-engineeren\n• De Dienst te gebruiken voor het bouwen van een concurrerende dienst\n• De Dienst door te verkopen of in sublicentie te geven\n• Onze handelsmerken of logo's te gebruiken zonder schriftelijke toestemming"
+      },
+      "prohibitedUse": {
+        "title": "8. Verboden Gebruik",
+        "content": "Je stemt ermee in de Dienst niet te gebruiken voor:\n\n• Het creëren van frauduleuze, misleidende of valse CV's\n• Het schenden van de rechten van derden, inclusief intellectuele eigendomsrechten\n• Het uploaden van illegale, schadelijke of aanstootgevende content\n• Het omzeilen van beveiligingsmaatregelen of het verstoren van de Dienst\n• Geautomatiseerde toegang tot de Dienst (scraping, bots) zonder onze toestemming\n• Het doorverkopen van credits of accounttoegang aan derden\n• Het delen van je account met anderen\n\nSchending van deze bepalingen kan leiden tot onmiddellijke beëindiging van je account zonder restitutie."
+      },
+      "disclaimers": {
+        "title": "9. Disclaimers en Beperkingen",
+        "subtitle1": "9.1 Dienst \"As Is\"",
+        "content1": "De Dienst wordt geleverd \"as is\" en \"as available\" zonder enige garanties, expliciet of impliciet. Wij garanderen niet dat:\n\n• De Dienst ononderbroken of foutloos zal werken\n• De AI-gegenereerde content accuraat, volledig of geschikt is voor enig doel\n• De Dienst zal voldoen aan je specifieke verwachtingen",
+        "subtitle2": "9.2 AI-Gegenereerde Content",
+        "content2": "Content gegenereerd door AI-modellen kan fouten, onnauwkeurigheden of ongeschikte formuleringen bevatten. Het is jouw verantwoordelijkheid om:\n\n• Alle gegenereerde content te controleren voordat je deze gebruikt\n• Feitelijke informatie te verifiëren\n• Content aan te passen waar nodig\n\nWij zijn niet verantwoordelijk voor de uitkomsten van sollicitaties of voor beslissingen die worden genomen op basis van door de Dienst gegenereerde content.",
+        "subtitle3": "9.3 Beperking van Aansprakelijkheid",
+        "content3": "Voor zover wettelijk toegestaan, is CVeetje niet aansprakelijk voor:\n\n• Indirecte, incidentele, speciale of gevolgschade\n• Verlies van gegevens, winst of zakelijke kansen\n• Schade als gevolg van het gebruik van of onvermogen om de Dienst te gebruiken\n• Kosten voortvloeiend uit API-gebruik bij derden\n\nOnze totale aansprakelijkheid is beperkt tot het bedrag dat je in de voorafgaande 12 maanden aan ons hebt betaald voor de Dienst."
+      },
+      "termination": {
+        "title": "10. Beëindiging",
+        "content": "Je kunt je account op elk moment beëindigen door contact met ons op te nemen of door je account te verwijderen in de instellingen.\n\nWij kunnen je account beëindigen of opschorten:\n\n• Bij schending van deze Voorwaarden\n• Bij vermoeden van frauduleus of ongeautoriseerd gebruik\n• Als de Dienst wordt stopgezet\n\nBij beëindiging:\n\n• Verlies je toegang tot je account en opgeslagen data\n• Vervallen niet-gebruikte credits (zowel gratis als gekocht)\n• Worden je persoonsgegevens verwijderd conform ons Privacybeleid"
+      },
+      "changes": {
+        "title": "11. Wijzigingen in de Dienst",
+        "content": "Wij behouden ons het recht voor om op elk moment:\n\n• Functies toe te voegen, te wijzigen of te verwijderen\n• Prijzen aan te passen (wijzigingen zijn niet van toepassing op reeds gekochte credits)\n• De Dienst tijdelijk of permanent stop te zetten\n\nBij significante wijzigingen zullen wij je via e-mail of via de Dienst informeren."
+      },
+      "governingLaw": {
+        "title": "12. Toepasselijk Recht en Geschillen",
+        "content": "Op deze Voorwaarden is Nederlands recht van toepassing.\n\nGeschillen voortvloeiend uit of verband houdend met deze Voorwaarden of de Dienst zullen worden voorgelegd aan de bevoegde rechter in Nederland.\n\nVoordat je een geschil aanhangig maakt, verzoeken wij je eerst contact met ons op te nemen om te proberen het geschil in onderling overleg op te lossen."
+      },
+      "contact": {
+        "title": "13. Contact",
+        "content": "Voor vragen over deze Voorwaarden of de Dienst kun je contact met ons opnemen via:\n\nE-mail: support@cveetje.nl\n\nWij streven ernaar om binnen 5 werkdagen te reageren op alle verzoeken."
+      },
+      "severability": {
+        "title": "14. Scheidbaarheid",
+        "content": "Als een bepaling van deze Voorwaarden ongeldig of niet-afdwingbaar wordt verklaard, blijven de overige bepalingen volledig van kracht. De ongeldige bepaling zal worden vervangen door een geldige bepaling die de oorspronkelijke intentie zo dicht mogelijk benadert."
+      }
     }
   }
 }
