@@ -29,7 +29,6 @@ export const metadata: Metadata = {
     description: 'Create professional, tailored CVs from your LinkedIn profile in minutes.',
     type: 'website',
     siteName: 'CVeetje',
-    locale: 'nl_NL',
   },
   twitter: {
     card: 'summary_large_image',
@@ -43,13 +42,19 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
+type RootLayoutProps = {
   children: React.ReactNode;
-}>) {
+  params: Promise<{ locale?: string }>;
+};
+
+export default async function RootLayout({
+  children,
+  params,
+}: RootLayoutProps) {
+  const { locale } = await params;
+
   return (
-    <html lang="en">
+    <html lang={locale || 'nl'} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

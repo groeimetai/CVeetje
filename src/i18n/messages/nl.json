@@ -1,0 +1,442 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "error": "Fout",
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "close": "Sluiten",
+    "back": "Terug",
+    "next": "Volgende",
+    "submit": "Verzenden",
+    "confirm": "Bevestigen",
+    "yes": "Ja",
+    "no": "Nee",
+    "or": "of",
+    "and": "en",
+    "credits": "credits",
+    "free": "gratis",
+    "purchased": "gekocht",
+    "recently": "Recent"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "profiles": "Profielen",
+    "myCvs": "Mijn CVs",
+    "credits": "Credits",
+    "settings": "Instellingen",
+    "newCv": "Nieuwe CV",
+    "accountSettings": "Account Instellingen",
+    "signOut": "Uitloggen"
+  },
+  "auth": {
+    "signIn": "Inloggen",
+    "signUp": "Registreren",
+    "signOut": "Uitloggen",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "confirmPassword": "Wachtwoord bevestigen",
+    "name": "Naam",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "noAccount": "Nog geen account?",
+    "hasAccount": "Heb je al een account?",
+    "continueWithGoogle": "Doorgaan met Google",
+    "continueWithApple": "Doorgaan met Apple",
+    "orContinueWithEmail": "Of doorgaan met e-mail",
+    "signingIn": "Inloggen...",
+    "creatingAccount": "Account aanmaken...",
+    "createAccount": "Account Aanmaken",
+    "signInTitle": "Inloggen",
+    "signInDescription": "Log in op je CVeetje account om je CVs te beheren",
+    "signUpTitle": "Account Aanmaken",
+    "signUpDescription": "Registreer om professionele CVs te maken met AI",
+    "termsAgreement": "Door te registreren ga je akkoord met onze Algemene Voorwaarden en Privacybeleid. Je krijgt 5 gratis credits per maand."
+  },
+  "validation": {
+    "emailRequired": "E-mail is verplicht",
+    "emailInvalid": "Voer een geldig e-mailadres in",
+    "passwordRequired": "Wachtwoord is verplicht",
+    "passwordMin": "Wachtwoord moet minimaal 6 tekens bevatten",
+    "passwordsNotMatch": "Wachtwoorden komen niet overeen",
+    "nameRequired": "Naam is verplicht",
+    "nameMin": "Naam moet minimaal 2 tekens bevatten"
+  },
+  "landing": {
+    "heroTitle": "Stop het Priegelwerk",
+    "heroTitleHighlight": "Start met Solliciteren",
+    "heroBadge": "Automatisch gefit op elke vacature",
+    "heroDescription": "Geen urenlang CV's aanpassen meer. Sla je profiel één keer op, plak een vacature, en ontvang een CV dat automatisch is geoptimaliseerd voor die specifieke baan.",
+    "ctaStart": "Gratis Starten",
+    "ctaHowItWorks": "Bekijk Hoe Het Werkt",
+    "freeNote": "5 gratis downloads per maand. Geen creditcard nodig.",
+    "valueProps": {
+      "enterOnce": "Eén keer invoeren",
+      "enterOnceDesc": "Sla je profiel op en hergebruik het voor elke sollicitatie",
+      "autoFit": "Automatisch gefit",
+      "autoFitDesc": "AI analyseert de vacature en optimaliseert je CV",
+      "readyInMinutes": "Klaar in minuten",
+      "readyInMinutesDesc": "Van vacature naar sollicitatie-klaar CV in een paar klikken"
+    },
+    "howItWorks": {
+      "title": "Zo Simpel Werkt Het",
+      "subtitle": "Van LinkedIn naar een perfect gefit CV in 3 stappen",
+      "step1Label": "Stap 1 - Eenmalig",
+      "step1Title": "Sla Je Profiel Op",
+      "step1Desc": "Plak je LinkedIn, upload screenshots van een oud CV, of voer handmatig in. Je hoeft dit maar één keer te doen.",
+      "step2Label": "Stap 2 - Per Sollicitatie",
+      "step2Title": "Plak de Vacature",
+      "step2Desc": "Copy-paste de vacaturetekst. AI analyseert de functie-eisen en past je CV automatisch aan.",
+      "step3Label": "Stap 3",
+      "step3Title": "Download & Solliciteer",
+      "step3Desc": "Download je CV als PDF. Voeg optioneel een AI-gegenereerde motivatiebrief toe."
+    },
+    "preview": {
+      "badge": "Preview",
+      "title": "Professioneel Resultaat,",
+      "titleHighlight": "Automatisch Gegenereerd",
+      "description": "Je ontvangt een volledig opgemaakte CV met jouw gegevens, geoptimaliseerd voor de vacature waar je op solliciteert. Inclusief professionele styling, duidelijke secties, en ATS-vriendelijke opmaak.",
+      "keywordsProcessed": "Keywords uit de vacature automatisch verwerkt",
+      "experiencePrioritized": "Ervaring en skills geprioriteerd op relevantie",
+      "industryStyle": "Stijl passend bij jouw industrie en functie",
+      "readyDownload": "Direct klaar om te downloaden als PDF"
+    },
+    "profiles": {
+      "badge": "Profielen",
+      "title": "Eén Keer Invoeren,",
+      "titleHighlight": "Altijd Hergebruiken",
+      "description": "Maak meerdere profielen voor verschillende rollen. Upload je LinkedIn, screenshots van een oud CV, of voer handmatig in. Je hoeft nooit meer opnieuw te beginnen.",
+      "multipleProfiles": "Meerdere profielen voor verschillende rollen",
+      "uploadOptions": "LinkedIn tekst of CV screenshots uploaden",
+      "photoSaved": "Profielfoto wordt mee opgeslagen",
+      "quickSwitch": "Snel wisselen met één klik"
+    },
+    "jobAnalysis": {
+      "badge": "Vacature Analyse",
+      "title": "AI Analyseert",
+      "titleHighlight": "Elke Vacature",
+      "description": "Plak de vacaturetekst en AI extraheert automatisch de functie-eisen, keywords, en geeft zelfs een salaris inschatting op basis van marktdata.",
+      "keywordExtraction": "Automatische keyword extractie",
+      "requirementsOverview": "Functie-eisen in één oogopslag",
+      "salaryEstimate": "AI salaris inschatting met onderbouwing",
+      "marketInsights": "Marktinzichten per industrie en locatie"
+    },
+    "styleGenerator": {
+      "badge": "Stijl Generator",
+      "title": "Unieke Stijl",
+      "titleHighlight": "Op Maat Gegenereerd",
+      "description": "Kies je creativiteitsniveau en laat AI een professionele stijl genereren die past bij jouw industrie en de vacature. Niet tevreden? Regenereer onbeperkt tot je de perfecte look hebt.",
+      "creativityLevels": "3 creativiteitsniveaus: Veilig, Gebalanceerd, Creatief",
+      "industryFit": "Stijl passend bij jouw vakgebied",
+      "unlimitedRegenerate": "Onbeperkt regenereren zonder extra kosten",
+      "adjustColors": "Kleuren achteraf aanpasbaar"
+    },
+    "features": {
+      "title": "Waarom CVeetje?",
+      "subtitle": "Alles om sneller en beter te solliciteren",
+      "mainFeatureBadge": "Belangrijkste feature",
+      "autoFit": {
+        "title": "Automatisch Gefit op Vacatures",
+        "description": "AI leest de vacature en optimaliseert je CV",
+        "keywords": "Relevante keywords automatisch verwerkt",
+        "experience": "Ervaring geprioriteerd op functie-eisen",
+        "skills": "Skills die matchen komen bovenaan",
+        "ats": "ATS-vriendelijk voor recruiter software"
+      },
+      "profiles": {
+        "title": "Profielen Opslaan & Hergebruiken",
+        "description": "Nooit meer opnieuw beginnen",
+        "linkedin": "Importeer vanuit LinkedIn tekst",
+        "screenshots": "Upload screenshots van oud CV",
+        "multipleProfiles": "Meerdere profielen voor verschillende rollen",
+        "photo": "Profielfoto wordt mee opgeslagen"
+      },
+      "motivationLetter": {
+        "title": "Motivatiebrief Erbij",
+        "description": "Gebaseerd op je CV én de vacature",
+        "matchesCv": "Sluit aan op je gegenereerde CV",
+        "addOwn": "Voeg je eigen motivatie toe",
+        "downloadFormats": "Download als PDF of Word",
+        "extraCredit": "Kost slechts 1 extra credit"
+      },
+      "preview": {
+        "title": "Preview & Aanpassen",
+        "description": "Altijd de laatste controle",
+        "livePreview": "Live preview voordat je download",
+        "clickToEdit": "Klik op tekst om aan te passen",
+        "adjustColors": "Kleuren aanpassen aan je smaak",
+        "wysiwyg": "Wat je ziet is wat je krijgt"
+      },
+      "styling": {
+        "title": "Professionele Opmaak",
+        "description": "Stijl passend bij jouw industrie",
+        "aiColors": "AI kiest kleuren passend bij je vakgebied",
+        "multipleLayouts": "Meerdere layouts beschikbaar",
+        "photoSupport": "Profielfoto ondersteuning",
+        "unlimitedStyles": "Genereer onbeperkt nieuwe stijlen"
+      },
+      "apiKey": {
+        "title": "Jouw Data, Jouw Key",
+        "description": "Gebruik je eigen AI API key",
+        "providers": "OpenAI, Anthropic of Google",
+        "payForUse": "Betaal alleen AI-kosten die je maakt",
+        "encrypted": "Versleuteld opgeslagen",
+        "fullControl": "Volledig in jouw controle"
+      }
+    },
+    "stats": {
+      "timeSaved": "2 uur → 2 min",
+      "timeSavedLabel": "Tijd bespaard per sollicitatie",
+      "fitPercentage": "100%",
+      "fitPercentageLabel": "Gefit op de vacature",
+      "enterOnce": "1x invoeren",
+      "enterOnceLabel": "Onbeperkt hergebruiken"
+    },
+    "pricing": {
+      "title": "Simpele Prijzen",
+      "subtitle": "Betaal alleen voor downloads. Geen abonnementen.",
+      "free": {
+        "title": "Gratis",
+        "description": "Elke maand opnieuw",
+        "amount": "5",
+        "unit": "credits/maand",
+        "cvDownloads": "CV downloads",
+        "jobTargeting": "Vacature targeting",
+        "motivationLetters": "Motivatiebrieven",
+        "unlimitedProfiles": "Onbeperkt profielen",
+        "cta": "Gratis Starten"
+      },
+      "pack5": {
+        "title": "5 Credits",
+        "description": "Eenmalige aankoop",
+        "price": "€4,99",
+        "perDownload": "€1,00/download",
+        "neverExpire": "Nooit verlopen",
+        "cta": "Kopen"
+      },
+      "pack15": {
+        "title": "15 Credits",
+        "description": "Eenmalige aankoop",
+        "badge": "Populair",
+        "price": "€12,99",
+        "perDownload": "€0,87/download",
+        "save": "Bespaar 13%",
+        "cta": "Kopen"
+      },
+      "pack30": {
+        "title": "30 Credits",
+        "description": "Eenmalige aankoop",
+        "price": "€22,99",
+        "perDownload": "€0,77/download",
+        "save": "Bespaar 23%",
+        "cta": "Kopen"
+      },
+      "paymentMethods": "Veilig betalen via Mollie (iDEAL, Creditcard en meer)"
+    },
+    "cta": {
+      "title": "Klaar met Priegelwerk?",
+      "description": "Sla je profiel op, plak een vacature, en download je perfect gefitte CV. Zo simpel is het.",
+      "button": "Gratis Beginnen"
+    },
+    "footer": {
+      "copyright": "© {year} CVeetje. Alle rechten voorbehouden.",
+      "privacy": "Privacy",
+      "terms": "Voorwaarden"
+    }
+  },
+  "dashboard": {
+    "welcome": "Welkom, {name}!",
+    "subtitle": "Maak AI-gegenereerde CVs op maat voor je droombaan",
+    "newCv": "Nieuwe CV",
+    "stats": {
+      "totalCvs": "Totaal CVs",
+      "readyForDownload": "Klaar voor Download"
+    },
+    "recentCvs": {
+      "title": "Recente CVs",
+      "description": "Je meest recent gemaakte CVs",
+      "noCvs": "Nog geen CVs",
+      "createFirst": "Maak je eerste CV",
+      "viewAll": "Bekijk alle {count} CVs",
+      "untitled": "Naamloze CV",
+      "generalCv": "Algemene CV"
+    },
+    "status": {
+      "ready": "Klaar",
+      "generated": "Gegenereerd",
+      "generating": "Genereren",
+      "failed": "Mislukt",
+      "draft": "Concept"
+    },
+    "setupRequired": {
+      "title": "Configuratie Vereist",
+      "description": "Om CVs te genereren moet je een AI API key configureren. CVeetje gebruikt je eigen API key van OpenAI, Anthropic of Google.",
+      "button": "API Key Configureren"
+    }
+  },
+  "sidebar": {
+    "availableCredits": "Beschikbare Credits",
+    "freeCredits": "{count} gratis",
+    "purchasedCredits": "{count} gekocht",
+    "buyMoreCredits": "Meer credits kopen"
+  },
+  "credits": {
+    "title": "Credits",
+    "subtitle": "Beheer je credits en koop meer om CVs te downloaden",
+    "paymentSuccess": "Betaling succesvol! Je credits zijn toegevoegd aan je account.",
+    "balance": {
+      "title": "Je Saldo",
+      "available": "credits beschikbaar",
+      "resetIn": "Gratis credits resetten over {days} dagen",
+      "nextReset": "Volgende reset: {date}"
+    },
+    "buy": {
+      "title": "Credits Kopen",
+      "description": "Koop credits om meer CVs te downloaden. Betaal veilig met iDEAL, creditcard of andere betaalmethoden via Mollie.",
+      "popular": "Populair",
+      "credits": "credits",
+      "processing": "Verwerken...",
+      "buyNow": "Nu Kopen"
+    },
+    "history": {
+      "title": "Transactie Geschiedenis",
+      "description": "Je recente credit transacties",
+      "noTransactions": "Nog geen transacties",
+      "credits": "credits"
+    }
+  },
+  "settings": {
+    "title": "Instellingen",
+    "subtitle": "Beheer je account en API configuratie",
+    "tabs": {
+      "apiKey": "API Key",
+      "account": "Account"
+    },
+    "currentConfig": {
+      "title": "Huidige Configuratie",
+      "description": "Je API key is geconfigureerd en klaar voor gebruik",
+      "provider": "Provider",
+      "model": "Model",
+      "removeApiKey": "API Key Verwijderen",
+      "removing": "Verwijderen..."
+    },
+    "configureApiKey": {
+      "title": "API Key Configureren",
+      "updateTitle": "API Key Bijwerken",
+      "description": "Je API key wordt veilig en versleuteld opgeslagen. CVeetje gebruikt je eigen API key om CVs te genereren, zodat je alleen betaalt voor wat je gebruikt.",
+      "provider": "AI Provider",
+      "selectProvider": "Selecteer provider",
+      "models": "modellen",
+      "selectModel": "Selecteer model",
+      "apiKey": "API Key",
+      "enterApiKey": "Voer je {provider} API key in",
+      "getApiKey": "Haal je API key op bij:",
+      "saveApiKey": "API Key Opslaan",
+      "saving": "Opslaan...",
+      "loadingProviders": "Providers laden...",
+      "context": "context",
+      "capabilities": "Mogelijkheden",
+      "structuredOutput": "Gestructureerde Output",
+      "toolCall": "Tool Call",
+      "reasoning": "Redeneren",
+      "inputTypes": "Input Types",
+      "supportsUpload": "Ondersteunt LinkedIn PDF/afbeelding upload"
+    },
+    "account": {
+      "title": "Account Informatie",
+      "description": "Je account gegevens",
+      "name": "Naam",
+      "notSet": "Niet ingesteld",
+      "email": "E-mail",
+      "createdAt": "Account Aangemaakt",
+      "unknown": "Onbekend"
+    },
+    "messages": {
+      "apiKeySaved": "API key succesvol opgeslagen",
+      "apiKeyRemoved": "API key succesvol verwijderd",
+      "confirmRemove": "Weet je zeker dat je je API key wilt verwijderen?"
+    }
+  },
+  "profiles": {
+    "title": "Profielen",
+    "subtitle": "Beheer je opgeslagen profielen voor snelle CV creatie",
+    "newProfile": "Nieuw Profiel",
+    "noProfiles": "Geen profielen",
+    "noProfilesDescription": "Je hebt nog geen profielen opgeslagen. Maak een CV en sla je profiel op om het later te hergebruiken.",
+    "createNewProfile": "Nieuw Profiel Aanmaken",
+    "deleteConfirm": {
+      "title": "Profiel Verwijderen",
+      "description": "Weet je zeker dat je dit profiel wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen",
+      "deleting": "Verwijderen..."
+    }
+  },
+  "cvWizard": {
+    "steps": {
+      "profile": "Profiel",
+      "job": "Vacature",
+      "style": "Stijl",
+      "generating": "Genereren",
+      "preview": "Preview"
+    },
+    "languageSelection": {
+      "title": "CV Taal",
+      "description": "In welke taal moet de CV content gegenereerd worden?",
+      "dutch": "Nederlands",
+      "english": "Engels"
+    },
+    "noApiKey": {
+      "title": "API Key Vereist",
+      "description": "Je moet eerst een AI API key configureren voordat je CVs kunt genereren.",
+      "button": "Naar Instellingen"
+    },
+    "generating": {
+      "title": "Je CV wordt gegenereerd...",
+      "analyzing": "Je profiel en vacature worden geanalyseerd...",
+      "creating": "Je gepersonaliseerde CV wordt gemaakt..."
+    },
+    "error": {
+      "title": "Er ging iets mis",
+      "tryAgain": "Probeer Opnieuw"
+    }
+  },
+  "cvPreview": {
+    "download": "Download PDF",
+    "downloading": "Downloaden...",
+    "regenerate": "Opnieuw Genereren",
+    "editColors": "Kleuren Bewerken",
+    "viewMode": "Weergave",
+    "singlePage": "Enkele Pagina",
+    "allPages": "Alle Pagina's",
+    "creditCost": "1 credit voor download"
+  },
+  "errors": {
+    "unauthorized": "Je bent niet gemachtigd voor deze actie",
+    "invalidToken": "Ongeldige sessie, log opnieuw in",
+    "networkError": "Netwerkfout, probeer opnieuw",
+    "unknownError": "Er is een onbekende fout opgetreden",
+    "loginFailed": "Inloggen mislukt. Controleer je gegevens.",
+    "registrationFailed": "Registratie mislukt. Probeer opnieuw.",
+    "googleSignInFailed": "Google inloggen mislukt.",
+    "appleSignInFailed": "Apple inloggen mislukt."
+  },
+  "metadata": {
+    "home": {
+      "title": "CVeetje - CV Automatisch Gefit op Elke Vacature | Stop het Priegelwerk",
+      "description": "Stop met urenlang CV's aanpassen. CVeetje analyseert vacatures en past je CV automatisch aan. Sla je profiel op en genereer met één klik een perfect gefit CV. Start gratis."
+    },
+    "login": {
+      "title": "Inloggen",
+      "description": "Log in op je CVeetje account om je professionele CVs te beheren en nieuwe te maken met AI."
+    },
+    "register": {
+      "title": "Gratis Account Aanmaken",
+      "description": "Maak gratis een CVeetje account aan en ontvang 5 credits per maand. Start direct met het maken van professionele CVs met AI."
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Beheer je CVs en profielen"
+    }
+  }
+}

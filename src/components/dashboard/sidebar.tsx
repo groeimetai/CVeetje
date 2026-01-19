@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import {
   FileText,
   Home,
@@ -25,20 +25,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/components/auth/auth-context';
 import { signOut } from '@/lib/firebase/auth';
-import { useRouter } from 'next/navigation';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Profielen', href: '/profiles', icon: Users },
-  { name: 'Mijn CVs', href: '/cv', icon: FileText },
-  { name: 'Credits', href: '/credits', icon: CreditCard },
-  { name: 'Instellingen', href: '/settings', icon: Settings },
+const navigationItems = [
+  { key: 'dashboard', href: '/dashboard', icon: Home },
+  { key: 'profiles', href: '/profiles', icon: Users },
+  { key: 'myCvs', href: '/cv', icon: FileText },
+  { key: 'credits', href: '/credits', icon: CreditCard },
+  { key: 'settings', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { firebaseUser, userData, credits, freeCredits, purchasedCredits } = useAuth();
+  const t = useTranslations('navigation');
+  const tSidebar = useTranslations('sidebar');
+  const tCommon = useTranslations('common');
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,15 +73,15 @@ export function Sidebar() {
         <Link href="/cv/new">
           <Button className="w-full mb-4" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            Nieuwe CV
+            {t('newCv')}
           </Button>
         </Link>
 
-        {navigation.map((item) => {
+        {navigationItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
-              key={item.name}
+              key={item.key}
               href={item.href}
               className={cn(
                 'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
@@ -89,7 +91,7 @@ export function Sidebar() {
               )}
             >
               <item.icon className="mr-3 h-4 w-4" />
-              {item.name}
+              {t(item.key)}
             </Link>
           );
         })}
@@ -98,16 +100,16 @@ export function Sidebar() {
       {/* Credit Display */}
       <div className="border-t px-3 py-4">
         <div className="rounded-md bg-accent/50 px-3 py-2">
-          <p className="text-xs text-muted-foreground">Beschikbare Credits</p>
+          <p className="text-xs text-muted-foreground">{tSidebar('availableCredits')}</p>
           <p className="text-2xl font-bold">{credits}</p>
           <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-            <span title="Maandelijkse gratis credits">{freeCredits} gratis</span>
+            <span>{tSidebar('freeCredits', { count: freeCredits })}</span>
             <span>•</span>
-            <span title="Gekochte credits">{purchasedCredits} gekocht</span>
+            <span>{tSidebar('purchasedCredits', { count: purchasedCredits })}</span>
           </div>
           <Link href="/credits">
             <Button variant="link" size="sm" className="h-auto p-0 text-xs mt-1">
-              Meer credits kopen
+              {tSidebar('buyMoreCredits')}
             </Button>
           </Link>
         </div>
@@ -136,13 +138,13 @@ export function Sidebar() {
             <DropdownMenuItem asChild>
               <Link href="/settings">
                 <User className="mr-2 h-4 w-4" />
-                Account Instellingen
+                {t('accountSettings')}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              Uitloggen
+              {t('signOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

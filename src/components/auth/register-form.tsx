@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter, Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,22 +14,30 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 
-const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
-
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormData = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export function RegisterForm() {
   const router = useRouter();
+  const t = useTranslations('auth');
+  const tValidation = useTranslations('validation');
+  const tErrors = useTranslations('errors');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const registerSchema = z.object({
+    name: z.string().min(2, tValidation('nameMin')),
+    email: z.string().email(tValidation('emailInvalid')),
+    password: z.string().min(6, tValidation('passwordMin')),
+    confirmPassword: z.string(),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: tValidation('passwordsNotMatch'),
+    path: ['confirmPassword'],
+  });
 
   const {
     register,
@@ -47,7 +55,7 @@ export function RegisterForm() {
       await registerWithEmail(data.email, data.password, data.name);
       router.push('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed. Please try again.';
+      const errorMessage = err instanceof Error ? err.message : tErrors('registrationFailed');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -62,7 +70,7 @@ export function RegisterForm() {
       await signInWithGoogle();
       router.push('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Google sign-in failed.';
+      const errorMessage = err instanceof Error ? err.message : tErrors('googleSignInFailed');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -77,7 +85,7 @@ export function RegisterForm() {
       await signInWithApple();
       router.push('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Apple sign-in failed.';
+      const errorMessage = err instanceof Error ? err.message : tErrors('appleSignInFailed');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -87,9 +95,9 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+        <CardTitle className="text-2xl font-bold">{t('signUpTitle')}</CardTitle>
         <CardDescription>
-          Sign up to start creating professional CVs with AI
+          {t('signUpDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -126,7 +134,7 @@ export function RegisterForm() {
                 fill="#EA4335"
               />
             </svg>
-            Continue with Google
+            {t('continueWithGoogle')}
           </Button>
 
           <Button
@@ -139,7 +147,7 @@ export function RegisterForm() {
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
             </svg>
-            Continue with Apple
+            {t('continueWithApple')}
           </Button>
         </div>
 
@@ -148,14 +156,14 @@ export function RegisterForm() {
             <Separator />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+            <span className="bg-card px-2 text-muted-foreground">{t('orContinueWithEmail')}</span>
           </div>
         </div>
 
         {/* Email/Password Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t('name')}</Label>
             <Input
               id="name"
               type="text"
@@ -168,7 +176,7 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('email')}</Label>
             <Input
               id="email"
               type="email"
@@ -181,7 +189,7 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t('password')}</Label>
             <Input
               id="password"
               type="password"
@@ -193,7 +201,7 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -205,20 +213,19 @@ export function RegisterForm() {
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? t('creatingAccount') : t('createAccount')}
           </Button>
         </form>
 
         <p className="text-xs text-center text-muted-foreground">
-          By signing up, you agree to our Terms of Service and Privacy Policy.
-          You get 5 free credits per month.
+          {t('termsAgreement')}
         </p>
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{' '}
+          {t('hasAccount')}{' '}
           <Link href="/login" className="text-primary hover:underline">
-            Sign in
+            {t('signIn')}
           </Link>
         </p>
       </CardFooter>

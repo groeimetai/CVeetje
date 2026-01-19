@@ -1,19 +1,26 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Logo } from '@/components/ui/logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { setRequestLocale } from 'next-intl/server';
 
-export default function AuthLayout({
-  children,
-}: {
+type Props = {
   children: React.ReactNode;
-}) {
+  params: Promise<{ locale: string }>;
+};
+
+export default async function AuthLayout({ children, params }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b">
-        <div className="container mx-auto px-4 h-16 flex items-center">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
             <Logo size="sm" />
           </Link>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -25,7 +32,7 @@ export default function AuthLayout({
       {/* Footer */}
       <footer className="border-t py-4">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} CVeetje. All rights reserved.
+          &copy; {new Date().getFullYear()} CVeetje
         </div>
       </footer>
     </div>
