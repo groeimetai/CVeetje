@@ -14,8 +14,6 @@ import {
   Mail,
   Save,
   Eye,
-  Clock,
-  X,
   Linkedin,
   Upload,
 } from 'lucide-react';
@@ -105,77 +103,37 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* Problem/Solution Section */}
-          <section className="py-16 bg-accent/30">
+          {/* Value Props */}
+          <section className="py-12 border-b">
             <div className="container mx-auto px-4">
-              <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                {/* Before */}
-                <Card className="border-destructive/30 bg-destructive/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-destructive">
-                      <Clock className="h-5 w-5" />
-                      Vroeger: Urenlang Priegelwerk
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3 text-sm">
-                      <li className="flex items-start gap-2">
-                        <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                        Voor elke vacature je CV handmatig aanpassen
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                        Keywords uit de vacature overnemen en verwerken
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                        Steeds opnieuw je ervaring herformuleren
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                        Motivatiebrief schrijven die past bij de functie
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                        Opmaak fixen die steeds verspringt
-                      </li>
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                {/* After */}
-                <Card className="border-green-500/30 bg-green-500/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-green-600">
-                      <Zap className="h-5 w-5" />
-                      Nu: Profiel Opslaan, Vacature Plakken, Klaar
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3 text-sm">
-                      <li className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        Eén keer je profiel invoeren vanuit LinkedIn of oude CV
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        AI analyseert de vacature en pikt de juiste keywords
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        Je ervaring wordt automatisch relevant gemaakt
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        Motivatiebrief erbij met één klik
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        Professionele opmaak, altijd consistent
-                      </li>
-                    </ul>
-                  </CardContent>
-                </Card>
+              <div className="grid md:grid-cols-3 gap-8 text-center">
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <Save className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-1">Eén keer invoeren</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Sla je profiel op en hergebruik het voor elke sollicitatie
+                  </p>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <Target className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-1">Automatisch gefit</h3>
+                  <p className="text-sm text-muted-foreground">
+                    AI analyseert de vacature en optimaliseert je CV
+                  </p>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <Zap className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold mb-1">Klaar in minuten</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Van vacature naar sollicitatie-klaar CV in een paar klikken
+                  </p>
+                </div>
               </div>
             </div>
           </section>
@@ -436,7 +394,7 @@ export default function LandingPage() {
             <div className="container mx-auto px-4">
               <div className="grid md:grid-cols-3 gap-8 text-center">
                 <div>
-                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-90" />
+                  <Zap className="h-12 w-12 mx-auto mb-4 opacity-90" />
                   <p className="text-4xl font-bold mb-2">2 uur → 2 min</p>
                   <p className="opacity-90">Tijd bespaard per sollicitatie</p>
                 </div>
