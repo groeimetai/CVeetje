@@ -19,6 +19,7 @@ const STEP_LABELS: Record<StepTokenUsage['step'], string> = {
   style: 'Style',
   generate: 'Generate',
   regenerate: 'Regenerate',
+  motivation: 'Motivatiebrief',
 };
 
 function formatNumber(num: number): string {

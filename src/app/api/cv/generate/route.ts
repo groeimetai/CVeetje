@@ -8,6 +8,7 @@ import type {
   JobVacancy,
   CVStyleConfig,
   LLMProvider,
+  OutputLanguage,
 } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -43,11 +44,13 @@ export async function POST(request: NextRequest) {
       jobVacancy,
       styleConfig,
       avatarUrl,
+      language = 'nl',
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
       styleConfig: CVStyleConfig;
       avatarUrl?: string | null;
+      language?: OutputLanguage;
     };
 
     // Validate input
@@ -96,7 +99,8 @@ export async function POST(request: NextRequest) {
       provider,
       apiKey,
       model,
-      styleConfig
+      styleConfig,
+      language
     );
 
     // Create CV document in Firestore

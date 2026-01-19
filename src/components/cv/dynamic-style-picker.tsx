@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SVGDecorationToggle } from './svg-decoration-toggle';
-import { StyleGenerationProgress } from './style-generation-progress';
 import type {
   CVStyleConfig,
   ParsedLinkedIn,
@@ -32,32 +31,57 @@ import type {
   SVGDecorationConfig,
   StyleCreativityLevel,
 } from '@/types';
+import type { CVDesignTokens, DecorationIntensity } from '@/types/design-tokens';
 
 interface DynamicStylePickerProps {
   linkedInData: ParsedLinkedIn;
   jobVacancy: JobVacancy | null;
-  onStyleGenerated: (styleConfig: CVStyleConfig) => void;
+  avatarUrl?: string | null;
+  onStyleGenerated: (styleConfig: CVStyleConfig, tokens: CVDesignTokens) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
   initialStyleConfig?: CVStyleConfig | null;
+  initialTokens?: CVDesignTokens | null;
 }
 
 export function DynamicStylePicker({
   linkedInData,
   jobVacancy,
+  avatarUrl,
   onStyleGenerated,
   onTokenUsage,
   initialStyleConfig,
+  initialTokens,
 }: DynamicStylePickerProps) {
   const [userPreferences, setUserPreferences] = useState('');
   const [creativityLevel, setCreativityLevel] = useState<StyleCreativityLevel>('balanced');
   const [styleConfig, setStyleConfig] = useState<CVStyleConfig | null>(initialStyleConfig || null);
+  const [tokens, setTokens] = useState<CVDesignTokens | null>(initialTokens || null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generationMessage, setGenerationMessage] = useState('');
 
-  // Progress tracking state
-  const [currentStep, setCurrentStep] = useState(0);
-  const [stepResults, setStepResults] = useState<Record<number, string>>({});
-  const [isComplete, setIsComplete] = useState(false);
+  // Track previous initialStyleConfig to detect when it changes to null (new vacancy)
+  const prevInitialStyleConfigRef = useRef<CVStyleConfig | null | undefined>(initialStyleConfig);
+  const prevInitialTokensRef = useRef<CVDesignTokens | null | undefined>(initialTokens);
+
+  // Reset state only when initialStyleConfig/initialTokens CHANGE to null (new vacancy started)
+  useEffect(() => {
+    // Only reset if initialStyleConfig changed FROM a non-null value TO null
+    if (prevInitialStyleConfigRef.current !== null && initialStyleConfig === null) {
+      console.log('[Style Picker] Resetting state - new vacancy detected');
+      setStyleConfig(null);
+      setError(null);
+    }
+    prevInitialStyleConfigRef.current = initialStyleConfig;
+  }, [initialStyleConfig]);
+
+  useEffect(() => {
+    // Only reset if initialTokens changed FROM a non-null value TO null
+    if (prevInitialTokensRef.current !== null && initialTokens === null) {
+      setTokens(null);
+    }
+    prevInitialTokensRef.current = initialTokens;
+  }, [initialTokens]);
 
   // Creativity level options
   const creativityLevels = [
@@ -90,10 +114,9 @@ export function DynamicStylePicker({
   const handleGenerateStyle = useCallback(async () => {
     setIsGenerating(true);
     setError(null);
-    setCurrentStep(0);
-    setStepResults({});
-    setIsComplete(false);
+    setGenerationMessage('Initialiseren...');
     setStyleConfig(null);
+    setTokens(null);
 
     try {
       const response = await fetch('/api/cv/style', {
@@ -105,6 +128,7 @@ export function DynamicStylePicker({
         body: JSON.stringify({
           linkedInData,
           jobVacancy,
+          avatarUrl,
           userPreferences: userPreferences.trim() || undefined,
           creativityLevel,
         }),
@@ -128,7 +152,35 @@ export function DynamicStylePicker({
       while (true) {
         const { done, value } = await reader.read();
 
-        if (done) break;
+        if (done) {
+          // Process any remaining buffer after stream ends
+          if (buffer.trim()) {
+            console.log('[Style Picker] Processing final buffer:', buffer.substring(0, 100));
+            const finalLines = buffer.split('\n\n').filter(l => l.trim());
+            for (const line of finalLines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  console.log('[Style Picker] Final SSE event:', data.type || 'unknown');
+                  if (data.type === 'complete' && data.styleConfig && data.tokens) {
+                    console.log('[Style Picker] Complete from final buffer! Style:', data.styleConfig.styleName);
+                    setStyleConfig(data.styleConfig);
+                    setTokens(data.tokens);
+                    if (data.usage && onTokenUsage) {
+                      onTokenUsage(data.usage);
+                    }
+                  }
+                  if (data.type === 'error') {
+                    throw new Error(data.error || 'Failed to generate style');
+                  }
+                } catch (e) {
+                  if (!(e instanceof SyntaxError)) throw e;
+                }
+              }
+            }
+          }
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n\n');
@@ -138,20 +190,20 @@ export function DynamicStylePicker({
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
+              console.log('[Style Picker] SSE event received:', data.type || 'unknown');
 
-              // Handle progress update
-              if (data.step && data.stepName) {
-                if (data.status === 'started') {
-                  setCurrentStep(data.step);
-                } else if (data.status === 'completed' && data.result) {
-                  setStepResults(prev => ({ ...prev, [data.step]: data.result }));
-                }
+              // Handle progress update (v2 API format)
+              if (data.type === 'progress') {
+                setGenerationMessage(data.message || 'Stijl genereren...');
+                console.log('[Style Picker] Progress:', data.message);
               }
 
               // Handle completion
-              if (data.type === 'complete' && data.styleConfig) {
-                setIsComplete(true);
+              if (data.type === 'complete' && data.styleConfig && data.tokens) {
+                console.log('[Style Picker] Complete! Style:', data.styleConfig.styleName);
                 setStyleConfig(data.styleConfig);
+                setTokens(data.tokens);
+                setGenerationMessage('');
                 if (data.usage && onTokenUsage) {
                   onTokenUsage(data.usage);
                 }
@@ -163,24 +215,27 @@ export function DynamicStylePicker({
               }
             } catch (parseError) {
               // Ignore parse errors for incomplete data
-              if (parseError instanceof SyntaxError) continue;
+              if (parseError instanceof SyntaxError) {
+                console.log('[Style Picker] Parse error, incomplete chunk');
+                continue;
+              }
               throw parseError;
             }
           }
         }
       }
     } catch (err) {
+      console.error('[Style Picker] Error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
-      setCurrentStep(0);
-      setIsComplete(false);
     } finally {
       setIsGenerating(false);
+      setGenerationMessage('');
     }
-  }, [linkedInData, jobVacancy, userPreferences, creativityLevel, onTokenUsage]);
+  }, [linkedInData, jobVacancy, avatarUrl, userPreferences, creativityLevel, onTokenUsage]);
 
   const handleContinue = () => {
-    if (styleConfig) {
-      onStyleGenerated(styleConfig);
+    if (styleConfig && tokens) {
+      onStyleGenerated(styleConfig, tokens);
     }
   };
 
@@ -194,6 +249,10 @@ export function DynamicStylePicker({
     } : null);
   };
 
+  const handleDecorationIntensityChange = (intensity: DecorationIntensity) => {
+    setTokens(prev => prev ? { ...prev, decorations: intensity } : null);
+  };
+
   // Layout style display names
   const layoutLabels: Record<string, string> = {
     'single-column': 'Single Column',
@@ -202,7 +261,7 @@ export function DynamicStylePicker({
     'sidebar-right': 'Right Sidebar',
   };
 
-  // Font display names
+  // Font display names (including all fonts from token font pairings)
   const fontLabels: Record<string, string> = {
     'inter': 'Inter',
     'georgia': 'Georgia',
@@ -211,6 +270,23 @@ export function DynamicStylePicker({
     'source-sans': 'Source Sans',
     'playfair': 'Playfair Display',
     'open-sans': 'Open Sans',
+    'montserrat': 'Montserrat',
+    'raleway': 'Raleway',
+    'poppins': 'Poppins',
+    'nunito': 'Nunito',
+    'lato': 'Lato',
+  };
+
+  // Font pairing display names (for showing tokens directly)
+  const fontPairingLabels: Record<string, string> = {
+    'inter-inter': 'Inter',
+    'playfair-inter': 'Playfair + Inter',
+    'montserrat-open-sans': 'Montserrat + Open Sans',
+    'raleway-lato': 'Raleway + Lato',
+    'poppins-nunito': 'Poppins + Nunito',
+    'roboto-roboto': 'Roboto',
+    'lato-lato': 'Lato',
+    'merriweather-source-sans': 'Merriweather + Source Sans',
   };
 
   return (
@@ -275,15 +351,6 @@ export function DynamicStylePicker({
           </Alert>
         )}
 
-        {/* Progress Indicator - Show during generation */}
-        {isGenerating && currentStep > 0 && (
-          <StyleGenerationProgress
-            currentStep={currentStep}
-            stepResults={stepResults}
-            isComplete={isComplete}
-          />
-        )}
-
         {/* Generate Button */}
         {!styleConfig && !isGenerating && (
           <Button
@@ -297,12 +364,20 @@ export function DynamicStylePicker({
           </Button>
         )}
 
-        {/* Loading state before first step starts */}
-        {isGenerating && currentStep === 0 && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-primary/5 border border-primary/20">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="text-sm font-medium text-primary">Initialiseren...</span>
+        {/* Loading state during generation */}
+        {isGenerating && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="relative">
+              <div className="h-16 w-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+              <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-primary" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-primary">
+                {generationMessage || 'Stijl genereren...'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                AI analyseert je profiel en vacature
+              </p>
             </div>
           </div>
         )}
@@ -379,20 +454,20 @@ export function DynamicStylePicker({
                 </div>
                 <div className="space-y-1 text-sm">
                   <p>
-                    <span className="text-muted-foreground">Style:</span>{' '}
-                    {layoutLabels[styleConfig.layout.style]}
+                    <span className="text-muted-foreground">Theme:</span>{' '}
+                    {tokens?.themeBase || 'professional'}
                   </p>
                   <p>
                     <span className="text-muted-foreground">Header:</span>{' '}
-                    {styleConfig.layout.headerStyle}
+                    {tokens?.headerVariant || styleConfig.layout.headerStyle}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Spacing:</span>{' '}
-                    {styleConfig.layout.spacing}
+                    <span className="text-muted-foreground">Sections:</span>{' '}
+                    {tokens?.sectionStyle || 'clean'}
                   </p>
                   <p>
                     <span className="text-muted-foreground">Skills:</span>{' '}
-                    {styleConfig.layout.skillDisplay}
+                    {tokens?.skillsDisplay || styleConfig.layout.skillDisplay}
                   </p>
                 </div>
               </div>
@@ -404,12 +479,13 @@ export function DynamicStylePicker({
                 </div>
                 <div className="space-y-1 text-sm">
                   <p>
-                    <span className="text-muted-foreground">Headings:</span>{' '}
-                    {fontLabels[styleConfig.typography.headingFont]}
+                    <span className="text-muted-foreground">Fonts:</span>{' '}
+                    {tokens ? fontPairingLabels[tokens.fontPairing] || tokens.fontPairing :
+                      (fontLabels[styleConfig.typography.headingFont] || styleConfig.typography.headingFont)}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Body:</span>{' '}
-                    {fontLabels[styleConfig.typography.bodyFont]}
+                    <span className="text-muted-foreground">Scale:</span>{' '}
+                    {tokens?.scale || 'medium'}
                   </p>
                   <p>
                     <span className="text-muted-foreground">Name Size:</span>{' '}
@@ -419,32 +495,61 @@ export function DynamicStylePicker({
               </div>
             </div>
 
-            {/* Decorations Preview */}
+            {/* Style Details Preview */}
             <div className="rounded-lg border p-4 space-y-2">
               <span className="font-medium text-sm">Style Details</span>
               <div className="flex flex-wrap gap-2">
+                {tokens?.showPhoto && (
+                  <Badge variant="default">Photo</Badge>
+                )}
+                {tokens?.useIcons && (
+                  <Badge variant="outline">Icons</Badge>
+                )}
+                {tokens?.roundedCorners && (
+                  <Badge variant="outline">Rounded</Badge>
+                )}
                 <Badge variant="outline">
-                  Intensity: {styleConfig.decorations.intensity}
+                  Spacing: {tokens?.spacing || styleConfig.layout.spacing}
                 </Badge>
-                <Badge variant="outline">
-                  Corners: {styleConfig.decorations.cornerStyle}
-                </Badge>
-                {styleConfig.decorations.useBorders && (
-                  <Badge variant="outline">Borders</Badge>
-                )}
-                {styleConfig.decorations.useBackgrounds && (
-                  <Badge variant="outline">Backgrounds</Badge>
-                )}
-                {styleConfig.decorations.iconStyle !== 'none' && (
-                  <Badge variant="outline">Icons: {styleConfig.decorations.iconStyle}</Badge>
-                )}
                 <Badge variant="outline">
                   Divider: {styleConfig.layout.sectionDivider}
                 </Badge>
               </div>
             </div>
 
-            {/* SVG Decorations Toggle - User Control */}
+            {/* Background Decorations Selector */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-medium text-sm">Achtergrond Decoraties</span>
+                  <p className="text-xs text-muted-foreground">
+                    Subtiele SVG vormen als achtergrond
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {(['none', 'minimal', 'moderate', 'abundant'] as DecorationIntensity[]).map((intensity) => (
+                  <button
+                    key={intensity}
+                    type="button"
+                    onClick={() => handleDecorationIntensityChange(intensity)}
+                    className={cn(
+                      "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      tokens?.decorations === intensity
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
+                  >
+                    {intensity === 'none' && 'Geen'}
+                    {intensity === 'minimal' && 'Minimaal'}
+                    {intensity === 'moderate' && 'Gemiddeld'}
+                    {intensity === 'abundant' && 'Veel'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SVG Decorations Toggle - User Control (legacy) */}
             <SVGDecorationToggle
               config={styleConfig.decorations.svgDecorations}
               colors={styleConfig.colors}

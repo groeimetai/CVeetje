@@ -9,8 +9,7 @@ import { ArrowLeft, Loader2, AlertTriangle, Key } from 'lucide-react';
 import { ProfileInput } from './profile-input';
 import { JobInput } from './job-input';
 import { DynamicStylePicker } from './dynamic-style-picker';
-import { AvatarUpload } from './avatar-upload';
-import { CVPreview } from './cv-preview';
+import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TokenUsageDisplay } from './token-usage-display';
 import { useAuth } from '@/components/auth/auth-context';
 import type {
@@ -20,7 +19,10 @@ import type {
   GeneratedCVContent,
   TokenUsage,
   StepTokenUsage,
+  CVContactInfo,
+  OutputLanguage,
 } from '@/types';
+import type { CVDesignTokens } from '@/types/design-tokens';
 import type { ModelInfo, ProviderInfo } from '@/lib/ai/models-registry';
 import { findModelInProviders } from '@/lib/ai/models-registry';
 import Link from 'next/link';
@@ -36,9 +38,19 @@ export function CVWizard() {
   const [linkedInData, setLinkedInData] = useState<ParsedLinkedIn | null>(null);
   const [jobVacancy, setJobVacancy] = useState<JobVacancy | null>(null);
   const [styleConfig, setStyleConfig] = useState<CVStyleConfig | null>(null);
+  const [designTokens, setDesignTokens] = useState<CVDesignTokens | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<GeneratedCVContent | null>(null);
+  const [editedContent, setEditedContent] = useState<GeneratedCVContent | null>(null);
+  const [editedHeader, setEditedHeader] = useState<{
+    fullName: string;
+    headline?: string | null;
+    contactInfo?: CVContactInfo | null;
+  } | null>(null);
+  const [editedColors, setEditedColors] = useState<CVDesignTokens['colors'] | null>(null);
+  const [elementColors, setElementColors] = useState<Record<string, string | undefined>>({});
   const [cvId, setCvId] = useState<string | null>(null);
+  const [outputLanguage, setOutputLanguage] = useState<OutputLanguage>('nl');
 
   // Model info for file upload support
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -136,8 +148,9 @@ export function CVWizard() {
     setCurrentStep('style');
   };
 
-  const handleStyleGenerated = async (config: CVStyleConfig) => {
+  const handleStyleGenerated = async (config: CVStyleConfig, tokens: CVDesignTokens) => {
     setStyleConfig(config);
+    setDesignTokens(tokens);
 
     if (!hasApiKey) {
       setError('Please configure your API key in Settings before generating a CV.');
@@ -158,6 +171,7 @@ export function CVWizard() {
           jobVacancy,
           styleConfig: config,
           avatarUrl,
+          language: outputLanguage,
         }),
       });
 
@@ -198,6 +212,7 @@ export function CVWizard() {
           jobVacancy,
           styleConfig,
           avatarUrl,
+          language: outputLanguage,
         }),
       });
 
@@ -221,15 +236,71 @@ export function CVWizard() {
     }
   };
 
-  const handleDownload = async () => {
+  // Handle content changes from preview editor
+  const handleContentChange = (content: GeneratedCVContent) => {
+    setEditedContent(content);
+  };
+
+  // Handle header changes from preview editor
+  const handleHeaderChange = (header: {
+    fullName: string;
+    headline?: string | null;
+    contactInfo?: CVContactInfo | null;
+  }) => {
+    setEditedHeader(header);
+  };
+
+  // Handle colors changes from preview editor
+  const handleColorsChange = (colors: CVDesignTokens['colors']) => {
+    setEditedColors(colors);
+  };
+
+  // Handle element colors changes from preview editor
+  const handleElementColorsChange = (newElementColors: Record<string, string | undefined>) => {
+    setElementColors(newElementColors);
+  };
+
+  const handleDownload = async (pageMode: PDFPageMode = 'multi-page') => {
     if (!cvId || credits < 1) return;
 
     setIsDownloading(true);
     setError(null);
 
     try {
+      // Send edited content, header, and tokens if user made changes
+      // IMPORTANT: Use same logic as preview for all fields:
+      // 1. editedHeader values (user edited)
+      // 2. generatedContent values (AI generated, for headline)
+      // 3. linkedInData values (fallback)
+      const effectiveContent = editedContent || generatedContent;
+      const headerInfo = {
+        fullName: editedHeader?.fullName ?? linkedInData?.fullName ?? '',
+        headline: editedHeader?.headline ?? effectiveContent?.headline ?? linkedInData?.headline,
+        contactInfo: editedHeader?.contactInfo ?? (linkedInData ? {
+          email: linkedInData.email,
+          phone: linkedInData.phone,
+          location: linkedInData.location || undefined,
+          linkedinUrl: linkedInData.linkedinUrl,
+          website: linkedInData.website,
+          github: linkedInData.github,
+        } : undefined),
+      };
+
+      // Build effective tokens with edited colors if available
+      const effectiveTokens = designTokens && editedColors
+        ? { ...designTokens, colors: editedColors }
+        : designTokens;
+
       const response = await fetch(`/api/cv/${cvId}/pdf`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: editedContent || generatedContent,
+          tokens: effectiveTokens,
+          header: headerInfo,
+          elementColors: Object.keys(elementColors).length > 0 ? elementColors : undefined,
+          pageMode,
+        }),
       });
 
       if (!response.ok) {
@@ -265,6 +336,26 @@ export function CVWizard() {
     if (currentIndex > 0) {
       setCurrentStep(stepOrder[currentIndex - 1]);
     }
+  };
+
+  // Start a new CV for a different job vacancy (keeps profile data)
+  const handleNewVacancy = () => {
+    // Reset job, style, and content - but keep profile data (linkedInData, avatarUrl)
+    setJobVacancy(null);
+    setStyleConfig(null);
+    setDesignTokens(null);
+    setGeneratedContent(null);
+    setEditedContent(null);
+    setEditedHeader(null);
+    setEditedColors(null);
+    setElementColors({});
+    setCvId(null);
+    setError(null);
+    // Keep token history for reference, but you could reset it too
+    // setTokenHistory([]);
+
+    // Go to job input step
+    setCurrentStep('job');
   };
 
   // Show API key warning if not configured
@@ -339,6 +430,8 @@ export function CVWizard() {
           onParsed={handleLinkedInParsed}
           onTokenUsage={(usage) => addTokenUsage('linkedin', usage)}
           initialData={linkedInData}
+          initialAvatarUrl={avatarUrl}
+          onAvatarChange={setAvatarUrl}
           modelInfo={modelInfo}
           apiKey={userData?.apiKey ? { provider: userData.apiKey.provider, model: userData.apiKey.model } : null}
         />
@@ -354,23 +447,48 @@ export function CVWizard() {
 
       {currentStep === 'style' && linkedInData && (
         <div className="space-y-6">
-          {/* Avatar Upload - always shown so user can add photo if desired */}
+          {/* Language Selection */}
           <div className="rounded-lg border p-4">
-            <AvatarUpload
-              avatarUrl={avatarUrl}
-              onAvatarChange={setAvatarUrl}
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Je foto wordt getoond in de CV als de gekozen stijl dit ondersteunt.
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm">CV Taal</p>
+                <p className="text-xs text-muted-foreground">
+                  In welke taal moet je CV gegenereerd worden?
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOutputLanguage('nl')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    outputLanguage === 'nl'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  🇳🇱 Nederlands
+                </button>
+                <button
+                  onClick={() => setOutputLanguage('en')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    outputLanguage === 'en'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  🇬🇧 English
+                </button>
+              </div>
+            </div>
           </div>
 
           <DynamicStylePicker
             linkedInData={linkedInData}
             jobVacancy={jobVacancy}
+            avatarUrl={avatarUrl}
             onStyleGenerated={handleStyleGenerated}
             onTokenUsage={(usage) => addTokenUsage('style', usage)}
             initialStyleConfig={styleConfig}
+            initialTokens={designTokens}
           />
         </div>
       )}
@@ -387,18 +505,36 @@ export function CVWizard() {
         </div>
       )}
 
-      {currentStep === 'preview' && generatedContent && linkedInData && styleConfig && (
+      {currentStep === 'preview' && generatedContent && linkedInData && designTokens && (
         <CVPreview
-          content={generatedContent}
-          styleConfig={styleConfig}
-          fullName={linkedInData.fullName}
-          headline={linkedInData.headline}
+          content={editedContent || generatedContent}
+          tokens={designTokens}
+          fullName={editedHeader?.fullName ?? linkedInData.fullName}
+          headline={editedHeader?.headline ?? (editedContent || generatedContent).headline ?? linkedInData.headline}
           avatarUrl={avatarUrl}
+          contactInfo={editedHeader?.contactInfo ?? {
+            email: linkedInData.email,
+            phone: linkedInData.phone,
+            location: linkedInData.location || undefined,
+            linkedinUrl: linkedInData.linkedinUrl,
+            website: linkedInData.website,
+            github: linkedInData.github,
+          }}
+          jobVacancy={jobVacancy}
+          cvId={cvId}
+          language={outputLanguage}
           onDownload={handleDownload}
           onRegenerate={handleRegenerate}
+          onNewVacancy={handleNewVacancy}
+          onCreditsRefresh={refreshCredits}
+          onTokenUsage={(usage) => addTokenUsage('motivation', usage)}
           isDownloading={isDownloading}
           isRegenerating={isGenerating}
           credits={credits}
+          onContentChange={handleContentChange}
+          onHeaderChange={handleHeaderChange}
+          onColorsChange={handleColorsChange}
+          onElementColorsChange={handleElementColorsChange}
         />
       )}
     </div>

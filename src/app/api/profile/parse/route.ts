@@ -9,29 +9,38 @@ import { parseLinkedInProfile } from '@/lib/linkedin/parser';
 import type { ProfileInputSource, ParsedLinkedIn } from '@/types';
 
 // Schema for structured profile extraction via LLM
+// Note: Reduced nullable fields to stay under 16 union parameter limit
 const profileSchema = z.object({
   fullName: z.string().describe('Full name of the person'),
   headline: z.string().nullable().describe('Professional headline/title'),
   location: z.string().nullable().describe('Location (city, country)'),
   about: z.string().nullable().describe('About/summary section'),
+  // Contact information grouped to reduce union count
+  contactInfo: z.object({
+    email: z.string().describe('Email address if visible, empty string if not found'),
+    phone: z.string().describe('Phone number if visible, empty string if not found'),
+    linkedinUrl: z.string().describe('LinkedIn profile URL, empty string if not found'),
+    website: z.string().describe('Personal website URL, empty string if not found'),
+    github: z.string().describe('GitHub profile URL, empty string if not found'),
+  }).describe('Contact information extracted from the profile - use empty strings for missing fields'),
   experience: z.array(
     z.object({
       title: z.string().describe('Job title'),
       company: z.string().describe('Company name'),
-      location: z.string().nullable().describe('Job location'),
+      location: z.string().describe('Job location, empty string if not specified'),
       startDate: z.string().describe('Start date (e.g., "Jan 2020" or "2020")'),
-      endDate: z.string().nullable().describe('End date or null if current'),
-      description: z.string().nullable().describe('Job description'),
+      endDate: z.string().describe('End date, empty string if current position'),
+      description: z.string().describe('Job description, empty string if not available'),
       isCurrentRole: z.boolean().describe('Whether this is the current role'),
     })
   ).describe('Work experience entries'),
   education: z.array(
     z.object({
       school: z.string().describe('School/university name'),
-      degree: z.string().nullable().describe('Degree type (e.g., Bachelor, Master)'),
-      fieldOfStudy: z.string().nullable().describe('Field of study'),
-      startYear: z.string().nullable().describe('Start year'),
-      endYear: z.string().nullable().describe('End year'),
+      degree: z.string().describe('Degree type, empty string if not specified'),
+      fieldOfStudy: z.string().describe('Field of study, empty string if not specified'),
+      startYear: z.string().describe('Start year, empty string if not specified'),
+      endYear: z.string().describe('End year, empty string if not specified'),
     })
   ).describe('Education entries'),
   skills: z.array(
@@ -42,14 +51,14 @@ const profileSchema = z.object({
   languages: z.array(
     z.object({
       language: z.string().describe('Language name'),
-      proficiency: z.string().nullable().describe('Proficiency level'),
+      proficiency: z.string().describe('Proficiency level, empty string if not specified'),
     })
   ).describe('Languages'),
   certifications: z.array(
     z.object({
       name: z.string().describe('Certification name'),
-      issuer: z.string().nullable().describe('Issuing organization'),
-      issueDate: z.string().nullable().describe('Issue date'),
+      issuer: z.string().describe('Issuing organization, empty string if not specified'),
+      issueDate: z.string().describe('Issue date, empty string if not specified'),
     })
   ).describe('Certifications'),
 });
@@ -162,6 +171,12 @@ Instructions:
   - Professional headline/title
   - Location
   - About/Summary section
+  - **CONTACT INFORMATION** (IMPORTANT - look carefully for these):
+    - Email address (look in header, contact sections, footer, or anywhere visible)
+    - Phone number (look in header, contact sections, or anywhere visible)
+    - LinkedIn URL (often in format linkedin.com/in/username)
+    - Personal website or portfolio URL
+    - GitHub profile URL
   - ALL work experience entries with dates and descriptions
   - Education history
   - Skills (technical and soft skills)
@@ -224,17 +239,44 @@ Instructions:
         ],
       });
 
+      // Helper to convert empty strings to null for compatibility
+      const emptyToNull = (val: string): string | null => val === '' ? null : val;
+
       // Convert to ParsedLinkedIn format
       const parsed: ParsedLinkedIn = {
         fullName: object.fullName,
         headline: object.headline,
         location: object.location,
         about: object.about,
-        experience: object.experience,
-        education: object.education,
+        experience: object.experience.map(exp => ({
+          ...exp,
+          location: emptyToNull(exp.location),
+          endDate: emptyToNull(exp.endDate),
+          description: emptyToNull(exp.description),
+        })),
+        education: object.education.map(edu => ({
+          ...edu,
+          degree: emptyToNull(edu.degree),
+          fieldOfStudy: emptyToNull(edu.fieldOfStudy),
+          startYear: emptyToNull(edu.startYear),
+          endYear: emptyToNull(edu.endYear),
+        })),
         skills: object.skills,
-        languages: object.languages,
-        certifications: object.certifications,
+        languages: object.languages.map(lang => ({
+          ...lang,
+          proficiency: emptyToNull(lang.proficiency),
+        })),
+        certifications: object.certifications.map(cert => ({
+          ...cert,
+          issuer: emptyToNull(cert.issuer),
+          issueDate: emptyToNull(cert.issueDate),
+        })),
+        // Contact info extracted from source (convert empty strings to undefined)
+        email: object.contactInfo.email || undefined,
+        phone: object.contactInfo.phone || undefined,
+        linkedinUrl: object.contactInfo.linkedinUrl || undefined,
+        website: object.contactInfo.website || undefined,
+        github: object.contactInfo.github || undefined,
       };
 
       return NextResponse.json({

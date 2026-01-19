@@ -11,55 +11,17 @@ import { Badge } from '@/components/ui/badge';
 import { CVPreview } from '@/components/cv/cv-preview';
 import { useAuth } from '@/components/auth/auth-context';
 import { getCV, updateCV } from '@/lib/firebase/firestore';
+import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
+import { getDefaultTokens } from '@/lib/cv/html-generator';
 import type { CV, GeneratedCVContent, CVStyleConfig, CVElementOverrides } from '@/types';
-
-// Create a default style config from legacy colorScheme
-function createDefaultStyleConfig(cv: CV): CVStyleConfig {
-  return {
-    styleName: 'Classic Style',
-    styleRationale: 'A traditional CV layout',
-    colors: {
-      primary: cv.colorScheme?.primary || '#1e40af',
-      secondary: cv.colorScheme?.secondary || '#dbeafe',
-      accent: cv.colorScheme?.accent || '#3b82f6',
-      text: '#333333',
-      muted: '#666666',
-    },
-    typography: {
-      headingFont: 'inter',
-      bodyFont: 'inter',
-      nameSizePt: 24,
-      headingSizePt: 12,
-      bodySizePt: 10,
-      lineHeight: 1.5,
-    },
-    layout: {
-      style: 'single-column',
-      headerStyle: 'left-aligned',
-      sectionOrder: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
-      sectionDivider: 'line',
-      skillDisplay: 'tags',
-      spacing: 'normal',
-      showPhoto: false,
-    },
-    decorations: {
-      intensity: 'moderate',
-      useBorders: false,
-      useBackgrounds: false,
-      iconStyle: 'none',
-      cornerStyle: 'rounded',
-    },
-    industryFit: 'general',
-    formalityLevel: 'professional',
-  };
-}
+import type { CVDesignTokens } from '@/types/design-tokens';
 
 export default function CVDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { firebaseUser, credits, refreshCredits } = useAuth();
 
-  const [cv, setCV] = useState<CV | null>(null);
+  const [cv, setCV] = useState<(CV & { tokens?: CVDesignTokens }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -86,7 +48,7 @@ export default function CVDetailPage() {
     async function fetchCV() {
       if (firebaseUser && cvId) {
         const cvData = await getCV(firebaseUser.uid, cvId);
-        setCV(cvData);
+        setCV(cvData as CV & { tokens?: CVDesignTokens });
         setLoading(false);
       }
     }
@@ -156,8 +118,15 @@ export default function CVDetailPage() {
     );
   }
 
-  // Get style config - use existing or create default from legacy colorScheme
-  const styleConfig = cv.styleConfig || createDefaultStyleConfig(cv);
+  // Get tokens - use stored tokens if available, convert from styleConfig, or use defaults
+  let tokens: CVDesignTokens;
+  if (cv.tokens) {
+    tokens = cv.tokens;
+  } else if (cv.styleConfig) {
+    tokens = styleConfigToTokens(cv.styleConfig as CVStyleConfig);
+  } else {
+    tokens = getDefaultTokens();
+  }
 
   return (
     <div className="space-y-6">
@@ -176,7 +145,7 @@ export default function CVDetailPage() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{cv.jobVacancy?.title || 'General CV'}</span>
               <span>•</span>
-              <span>{cv.styleConfig?.styleName || cv.template}</span>
+              <span>{tokens.styleName}</span>
               <span>•</span>
               <Badge variant="outline">{cv.status}</Badge>
             </div>
@@ -214,9 +183,9 @@ export default function CVDetailPage() {
       {cv.generatedContent ? (
         <CVPreview
           content={cv.generatedContent as GeneratedCVContent}
-          styleConfig={styleConfig}
+          tokens={tokens}
           fullName={cv.linkedInData.fullName}
-          headline={cv.linkedInData.headline}
+          headline={(cv.generatedContent as GeneratedCVContent).headline ?? cv.linkedInData.headline}
           avatarUrl={cv.avatarUrl}
           onDownload={handleDownload}
           onRegenerate={() => router.push('/cv/new')}
@@ -249,10 +218,7 @@ export default function CVDetailPage() {
               {cv.jobVacancy && (
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Target Job</p>
-                  <p>
-                    {cv.jobVacancy.title}
-                    {cv.jobVacancy.company && ` at ${cv.jobVacancy.company}`}
-                  </p>
+                  <p>{cv.jobVacancy.title}</p>
                 </div>
               )}
             </div>

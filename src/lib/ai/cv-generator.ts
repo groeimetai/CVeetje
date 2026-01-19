@@ -8,6 +8,7 @@ import type {
   LLMProvider,
   CVStyleConfig,
   TokenUsage,
+  OutputLanguage,
 } from '@/types';
 
 // Schema for structured CV output
@@ -79,16 +80,18 @@ function getIndustryGuidance(industry: string | undefined): string {
 }
 
 const cvContentSchema = z.object({
+  headline: z.string().describe('A professional headline/title that positions the candidate for the TARGET JOB. This appears under the name. Examples: "Senior Software Engineer | Cloud & DevOps Specialist" or "Marketing Manager | Digital Strategy & Brand Development". Should bridge the candidates background WITH the target role - not just copy their current title!'),
   summary: z.string().describe('A professional summary tailored to the target job, 2-3 sentences'),
   experience: z.array(
     z.object({
-      title: z.string(),
+      title: z.string().describe('Job title - MUST be adapted to align with target job. If target is "ServiceNow Developer" and original was "IT Consultant", use "ServiceNow Consultant" or "Technical Consultant (ServiceNow)". Always reframe titles to show relevance while staying truthful.'),
       company: z.string(),
       location: z.string().nullable(),
       period: z.string().describe('Format: "Month Year - Month Year" or "Month Year - Present"'),
-      highlights: z.array(z.string()).describe('3-5 bullet points, tailored to the job requirements'),
+      highlights: z.array(z.string()).describe('2-5 bullet points. More bullets (4-5) for highly relevant roles, fewer (2-3) for less relevant ones'),
+      relevanceScore: z.number().describe('How relevant is this role to the target job? Use scale 1-5 where 5=highly relevant, 1=minimally relevant'),
     })
-  ),
+  ).describe('Experiences ORDERED BY RELEVANCE to target job (most relevant first), not just chronologically'),
   education: z.array(
     z.object({
       degree: z.string(),
@@ -98,7 +101,7 @@ const cvContentSchema = z.object({
     })
   ),
   skills: z.object({
-    technical: z.array(z.string()).describe('Technical/hard skills relevant to the job'),
+    technical: z.array(z.string()).describe('Technical/hard skills relevant to the job, ordered by relevance'),
     soft: z.array(z.string()).describe('Soft skills relevant to the job'),
   }),
   languages: z.array(
@@ -110,13 +113,37 @@ const cvContentSchema = z.object({
   certifications: z.array(z.string()).describe('Relevant certifications'),
 });
 
-function buildPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy | null, styleConfig?: CVStyleConfig): string {
+// Language-specific instructions
+const languageInstructions: Record<OutputLanguage, { intro: string; outputNote: string }> = {
+  en: {
+    intro: 'You are an expert CV writer. Create a professional, tailored CV based on the following profile data.',
+    outputNote: 'Write ALL output in English. Use professional English language appropriate for CVs.',
+  },
+  nl: {
+    intro: 'Je bent een expert CV-schrijver. Maak een professionele, op maat gemaakte CV op basis van de volgende profielgegevens.',
+    outputNote: `Write ALL output in Dutch (Nederlands). Use professional Dutch language appropriate for CVs.
+Examples of Dutch CV language:
+- "Verantwoordelijk voor" → "Leidde" or "Beheerde"
+- "Worked on" → "Werkte aan"
+- "Led a team" → "Leidde een team van"
+- "Increased" → "Verhoogde" or "Groeide"
+- "Implemented" → "Implementeerde"
+- "Developed" → "Ontwikkelde"`,
+  },
+};
+
+function buildPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy | null, styleConfig?: CVStyleConfig, language: OutputLanguage = 'nl'): string {
   // Layout-aware instructions (single-column only now for reliable PDF)
   const isCompact = styleConfig?.layout.spacing === 'compact';
   const bulletCount = isCompact ? '2-3' : '3-5';
   const bulletLength = isCompact ? 'Keep bullet points concise (max 15 words each)' : 'Bullet points can be detailed (max 25 words each)';
 
-  let prompt = `You are an expert CV writer. Create a professional, tailored CV based on the following LinkedIn profile data.
+  const langInstructions = languageInstructions[language];
+
+  let prompt = `${langInstructions.intro}
+
+## CRITICAL: Output Language
+${langInstructions.outputNote}
 
 ## LinkedIn Profile Data:
 
@@ -201,21 +228,53 @@ ${industryGuidance}
 **Step 1 - Analyze Requirements:**
 For each job requirement listed above, identify which of the candidate's experiences best demonstrates that skill or capability.
 
-**Step 2 - Professional Summary Strategy:**
+**Step 2 - CRITICAL: Experience Relevance Assessment:**
+Before writing, score EACH experience 1-5 on relevance to "${jobVacancy.title}":
+- **5 (Highly Relevant):** Direct match - same role/field, directly applicable skills
+- **4 (Very Relevant):** Strong overlap - related role, most skills transfer
+- **3 (Moderately Relevant):** Some overlap - transferable skills apply
+- **2 (Slightly Relevant):** Limited overlap - only soft skills or general experience applies
+- **1 (Minimally Relevant):** Little connection - include briefly or consider omitting
+
+**OUTPUT experiences ORDERED BY RELEVANCE (highest first), NOT chronologically!**
+
+**Step 3 - Job Title Adaptation:**
+IMPORTANT: Adapt job titles to highlight relevance to the target role:
+- If applying for "Backend Developer" and candidate was "Software Engineer" → Use "Software Engineer (Backend Focus)" or "Backend Software Engineer" if that accurately reflects their work
+- If applying for "Product Manager" and candidate was "Project Lead" → Use "Project Lead / Product Owner" if they did product work
+- NEVER invent titles, but DO reframe to show relevance
+- Keep original title if it already matches well or if adaptation would be misleading
+
+**Step 4 - Professional Headline (CRITICAL!):**
+Create a headline that BRIDGES the candidate's experience WITH the target role:
+- Target role: "${jobVacancy.title}"
+- DO NOT just copy the candidate's current LinkedIn headline!
+- The headline should position them AS a potential "${jobVacancy.title}"
+- Format: "[Role/Expertise] | [Specialization relevant to job]"
+- Examples of GOOD headlines for this job:
+  - If applying for "Backend Developer": "Software Engineer | Backend Development & API Architecture"
+  - If applying for "Product Manager": "Product Lead | Tech Product Strategy & Agile Delivery"
+  - If applying for "Data Analyst": "Analytics Professional | Data-Driven Business Intelligence"
+- The headline should feel natural, not forced - bridge their real experience to the target
+
+**Step 5 - Professional Summary Strategy:**
 Write a summary that:
 - Opens with positioning for "${jobVacancy.title}" role
 ${topKeywords ? `- Naturally includes keywords like: ${topKeywords}` : ''}
 - References 1-2 key requirements the candidate clearly meets
 - Closes with value proposition relevant to ${jobVacancy.company || 'this opportunity'}
 
-**Step 3 - Experience Tailoring:**
-- PRIORITIZE experience bullets that directly address the key requirements
+**Step 6 - Experience Tailoring by Relevance:**
+- **Score 5-4 roles:** 4-5 detailed bullet points, lead with job-relevant achievements
+- **Score 3 roles:** 3 bullet points, focus on transferable skills
+- **Score 2-1 roles:** 2 brief bullet points OR omit if CV is already long enough
+
+For ALL roles:
 - REWRITE highlights using terminology FROM the job posting
 - QUANTIFY achievements where possible (%, numbers, scale, impact)
-- For each role, lead with the most job-relevant accomplishments
-- Keep less relevant experience but make bullets shorter
+- Lead with the most job-relevant accomplishments
 
-**Step 4 - Skills Optimization:**
+**Step 7 - Skills Optimization:**
 - Order technical skills by relevance to this specific job
 - Include job keywords in skills where the candidate has matching experience
 - Match skill names exactly as they appear in the job posting when applicable
@@ -229,10 +288,14 @@ ${topKeywords ? `- Naturally includes keywords like: ${topKeywords}` : ''}
     prompt += `
 
 ## Instructions:
-1. Create a general professional CV highlighting the candidate's strengths
-2. Write compelling experience highlights that demonstrate achievements
-3. Create a strong professional summary
-4. Order skills by importance/expertise level
+1. Create a professional headline that captures the candidate's expertise and value
+   - Format: "[Primary Role] | [Key Specialization]"
+   - Example: "Software Engineer | Full-Stack Development & Cloud Architecture"
+   - Should highlight their strongest professional identity
+2. Create a general professional CV highlighting the candidate's strengths
+3. Write compelling experience highlights that demonstrate achievements
+4. Create a strong professional summary
+5. Order skills by importance/expertise level
 `;
   }
 
@@ -322,12 +385,13 @@ export async function generateCV(
   provider: LLMProvider,
   apiKey: string,
   model: string,
-  styleConfig?: CVStyleConfig
+  styleConfig?: CVStyleConfig,
+  language: OutputLanguage = 'nl'
 ): Promise<GenerateCVResult> {
   const aiProvider = createAIProvider(provider, apiKey);
   const modelId = getModelId(provider, model);
 
-  const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig);
+  const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language);
 
   const { object, usage } = await generateObject({
     model: aiProvider(modelId),

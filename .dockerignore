@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build output
+.next
+out
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files (will be set via Cloud Run)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Test files
+coverage
+.nyc_output
+
+# Documentation
+README.md
+docs
+
+# CI/CD files (not needed in image)
+cloudbuild.yaml
+.github
+
+# Firebase local files
+.firebase
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# PDF outputs (development only)
+pdf-outputs
+
+# Misc
+*.log
+*.md
+!README.md

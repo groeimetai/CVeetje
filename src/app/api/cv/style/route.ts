@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { decrypt } from '@/lib/encryption';
-import { generateCVStyle, createLinkedInSummary, StyleGenerationProgress } from '@/lib/ai/style-generator';
+import { generateDesignTokens, createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
+import { tokensToStyleConfig } from '@/lib/cv/templates/adapter';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -10,12 +11,12 @@ import type {
   StyleCreativityLevel,
 } from '@/types';
 
-// Allow longer execution time for AI generation
-export const maxDuration = 120; // seconds
+// Reduced from 120s since we only make 1 API call now (was 12+)
+export const maxDuration = 60; // seconds
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if client wants streaming response
+    // Check if client wants streaming response (for backward compatibility)
     const acceptsStream = request.headers.get('Accept')?.includes('text/event-stream');
 
     // Get auth token from cookie or header
@@ -48,13 +49,18 @@ export async function POST(request: NextRequest) {
       linkedInData,
       jobVacancy,
       userPreferences,
-      creativityLevel,
+      creativityLevel = 'balanced',
+      avatarUrl,
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
       userPreferences?: string;
       creativityLevel?: StyleCreativityLevel;
+      avatarUrl?: string | null;
     };
+
+    // Check if user has uploaded a photo
+    const hasPhoto = !!avatarUrl;
 
     // Validate input
     if (!linkedInData || !linkedInData.fullName) {
@@ -88,24 +94,29 @@ export async function POST(request: NextRequest) {
     const provider = userData.apiKey.provider as LLMProvider;
     const model = userData.apiKey.model;
 
-    // Create a summary of LinkedIn data for style generation
-    const linkedInSummary = createLinkedInSummary(linkedInData);
+    // Create a summary of LinkedIn data for style generation (v2)
+    const linkedInSummary = createLinkedInSummaryV2(linkedInData);
 
-    // If streaming is requested, use Server-Sent Events
+    // If streaming is requested, use Server-Sent Events (simplified for v2)
     if (acceptsStream) {
       const encoder = new TextEncoder();
 
       const stream = new ReadableStream({
         async start(controller) {
-          // Progress callback that sends SSE events
-          const onProgress = (progress: StyleGenerationProgress) => {
-            const data = JSON.stringify(progress);
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-          };
-
           try {
-            // Generate style with progress callback
-            const { styleConfig, usage } = await generateCVStyle(
+            // Send initial progress (v2 only has 1 step)
+            const startProgress = JSON.stringify({
+              type: 'progress',
+              step: 1,
+              totalSteps: 1,
+              stepName: 'Generating style tokens',
+              message: 'AI analyseert je profiel en genereert een gepersonaliseerde stijl...',
+            });
+            controller.enqueue(encoder.encode(`data: ${startProgress}\n\n`));
+
+            // Generate design tokens with single LLM call
+            console.log(`[Style Gen v2] Generating tokens: creativity=${creativityLevel}, hasPhoto=${hasPhoto}`);
+            const { tokens, usage } = await generateDesignTokens(
               linkedInSummary,
               jobVacancy,
               provider,
@@ -113,19 +124,25 @@ export async function POST(request: NextRequest) {
               model,
               userPreferences,
               creativityLevel,
-              onProgress
+              hasPhoto
             );
+            console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
+
+            // Convert to legacy CVStyleConfig for backward compatibility
+            const styleConfig = tokensToStyleConfig(tokens);
 
             // Send final result
             const result = JSON.stringify({
               type: 'complete',
               success: true,
               styleConfig,
+              tokens, // Also include new tokens
               usage,
             });
             controller.enqueue(encoder.encode(`data: ${result}\n\n`));
             controller.close();
           } catch (error) {
+            console.error('[Style Gen v2] Error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to generate style';
             const errorResult = JSON.stringify({
               type: 'error',
@@ -146,20 +163,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Non-streaming response (fallback)
-    const { styleConfig, usage } = await generateCVStyle(
+    // Non-streaming response
+    console.log(`[Style Gen v2] Generating tokens: creativity=${creativityLevel}, hasPhoto=${hasPhoto}`);
+    const { tokens, usage } = await generateDesignTokens(
       linkedInSummary,
       jobVacancy,
       provider,
       apiKey,
       model,
       userPreferences,
-      creativityLevel
+      creativityLevel,
+      hasPhoto
     );
+    console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
+
+    // Convert to legacy CVStyleConfig for backward compatibility
+    const styleConfig = tokensToStyleConfig(tokens);
 
     return NextResponse.json({
       success: true,
       styleConfig,
+      tokens, // Also include new tokens
       usage,
     });
   } catch (error) {

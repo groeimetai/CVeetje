@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,11 @@ import {
   Image as ImageIcon,
   AlertTriangle,
   Coins,
+  Save,
+  FolderOpen,
+  Star,
+  MoreVertical,
+  User,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -32,6 +37,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { parseLinkedInProfile } from '@/lib/linkedin/parser';
 import {
   getTokenEstimate,
@@ -39,6 +58,7 @@ import {
   formatCost,
   exceedsWarningThreshold,
 } from '@/lib/token-estimator';
+import { AvatarUpload } from './avatar-upload';
 import type {
   ParsedLinkedIn,
   ProfileInputSource,
@@ -47,6 +67,7 @@ import type {
   LinkedInLanguage,
   LinkedInCertification,
   TokenUsage,
+  SavedProfileSummary,
 } from '@/types';
 import type { ModelInfo } from '@/lib/ai/models-registry';
 import { supportsFileInput } from '@/lib/ai/models-registry';
@@ -55,6 +76,8 @@ interface ProfileInputProps {
   onParsed: (data: ParsedLinkedIn) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
   initialData?: ParsedLinkedIn | null;
+  initialAvatarUrl?: string | null;
+  onAvatarChange?: (url: string | null) => void;
   modelInfo?: ModelInfo | null;
   apiKey?: { provider: string; model: string } | null;
 }
@@ -112,6 +135,8 @@ export function ProfileInput({
   onParsed,
   onTokenUsage,
   initialData,
+  initialAvatarUrl,
+  onAvatarChange,
   modelInfo,
   apiKey,
 }: ProfileInputProps) {
@@ -124,7 +149,180 @@ export function ProfileInput({
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInputValue, setTextInputValue] = useState('');
   const [showWarningDialog, setShowWarningDialog] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [savedProfiles, setSavedProfiles] = useState<SavedProfileSummary[]>([]);
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [saveProfileName, setSaveProfileName] = useState('');
+  const [saveProfileDescription, setSaveProfileDescription] = useState('');
+  const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle avatar changes
+  const handleAvatarChange = (url: string | null) => {
+    setAvatarUrl(url);
+    onAvatarChange?.(url);
+  };
+
+  // Fetch saved profiles on mount
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      console.log('[Profiles] Fetching saved profiles...');
+      setIsLoadingProfiles(true);
+      try {
+        const response = await fetch('/api/profiles');
+        console.log('[Profiles] Response status:', response.status);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[Profiles] Data received:', data);
+          if (data.success && data.profiles) {
+            console.log('[Profiles] Setting profiles:', data.profiles.length);
+            setSavedProfiles(data.profiles);
+          }
+        } else {
+          console.log('[Profiles] Response not ok:', response.status);
+        }
+      } catch (err) {
+        console.error('[Profiles] Failed to fetch profiles:', err);
+      } finally {
+        setIsLoadingProfiles(false);
+      }
+    };
+    fetchProfiles();
+  }, []);
+
+  // Load a saved profile
+  const handleLoadProfile = async (profileId: string) => {
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/profiles/${profileId}`);
+      if (!response.ok) {
+        throw new Error('Kon profiel niet laden');
+      }
+      const data = await response.json();
+      if (data.success && data.profile?.parsedData) {
+        setSelectedProfileId(profileId);
+        setParsed(data.profile.parsedData);
+        // Also load avatar if available
+        if (data.profile.avatarUrl) {
+          handleAvatarChange(data.profile.avatarUrl);
+        }
+        setMode('preview');
+        // Don't call onParsed here - let user review and click "Doorgaan"
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kon profiel niet laden');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Save current profile
+  const handleSaveProfile = async () => {
+    console.log('[Profile Save] Starting save...', { parsed: !!parsed, name: saveProfileName });
+    if (!parsed || !saveProfileName.trim()) {
+      console.log('[Profile Save] Validation failed - parsed:', !!parsed, 'name:', saveProfileName);
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      console.log('[Profile Save] Sending request...');
+      const response = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: saveProfileName.trim(),
+          description: saveProfileDescription.trim() || undefined,
+          parsedData: parsed,
+          avatarUrl: avatarUrl || undefined,
+          sourceInfo: {
+            inputType: sources.some(s => s.type === 'file')
+              ? (sources.some(s => s.type === 'text') ? 'mixed' : 'file')
+              : 'text',
+            fileNames: sources.filter(s => s.type === 'file').map(s => s.file?.name).filter(Boolean) as string[],
+            lastUpdated: new Date(),
+          },
+          isDefault: saveAsDefault,
+        }),
+      });
+
+      console.log('[Profile Save] Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[Profile Save] Error response:', errorData);
+        throw new Error(errorData.error || 'Kon profiel niet opslaan');
+      }
+
+      const data = await response.json();
+      console.log('[Profile Save] Success:', data);
+
+      if (data.success && data.profile) {
+        // Add to local list
+        setSavedProfiles(prev => [{
+          id: data.profile.id,
+          name: data.profile.name,
+          description: data.profile.description,
+          headline: data.profile.parsedData?.headline || null,
+          experienceCount: data.profile.parsedData?.experience?.length || 0,
+          avatarUrl: data.profile.avatarUrl || null,
+          isDefault: data.profile.isDefault,
+          updatedAt: new Date(),
+        }, ...prev.map(p => saveAsDefault ? { ...p, isDefault: false } : p)]);
+        setSelectedProfileId(data.profile.id);
+      }
+
+      setShowSaveDialog(false);
+      setSaveProfileName('');
+      setSaveProfileDescription('');
+      setSaveAsDefault(false);
+    } catch (err) {
+      console.error('[Profile Save] Error:', err);
+      setError(err instanceof Error ? err.message : 'Kon profiel niet opslaan');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  // Delete a saved profile
+  const handleDeleteProfile = async (profileId: string) => {
+    try {
+      const response = await fetch(`/api/profiles/${profileId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setSavedProfiles(prev => prev.filter(p => p.id !== profileId));
+        if (selectedProfileId === profileId) {
+          setSelectedProfileId(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete profile:', err);
+    }
+  };
+
+  // Set profile as default
+  const handleSetDefault = async (profileId: string) => {
+    try {
+      const response = await fetch(`/api/profiles/${profileId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDefault: true }),
+      });
+      if (response.ok) {
+        setSavedProfiles(prev => prev.map(p => ({
+          ...p,
+          isDefault: p.id === profileId,
+        })));
+      }
+    } catch (err) {
+      console.error('Failed to set default:', err);
+    }
+  };
 
   // Check if file input is supported by the model
   const fileInputSupported = modelInfo ? supportsFileInput(modelInfo) : false;
@@ -273,7 +471,7 @@ export function ProfileInput({
 
         setParsed(result);
         setMode('preview');
-        onParsed(result);
+        // Don't call onParsed here - let user review and click "Doorgaan"
         return;
       }
 
@@ -311,7 +509,7 @@ export function ProfileInput({
 
       setParsed(result.data);
       setMode('preview');
-      onParsed(result.data);
+      // Don't call onParsed here - let user review and click "Doorgaan"
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verwerking mislukt');
     } finally {
@@ -328,6 +526,8 @@ export function ProfileInput({
     setTextInputValue('');
     setShowTextInput(false);
     setMode('input');
+    setSelectedProfileId(null);
+    handleAvatarChange(null); // Reset avatar
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -785,6 +985,7 @@ export function ProfileInput({
   // PREVIEW MODE
   if (mode === 'preview' && parsed) {
     return (
+      <>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -842,7 +1043,140 @@ export function ProfileInput({
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          {/* Avatar Upload Section */}
+          <div className="border rounded-lg p-4 mt-4">
+            <AvatarUpload
+              avatarUrl={avatarUrl}
+              onAvatarChange={handleAvatarChange}
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Je foto wordt getoond in de CV als de gekozen stijl dit ondersteunt.
+            </p>
+          </div>
+
+          {/* Contact Info Section - Prominent */}
+          <div className="border-2 border-primary/20 rounded-lg p-4 mt-4 bg-primary/5">
+            <p className="text-sm font-semibold text-primary mb-1">
+              Contactgegevens voor je CV
+            </p>
+            <p className="text-xs text-muted-foreground mb-3">
+              LinkedIn exporteert geen contactgegevens - vul deze hieronder in!
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-xs text-muted-foreground">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="naam@email.com"
+                  value={parsed.email || ''}
+                  onChange={(e) => setParsed({ ...parsed, email: e.target.value || undefined })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phone" className="text-xs text-muted-foreground">Telefoon</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+31 6 12345678"
+                  value={parsed.phone || ''}
+                  onChange={(e) => setParsed({ ...parsed, phone: e.target.value || undefined })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="linkedinUrl" className="text-xs text-muted-foreground">LinkedIn URL</Label>
+                <Input
+                  id="linkedinUrl"
+                  type="url"
+                  placeholder="linkedin.com/in/jouw-naam"
+                  value={parsed.linkedinUrl || ''}
+                  onChange={(e) => setParsed({ ...parsed, linkedinUrl: e.target.value || undefined })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="website" className="text-xs text-muted-foreground">Website / Portfolio</Label>
+                <Input
+                  id="website"
+                  type="url"
+                  placeholder="jouwwebsite.nl"
+                  value={parsed.website || ''}
+                  onChange={(e) => setParsed({ ...parsed, website: e.target.value || undefined })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="github" className="text-xs text-muted-foreground">GitHub (optioneel)</Label>
+                <Input
+                  id="github"
+                  placeholder="github.com/username"
+                  value={parsed.github || ''}
+                  onChange={(e) => setParsed({ ...parsed, github: e.target.value || undefined })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="location" className="text-xs text-muted-foreground">Locatie</Label>
+                <Input
+                  id="location"
+                  placeholder="Amsterdam, Nederland"
+                  value={parsed.location || ''}
+                  onChange={(e) => setParsed({ ...parsed, location: e.target.value || null })}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              * Email is verplicht voor een professionele CV
+            </p>
+          </div>
+
+          {/* Saved Profiles Quick Select - shown when profiles exist */}
+          {savedProfiles.length > 0 && (
+            <div className="border rounded-lg p-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Opgeslagen Profielen</span>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <User className="h-4 w-4 mr-2" />
+                      Wissel profiel
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    {savedProfiles.map((profile) => (
+                      <DropdownMenuItem
+                        key={profile.id}
+                        onClick={() => handleLoadProfile(profile.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">{profile.name}</span>
+                            {profile.isDefault && (
+                              <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {profile.headline || `${profile.experienceCount} ervaringen`}
+                          </span>
+                        </div>
+                        {selectedProfileId === profile.id && (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleReset}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nieuw profiel invoeren
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button onClick={handleContinue}>
               Doorgaan
             </Button>
@@ -850,6 +1184,25 @@ export function ProfileInput({
               <Pencil className="h-4 w-4 mr-2" />
               Bewerken
             </Button>
+            {!selectedProfileId && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  console.log('[Profile] Opening save dialog...');
+                  setSaveProfileName(parsed?.fullName || '');
+                  setShowSaveDialog(true);
+                }}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Profiel opslaan
+              </Button>
+            )}
+            {selectedProfileId && (
+              <Badge variant="secondary" className="py-1.5 px-3">
+                <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                Opgeslagen profiel
+              </Badge>
+            )}
             <Button variant="ghost" onClick={handleReset}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Opnieuw
@@ -857,6 +1210,79 @@ export function ProfileInput({
           </div>
         </CardContent>
       </Card>
+
+      {/* Save profile dialog - also in preview mode */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Save className="h-5 w-5 text-primary" />
+              Profiel Opslaan
+            </DialogTitle>
+            <DialogDescription>
+              Sla dit profiel op om het later snel te kunnen hergebruiken voor andere vacatures.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-name">Naam *</Label>
+              <Input
+                id="profile-name"
+                placeholder="bijv. ServiceNow Developer Profiel"
+                value={saveProfileName}
+                onChange={(e) => setSaveProfileName(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Geef een herkenbare naam voor dit profiel
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profile-description">Beschrijving (optioneel)</Label>
+              <Textarea
+                id="profile-description"
+                placeholder="bijv. Gericht op ServiceNow implementatie projecten..."
+                value={saveProfileDescription}
+                onChange={(e) => setSaveProfileDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="save-as-default"
+                checked={saveAsDefault}
+                onChange={(e) => setSaveAsDefault(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="save-as-default" className="text-sm font-normal">
+                Als standaard profiel instellen
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleSaveProfile}
+              disabled={!saveProfileName.trim() || isSavingProfile}
+            >
+              {isSavingProfile ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Opslaan...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Opslaan
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   }
 
@@ -882,6 +1308,83 @@ export function ProfileInput({
               <AlertCircle className="h-4 w-4" />
               <span className="ml-2">{error}</span>
             </Alert>
+          )}
+
+          {/* Saved Profiles Section */}
+          {savedProfiles.length > 0 && (
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <div className="flex items-center gap-2 mb-3">
+                <FolderOpen className="h-4 w-4 text-primary" />
+                <Label className="text-sm font-medium">Opgeslagen Profielen</Label>
+              </div>
+              <div className="space-y-2">
+                {savedProfiles.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className={`flex items-center justify-between border rounded-lg p-3 cursor-pointer hover:bg-accent/50 transition-colors ${
+                      selectedProfileId === profile.id ? 'border-primary bg-primary/5' : ''
+                    }`}
+                    onClick={() => handleLoadProfile(profile.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{profile.name}</span>
+                          {profile.isDefault && (
+                            <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {profile.headline || `${profile.experienceCount} ervaringen`}
+                        </p>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleLoadProfile(profile.id); }}>
+                          <FolderOpen className="h-4 w-4 mr-2" />
+                          Laden
+                        </DropdownMenuItem>
+                        {!profile.isDefault && (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleSetDefault(profile.id); }}>
+                            <Star className="h-4 w-4 mr-2" />
+                            Als standaard instellen
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteProfile(profile.id); }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Verwijderen
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs text-muted-foreground text-center">
+                  Of voeg hieronder nieuw profiel informatie toe
+                </p>
+              </div>
+            </div>
+          )}
+
+          {isLoadingProfiles && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Profielen laden...</span>
+            </div>
           )}
 
           {/* Action buttons */}
@@ -1127,6 +1630,78 @@ export function ProfileInput({
             </Button>
             <Button onClick={processSourcesInternal}>
               Ja, verwerken
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save profile dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Save className="h-5 w-5 text-primary" />
+              Profiel Opslaan
+            </DialogTitle>
+            <DialogDescription>
+              Sla dit profiel op om het later snel te kunnen hergebruiken voor andere vacatures.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-name">Naam *</Label>
+              <Input
+                id="profile-name"
+                placeholder="bijv. ServiceNow Developer Profiel"
+                value={saveProfileName}
+                onChange={(e) => setSaveProfileName(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Geef een herkenbare naam voor dit profiel
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profile-description">Beschrijving (optioneel)</Label>
+              <Textarea
+                id="profile-description"
+                placeholder="bijv. Gericht op ServiceNow implementatie projecten..."
+                value={saveProfileDescription}
+                onChange={(e) => setSaveProfileDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="save-as-default"
+                checked={saveAsDefault}
+                onChange={(e) => setSaveAsDefault(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="save-as-default" className="text-sm font-normal">
+                Als standaard profiel instellen
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleSaveProfile}
+              disabled={!saveProfileName.trim() || isSavingProfile}
+            >
+              {isSavingProfile ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Opslaan...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Opslaan
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

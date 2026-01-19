@@ -26,6 +26,14 @@ export function parseLinkedInProfile(rawText: string): ParsedLinkedIn {
     certifications: [],
   };
 
+  // Extract contact information from the raw text
+  const contactInfo = extractContactInfo(rawText);
+  if (contactInfo.email) result.email = contactInfo.email;
+  if (contactInfo.phone) result.phone = contactInfo.phone;
+  if (contactInfo.linkedinUrl) result.linkedinUrl = contactInfo.linkedinUrl;
+  if (contactInfo.website) result.website = contactInfo.website;
+  if (contactInfo.github) result.github = contactInfo.github;
+
   let currentSection: string | null = null;
   let sectionContent: string[] = [];
 
@@ -401,4 +409,78 @@ function parseCertifications(content: string[]): LinkedInCertification[] {
   }
 
   return certifications;
+}
+
+/**
+ * Extract contact information from raw text using regex patterns
+ */
+function extractContactInfo(rawText: string): {
+  email?: string;
+  phone?: string;
+  linkedinUrl?: string;
+  website?: string;
+  github?: string;
+} {
+  const result: {
+    email?: string;
+    phone?: string;
+    linkedinUrl?: string;
+    website?: string;
+    github?: string;
+  } = {};
+
+  // Email pattern
+  const emailMatch = rawText.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
+  if (emailMatch) {
+    result.email = emailMatch[0];
+  }
+
+  // Phone patterns (international and local formats)
+  const phonePatterns = [
+    /\+\d{1,3}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,9}/,  // International
+    /\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,4}/,  // Local formats
+    /\b0\d{1,2}[\s.-]?\d{3,4}[\s.-]?\d{3,4}\b/,   // Dutch format (06-12345678)
+  ];
+  for (const pattern of phonePatterns) {
+    const phoneMatch = rawText.match(pattern);
+    if (phoneMatch) {
+      result.phone = phoneMatch[0].trim();
+      break;
+    }
+  }
+
+  // LinkedIn URL pattern
+  const linkedinMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+\/?/i);
+  if (linkedinMatch) {
+    let url = linkedinMatch[0];
+    if (!url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+    result.linkedinUrl = url;
+  }
+
+  // GitHub URL pattern
+  const githubMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[\w-]+\/?/i);
+  if (githubMatch) {
+    let url = githubMatch[0];
+    if (!url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+    result.github = url;
+  }
+
+  // Website pattern (generic URLs, excluding linkedin and github)
+  const websiteMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?(?!linkedin\.com|github\.com)[a-zA-Z0-9][\w-]*\.[a-zA-Z]{2,}(?:\/[\w-]*)*\/?/i);
+  if (websiteMatch) {
+    let url = websiteMatch[0];
+    // Filter out common non-website patterns
+    if (!url.includes('@') && !url.match(/^\d/) && url.length > 5) {
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      result.website = url;
+    }
+  }
+
+  return result;
 }

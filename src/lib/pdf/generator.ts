@@ -1,12 +1,9 @@
 import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
-import type {
-  GeneratedCVContent,
-  CVTemplate,
-  CVColorScheme,
-  CVStyleConfig,
-} from '@/types';
-import { generateCVHTML, getDefaultStyleConfig } from '@/lib/cv/html-generator';
+import type { GeneratedCVContent, CVElementOverrides, CVContactInfo } from '@/types';
+import type { CVDesignTokens } from '@/types/design-tokens';
+import { generateCVHTML, getDefaultTokens } from '@/lib/cv/html-generator';
+import { spacingScales } from '@/lib/cv/templates/themes';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -29,19 +26,34 @@ async function getBrowser() {
   });
 }
 
+export type PDFPageMode = 'multi-page' | 'single-page';
+
+/**
+ * Generate PDF from CV content and design tokens
+ */
 export async function generatePDF(
   content: GeneratedCVContent,
-  template: CVTemplate,
-  colorScheme: CVColorScheme,
   fullName: string,
-  styleConfig?: CVStyleConfig | null,
+  tokens?: CVDesignTokens | null,
   avatarUrl?: string | null,
-  headline?: string | null
+  headline?: string | null,
+  overrides?: CVElementOverrides | null,
+  contactInfo?: CVContactInfo | null,
+  pageMode: PDFPageMode = 'multi-page'
 ): Promise<Buffer> {
-  // Always use dynamic HTML with either provided styleConfig or a generated default
-  // This ensures consistent, well-styled PDFs even when AI styling fails
-  const effectiveStyleConfig = styleConfig || getDefaultStyleConfig(colorScheme);
-  const html = generateCVHTML(content, effectiveStyleConfig, fullName, avatarUrl, headline);
+  // Use provided tokens or default
+  const effectiveTokens = tokens || getDefaultTokens();
+
+  // Generate HTML
+  const html = generateCVHTML(
+    content,
+    effectiveTokens,
+    fullName,
+    avatarUrl,
+    headline,
+    overrides,
+    contactInfo
+  );
 
   const browser = await getBrowser();
   const page = await browser.newPage();
@@ -49,17 +61,68 @@ export async function generatePDF(
   // Set content
   await page.setContent(html, { waitUntil: 'networkidle0' });
 
-  // Generate PDF
-  const pdf = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: {
-      top: '15mm',
-      right: '15mm',
-      bottom: '15mm',
-      left: '15mm',
-    },
-  });
+  // Get page margin from tokens
+  const pageMargin = spacingScales[effectiveTokens.spacing].pageMargin;
+
+  // For full-bleed header, use CSS @page rules for per-page margin control
+  const isFullBleed = effectiveTokens.headerFullBleed === true;
+
+  let pdf: Uint8Array;
+
+  if (pageMode === 'single-page') {
+    // Single-page mode: measure content and create one tall page
+    const contentHeight = await page.evaluate(() => {
+      const body = document.body;
+      const html = document.documentElement;
+      return Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
+        html.offsetHeight
+      );
+    });
+
+    // A4 width in pixels at 96 DPI is ~794px, we use mm for consistency
+    const a4WidthMm = 210;
+    // Convert content height to mm (assuming 96 DPI: 1px ≈ 0.264583mm)
+    const contentHeightMm = Math.ceil(contentHeight * 0.264583) + 20; // Add some padding
+
+    pdf = await page.pdf({
+      width: `${a4WidthMm}mm`,
+      height: `${contentHeightMm}mm`,
+      printBackground: true,
+      margin: isFullBleed
+        ? { top: '0', right: '0', bottom: '0', left: '0' }
+        : {
+            top: pageMargin,
+            right: pageMargin,
+            bottom: pageMargin,
+            left: pageMargin,
+          },
+    });
+  } else {
+    // Multi-page mode: standard A4 pages
+    pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      // For full-bleed: let CSS @page rules handle margins (first page vs subsequent pages)
+      // For normal: use consistent margins from tokens
+      ...(isFullBleed
+        ? {
+            preferCSSPageSize: true,
+            margin: { top: '0', right: '0', bottom: '0', left: '0' },
+          }
+        : {
+            margin: {
+              top: pageMargin,
+              right: pageMargin,
+              bottom: pageMargin,
+              left: pageMargin,
+            },
+          }),
+    });
+  }
 
   await browser.close();
 

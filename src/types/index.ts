@@ -1,5 +1,14 @@
 import { Timestamp } from 'firebase/firestore';
 
+// ============ Language Types ============
+
+export type OutputLanguage = 'nl' | 'en';
+
+export const LANGUAGE_LABELS: Record<OutputLanguage, string> = {
+  nl: 'Nederlands',
+  en: 'English',
+};
+
 // ============ Input Modality Types ============
 
 export type InputModality = 'text' | 'image' | 'pdf';
@@ -108,9 +117,47 @@ export interface ParsedLinkedIn {
   skills: LinkedInSkill[];
   languages: LinkedInLanguage[];
   certifications: LinkedInCertification[];
+  // Contact info - manually entered by user (not from LinkedIn)
+  email?: string;
+  phone?: string;
+  linkedinUrl?: string;
+  website?: string;
+  github?: string;
+}
+
+// Contact information for CV header
+export interface CVContactInfo {
+  email?: string;
+  phone?: string;
+  location?: string;
+  linkedinUrl?: string;
+  website?: string;
+  github?: string;
 }
 
 // ============ Job Vacancy Types ============
+
+export interface JobCompensation {
+  salaryMin?: number;           // Minimum salary (annual)
+  salaryMax?: number;           // Maximum salary (annual)
+  salaryCurrency?: string;      // EUR, USD, etc.
+  salaryPeriod?: 'yearly' | 'monthly' | 'hourly';
+  benefits?: string[];          // List of benefits (pension, car, etc.)
+  bonusInfo?: string;           // Bonus structure description
+  notes?: string;               // Additional compensation notes
+}
+
+export type ExperienceLevel = 'junior' | 'medior' | 'senior' | 'lead' | 'executive';
+export type ConfidenceLevel = 'low' | 'medium' | 'high';
+
+export interface SalaryEstimate {
+  estimatedMin: number;         // Estimated minimum salary (annual, EUR)
+  estimatedMax: number;         // Estimated maximum salary (annual, EUR)
+  experienceLevel: ExperienceLevel;  // junior/medior/senior/lead/executive
+  confidence: ConfidenceLevel;  // How confident is the estimate
+  reasoning: string;            // Why this estimate
+  marketInsight: string;        // Market context and insights
+}
 
 export interface JobVacancy {
   title: string;
@@ -122,6 +169,8 @@ export interface JobVacancy {
   location?: string;        // Job location
   employmentType?: string;  // Fulltime/parttime/freelance
   rawText?: string;         // Original vacancy text
+  compensation?: JobCompensation; // Optional compensation details
+  salaryEstimate?: SalaryEstimate; // AI-estimated salary for this role
 }
 
 // ============ CV Types ============
@@ -265,6 +314,24 @@ export interface CVStyleColors {
   accent: string;       // Links, highlights
   text: string;         // Body text
   muted: string;        // Secondary text
+
+  // === Extended Color Properties (optional) ===
+  primaryLight?: string;      // Lighter variant for hover states
+  primaryDark?: string;       // Darker variant for emphasis
+  accentLight?: string;       // Lighter variant of accent
+  linkColor?: string;         // Specific color for links
+  borderColor?: string;       // Border color
+  successColor?: string;      // Success indicators
+  warningColor?: string;      // Warning indicators
+  tertiaryColor?: string;     // Third brand color
+  quaternaryColor?: string;   // Fourth brand color
+
+  // === Color Relationships ===
+  colorHarmony?: 'monochromatic' | 'analogous' | 'complementary' | 'triadic' | 'split-complementary';
+  colorTemperature?: 'cool' | 'neutral' | 'warm';
+  contrastLevel?: 'subtle' | 'moderate' | 'high';
+  colorMode?: 'light' | 'dark' | 'auto';
+  saturationLevel?: 'muted' | 'normal' | 'vivid';
 }
 
 export interface CVStyleTypography {
@@ -274,6 +341,99 @@ export interface CVStyleTypography {
   headingSizePt: number;    // 11-16pt
   bodySizePt: number;       // 9-11pt
   lineHeight: number;       // 1.3-1.8
+
+  // === Extended Typography (new) ===
+  smallTextSizePt?: number;           // 8-10pt for dates, labels
+  headingWeight?: 'medium' | 'semibold' | 'bold';
+  bodyWeight?: 'normal' | 'medium';
+  headingTransform?: 'none' | 'uppercase' | 'capitalize';
+  jobTitleSizePt?: number;            // 10-13pt
+  companySizePt?: number;             // 10-12pt
+  sectionTitleLetterSpacing?: 'none' | 'subtle' | 'wide' | 'extra-wide';
+}
+
+// === Header Styling (all header-specific properties) ===
+export type HeaderAlignment = 'left' | 'center' | 'right';
+export type HeaderHeight = 'compact' | 'standard' | 'tall' | 'auto';
+export type NameWeight = 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
+export type NameTransform = 'none' | 'uppercase' | 'capitalize';
+export type HeadlineStyle = 'normal' | 'italic' | 'muted' | 'accent-color';
+export type AccentThickness = 'thin' | 'medium' | 'thick';
+export type AccentPosition = 'below-name' | 'below-header' | 'left-side' | 'full-width';
+export type ContactSeparator = 'pipe' | 'bullet' | 'slash' | 'space' | 'newline';
+export type NameLetterSpacing = 'tight' | 'normal' | 'wide' | 'extra-wide';
+export type HeaderMarginBottom = 'none' | 'small' | 'medium' | 'large';
+export type HeaderBackground = 'none' | 'subtle' | 'colored' | 'gradient';
+export type HeaderBorderStyle = 'none' | 'bottom' | 'all' | 'rounded';
+export type HeaderRounding = 'none' | 'subtle' | 'medium' | 'full';
+export type NameUnderline = 'none' | 'solid' | 'dotted' | 'gradient';
+export type GradientType = 'linear' | 'radial';
+export type HeaderOverlay = 'none' | 'subtle-pattern' | 'noise' | 'geometric';
+export type DividerStyle = 'none' | 'line' | 'fade' | 'wave' | 'chevron';
+export type HeaderShape = 'rectangle' | 'angled' | 'curved' | 'wave-bottom';
+export type NameSplitStyle = 'none' | 'first-last' | 'first-bold';
+export type NameVerticalAlign = 'top' | 'center' | 'baseline';
+export type HeaderShadow = 'none' | 'subtle' | 'medium' | 'dramatic' | 'layered';
+export type HeaderGradientStyle = 'none' | 'two-color' | 'three-color' | 'mesh';
+export type HeaderOrientation = 'horizontal' | 'vertical-left';
+export type NameFirstLetterStyle = 'none' | 'large' | 'decorated' | 'colored';
+export type TaglinePosition = 'below-name' | 'beside-name' | 'in-accent';
+
+export interface CVStyleHeader {
+  // === Header Structure ===
+  headerAlignment?: HeaderAlignment;
+  headerHeight?: HeaderHeight;
+
+  // === Name Styling ===
+  nameWeight?: NameWeight;
+  nameTransform?: NameTransform;
+  nameLetterSpacing?: NameLetterSpacing;
+  nameUnderline?: NameUnderline;
+  nameHighlight?: boolean;
+  nameGradient?: boolean;
+  nameTextShadow?: boolean;
+  nameSplitStyle?: NameSplitStyle;
+  nameVerticalAlign?: NameVerticalAlign;
+  nameFirstLetterStyle?: NameFirstLetterStyle;
+
+  // === Headline Styling ===
+  showHeadline?: boolean;
+  headlineSizePt?: number;
+  headlineStyle?: HeadlineStyle;
+  headlineIcon?: boolean;
+  headlineQuotes?: boolean;
+  taglinePosition?: TaglinePosition;
+
+  // === Accent Styling ===
+  accentThickness?: AccentThickness;
+  accentPosition?: AccentPosition;
+
+  // === Contact Display ===
+  contactInHeader?: boolean;
+  contactStyle?: 'inline' | 'stacked' | 'two-columns' | 'icons-only';
+  contactSeparator?: ContactSeparator;
+
+  // === Visual Depth ===
+  headerMarginBottom?: HeaderMarginBottom;
+  headerBackground?: HeaderBackground;
+  headerBorder?: HeaderBorderStyle;
+  headerRounding?: HeaderRounding;
+  headerShadow?: HeaderShadow;
+  header3DEffect?: boolean;
+
+  // === Gradient Options ===
+  gradientStart?: string;
+  gradientEnd?: string;
+  gradientType?: GradientType;
+  headerGradient?: HeaderGradientStyle;
+
+  // === Advanced Effects ===
+  headerOverlay?: HeaderOverlay;
+  dividerStyle?: DividerStyle;
+  headerShape?: HeaderShape;
+  headerOrientation?: HeaderOrientation;
+  overlayPhoto?: boolean;
+  floatingElements?: boolean;
 }
 
 // Header gradient angle options for full-width-accent headers
@@ -284,6 +444,64 @@ export type HeaderPaddingSize = 'compact' | 'normal' | 'spacious' | 'asymmetric'
 
 // Skill tag visual variants
 export type SkillTagVariant = 'filled' | 'outlined' | 'ghost' | 'gradient';
+
+// === Skill Styling Types ===
+export type SkillColumns = 'auto' | '2' | '3' | '4';
+export type SkillAlignment = 'left' | 'center' | 'justify';
+export type SkillSortOrder = 'as-provided' | 'alphabetical' | 'by-relevance';
+export type SkillGap = 'tight' | 'normal' | 'relaxed';
+export type SkillSectionSpacing = 'compact' | 'normal' | 'spacious';
+export type SkillCategoryStyle = 'none' | 'header' | 'divider' | 'badge' | 'sidebar';
+export type SkillTagSize = 'compact' | 'normal' | 'large';
+export type SkillTagShape = 'rounded' | 'pill' | 'square';
+export type SkillTagBorderWidth = 'none' | 'thin' | 'normal';
+export type SoftSkillsStyle = 'same' | 'italic' | 'muted' | 'separate-section' | 'hidden';
+export type SoftSkillsPosition = 'mixed' | 'after-technical' | 'separate-section';
+export type ProficiencyStyle = 'none' | 'labels' | 'dots' | 'bars' | 'percentage';
+export type ProficiencyScale = '3' | '5' | '10';
+
+export interface CVStyleSkills {
+  // === Display Format ===
+  skillDisplay: SkillDisplayStyle;
+  skillTagVariant: SkillTagVariant;
+
+  // === Layout Options ===
+  skillColumns?: SkillColumns;
+  skillAlignment?: SkillAlignment;
+
+  // === Ordering & Grouping ===
+  skillSortOrder?: SkillSortOrder;
+  showSkillCount?: boolean;
+
+  // === Visual Spacing ===
+  skillGap?: SkillGap;
+  skillSectionSpacing?: SkillSectionSpacing;
+
+  // === Category Styling ===
+  skillCategoryStyle?: SkillCategoryStyle;
+  categoryOrder?: string[];
+  showCategoryIcons?: boolean;
+
+  // === Tag Styling ===
+  skillTagSize?: SkillTagSize;
+  skillTagShape?: SkillTagShape;
+  skillTagBorderWidth?: SkillTagBorderWidth;
+
+  // === Soft Skills ===
+  softSkillsStyle?: SoftSkillsStyle;
+  softSkillsPosition?: SoftSkillsPosition;
+
+  // === Proficiency Indicators (creative/experimental) ===
+  showProficiencyLevel?: boolean;
+  proficiencyStyle?: ProficiencyStyle;
+  proficiencyScale?: ProficiencyScale;
+
+  // === Visual Enhancements (creative/experimental) ===
+  skillHighlight?: 'none' | 'top-skills' | 'relevant-skills';
+  highlightStyle?: 'bold' | 'colored' | 'starred' | 'badge';
+  highlightCount?: number;
+  useSkillIcons?: boolean;
+}
 
 // Border width for accent-left items
 export type ItemBorderWidth = 'none' | 'thin' | 'normal' | 'thick';
@@ -382,6 +600,24 @@ export interface SVGDecorationResult {
   background?: string;
 }
 
+// === Detail Styling Types ===
+export type SummaryFormat = 'paragraph' | 'bullets' | 'highlights';
+export type SummaryAlignment = 'left' | 'justify';
+export type SummaryStyleOption = 'none' | 'border-left' | 'background' | 'border-left-gradient' | 'quote' | 'card';
+export type SummaryQuoteStyle = 'none' | 'opening' | 'both';
+export type BulletPointStyle = 'disc' | 'check' | 'arrow' | 'dash' | 'custom' | 'circle' | 'square' | 'none';
+export type SectionDividerStyleOption = 'none' | 'line' | 'gradient' | 'dots' | 'fade';
+export type DividerWidth = 'partial' | 'full';
+export type LinkStyleOption = 'underline' | 'color' | 'both' | 'subtle';
+export type AchievementStyle = 'none' | 'bold' | 'colored' | 'badge' | 'icon';
+export type ShadowLevel = 'none' | 'subtle' | 'medium' | 'layered' | 'dramatic';
+export type CardElevation = 'flat' | 'raised' | 'floating';
+export type CompanyLogoSize = 'none' | 'small' | 'medium';
+export type TimelineStyleOption = 'none' | 'dots' | 'line' | 'connected';
+export type CardStyleOption = 'minimal' | 'filled' | 'bordered' | 'gradient-border';
+export type TitleEmphasis = 'normal' | 'bold' | 'large' | 'colored';
+export type CompanyEmphasis = 'normal' | 'bold' | 'muted' | 'accent';
+
 export interface CVStyleDecorations {
   intensity: 'subtle' | 'moderate' | 'bold';
   useBorders: boolean;
@@ -396,6 +632,52 @@ export interface CVStyleDecorations {
   // Additional variation options
   skillTagVariant?: SkillTagVariant;  // Visual style for skill tags
   itemBorderWidth?: ItemBorderWidth;  // Border width for accent-left items
+
+  // === Summary Section (extended) ===
+  summaryFormat?: SummaryFormat;
+  summaryAlignment?: SummaryAlignment;
+  summaryStyle?: SummaryStyleOption;
+  summaryQuoteStyle?: SummaryQuoteStyle;
+
+  // === Date & Location Styling ===
+  dateStyle?: 'normal' | 'muted' | 'badge' | 'pill';
+  locationStyle?: 'normal' | 'hidden' | 'muted' | 'with-icon';
+
+  // === Shadow & Depth (extended) ===
+  itemShadow?: ShadowLevel;
+  cardElevation?: CardElevation;
+
+  // === Experience Details ===
+  companyLogoSize?: CompanyLogoSize;
+  showJobType?: boolean;
+  bulletPointStyle?: BulletPointStyle;
+
+  // === Dividers ===
+  sectionDividerStyle?: SectionDividerStyleOption;
+  dividerWidth?: DividerWidth;
+
+  // === Links ===
+  linkStyle?: LinkStyleOption;
+  showLinkIcons?: boolean;
+
+  // === Visual Effects (creative/experimental) ===
+  hoverEffects?: boolean;
+  microAnimations?: boolean;
+  timelineStyle?: TimelineStyleOption;
+  timelineColor?: 'primary' | 'accent' | 'muted' | 'gradient';
+
+  // === Highlights & Emphasis ===
+  achievementStyle?: AchievementStyle;
+  keywordHighlighting?: boolean;
+  highlightColor?: 'accent' | 'subtle-accent' | 'background';
+
+  // === Cards ===
+  cardStyle?: CardStyleOption;
+  cardHoverEffect?: 'none' | 'lift' | 'glow' | 'border-highlight';
+
+  // === Hierarchy ===
+  titleEmphasis?: TitleEmphasis;
+  companyEmphasis?: CompanyEmphasis;
 }
 
 // Custom CSS for AI-generated creative styling
@@ -430,6 +712,8 @@ export interface CVStyleConfig {
   typography: CVStyleTypography;
   layout: CVStyleLayout;
   decorations: CVStyleDecorations;
+  header?: CVStyleHeader;      // Header-specific styling (name, headline, accents)
+  skills?: CVStyleSkills;      // Skills-specific styling (tags, categories, layout)
   industryFit: string;         // "technology", "finance", etc.
   formalityLevel: 'casual' | 'professional' | 'formal';
   customCSS?: CVStyleCustomCSS; // AI-generated custom CSS for creative styles
@@ -462,6 +746,7 @@ export interface GeneratedCVExperience {
   location: string | null;
   period: string;
   highlights: string[];
+  relevanceScore?: number; // 1-5, how relevant to target job (used for ordering, not displayed)
 }
 
 export interface GeneratedCVEducation {
@@ -482,6 +767,7 @@ export interface GeneratedCVLanguage {
 }
 
 export interface GeneratedCVContent {
+  headline: string; // Professional headline adapted for the target job
   summary: string;
   experience: GeneratedCVExperience[];
   education: GeneratedCVEducation[];
@@ -518,7 +804,7 @@ export interface TokenCost {
 }
 
 export interface StepTokenUsage {
-  step: 'linkedin' | 'job' | 'style' | 'generate' | 'regenerate';
+  step: 'linkedin' | 'job' | 'style' | 'generate' | 'regenerate' | 'motivation';
   usage: TokenUsage;
   cost: TokenCost;
   modelId: string;
@@ -543,10 +829,24 @@ export interface ElementOverride {
   hidden: boolean;              // Whether element is hidden
   colorOverride?: string;       // Override text/accent color
   backgroundOverride?: string;  // Override background color
+  textOverride?: string;        // Override text content
+}
+
+// Text content edits for CV preview
+export interface CVTextEdits {
+  summary?: string;
+  experienceHighlights?: Record<number, Record<number, string>>; // experience index -> highlight index -> text
+  experienceTitles?: Record<number, string>;    // experience index -> title
+  educationDegrees?: Record<number, string>;    // education index -> degree text
+  skillsOverrides?: {
+    technical?: string[];  // Override technical skills
+    soft?: string[];       // Override soft skills
+  };
 }
 
 export interface CVElementOverrides {
   overrides: ElementOverride[];
+  textEdits?: CVTextEdits;       // Text content edits
   lastModified: Date;
 }
 
@@ -576,5 +876,78 @@ export interface GenerateStyleRequest {
 export interface GenerateStyleResponse {
   success: boolean;
   styleConfig?: CVStyleConfig;
+  error?: string;
+}
+
+// ============ Re-export Design Tokens (v2 Style System) ============
+
+export type {
+  CVDesignTokens,
+  ThemeBase,
+  FontPairing,
+  TypeScale,
+  SpacingScale,
+  HeaderVariant,
+  SectionStyle,
+  SkillsDisplay,
+  DesignTokenColors,
+  GenerateDesignTokensRequest,
+  GenerateDesignTokensResponse,
+} from './design-tokens';
+
+// ============ Saved Profile Types ============
+
+export interface SavedProfile {
+  id: string;
+  name: string;                    // User-defined name, e.g., "ServiceNow Developer"
+  description?: string;            // Optional description
+  parsedData: ParsedLinkedIn;      // The cached parsed profile data
+  avatarUrl?: string | null;       // Profile photo URL (uploaded separately)
+  sourceInfo?: {                   // Metadata about original sources
+    inputType: 'text' | 'file' | 'mixed';
+    fileNames?: string[];          // Names of uploaded files
+    lastUpdated: Date;
+  };
+  isDefault?: boolean;             // Mark as default profile
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SavedProfileSummary {
+  id: string;
+  name: string;
+  description?: string;
+  headline: string | null;         // From parsedData for quick display
+  experienceCount: number;         // Number of experiences
+  avatarUrl?: string | null;       // Profile photo URL for display
+  isDefault?: boolean;
+  updatedAt: Date;
+}
+
+// ============ Motivation Letter Types ============
+
+export interface MotivationLetterInput {
+  personalMotivation?: string; // Optional user input about what motivates them
+}
+
+export interface GeneratedMotivationLetter {
+  opening: string;           // Opening paragraph (attention grabber)
+  whyCompany: string;        // Why this company/role
+  whyMe: string;             // Why I'm a good fit (experience + skills)
+  motivation: string;        // Personal motivation and enthusiasm
+  closing: string;           // Call to action and closing
+  fullText: string;          // Complete letter as formatted text
+}
+
+export interface MotivationLetterRequest {
+  cvId: string;
+  personalMotivation?: string;
+  language: OutputLanguage;
+}
+
+export interface MotivationLetterResponse {
+  success: boolean;
+  letter?: GeneratedMotivationLetter;
+  usage?: TokenUsage;
   error?: string;
 }
