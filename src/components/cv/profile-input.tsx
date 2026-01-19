@@ -29,6 +29,12 @@ import {
   User,
   Sparkles,
   Check,
+  Linkedin,
+  Copy,
+  Lightbulb,
+  Briefcase,
+  GraduationCap,
+  Award,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -171,6 +177,28 @@ export function ProfileInput({
     changes: string[];
     changesSummary: string;
   } | null>(null);
+
+  // LinkedIn export state
+  const [showLinkedInDialog, setShowLinkedInDialog] = useState(false);
+  const [isExportingLinkedIn, setIsExportingLinkedIn] = useState(false);
+  const [linkedInContent, setLinkedInContent] = useState<{
+    headline: string;
+    about: string;
+    experienceDescriptions: Array<{
+      originalTitle: string;
+      originalCompany: string;
+      optimizedTitle: string;
+      description: string;
+      skills: string[];
+    }>;
+    educationDescriptions: Array<{
+      originalSchool: string;
+      description: string;
+    }>;
+    topSkills: string[];
+    profileTips: string[];
+  } | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Handle avatar changes
   const handleAvatarChange = (url: string | null) => {
@@ -434,6 +462,59 @@ export function ProfileInput({
     setEnrichmentPreview(null);
     setShowEnrichDialog(false);
     setEnrichmentText('');
+  };
+
+  // Handle LinkedIn export
+  const handleLinkedInExport = async () => {
+    if (!selectedProfileId) return;
+
+    setIsExportingLinkedIn(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/profiles/${selectedProfileId}/linkedin-export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: 'nl' }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Export mislukt');
+      }
+
+      if (result.success) {
+        setLinkedInContent(result.linkedInContent);
+
+        // Report token usage if available
+        if (result.usage && onTokenUsage) {
+          onTokenUsage(result.usage);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export mislukt');
+      setShowLinkedInDialog(false);
+    } finally {
+      setIsExportingLinkedIn(false);
+    }
+  };
+
+  // Copy to clipboard helper
+  const handleCopyToClipboard = async (text: string, fieldId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldId);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+  };
+
+  // Close LinkedIn dialog
+  const handleCloseLinkedInDialog = () => {
+    setShowLinkedInDialog(false);
+    setLinkedInContent(null);
   };
 
   // Check if file input is supported by the model
@@ -1332,6 +1413,20 @@ export function ProfileInput({
                   AI Verrijken
                 </Button>
                 <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowLinkedInDialog(true);
+                    handleLinkedInExport();
+                  }}
+                  className="border-blue-500/50 text-blue-600 hover:bg-blue-50"
+                >
+                  <Linkedin className="h-4 w-4 mr-2" />
+                  LinkedIn Export
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    <Coins className="h-3 w-3 mr-1" />1
+                  </Badge>
+                </Button>
+                <Button
                   variant="ghost"
                   onClick={() => {
                     setSaveProfileName(parsed?.fullName || '');
@@ -1603,6 +1698,216 @@ export function ProfileInput({
                 </Button>
               </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* LinkedIn Export Dialog */}
+      <Dialog open={showLinkedInDialog} onOpenChange={(open) => {
+        if (!open) handleCloseLinkedInDialog();
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Linkedin className="h-5 w-5 text-blue-600" />
+              LinkedIn Profiel Content
+            </DialogTitle>
+            <DialogDescription>
+              Geoptimaliseerde content voor je LinkedIn profiel. Kopieer en plak naar LinkedIn.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isExportingLinkedIn ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <p className="text-sm text-muted-foreground">LinkedIn content genereren...</p>
+              <p className="text-xs text-muted-foreground">Dit kost 1 credit</p>
+            </div>
+          ) : linkedInContent ? (
+            <div className="space-y-6 py-4">
+              {/* Headline */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" />
+                    Headline
+                  </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyToClipboard(linkedInContent.headline, 'headline')}
+                  >
+                    {copiedField === 'headline' ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <div className="bg-muted rounded-lg p-3 text-sm">
+                  {linkedInContent.headline}
+                </div>
+                <p className="text-xs text-muted-foreground">Max 220 tekens - verschijnt onder je naam</p>
+              </div>
+
+              {/* About */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    Over mij / About
+                  </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopyToClipboard(linkedInContent.about, 'about')}
+                  >
+                    {copiedField === 'about' ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <div className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto">
+                  {linkedInContent.about}
+                </div>
+              </div>
+
+              {/* Experience Descriptions */}
+              {linkedInContent.experienceDescriptions.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-blue-600" />
+                    Werkervaring Beschrijvingen
+                  </Label>
+                  {linkedInContent.experienceDescriptions.map((exp, idx) => (
+                    <div key={idx} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium">{exp.optimizedTitle}</p>
+                          <p className="text-sm text-muted-foreground">{exp.originalCompany}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyToClipboard(exp.description, `exp-${idx}`)}
+                        >
+                          {copiedField === `exp-${idx}` ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
+                        {exp.description}
+                      </div>
+                      {exp.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-2">
+                          <span className="text-xs text-muted-foreground mr-1">Skills:</span>
+                          {exp.skills.map((skill, skillIdx) => (
+                            <Badge key={skillIdx} variant="outline" className="text-xs">
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Education Descriptions */}
+              {linkedInContent.educationDescriptions.some(edu => edu.description) && (
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-blue-600" />
+                    Opleiding Beschrijvingen
+                  </Label>
+                  {linkedInContent.educationDescriptions.filter(edu => edu.description).map((edu, idx) => (
+                    <div key={idx} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <p className="font-medium">{edu.originalSchool}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyToClipboard(edu.description, `edu-${idx}`)}
+                        >
+                          {copiedField === `edu-${idx}` ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
+                        {edu.description}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Top Skills */}
+              {linkedInContent.topSkills.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-blue-600" />
+                      Aanbevolen Skills om toe te voegen
+                    </Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyToClipboard(linkedInContent.topSkills.join(', '), 'skills')}
+                    >
+                      {copiedField === 'skills' ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {linkedInContent.topSkills.map((skill, idx) => (
+                      <Badge key={idx} variant="secondary">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Profile Tips */}
+              {linkedInContent.profileTips.length > 0 && (
+                <div className="space-y-2 border-t pt-4">
+                  <Label className="flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-amber-500" />
+                    Tips voor je LinkedIn Profiel
+                  </Label>
+                  <ul className="space-y-2">
+                    {linkedInContent.profileTips.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm">
+                        <span className="text-amber-500 font-bold">{idx + 1}.</span>
+                        <span className="text-muted-foreground">{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <AlertCircle className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Er ging iets mis bij het genereren.</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseLinkedInDialog}>
+              Sluiten
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
