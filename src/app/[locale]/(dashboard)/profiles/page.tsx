@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
@@ -25,6 +26,7 @@ import { ProfileCard } from '@/components/profiles/profile-card';
 
 export default function ProfilesPage() {
   const router = useRouter();
+  const t = useTranslations('profiles');
   const { profiles, isLoading, error, deleteProfile, setDefaultProfile } = useProfiles();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -62,14 +64,14 @@ export default function ProfilesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Profielen</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Beheer je opgeslagen profielen voor snelle CV creatie
+            {t('subtitle')}
           </p>
         </div>
         <Button onClick={() => router.push('/cv/new')}>
           <Plus className="h-4 w-4 mr-2" />
-          Nieuw Profiel
+          {t('newProfile')}
         </Button>
       </div>
 
@@ -84,13 +86,13 @@ export default function ProfilesPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Geen profielen</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('noProfiles')}</h3>
             <p className="text-muted-foreground text-center max-w-sm mb-4">
-              Je hebt nog geen profielen opgeslagen. Maak een CV en sla je profiel op om het later te hergebruiken.
+              {t('noProfilesDescription')}
             </p>
             <Button onClick={() => router.push('/cv/new')}>
               <Plus className="h-4 w-4 mr-2" />
-              Nieuw Profiel Aanmaken
+              {t('createNewProfile')}
             </Button>
           </CardContent>
         </Card>
@@ -115,14 +117,14 @@ export default function ProfilesPage() {
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Profiel Verwijderen</DialogTitle>
+            <DialogTitle>{t('deleteConfirm.title')}</DialogTitle>
             <DialogDescription>
-              Weet je zeker dat je dit profiel wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+              {t('deleteConfirm.description')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
-              Annuleren
+              {t('deleteConfirm.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -132,12 +134,12 @@ export default function ProfilesPage() {
               {isDeleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Verwijderen...
+                  {t('deleteConfirm.deleting')}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Verwijderen
+                  {t('deleteConfirm.delete')}
                 </>
               )}
             </Button>

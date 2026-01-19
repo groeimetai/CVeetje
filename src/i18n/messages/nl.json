@@ -457,6 +457,10 @@
     "terms": {
       "title": "Algemene Voorwaarden",
       "description": "Lees onze algemene voorwaarden voor het gebruik van CVeetje"
+    },
+    "privacy": {
+      "title": "Privacybeleid",
+      "description": "Lees ons privacybeleid over hoe wij je gegevens verwerken"
     }
   },
   "terms": {
@@ -533,6 +537,82 @@
       "severability": {
         "title": "14. Scheidbaarheid",
         "content": "Als een bepaling van deze Voorwaarden ongeldig of niet-afdwingbaar wordt verklaard, blijven de overige bepalingen volledig van kracht. De ongeldige bepaling zal worden vervangen door een geldige bepaling die de oorspronkelijke intentie zo dicht mogelijk benadert."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacybeleid",
+    "lastUpdated": "Laatst bijgewerkt: {date}",
+    "sections": {
+      "introduction": {
+        "title": "1. Inleiding",
+        "content": "CVeetje (\"wij\", \"ons\" of \"onze\") respecteert je privacy en is toegewijd aan het beschermen van je persoonsgegevens. Dit privacybeleid legt uit hoe wij je gegevens verzamelen, gebruiken, opslaan en beschermen wanneer je onze website en diensten gebruikt.\n\nDit beleid is van toepassing op alle gebruikers van CVeetje, inclusief bezoekers van onze website en geregistreerde gebruikers van onze dienst.\n\nDoor gebruik te maken van CVeetje, ga je akkoord met de verwerking van je gegevens zoals beschreven in dit privacybeleid."
+      },
+      "dataController": {
+        "title": "2. Verwerkingsverantwoordelijke",
+        "content": "CVeetje is de verwerkingsverantwoordelijke voor de persoonsgegevens die via onze dienst worden verzameld.\n\nContactgegevens:\nE-mail: support@cveetje.nl\n\nVoor vragen over dit privacybeleid of de verwerking van je persoonsgegevens kun je contact met ons opnemen via bovenstaand e-mailadres."
+      },
+      "dataCollection": {
+        "title": "3. Welke Gegevens Verzamelen Wij",
+        "subtitle1": "3.1 Accountgegevens",
+        "content1": "Wanneer je een account aanmaakt, verzamelen wij:\n\n• E-mailadres\n• Naam (indien opgegeven)\n• Profielfoto (indien je inlogt via Google of Apple)\n• Wachtwoord (versleuteld opgeslagen)\n\nAls je inlogt via Google of Apple, ontvangen wij bepaalde profielgegevens van deze diensten conform hun privacybeleid.",
+        "subtitle2": "3.2 Profielgegevens voor CV's",
+        "content2": "Om CV's te genereren, verzamelen wij de informatie die je invoert:\n\n• Persoonlijke gegevens (naam, contactgegevens, locatie)\n• Werkervaring en functiebeschrijvingen\n• Opleiding en certificeringen\n• Vaardigheden en competenties\n• Profielfoto's die je uploadt\n• LinkedIn-profieldata (als je deze plakt of importeert)\n• Screenshots of documenten van oude CV's\n\nJe bepaalt zelf welke informatie je invoert. Wij raden aan alleen informatie te delen die relevant is voor je CV.",
+        "subtitle3": "3.3 Gebruiksgegevens",
+        "content3": "Wij verzamelen automatisch bepaalde informatie over je gebruik van de dienst:\n\n• IP-adres en apparaatinformatie\n• Browsertype en -versie\n• Pagina's die je bezoekt en functies die je gebruikt\n• Datum en tijd van je bezoeken\n• Referrer-informatie (hoe je bij ons kwam)\n\nDeze gegevens worden geanonimiseerd voor analytische doeleinden."
+      },
+      "dataUsage": {
+        "title": "4. Hoe Wij Je Gegevens Gebruiken",
+        "content": "Wij gebruiken je gegevens voor de volgende doeleinden:\n\n• Het leveren van onze dienst: Het genereren van CV's, motivatiebrieven en LinkedIn-content op basis van je profielgegevens.\n\n• Accountbeheer: Het aanmaken en beheren van je account, het verwerken van betalingen, en het bijhouden van je creditsaldo.\n\n• Communicatie: Het sturen van belangrijke serviceberichten, zoals bevestigingen van aankopen of wijzigingen in onze voorwaarden.\n\n• Verbetering van de dienst: Het analyseren van gebruikspatronen om onze dienst te verbeteren (alleen geanonimiseerde data).\n\n• Fraudepreventie: Het detecteren en voorkomen van frauduleus of ongeautoriseerd gebruik.\n\n• Wettelijke verplichtingen: Het voldoen aan wettelijke verplichtingen, zoals belastingadministratie voor betalingen."
+      },
+      "legalBasis": {
+        "title": "5. Rechtsgrond voor Verwerking",
+        "content": "Wij verwerken je persoonsgegevens op basis van de volgende rechtsgronden (conform de AVG/GDPR):\n\n• Uitvoering van een overeenkomst: De verwerking is noodzakelijk voor het leveren van de dienst die je hebt aangevraagd (artikel 6(1)(b) AVG).\n\n• Toestemming: Voor bepaalde verwerkingen vragen wij je expliciete toestemming, bijvoorbeeld voor het opslaan van je profielgegevens (artikel 6(1)(a) AVG).\n\n• Gerechtvaardigd belang: Voor het verbeteren van onze dienst en het voorkomen van fraude, waarbij wij je belangen en rechten in acht nemen (artikel 6(1)(f) AVG).\n\n• Wettelijke verplichting: Voor het voldoen aan wettelijke verplichtingen, zoals belastingwetgeving (artikel 6(1)(c) AVG)."
+      },
+      "dataSharing": {
+        "title": "6. Delen van Gegevens",
+        "content": "Wij verkopen je persoonsgegevens niet aan derden. Wij delen je gegevens alleen in de volgende situaties:\n\n• Met dienstverleners: Zie sectie 7 voor een overzicht van de externe diensten die wij gebruiken.\n\n• Met AI-providers: Wanneer je een CV genereert, wordt je profieldata verwerkt door de AI-provider waarvan je de API-sleutel hebt opgegeven (zoals OpenAI, Anthropic of Google). Dit gebeurt rechtstreeks met je eigen API-sleutel.\n\n• Bij wettelijke verplichting: Als wij hiertoe wettelijk verplicht zijn, bijvoorbeeld bij een gerechtelijk bevel.\n\n• Bij bedrijfsoverdracht: Bij een fusie, overname of verkoop van activa kunnen je gegevens worden overgedragen aan de nieuwe eigenaar."
+      },
+      "thirdPartyServices": {
+        "title": "7. Externe Diensten",
+        "subtitle1": "7.1 Firebase (Google Cloud)",
+        "content1": "Wij gebruiken Firebase van Google voor:\n\n• Authenticatie (inloggen en accountbeheer)\n• Database (opslag van je profielen en CV's)\n• Hosting van bepaalde diensten\n\nFirebase verwerkt data in overeenstemming met het privacybeleid van Google. Data kan worden opgeslagen in datacenters binnen de EU of VS. Google is gecertificeerd onder het EU-US Data Privacy Framework.\n\nMeer informatie: https://firebase.google.com/support/privacy",
+        "subtitle2": "7.2 Mollie (Betalingen)",
+        "content2": "Wij gebruiken Mollie voor het verwerken van betalingen. Wanneer je credits koopt, worden je betalingsgegevens rechtstreeks door Mollie verwerkt. Wij ontvangen alleen een bevestiging van de betaling, niet je volledige betaalgegevens.\n\nMollie is gevestigd in Nederland en verwerkt data conform de AVG.\n\nMeer informatie: https://www.mollie.com/nl/privacy",
+        "subtitle3": "7.3 AI-Providers",
+        "content3": "Voor het genereren van CV-content gebruiken wij AI-modellen via jouw eigen API-sleutel. De volgende providers worden ondersteund:\n\n• OpenAI (ChatGPT, GPT-4)\n• Anthropic (Claude)\n• Google (Gemini)\n\nWanneer je content genereert, wordt je profieldata en de vacaturetekst naar de door jou gekozen AI-provider gestuurd. Deze verwerking valt onder het privacybeleid en de voorwaarden van de betreffende provider.\n\nWij raden aan het privacybeleid van je gekozen AI-provider te lezen voordat je de dienst gebruikt."
+      },
+      "cookies": {
+        "title": "8. Cookies en Lokale Opslag",
+        "content": "CVeetje maakt beperkt gebruik van cookies en lokale opslag:\n\n• Essentiële cookies: Voor het functioneren van de website en het onthouden van je inlogstatus. Deze zijn strikt noodzakelijk en vereisen geen toestemming.\n\n• Voorkeuren: Je taalvoorkeur en thema-instelling (licht/donker) worden lokaal opgeslagen in je browser.\n\n• Authenticatie: Firebase plaatst cookies voor het beheren van je inlogsessie.\n\nWij gebruiken geen tracking cookies of advertentiecookies. Wij delen geen cookie-data met derden voor marketingdoeleinden.\n\nJe kunt cookies blokkeren via je browserinstellingen, maar dit kan de functionaliteit van de website beperken."
+      },
+      "dataRetention": {
+        "title": "9. Bewaartermijnen",
+        "content": "Wij bewaren je gegevens niet langer dan noodzakelijk:\n\n• Accountgegevens: Worden bewaard zolang je account actief is. Bij verwijdering van je account worden je gegevens binnen 30 dagen definitief verwijderd.\n\n• Profielgegevens: Worden bewaard zolang je ze opslaat in je account. Je kunt profielen op elk moment zelf verwijderen.\n\n• Gegenereerde CV's: Worden bewaard in je account totdat je ze verwijdert of je account beëindigt.\n\n• Transactiegegevens: Worden conform wettelijke vereisten (belastingwetgeving) 7 jaar bewaard.\n\n• Loggegevens: Worden na 90 dagen geanonimiseerd of verwijderd."
+      },
+      "yourRights": {
+        "title": "10. Jouw Rechten",
+        "content": "Onder de AVG (GDPR) heb je de volgende rechten met betrekking tot je persoonsgegevens:\n\n• Recht op inzage: Je kunt opvragen welke gegevens wij van je verwerken.\n\n• Recht op rectificatie: Je kunt onjuiste gegevens laten corrigeren.\n\n• Recht op verwijdering: Je kunt verzoeken om verwijdering van je gegevens (\"recht om vergeten te worden\").\n\n• Recht op beperking: Je kunt verzoeken de verwerking van je gegevens te beperken.\n\n• Recht op overdraagbaarheid: Je kunt je gegevens in een gestructureerd formaat opvragen om over te dragen aan een andere dienst.\n\n• Recht van bezwaar: Je kunt bezwaar maken tegen verwerking op basis van gerechtvaardigd belang.\n\n• Recht om toestemming in te trekken: Je kunt eerder gegeven toestemming op elk moment intrekken.\n\nVoor het uitoefenen van deze rechten kun je contact met ons opnemen via support@cveetje.nl. Wij reageren binnen 30 dagen op je verzoek.\n\nJe hebt ook het recht om een klacht in te dienen bij de Autoriteit Persoonsgegevens (https://autoriteitpersoonsgegevens.nl)."
+      },
+      "dataTransfers": {
+        "title": "11. Internationale Doorgifte",
+        "content": "Je gegevens kunnen worden verwerkt buiten de Europese Economische Ruimte (EER), met name:\n\n• Door Firebase/Google (VS): Google is gecertificeerd onder het EU-US Data Privacy Framework en maakt gebruik van Standard Contractual Clauses (SCC's).\n\n• Door AI-providers (VS): OpenAI, Anthropic en Google zijn allen gevestigd in de VS. Verwerking vindt plaats met jouw eigen API-sleutel en onder de voorwaarden van de betreffende provider.\n\nWij nemen passende maatregelen om een adequaat beschermingsniveau te waarborgen conform hoofdstuk V van de AVG."
+      },
+      "security": {
+        "title": "12. Beveiliging",
+        "content": "Wij nemen de beveiliging van je gegevens serieus en hebben passende technische en organisatorische maatregelen getroffen:\n\n• Versleuteling: Alle data wordt versleuteld verzonden (HTTPS/TLS). API-sleutels worden versleuteld opgeslagen met AES-256 encryptie.\n\n• Toegangscontrole: Alleen geautoriseerd personeel heeft toegang tot systemen met persoonsgegevens.\n\n• Infrastructuur: Wij maken gebruik van beveiligde cloudinfrastructuur (Google Cloud/Firebase) met enterprise-grade beveiliging.\n\n• Wachtwoorden: Wachtwoorden worden gehasht opgeslagen en zijn niet in platte tekst toegankelijk.\n\nOndanks deze maatregelen kan geen enkele methode van gegevensoverdracht of opslag 100% veilig worden gegarandeerd. Als je vermoedt dat je gegevens zijn gecompromitteerd, neem dan onmiddellijk contact met ons op."
+      },
+      "children": {
+        "title": "13. Kinderen",
+        "content": "CVeetje is niet bedoeld voor kinderen jonger dan 16 jaar. Wij verzamelen niet bewust persoonsgegevens van kinderen onder deze leeftijd.\n\nAls je ouder of voogd bent en ontdekt dat je kind gegevens aan ons heeft verstrekt zonder jouw toestemming, neem dan contact met ons op. Wij zullen de gegevens onmiddellijk verwijderen."
+      },
+      "changes": {
+        "title": "14. Wijzigingen in dit Privacybeleid",
+        "content": "Wij kunnen dit privacybeleid van tijd tot tijd bijwerken om wijzigingen in onze praktijken of om juridische redenen weer te geven.\n\nBij significante wijzigingen zullen wij:\n\n• De \"laatst bijgewerkt\" datum bovenaan dit beleid aanpassen\n• Je per e-mail informeren als je een account hebt\n• Een melding tonen in de applicatie\n\nWij raden aan dit privacybeleid regelmatig te raadplegen. Voortgezet gebruik van de dienst na wijzigingen houdt acceptatie van het bijgewerkte beleid in."
+      },
+      "contact": {
+        "title": "15. Contact",
+        "content": "Voor vragen, opmerkingen of verzoeken met betrekking tot dit privacybeleid of de verwerking van je persoonsgegevens kun je contact met ons opnemen:\n\nE-mail: support@cveetje.nl\n\nWij streven ernaar binnen 5 werkdagen te reageren op algemene vragen en binnen 30 dagen op verzoeken met betrekking tot je rechten onder de AVG."
       }
     }
   }

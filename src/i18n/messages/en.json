@@ -457,6 +457,10 @@
     "terms": {
       "title": "Terms of Service",
       "description": "Read our terms of service for using CVeetje"
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "Read our privacy policy about how we process your data"
     }
   },
   "terms": {
@@ -533,6 +537,82 @@
       "severability": {
         "title": "14. Severability",
         "content": "If any provision of these Terms is declared invalid or unenforceable, the remaining provisions shall remain in full force and effect. The invalid provision shall be replaced by a valid provision that most closely approximates the original intent."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: {date}",
+    "sections": {
+      "introduction": {
+        "title": "1. Introduction",
+        "content": "CVeetje (\"we\", \"us\" or \"our\") respects your privacy and is committed to protecting your personal data. This privacy policy explains how we collect, use, store and protect your data when you use our website and services.\n\nThis policy applies to all users of CVeetje, including visitors to our website and registered users of our service.\n\nBy using CVeetje, you agree to the processing of your data as described in this privacy policy."
+      },
+      "dataController": {
+        "title": "2. Data Controller",
+        "content": "CVeetje is the data controller for the personal data collected through our service.\n\nContact details:\nEmail: support@cveetje.nl\n\nFor questions about this privacy policy or the processing of your personal data, you can contact us at the email address above."
+      },
+      "dataCollection": {
+        "title": "3. What Data We Collect",
+        "subtitle1": "3.1 Account Data",
+        "content1": "When you create an account, we collect:\n\n• Email address\n• Name (if provided)\n• Profile photo (if you sign in via Google or Apple)\n• Password (stored encrypted)\n\nIf you sign in via Google or Apple, we receive certain profile data from these services in accordance with their privacy policies.",
+        "subtitle2": "3.2 Profile Data for CVs",
+        "content2": "To generate CVs, we collect the information you enter:\n\n• Personal details (name, contact information, location)\n• Work experience and job descriptions\n• Education and certifications\n• Skills and competencies\n• Profile photos you upload\n• LinkedIn profile data (if you paste or import it)\n• Screenshots or documents of old CVs\n\nYou determine what information you enter. We recommend only sharing information that is relevant to your CV.",
+        "subtitle3": "3.3 Usage Data",
+        "content3": "We automatically collect certain information about your use of the service:\n\n• IP address and device information\n• Browser type and version\n• Pages you visit and features you use\n• Date and time of your visits\n• Referrer information (how you came to us)\n\nThis data is anonymized for analytical purposes."
+      },
+      "dataUsage": {
+        "title": "4. How We Use Your Data",
+        "content": "We use your data for the following purposes:\n\n• Providing our service: Generating CVs, cover letters and LinkedIn content based on your profile data.\n\n• Account management: Creating and managing your account, processing payments, and tracking your credit balance.\n\n• Communication: Sending important service messages, such as purchase confirmations or changes to our terms.\n\n• Improving the service: Analyzing usage patterns to improve our service (anonymized data only).\n\n• Fraud prevention: Detecting and preventing fraudulent or unauthorized use.\n\n• Legal obligations: Complying with legal obligations, such as tax administration for payments."
+      },
+      "legalBasis": {
+        "title": "5. Legal Basis for Processing",
+        "content": "We process your personal data based on the following legal grounds (in accordance with GDPR):\n\n• Performance of a contract: Processing is necessary for providing the service you requested (Article 6(1)(b) GDPR).\n\n• Consent: For certain processing we ask for your explicit consent, for example for storing your profile data (Article 6(1)(a) GDPR).\n\n• Legitimate interest: For improving our service and preventing fraud, taking into account your interests and rights (Article 6(1)(f) GDPR).\n\n• Legal obligation: For complying with legal obligations, such as tax legislation (Article 6(1)(c) GDPR)."
+      },
+      "dataSharing": {
+        "title": "6. Data Sharing",
+        "content": "We do not sell your personal data to third parties. We only share your data in the following situations:\n\n• With service providers: See section 7 for an overview of the external services we use.\n\n• With AI providers: When you generate a CV, your profile data is processed by the AI provider whose API key you provided (such as OpenAI, Anthropic or Google). This happens directly with your own API key.\n\n• When legally required: If we are legally obligated to do so, for example by a court order.\n\n• In case of business transfer: In the event of a merger, acquisition or sale of assets, your data may be transferred to the new owner."
+      },
+      "thirdPartyServices": {
+        "title": "7. Third-Party Services",
+        "subtitle1": "7.1 Firebase (Google Cloud)",
+        "content1": "We use Firebase from Google for:\n\n• Authentication (login and account management)\n• Database (storage of your profiles and CVs)\n• Hosting of certain services\n\nFirebase processes data in accordance with Google's privacy policy. Data may be stored in data centers within the EU or US. Google is certified under the EU-US Data Privacy Framework.\n\nMore information: https://firebase.google.com/support/privacy",
+        "subtitle2": "7.2 Mollie (Payments)",
+        "content2": "We use Mollie for processing payments. When you purchase credits, your payment details are processed directly by Mollie. We only receive confirmation of payment, not your full payment details.\n\nMollie is based in the Netherlands and processes data in accordance with GDPR.\n\nMore information: https://www.mollie.com/en/privacy",
+        "subtitle3": "7.3 AI Providers",
+        "content3": "For generating CV content, we use AI models via your own API key. The following providers are supported:\n\n• OpenAI (ChatGPT, GPT-4)\n• Anthropic (Claude)\n• Google (Gemini)\n\nWhen you generate content, your profile data and job posting text are sent to your chosen AI provider. This processing falls under the privacy policy and terms of the respective provider.\n\nWe recommend reading the privacy policy of your chosen AI provider before using the service."
+      },
+      "cookies": {
+        "title": "8. Cookies and Local Storage",
+        "content": "CVeetje makes limited use of cookies and local storage:\n\n• Essential cookies: For the functioning of the website and remembering your login status. These are strictly necessary and do not require consent.\n\n• Preferences: Your language preference and theme setting (light/dark) are stored locally in your browser.\n\n• Authentication: Firebase places cookies for managing your login session.\n\nWe do not use tracking cookies or advertising cookies. We do not share cookie data with third parties for marketing purposes.\n\nYou can block cookies via your browser settings, but this may limit the functionality of the website."
+      },
+      "dataRetention": {
+        "title": "9. Data Retention",
+        "content": "We do not retain your data longer than necessary:\n\n• Account data: Retained as long as your account is active. Upon deletion of your account, your data is permanently deleted within 30 days.\n\n• Profile data: Retained as long as you save them in your account. You can delete profiles yourself at any time.\n\n• Generated CVs: Retained in your account until you delete them or terminate your account.\n\n• Transaction data: Retained for 7 years in accordance with legal requirements (tax legislation).\n\n• Log data: Anonymized or deleted after 90 days."
+      },
+      "yourRights": {
+        "title": "10. Your Rights",
+        "content": "Under the GDPR, you have the following rights regarding your personal data:\n\n• Right of access: You can request what data we process about you.\n\n• Right to rectification: You can have incorrect data corrected.\n\n• Right to erasure: You can request deletion of your data (\"right to be forgotten\").\n\n• Right to restriction: You can request restriction of the processing of your data.\n\n• Right to portability: You can request your data in a structured format to transfer to another service.\n\n• Right to object: You can object to processing based on legitimate interest.\n\n• Right to withdraw consent: You can withdraw previously given consent at any time.\n\nTo exercise these rights, you can contact us at support@cveetje.nl. We will respond to your request within 30 days.\n\nYou also have the right to file a complaint with the Dutch Data Protection Authority (https://autoriteitpersoonsgegevens.nl) or your local supervisory authority."
+      },
+      "dataTransfers": {
+        "title": "11. International Transfers",
+        "content": "Your data may be processed outside the European Economic Area (EEA), specifically:\n\n• By Firebase/Google (US): Google is certified under the EU-US Data Privacy Framework and uses Standard Contractual Clauses (SCCs).\n\n• By AI providers (US): OpenAI, Anthropic and Google are all based in the US. Processing takes place with your own API key and under the terms of the respective provider.\n\nWe take appropriate measures to ensure an adequate level of protection in accordance with Chapter V of the GDPR."
+      },
+      "security": {
+        "title": "12. Security",
+        "content": "We take the security of your data seriously and have implemented appropriate technical and organizational measures:\n\n• Encryption: All data is transmitted encrypted (HTTPS/TLS). API keys are stored encrypted with AES-256 encryption.\n\n• Access control: Only authorized personnel have access to systems containing personal data.\n\n• Infrastructure: We use secure cloud infrastructure (Google Cloud/Firebase) with enterprise-grade security.\n\n• Passwords: Passwords are stored hashed and are not accessible in plain text.\n\nDespite these measures, no method of data transmission or storage can be guaranteed to be 100% secure. If you suspect your data has been compromised, please contact us immediately."
+      },
+      "children": {
+        "title": "13. Children",
+        "content": "CVeetje is not intended for children under 16 years of age. We do not knowingly collect personal data from children under this age.\n\nIf you are a parent or guardian and discover that your child has provided us with data without your consent, please contact us. We will immediately delete the data."
+      },
+      "changes": {
+        "title": "14. Changes to This Privacy Policy",
+        "content": "We may update this privacy policy from time to time to reflect changes in our practices or for legal reasons.\n\nIn case of significant changes, we will:\n\n• Update the \"last updated\" date at the top of this policy\n• Inform you by email if you have an account\n• Show a notification in the application\n\nWe recommend regularly reviewing this privacy policy. Continued use of the service after changes constitutes acceptance of the updated policy."
+      },
+      "contact": {
+        "title": "15. Contact",
+        "content": "For questions, comments or requests regarding this privacy policy or the processing of your personal data, you can contact us:\n\nEmail: support@cveetje.nl\n\nWe aim to respond to general questions within 5 business days and to requests regarding your rights under GDPR within 30 days."
       }
     }
   }
