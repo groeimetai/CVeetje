@@ -14,15 +14,33 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'CVeetje - AI-Powered CV Builder',
+  title: {
+    default: 'CVeetje - AI-Powered CV Builder',
+    template: '%s | CVeetje',
+  },
   description: 'Create professional, tailored CVs from your LinkedIn profile in minutes. AI-powered CV generation with job-specific optimization.',
-  keywords: ['CV builder', 'resume builder', 'AI CV', 'LinkedIn CV', 'professional CV'],
-  authors: [{ name: 'CVeetje' }],
+  keywords: ['CV builder', 'resume builder', 'AI CV', 'LinkedIn CV', 'professional CV', 'CV generator', 'sollicitatie'],
+  authors: [{ name: 'CVeetje', url: 'https://cveetje.nl' }],
+  creator: 'CVeetje',
+  publisher: 'CVeetje',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://cveetje.nl'),
   openGraph: {
     title: 'CVeetje - AI-Powered CV Builder',
     description: 'Create professional, tailored CVs from your LinkedIn profile in minutes.',
     type: 'website',
+    siteName: 'CVeetje',
+    locale: 'nl_NL',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CVeetje - AI-Powered CV Builder',
+    description: 'Create professional, tailored CVs from your LinkedIn profile in minutes.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

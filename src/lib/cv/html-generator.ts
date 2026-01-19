@@ -459,12 +459,17 @@ function generateHeader(
 
   // For split header, structure is different
   if (tokens.headerVariant === 'split') {
+    // When photo is present, wrap name/headline in a container for proper flex layout
+    const nameHeadlineContent = `
+      <h1 class="name" style="${nameStyle}">${escapeHtml(fullName)}</h1>
+      ${headline ? `<p class="headline" style="${headlineStyle}">${escapeHtml(headline)}</p>` : ''}
+    `;
+
     return `
     <header class="cv-header ${photoClass}" style="${headerStyle}">
       <div class="header-left">
         ${avatarUrl && tokens.showPhoto ? generateAvatar(avatarUrl, tokens.roundedCorners) : ''}
-        <h1 class="name" style="${nameStyle}">${escapeHtml(fullName)}</h1>
-        ${headline ? `<p class="headline" style="${headlineStyle}">${escapeHtml(headline)}</p>` : ''}
+        ${avatarUrl && tokens.showPhoto ? `<div class="header-info">${nameHeadlineContent}</div>` : nameHeadlineContent}
       </div>
       <div class="header-right">
         ${contactHtml}

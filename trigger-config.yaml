@@ -1,0 +1,10 @@
+name: cveetje-deploy
+description: Deploy CVeetje to Cloud Run on push to main
+repositoryEventConfig:
+  repository: projects/cveetje/locations/europe-west4/connections/cveetje-github/repositories/cveetje-repo
+  repositoryType: GITHUB
+  push:
+    branch: ^main$
+filename: cloudbuild.yaml
+substitutions:
+  _REGION: europe-west4

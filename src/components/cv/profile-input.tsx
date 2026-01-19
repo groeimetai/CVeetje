@@ -324,6 +324,50 @@ export function ProfileInput({
     }
   };
 
+  // Update current profile (when selectedProfileId is set)
+  const handleUpdateCurrentProfile = async () => {
+    if (!selectedProfileId || !parsed) return;
+
+    setIsSavingProfile(true);
+    try {
+      const response = await fetch(`/api/profiles/${selectedProfileId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parsedData: parsed,
+          avatarUrl: avatarUrl || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Kon profiel niet bijwerken');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        // Update local list
+        setSavedProfiles(prev => prev.map(p =>
+          p.id === selectedProfileId
+            ? {
+                ...p,
+                headline: parsed.headline || null,
+                experienceCount: parsed.experience?.length || 0,
+                avatarUrl: avatarUrl || null,
+                updatedAt: new Date(),
+              }
+            : p
+        ));
+        setError(null);
+      }
+    } catch (err) {
+      console.error('[Profile Update] Error:', err);
+      setError(err instanceof Error ? err.message : 'Kon profiel niet bijwerken');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   // Check if file input is supported by the model
   const fileInputSupported = modelInfo ? supportsFileInput(modelInfo) : false;
 
@@ -1198,10 +1242,30 @@ export function ProfileInput({
               </Button>
             )}
             {selectedProfileId && (
-              <Badge variant="secondary" className="py-1.5 px-3">
-                <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
-                Opgeslagen profiel
-              </Badge>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleUpdateCurrentProfile}
+                  disabled={isSavingProfile}
+                >
+                  {isSavingProfile ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Profiel bijwerken
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSaveProfileName(parsed?.fullName || '');
+                    setShowSaveDialog(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Als nieuw opslaan
+                </Button>
+              </>
             )}
             <Button variant="ghost" onClick={handleReset}>
               <RefreshCw className="h-4 w-4 mr-2" />

@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useCallback,
   ReactNode,
 } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -20,6 +21,7 @@ interface AuthContextType {
   loading: boolean;
   refreshCredits: () => Promise<void>;
   refreshUserData: () => Promise<void>;
+  refreshToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +31,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [credits, setCredits] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Helper to set the token cookie
+  const setTokenCookie = useCallback((token: string) => {
+    // Set cookie to expire in 55 minutes (before the 1 hour Firebase token expiry)
+    document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
+  }, []);
+
+  // Refresh the Firebase token and update the cookie
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    if (!firebaseUser) return null;
+    try {
+      // Force refresh to get a new token
+      const token = await firebaseUser.getIdToken(true);
+      setTokenCookie(token);
+      return token;
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      return null;
+    }
+  }, [firebaseUser, setTokenCookie]);
 
   const refreshUserData = async () => {
     if (firebaseUser) {
@@ -47,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Auth state change listener
   useEffect(() => {
     const unsubscribe = onAuthStateChange(async (user) => {
       setFirebaseUser(user);
@@ -55,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Get and store the ID token as a cookie for API routes
         try {
           const token = await user.getIdToken();
-          document.cookie = `firebase-token=${token}; path=/; max-age=3600; SameSite=Strict`;
+          setTokenCookie(token);
         } catch (error) {
           console.error('Failed to get ID token:', error);
         }
@@ -80,7 +103,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [setTokenCookie]);
+
+  // Automatic token refresh every 50 minutes (before the 1 hour expiry)
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    const refreshInterval = setInterval(async () => {
+      console.log('[Auth] Auto-refreshing token...');
+      await refreshToken();
+    }, 50 * 60 * 1000); // 50 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [firebaseUser, refreshToken]);
 
   return (
     <AuthContext.Provider
@@ -91,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         refreshCredits,
         refreshUserData,
+        refreshToken,
       }}
     >
       {children}

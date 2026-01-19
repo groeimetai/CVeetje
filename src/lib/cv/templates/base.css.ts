@@ -131,6 +131,18 @@ export const headerVariants = {
       border-bottom: 1px solid var(--color-border);
     }
 
+    /* Simple with photo - flex layout */
+    .cv-header.with-photo {
+      display: flex;
+      gap: var(--space-item);
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .cv-header.with-photo .header-content {
+      flex: 1;
+    }
+
     .cv-header h1.name {
       font-size: var(--size-name);
       font-weight: 700;
@@ -166,6 +178,18 @@ export const headerVariants = {
       margin-bottom: var(--space-section);
       border-left: 4px solid var(--color-accent);
       padding-left: var(--space-item);
+    }
+
+    /* Accented with photo - flex layout */
+    .cv-header.with-photo {
+      display: flex;
+      gap: var(--space-item);
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .cv-header.with-photo .header-content {
+      flex: 1;
     }
 
     .cv-header h1.name {
@@ -204,6 +228,22 @@ export const headerVariants = {
       color: #ffffff;
       margin-bottom: var(--space-section);
       padding: var(--space-section) var(--space-page);
+    }
+
+    /* Banner with photo - flex layout */
+    .cv-header.with-photo {
+      display: flex;
+      gap: var(--space-item);
+      align-items: flex-start;
+    }
+
+    .cv-header.with-photo .header-content {
+      flex: 1;
+    }
+
+    /* Banner avatar styling */
+    .cv-header .avatar-container {
+      border: 2px solid rgba(255, 255, 255, 0.3);
     }
 
     .cv-header h1.name {
@@ -284,6 +324,18 @@ export const headerVariants = {
     }
 
     .cv-header .header-left {
+      flex: 1;
+    }
+
+    /* With photo: use flex for avatar + info layout */
+    .cv-header.with-photo .header-left {
+      display: flex;
+      gap: var(--space-item);
+      align-items: flex-start;
+    }
+
+    /* Header info container (wraps name + headline when photo present) */
+    .cv-header .header-info {
       flex: 1;
     }
 
@@ -589,7 +641,12 @@ export const photoStyles = `
     object-fit: cover;
   }
 
-  /* Photo in header */
+  /* Header content - works with or without photo */
+  .cv-header .header-content {
+    width: 100%;
+  }
+
+  /* Photo in header - flexbox layout when photo present */
   .cv-header.with-photo {
     display: flex;
     gap: var(--space-item);
@@ -598,6 +655,7 @@ export const photoStyles = `
 
   .cv-header.with-photo .header-content {
     flex: 1;
+    width: auto;
   }
 
   .cv-header.with-photo .avatar-container {
@@ -606,6 +664,11 @@ export const photoStyles = `
 
   .cv-header.with-photo.photo-right .avatar-container {
     order: 1;
+  }
+
+  /* Split header adjustments for no-photo */
+  .cv-header:not(.with-photo) .header-left {
+    flex: 1;
   }
 `;
 

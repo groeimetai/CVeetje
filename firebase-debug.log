@@ -1,0 +1,470 @@
+[debug] [2026-01-17T12:37:53.353Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T12:37:53.355Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T12:37:53.356Z] Checked if tokens are valid: false, expires at: 1768604264381
+[debug] [2026-01-17T12:37:53.356Z] Checked if tokens are valid: false, expires at: 1768604264381
+[debug] [2026-01-17T12:37:53.356Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T12:37:53.357Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T12:37:53.357Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T12:37:53.365Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T12:37:53.366Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T12:37:53.366Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T12:37:53.366Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T12:37:53.366Z] Checked if tokens are valid: false, expires at: 1768604264381
+[debug] [2026-01-17T12:37:53.366Z] Checked if tokens are valid: false, expires at: 1768604264381
+[debug] [2026-01-17T12:37:53.366Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T12:37:53.367Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T12:37:53.367Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T12:37:53.368Z] Checked if tokens are valid: false, expires at: 1768604264381
+[debug] [2026-01-17T12:37:53.368Z] Checked if tokens are valid: false, expires at: 1768604264381
+[debug] [2026-01-17T12:37:53.368Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T12:37:53.368Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T12:37:53.368Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T12:37:53.432Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-17T12:37:53.432Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T12:37:53.486Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo [none]
+[debug] [2026-01-17T12:37:53.488Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-17T12:37:53.489Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T12:37:53.501Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo [none]
+[debug] [2026-01-17T12:37:53.503Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-01-17T12:37:53.503Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T12:37:53.512Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo [none]
+[debug] [2026-01-17T12:37:54.248Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo 200
+[debug] [2026-01-17T12:37:54.248Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo {"name":"projects/cveetje/billingInfo","projectId":"cveetje","billingAccountName":"billingAccounts/01D5DB-6EA155-296B0F","billingEnabled":true}
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.253Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.259Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.259Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.259Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.259Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.259Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.259Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.260Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.260Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.261Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.261Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.261Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.261Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.262Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.262Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.262Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.263Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.263Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.263Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.264Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com [none]
+[debug] [2026-01-17T12:37:54.264Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.277Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo 200
+[debug] [2026-01-17T12:37:54.277Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo {"name":"projects/cveetje/billingInfo","projectId":"cveetje","billingAccountName":"billingAccounts/01D5DB-6EA155-296B0F","billingEnabled":true}
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.278Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.280Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.280Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.280Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.280Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.280Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.280Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.281Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.281Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.281Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.281Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.282Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.282Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.282Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.282Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.283Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.283Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.283Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.283Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.283Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com [none]
+[debug] [2026-01-17T12:37:54.283Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.560Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo 200
+[debug] [2026-01-17T12:37:54.560Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo {"name":"projects/cveetje/billingInfo","projectId":"cveetje","billingAccountName":"billingAccounts/01D5DB-6EA155-296B0F","billingEnabled":true}
+[debug] [2026-01-17T12:37:54.560Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.560Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.560Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.560Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.561Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.562Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.562Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.563Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.563Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:54.563Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.563Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.563Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.563Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.564Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.564Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.564Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.564Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.564Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.564Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.565Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.565Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.565Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-01-17T12:37:54.565Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.565Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com [none]
+[debug] [2026-01-17T12:37:54.565Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com x-goog-quota-user=projects/cveetje
+[debug] [2026-01-17T12:37:54.975Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com 403
+[debug] [2026-01-17T12:37:54.975Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com [omitted]
+[debug] [2026-01-17T12:37:55.141Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com 200
+[debug] [2026-01-17T12:37:55.141Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.161Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-01-17T12:37:55.161Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.161Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-01-17T12:37:55.161Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.162Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com 200
+[debug] [2026-01-17T12:37:55.162Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.238Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2026-01-17T12:37:55.239Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.252Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com 200
+[debug] [2026-01-17T12:37:55.252Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.257Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com 200
+[debug] [2026-01-17T12:37:55.258Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.607Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com 403
+[debug] [2026-01-17T12:37:55.607Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com [omitted]
+[debug] [2026-01-17T12:37:55.627Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com 403
+[debug] [2026-01-17T12:37:55.627Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseio.com [omitted]
+[debug] [2026-01-17T12:37:55.895Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-01-17T12:37:55.895Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.903Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-01-17T12:37:55.903Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.904Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com 200
+[debug] [2026-01-17T12:37:55.904Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.944Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com 200
+[debug] [2026-01-17T12:37:55.944Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/fcm.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.976Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T12:37:55.976Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T12:37:55.977Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:55.977Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:55.977Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo [none]
+[debug] [2026-01-17T12:37:55.978Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com 200
+[debug] [2026-01-17T12:37:55.978Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.986Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-01-17T12:37:55.986Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.986Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com 200
+[debug] [2026-01-17T12:37:55.986Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.986Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2026-01-17T12:37:55.986Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.997Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com 200
+[debug] [2026-01-17T12:37:55.997Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebasedataconnect.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:55.997Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com 200
+[debug] [2026-01-17T12:37:55.997Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firebaseremoteconfig.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:56.003Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com 200
+[debug] [2026-01-17T12:37:56.003Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:56.008Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com 200
+[debug] [2026-01-17T12:37:56.008Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/firestore.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:56.014Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com 200
+[debug] [2026-01-17T12:37:56.014Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:56.152Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo 200
+[debug] [2026-01-17T12:37:56.152Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo {"name":"projects/cveetje/billingInfo","projectId":"cveetje","billingAccountName":"billingAccounts/01D5DB-6EA155-296B0F","billingEnabled":true}
+[debug] [2026-01-17T12:37:56.153Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T12:37:56.153Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T12:37:56.807Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com 200
+[debug] [2026-01-17T12:37:56.807Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/cveetje/services/identitytoolkit.googleapis.com [omitted]
+[debug] [2026-01-17T12:37:56.839Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T12:37:56.839Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T12:37:56.839Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:56.839Z] Checked if tokens are valid: true, expires at: 1768657072503
+[debug] [2026-01-17T12:37:56.839Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo [none]
+[debug] [2026-01-17T12:37:57.486Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo 200
+[debug] [2026-01-17T12:37:57.486Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/cveetje/billingInfo {"name":"projects/cveetje/billingInfo","projectId":"cveetje","billingAccountName":"billingAccounts/01D5DB-6EA155-296B0F","billingEnabled":true}
+[debug] [2026-01-17T12:37:57.487Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T12:37:57.487Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T15:49:41.939Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T15:49:41.940Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T15:49:41.940Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T15:49:41.940Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T15:49:41.941Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T15:49:41.941Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T15:49:41.941Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T15:49:41.942Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T15:49:41.942Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T15:49:41.943Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T15:49:41.943Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T15:49:41.943Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T15:49:41.943Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T15:49:41.943Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T15:49:41.944Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T15:49:41.944Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T15:49:41.944Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T15:49:41.944Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T15:49:41.944Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T15:49:41.944Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T15:49:41.944Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T15:49:42.013Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-17T15:49:42.013Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-17T15:49:42.016Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-17T17:57:22.727Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T17:57:22.729Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T17:57:22.729Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T17:57:22.729Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T17:57:22.730Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T17:57:22.730Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T17:57:22.730Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T17:57:22.731Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T17:57:22.731Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T17:57:22.732Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T17:57:22.732Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T17:57:22.732Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T17:57:22.732Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T17:57:22.732Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T17:57:22.733Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T17:57:22.733Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T17:57:22.733Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T17:57:22.733Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T17:57:22.733Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T17:57:22.733Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T17:57:22.733Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T17:57:22.863Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-17T17:57:22.863Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-17T17:57:22.870Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-17T18:11:21.292Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T18:11:21.294Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T18:11:21.294Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T18:11:21.294Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T18:11:21.294Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T18:11:21.294Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T18:11:21.294Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T18:11:21.295Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T18:11:21.295Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T18:11:21.296Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T18:11:21.296Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T18:11:21.296Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T18:11:21.297Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T18:11:21.297Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T18:11:21.297Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-17T18:11:21.297Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-17T18:11:21.297Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T18:11:21.297Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-17T18:11:21.299Z] > refreshing access token with scopes: []
+[debug] [2026-01-17T18:11:21.300Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-17T18:11:21.300Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-17T18:11:21.360Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-17T18:11:21.361Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-17T18:11:21.370Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-17T18:11:21.370Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-17T18:11:21.371Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:06:46.436Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:06:46.437Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:06:46.438Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:06:46.438Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:06:46.438Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:06:46.439Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:06:46.439Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:06:46.447Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:06:46.448Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:06:46.448Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:06:46.448Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:06:46.448Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:06:46.448Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:06:46.448Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:06:46.448Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:06:46.448Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:06:46.449Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:06:46.449Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:06:46.449Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:06:46.450Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:06:46.450Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:06:46.526Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:27:26.533Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:27:26.534Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:27:26.535Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:27:26.535Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:27:26.535Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:27:26.535Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:27:26.535Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:27:26.536Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:27:26.536Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:27:26.537Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:27:26.537Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:27:26.537Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:27:26.537Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:27:26.537Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:27:26.538Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:27:26.538Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:27:26.538Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:27:26.538Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:27:26.538Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:27:26.538Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:27:26.538Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:27:26.690Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:27:26.690Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T09:27:26.691Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:27:26.691Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T09:27:26.692Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:36:52.452Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:36:52.453Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:36:52.454Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:36:52.454Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:36:52.454Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:36:52.454Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:36:52.454Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:36:52.455Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:36:52.455Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:36:52.456Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:36:52.456Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:36:52.456Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:36:52.456Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:36:52.457Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:36:52.457Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:36:52.457Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:36:52.457Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:36:52.457Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:36:52.457Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:36:52.458Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:36:52.458Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:36:52.531Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:36:52.531Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T09:36:52.532Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:36:52.532Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T09:36:52.547Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:53:04.554Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:53:04.556Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:53:04.556Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:53:04.556Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:53:04.556Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:53:04.557Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:53:04.557Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:53:04.557Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:53:04.558Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:53:04.559Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:53:04.559Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:53:04.559Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:53:04.559Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:53:04.559Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:53:04.560Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T09:53:04.560Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T09:53:04.560Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:53:04.560Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T09:53:04.560Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T09:53:04.560Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T09:53:04.560Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T09:53:04.621Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:53:04.621Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T09:53:04.625Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T09:53:04.625Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T09:53:04.640Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T15:15:31.526Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T15:15:31.528Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T15:15:31.529Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T15:15:31.529Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T15:15:31.529Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T15:15:31.529Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T15:15:31.530Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T15:15:31.534Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T15:15:31.534Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T15:15:31.534Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-18T15:15:31.535Z] > authorizing via signed-in user (niels@groeimetai.io)
+[debug] [2026-01-18T15:15:31.535Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T15:15:31.535Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T15:15:31.535Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T15:15:31.535Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T15:15:31.535Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T15:15:31.536Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T15:15:31.536Z] Checked if tokens are valid: false, expires at: 1768657072503
+[debug] [2026-01-18T15:15:31.536Z] > refreshing access token with scopes: []
+[debug] [2026-01-18T15:15:31.536Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-01-18T15:15:31.536Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-01-18T15:15:31.613Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T15:15:31.613Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T15:15:31.615Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-01-18T15:15:31.615Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-01-18T15:15:31.616Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400

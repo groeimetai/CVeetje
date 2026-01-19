@@ -50,6 +50,7 @@ export async function GET(
       name: data.name,
       description: data.description,
       parsedData: data.parsedData,
+      avatarUrl: data.avatarUrl || null,
       sourceInfo: data.sourceInfo,
       isDefault: data.isDefault,
       createdAt: data.createdAt instanceof Date ? data.createdAt : data.createdAt?.toDate?.() || new Date(),
@@ -97,7 +98,7 @@ export async function PUT(
 
     // Parse request body
     const body = await request.json();
-    const { name, description, parsedData, sourceInfo, isDefault } = body;
+    const { name, description, parsedData, avatarUrl, sourceInfo, isDefault } = body;
 
     const db = getAdminDb();
     const profileRef = db
@@ -140,6 +141,7 @@ export async function PUT(
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (parsedData !== undefined) updateData.parsedData = parsedData as ParsedLinkedIn;
+    if (avatarUrl !== undefined) (updateData as Record<string, unknown>).avatarUrl = avatarUrl;
     if (sourceInfo !== undefined) updateData.sourceInfo = sourceInfo;
     if (isDefault !== undefined) updateData.isDefault = isDefault;
 
@@ -157,6 +159,7 @@ export async function PUT(
         name: updatedData.name,
         description: updatedData.description,
         parsedData: updatedData.parsedData,
+        avatarUrl: updatedData.avatarUrl || null,
         sourceInfo: updatedData.sourceInfo,
         isDefault: updatedData.isDefault,
         createdAt: updatedData.createdAt instanceof Date ? updatedData.createdAt : updatedData.createdAt?.toDate?.() || new Date(),

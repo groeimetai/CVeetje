@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import {
   FileText,
   Sparkles,
@@ -14,10 +15,34 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { WebsiteStructuredData, FAQStructuredData } from '@/components/seo/structured-data';
+
+export const metadata: Metadata = {
+  title: 'CVeetje - Maak Professionele CVs met AI | LinkedIn naar CV in Minuten',
+  description: 'Transformeer je LinkedIn profiel naar een professioneel CV met AI. CVeetje analyseert vacatures en optimaliseert je CV automatisch. Start gratis met 5 credits per maand.',
+  keywords: [
+    'CV maken',
+    'CV builder',
+    'AI CV generator',
+    'LinkedIn CV',
+    'professioneel CV',
+    'CV template',
+    'sollicitatie',
+    'resume builder',
+    'Nederlands CV',
+    'gratis CV maker',
+  ],
+  alternates: {
+    canonical: '/',
+  },
+};
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
+      <WebsiteStructuredData />
+      <FAQStructuredData />
+      <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -354,5 +379,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

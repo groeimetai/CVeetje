@@ -13,11 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  FileText,
   Coins,
   Loader2,
-  Copy,
-  Check,
   Download,
   Sparkles,
   ChevronDown,
@@ -66,7 +63,6 @@ export function MotivationLetterSection({
   const [isGenerating, setIsGenerating] = useState(false);
   const [letter, setLetter] = useState<GeneratedMotivationLetter | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const placeholders = MOTIVATION_PLACEHOLDERS[language];
 
@@ -105,39 +101,12 @@ export function MotivationLetterSection({
     }
   };
 
-  const handleCopy = async () => {
-    if (!letter) return;
-
-    try {
-      await navigator.clipboard.writeText(letter.fullText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setError('Failed to copy to clipboard');
-    }
-  };
-
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState<string | null>(null);
 
-  const handleDownload = async (format: 'pdf' | 'docx' | 'txt') => {
+  const handleDownload = async (format: 'pdf' | 'docx') => {
     if (!letter) return;
 
-    // For TXT, handle client-side (faster)
-    if (format === 'txt') {
-      const blob = new Blob([letter.fullText], { type: 'text/plain;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `motivatiebrief-${new Date().toISOString().split('T')[0]}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      return;
-    }
-
-    // For PDF and DOCX, use API
     setIsDownloading(true);
     setDownloadFormat(format);
 
@@ -305,28 +274,9 @@ export function MotivationLetterSection({
 
               {/* Action buttons */}
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleCopy}
-                  className="flex-1 sm:flex-none"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="mr-2 h-4 w-4 text-green-500" />
-                      Gekopieerd!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="mr-2 h-4 w-4" />
-                      Kopieer tekst
-                    </>
-                  )}
-                </Button>
-
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
                       className="flex-1 sm:flex-none"
                       disabled={isDownloading}
                     >
@@ -363,20 +313,11 @@ export function MotivationLetterSection({
                         </span>
                       </div>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDownload('txt')}>
-                      <FileText className="mr-2 h-4 w-4 text-gray-500" />
-                      <div className="flex flex-col">
-                        <span className="font-medium">Tekst (.txt)</span>
-                        <span className="text-xs text-muted-foreground">
-                          Platte tekst zonder opmaak
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => {
                     setLetter(null);
                     setPersonalMotivation('');
@@ -388,9 +329,9 @@ export function MotivationLetterSection({
                 </Button>
               </div>
 
-              {/* Tip */}
+              {/* Info */}
               <p className="text-xs text-muted-foreground text-center">
-                💡 Tip: Pas de brief aan naar je eigen stijl voordat je hem verstuurt.
+                Download de brief om deze te kunnen bewerken en versturen.
               </p>
             </div>
           )}
