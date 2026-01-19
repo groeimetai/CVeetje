@@ -10,6 +10,7 @@ import {
   Plus,
   LogOut,
   User,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,15 +29,16 @@ import { useRouter } from 'next/navigation';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'My CVs', href: '/cv', icon: FileText },
+  { name: 'Profielen', href: '/profiles', icon: Users },
+  { name: 'Mijn CVs', href: '/cv', icon: FileText },
   { name: 'Credits', href: '/credits', icon: CreditCard },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Instellingen', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { firebaseUser, userData, credits } = useAuth();
+  const { firebaseUser, userData, credits, freeCredits, purchasedCredits } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -69,7 +71,7 @@ export function Sidebar() {
         <Link href="/cv/new">
           <Button className="w-full mb-4" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            New CV
+            Nieuwe CV
           </Button>
         </Link>
 
@@ -96,11 +98,16 @@ export function Sidebar() {
       {/* Credit Display */}
       <div className="border-t px-3 py-4">
         <div className="rounded-md bg-accent/50 px-3 py-2">
-          <p className="text-xs text-muted-foreground">Available Credits</p>
+          <p className="text-xs text-muted-foreground">Beschikbare Credits</p>
           <p className="text-2xl font-bold">{credits}</p>
+          <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+            <span title="Maandelijkse gratis credits">{freeCredits} gratis</span>
+            <span>•</span>
+            <span title="Gekochte credits">{purchasedCredits} gekocht</span>
+          </div>
           <Link href="/credits">
-            <Button variant="link" size="sm" className="h-auto p-0 text-xs">
-              Get more credits
+            <Button variant="link" size="sm" className="h-auto p-0 text-xs mt-1">
+              Meer credits kopen
             </Button>
           </Link>
         </div>
@@ -129,13 +136,13 @@ export function Sidebar() {
             <DropdownMenuItem asChild>
               <Link href="/settings">
                 <User className="mr-2 h-4 w-4" />
-                Account Settings
+                Account Instellingen
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              Uitloggen
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
