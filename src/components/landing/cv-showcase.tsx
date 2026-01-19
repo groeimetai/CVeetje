@@ -1,6 +1,19 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  CheckCircle,
+  User,
+  Building2,
+  MapPin,
+  TrendingUp,
+  Target,
+  Shield,
+  Sparkles,
+  Zap,
+  Star,
+} from 'lucide-react';
 
 // Sample CV preview that mimics the actual generated CV style
 export function CVShowcase() {
@@ -170,8 +183,8 @@ export function CVShowcase() {
   );
 }
 
-// Dashboard mockup showing the wizard interface
-export function DashboardMockup() {
+// Profile Selection mockup showing saved profiles
+export function ProfileSelectionMockup() {
   return (
     <div className="bg-muted rounded-lg border shadow-xl overflow-hidden">
       {/* Browser top bar */}
@@ -188,71 +201,254 @@ export function DashboardMockup() {
         </div>
       </div>
 
-      {/* Dashboard content */}
+      {/* Content */}
       <div className="bg-background p-4 md:p-6">
-        {/* Wizard steps indicator */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">✓</div>
-            <span className="text-sm font-medium hidden sm:inline">Profiel</span>
-          </div>
-          <div className="w-8 h-0.5 bg-primary" />
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">✓</div>
-            <span className="text-sm font-medium hidden sm:inline">Vacature</span>
-          </div>
-          <div className="w-8 h-0.5 bg-primary" />
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">3</div>
-            <span className="text-sm font-medium hidden sm:inline">Stijl</span>
-          </div>
-          <div className="w-8 h-0.5 bg-muted-foreground/30" />
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-medium">4</div>
-            <span className="text-sm text-muted-foreground hidden sm:inline">Preview</span>
-          </div>
-        </div>
+        <Card className="max-w-md mx-auto">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              Kies je Profiel
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Selecteer een opgeslagen profiel of maak een nieuwe aan
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {/* Saved profiles */}
+            <div className="space-y-2">
+              {/* Selected profile */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-primary bg-primary/5">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-600">
+                  SJ
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm truncate">Sophie Jansen</span>
+                    <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Marketing Professional</span>
+                </div>
+                <CheckCircle className="h-5 w-5 text-primary" />
+              </div>
 
-        {/* Style generation card */}
-        <div className="bg-card rounded-lg border p-4 max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-lg">🎨</span>
-            </div>
-            <div>
-              <h4 className="font-semibold text-sm">Stijl Genereren</h4>
-              <p className="text-xs text-muted-foreground">AI maakt een unieke stijl voor jou</p>
-            </div>
-          </div>
+              {/* Other profiles */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-sm font-semibold text-green-600">
+                  SJ
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-sm truncate block">Sophie - Tech Focus</span>
+                  <span className="text-xs text-muted-foreground">Product Management</span>
+                </div>
+              </div>
 
-          {/* Style preview cards */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="aspect-[3/4] rounded border-2 border-primary bg-gradient-to-b from-[#1e3a5f] to-[#2d5a87] relative overflow-hidden">
-              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-white" />
-              <div className="absolute top-1 right-1">
-                <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center">
-                  <span className="text-[8px]">✓</span>
+              <div className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
+                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-sm font-semibold text-purple-600">
+                  SJ
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-sm truncate block">Sophie - Freelance</span>
+                  <span className="text-xs text-muted-foreground">Consultant</span>
                 </div>
               </div>
             </div>
-            <div className="aspect-[3/4] rounded border bg-gradient-to-b from-gray-700 to-gray-800 relative overflow-hidden opacity-60">
-              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-white" />
-            </div>
-            <div className="aspect-[3/4] rounded border bg-gradient-to-b from-emerald-600 to-emerald-700 relative overflow-hidden opacity-60">
-              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-white" />
-            </div>
-          </div>
 
-          <div className="flex gap-2">
-            <div className="flex-1 h-9 rounded bg-primary/10 flex items-center justify-center text-xs text-primary font-medium">
-              ↻ Regenereer
-            </div>
-            <div className="flex-1 h-9 rounded bg-primary flex items-center justify-center text-xs text-primary-foreground font-medium">
-              Verder →
-            </div>
-          </div>
-        </div>
+            {/* New profile button */}
+            <button className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed text-muted-foreground hover:text-foreground hover:border-primary transition-colors text-sm">
+              <span className="text-lg">+</span>
+              Nieuw profiel aanmaken
+            </button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
+}
+
+// Job Analysis mockup with salary estimate
+export function JobAnalysisMockup() {
+  return (
+    <div className="bg-muted rounded-lg border shadow-xl overflow-hidden">
+      {/* Browser top bar */}
+      <div className="bg-muted-foreground/10 px-4 py-2 flex items-center gap-2 border-b">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-400" />
+          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+          <div className="w-3 h-3 rounded-full bg-green-400" />
+        </div>
+        <div className="flex-1 mx-4">
+          <div className="bg-background rounded px-3 py-1 text-xs text-muted-foreground text-center">
+            cveetje.nl/dashboard
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="bg-background p-4 md:p-6">
+        <Card className="max-w-md mx-auto">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-base">Vacature geanalyseerd</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Job info */}
+            <div className="rounded-lg border p-3 space-y-2">
+              <h3 className="font-semibold">Senior Marketing Manager</h3>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Building2 className="h-4 w-4" />
+                TechCorp Nederland
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Amsterdam
+                </span>
+                <Badge variant="secondary" className="text-xs">Marketing</Badge>
+              </div>
+            </div>
+
+            {/* Keywords extracted */}
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Keywords gevonden</span>
+              <div className="flex flex-wrap gap-1">
+                {['Digital Marketing', 'SEO', 'Team Leadership', 'B2B', 'Analytics', 'Content'].map((kw) => (
+                  <Badge key={kw} variant="outline" className="text-xs">
+                    {kw}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Salary Estimate */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm">AI Salaris Inschatting</span>
+                <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                  Hoge betrouwbaarheid
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-lg">€65.000 - €85.000</span>
+                <span className="text-xs text-muted-foreground">/jaar</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Gebaseerd op functie, ervaring en locatie Amsterdam
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// Style Generator mockup with creativity levels
+export function StyleGeneratorMockup() {
+  return (
+    <div className="bg-muted rounded-lg border shadow-xl overflow-hidden">
+      {/* Browser top bar */}
+      <div className="bg-muted-foreground/10 px-4 py-2 flex items-center gap-2 border-b">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-400" />
+          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+          <div className="w-3 h-3 rounded-full bg-green-400" />
+        </div>
+        <div className="flex-1 mx-4">
+          <div className="bg-background rounded px-3 py-1 text-xs text-muted-foreground text-center">
+            cveetje.nl/dashboard
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="bg-background p-4 md:p-6">
+        <Card className="max-w-md mx-auto">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Stijl Genereren
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Kies je creativiteitsniveau en genereer een unieke stijl
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Creativity levels */}
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Creativiteitsniveau</span>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2 rounded-lg border text-center cursor-pointer hover:bg-muted/50">
+                  <Shield className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                  <span className="text-xs">Veilig</span>
+                </div>
+                <div className="p-2 rounded-lg border-2 border-primary bg-primary/5 text-center">
+                  <Zap className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <span className="text-xs font-medium">Gebalanceerd</span>
+                </div>
+                <div className="p-2 rounded-lg border text-center cursor-pointer hover:bg-muted/50">
+                  <Sparkles className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                  <span className="text-xs">Creatief</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Style preview cards */}
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Gegenereerde stijl</span>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="aspect-[3/4] rounded-lg border-2 border-primary bg-gradient-to-b from-[#1e3a5f] to-[#2d5a87] relative overflow-hidden shadow-md">
+                  <div className="absolute inset-x-0 bottom-0 h-2/3 bg-white" />
+                  <div className="absolute inset-x-2 top-2 h-3 bg-white/20 rounded" />
+                  <div className="absolute inset-x-2 bottom-2 space-y-1">
+                    <div className="h-1 bg-gray-200 rounded w-3/4" />
+                    <div className="h-1 bg-gray-200 rounded w-1/2" />
+                  </div>
+                  <div className="absolute top-1 right-1">
+                    <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                      <CheckCircle className="h-3 w-3 text-white" />
+                    </div>
+                  </div>
+                </div>
+                <div className="aspect-[3/4] rounded-lg border bg-gradient-to-b from-gray-700 to-gray-800 relative overflow-hidden opacity-50">
+                  <div className="absolute inset-x-0 bottom-0 h-2/3 bg-white" />
+                  <div className="absolute inset-x-2 top-2 h-3 bg-white/20 rounded" />
+                </div>
+                <div className="aspect-[3/4] rounded-lg border bg-gradient-to-b from-emerald-600 to-emerald-700 relative overflow-hidden opacity-50">
+                  <div className="absolute inset-x-0 bottom-0 h-2/3 bg-white" />
+                  <div className="absolute inset-x-2 top-2 h-3 bg-white/20 rounded" />
+                </div>
+              </div>
+            </div>
+
+            {/* Style description */}
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs font-medium mb-1">&quot;Corporate Maritime&quot;</p>
+              <p className="text-xs text-muted-foreground">
+                Professionele stijl met diepe blauwtinten, perfect voor marketing en corporate rollen.
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-2">
+              <div className="flex-1 h-9 rounded-lg bg-muted flex items-center justify-center text-xs font-medium cursor-pointer hover:bg-muted/80">
+                ↻ Regenereer
+              </div>
+              <div className="flex-1 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
+                Verder →
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// Keep the old DashboardMockup for backwards compatibility, but make it an alias
+export function DashboardMockup() {
+  return <StyleGeneratorMockup />;
 }

@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/ui/logo';
 import { WebsiteStructuredData, FAQStructuredData } from '@/components/seo/structured-data';
-import { CVShowcase, DashboardMockup } from '@/components/landing/cv-showcase';
+import { CVShowcase, ProfileSelectionMockup, JobAnalysisMockup, StyleGeneratorMockup } from '@/components/landing/cv-showcase';
 
 export const metadata: Metadata = {
   title: 'CVeetje - CV Automatisch Gefit op Elke Vacature | Stop het Priegelwerk',
@@ -233,43 +233,130 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* Dashboard Preview */}
+          {/* Profile Selection Feature */}
           <section className="py-20">
             <div className="container mx-auto px-4">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div className="order-2 lg:order-1 lg:pr-8">
-                  <DashboardMockup />
+                  <ProfileSelectionMockup />
                 </div>
                 <div className="order-1 lg:order-2">
                   <Badge className="mb-4" variant="secondary">
-                    Dashboard
+                    Profielen
                   </Badge>
                   <h2 className="text-3xl font-bold mb-4">
-                    Stap voor Stap
+                    Eén Keer Invoeren,
                     <br />
-                    <span className="text-primary">Begeleid naar je CV</span>
+                    <span className="text-primary">Altijd Hergebruiken</span>
                   </h2>
                   <p className="text-muted-foreground mb-6">
-                    Onze wizard begeleidt je door elk stap. Van het invoeren van je profiel,
-                    tot het plakken van de vacature, het kiezen van een stijl, en het downloaden
-                    van je perfecte CV.
+                    Maak meerdere profielen voor verschillende rollen. Upload je LinkedIn,
+                    screenshots van een oud CV, of voer handmatig in. Je hoeft nooit meer
+                    opnieuw te beginnen.
                   </p>
                   <ul className="space-y-3 text-sm">
                     <li className="flex items-center gap-2">
                       <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>Intuïtieve stap-voor-stap wizard</span>
+                      <span>Meerdere profielen voor verschillende rollen</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>Meerdere stijlen om uit te kiezen</span>
+                      <span>LinkedIn tekst of CV screenshots uploaden</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>Live preview voordat je download</span>
+                      <span>Profielfoto wordt mee opgeslagen</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>Tekst aanpassen waar nodig</span>
+                      <span>Snel wisselen met één klik</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Job Analysis Feature */}
+          <section className="py-20 bg-muted/30">
+            <div className="container mx-auto px-4">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                  <Badge className="mb-4" variant="secondary">
+                    Vacature Analyse
+                  </Badge>
+                  <h2 className="text-3xl font-bold mb-4">
+                    AI Analyseert
+                    <br />
+                    <span className="text-primary">Elke Vacature</span>
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Plak de vacaturetekst en AI extraheert automatisch de functie-eisen,
+                    keywords, en geeft zelfs een salaris inschatting op basis van marktdata.
+                  </p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Automatische keyword extractie</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Functie-eisen in één oogopslag</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>AI salaris inschatting met onderbouwing</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Marktinzichten per industrie en locatie</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="lg:pl-8">
+                  <JobAnalysisMockup />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Style Generator Feature */}
+          <section className="py-20">
+            <div className="container mx-auto px-4">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div className="order-2 lg:order-1 lg:pr-8">
+                  <StyleGeneratorMockup />
+                </div>
+                <div className="order-1 lg:order-2">
+                  <Badge className="mb-4" variant="secondary">
+                    Stijl Generator
+                  </Badge>
+                  <h2 className="text-3xl font-bold mb-4">
+                    Unieke Stijl
+                    <br />
+                    <span className="text-primary">Op Maat Gegenereerd</span>
+                  </h2>
+                  <p className="text-muted-foreground mb-6">
+                    Kies je creativiteitsniveau en laat AI een professionele stijl genereren
+                    die past bij jouw industrie en de vacature. Niet tevreden? Regenereer
+                    onbeperkt tot je de perfecte look hebt.
+                  </p>
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>3 creativiteitsniveaus: Veilig, Gebalanceerd, Creatief</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Stijl passend bij jouw vakgebied</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Onbeperkt regenereren zonder extra kosten</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <span>Kleuren achteraf aanpasbaar</span>
                     </li>
                   </ul>
                 </div>
