@@ -1,0 +1,44 @@
+# CVeetje
+
+> AI-powered CV and motivation letter generator that transforms LinkedIn profiles into professional, job-tailored documents.
+
+## About
+
+CVeetje is a Dutch SaaS application that helps job seekers create professional CVs and motivation letters using AI. Users can import their LinkedIn profile, add a job vacancy, and get an AI-generated CV optimized for that specific position.
+
+## Key Features
+
+- LinkedIn profile parsing (text or screenshot upload)
+- AI-powered CV generation with job-specific optimization
+- Dynamic style generation based on industry and role
+- Motivation letter generator
+- Multiple export formats (PDF, DOCX)
+- Profile management for multiple CVs
+- Live preview and editing
+
+## How It Works
+
+1. User enters their LinkedIn profile (paste text or upload screenshots)
+2. User adds a job vacancy (optional but recommended)
+3. AI generates a unique style matching the industry
+4. AI creates optimized CV content
+5. User can preview, edit, and download
+
+## Pricing
+
+- Free: 5 downloads per month
+- 5 credits: €4.99
+- 15 credits: €12.99 (most popular)
+- 30 credits: €22.99
+
+## Tech Stack
+
+- Next.js 16 (React)
+- Firebase (Auth, Firestore, Storage)
+- Multiple LLM providers (OpenAI, Anthropic, Google)
+- Puppeteer for PDF generation
+- Deployed on Google Cloud Run
+
+## Contact
+
+Website: https://cveetje.nl

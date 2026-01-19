@@ -1,0 +1,236 @@
+# CVeetje - Complete Documentation for LLMs
+
+## Overview
+
+CVeetje is a Dutch AI-powered CV (resume) and motivation letter generator. The name "CVeetje" is a Dutch diminutive meaning "little CV", reflecting the friendly and accessible nature of the product.
+
+## Mission
+
+To help Dutch job seekers create professional, tailored CVs and motivation letters quickly and affordably using AI technology.
+
+## Target Audience
+
+- Job seekers in the Netherlands and Belgium
+- Professionals updating their CV for new opportunities
+- Students entering the job market
+- Career changers needing multiple CV versions
+
+## Core Features
+
+### 1. LinkedIn Profile Import
+- Users can paste their LinkedIn profile text directly
+- Alternatively, users can upload screenshots of their LinkedIn profile
+- AI parses the content to extract structured data:
+  - Personal information (name, location, contact)
+  - Work experience (company, role, dates, descriptions)
+  - Education (institution, degree, dates)
+  - Skills (technical and soft skills)
+  - Languages
+  - Certifications
+
+### 2. Job Vacancy Analysis
+- Users paste the job vacancy text
+- AI extracts:
+  - Company name
+  - Job title
+  - Required skills
+  - Responsibilities
+  - Qualifications
+  - Company culture indicators
+
+### 3. AI Style Generation
+- Generates unique visual styles based on:
+  - Industry (tech, finance, healthcare, creative, etc.)
+  - Role level (junior, senior, executive)
+  - User preferences (conservative to experimental)
+- Style includes:
+  - Color palette (primary, secondary, accent)
+  - Typography (heading and body fonts)
+  - Layout structure
+  - Header design
+  - Skill display format
+
+### 4. CV Content Generation
+- AI writes optimized content sections:
+  - Professional summary tailored to the job
+  - Experience descriptions with relevant achievements
+  - Skills section highlighting matching competencies
+  - Education with relevant details
+- Keyword optimization for ATS (Applicant Tracking Systems)
+
+### 5. Motivation Letter Generator
+- Creates personalized motivation letters based on:
+  - The generated CV content
+  - The job vacancy requirements
+  - User's personal motivation (optional input)
+- Available in multiple tones (formal, friendly, confident)
+- Export as PDF or Word document
+
+### 6. Live Preview & Editor
+- WYSIWYG preview of the CV
+- Real-time editing capabilities
+- Element hiding/showing
+- Color customization
+- Font adjustments
+
+### 7. Profile Management
+- Save multiple LinkedIn profiles
+- Quick switching between profiles
+- Profile photos stored securely
+- Reuse profiles for different job applications
+
+## Technical Architecture
+
+### Frontend
+- Next.js 16 with App Router
+- React 19 with Server Components
+- Tailwind CSS 4 for styling
+- Radix UI for accessible components
+- TypeScript for type safety
+
+### Backend
+- Next.js API Routes
+- Firebase Admin SDK for server operations
+- Puppeteer with Chromium for PDF generation
+
+### Database
+- Firebase Firestore for data storage
+- Collections:
+  - users (user profiles, API keys, credits)
+  - users/{userId}/cvs (generated CVs)
+  - users/{userId}/transactions (credit history)
+
+### Authentication
+- Firebase Authentication
+- Email/password sign-in
+- Secure session management
+
+### AI Integration
+- Supports multiple LLM providers:
+  - OpenAI (GPT-4, GPT-4 Turbo)
+  - Anthropic (Claude 3 Opus, Sonnet, Haiku)
+  - Google (Gemini Pro, Gemini Flash)
+- Users provide their own API keys
+- Keys encrypted before storage
+
+### Payments
+- Mollie payment provider
+- Supports: iDEAL, credit card, Bancontact, etc.
+- Credit-based system (1 credit = 1 PDF download)
+
+### Infrastructure
+- Google Cloud Run for hosting
+- Google Artifact Registry for Docker images
+- Cloud Build for CI/CD
+- Firebase Storage for file uploads
+
+## API Endpoints
+
+### Authentication Required
+All /api/* routes require Firebase authentication.
+
+### CV Operations
+- POST /api/cv/generate - Generate CV content
+- POST /api/cv/style - Generate CV styling
+- GET /api/cv/[id]/preview-html - Get CV HTML preview
+- GET /api/cv/[id]/pdf - Generate and download PDF
+
+### Motivation Letter
+- POST /api/cv/[id]/motivation - Generate motivation letter
+- GET /api/cv/[id]/motivation/download - Download as PDF/DOCX
+
+### Profile Operations
+- POST /api/linkedin/parse - Parse LinkedIn text
+- POST /api/profile/parse - Parse profile from screenshots
+- GET /api/profiles - List saved profiles
+- POST /api/profiles - Save new profile
+
+### Settings
+- POST /api/settings/api-key - Save encrypted API key
+- GET /api/models - List available AI models
+
+### Payments
+- POST /api/mollie/checkout - Create payment session
+- POST /api/mollie/webhook - Handle payment webhooks
+
+## Data Privacy
+
+- User data stored in Firebase (EU region)
+- API keys encrypted with AES-256
+- No data shared with third parties
+- Users can delete their data at any time
+- GDPR compliant
+
+## Business Model
+
+### Free Tier
+- 5 CV download credits per month
+- Resets monthly
+- All features included
+
+### Credit Packages
+- One-time purchases, no subscription
+- Credits never expire
+- Bulk discounts available
+
+## Localization
+
+- Primary language: Dutch (nl-NL)
+- UI fully translated to Dutch
+- CV generation in Dutch and English
+- Future: German, French support planned
+
+## Competitive Advantages
+
+1. **BYOK (Bring Your Own Key)** - Users control AI costs
+2. **Dutch-focused** - Understands Dutch job market
+3. **No subscription** - Pay-as-you-go model
+4. **AI-powered styling** - Unique designs per industry
+5. **Complete package** - CV + motivation letter
+6. **Fast** - LinkedIn to PDF in under a minute
+
+## Roadmap
+
+- [ ] Multi-language CV generation
+- [ ] LinkedIn API integration
+- [ ] Cover letter templates
+- [ ] Interview preparation module
+- [ ] Team/recruiter features
+
+## Contact Information
+
+- Website: https://cveetje.nl
+- Support: via in-app chat
+- Company: GroeimetAI
+
+## Technical Specifications
+
+### Performance
+- First Contentful Paint: < 1.5s
+- Time to Interactive: < 3s
+- PDF generation: 5-10 seconds
+
+### Supported Browsers
+- Chrome 90+
+- Firefox 90+
+- Safari 14+
+- Edge 90+
+
+### Mobile Support
+- Responsive design
+- PWA capabilities
+- Mobile-optimized preview
+
+## Structured Data
+
+The website implements the following Schema.org types:
+- WebApplication
+- FAQPage
+- BreadcrumbList
+- Organization
+
+## SEO Keywords
+
+Dutch: CV maken, CV builder, AI CV generator, LinkedIn CV, professioneel CV, CV template, sollicitatie, motivatiebrief generator, sollicitatiebrief, gratis CV maker
+
+English: CV builder, resume builder, AI CV generator, LinkedIn to CV, professional resume, job application, cover letter generator
