@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -11,6 +12,7 @@ import {
   LogOut,
   User,
   Users,
+  Menu,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -25,6 +27,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { useAuth } from '@/components/auth/auth-context';
 import { signOut } from '@/lib/firebase/auth';
 
@@ -36,13 +43,13 @@ const navigationItems = [
   { key: 'settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+// Sidebar content component (shared between desktop and mobile)
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { firebaseUser, userData, credits, freeCredits, purchasedCredits } = useAuth();
   const t = useTranslations('navigation');
   const tSidebar = useTranslations('sidebar');
-  const tCommon = useTranslations('common');
 
   const handleSignOut = async () => {
     await signOut();
@@ -51,21 +58,16 @@ export function Sidebar() {
 
   // Get the display name with proper fallbacks
   const getDisplayName = () => {
-    // 1. Try userData displayName (from Firestore)
     if (userData?.displayName) {
       return userData.displayName;
     }
-    // 2. Try firebaseUser displayName (from Google/Apple auth)
     if (firebaseUser?.displayName) {
       return firebaseUser.displayName;
     }
-    // 3. Extract name from email (niels@example.com -> Niels)
     if (firebaseUser?.email) {
       const emailName = firebaseUser.email.split('@')[0];
-      // Capitalize first letter
       return emailName.charAt(0).toUpperCase() + emailName.slice(1);
     }
-    // 4. Fallback
     return null;
   };
 
@@ -83,22 +85,15 @@ export function Sidebar() {
     return firebaseUser?.email?.[0].toUpperCase() || 'U';
   };
 
-  return (
-    <div className="flex h-full w-64 flex-col border-r bg-card">
-      {/* Logo & Theme/Language */}
-      <div className="flex h-16 items-center justify-between border-b px-4">
-        <Link href="/dashboard">
-          <Logo size="sm" />
-        </Link>
-        <div className="flex items-center gap-1">
-          <ThemeSwitcher />
-          <LanguageSwitcher />
-        </div>
-      </div>
+  const handleNavClick = () => {
+    onNavigate?.();
+  };
 
+  return (
+    <>
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        <Link href="/cv/new">
+        <Link href="/cv/new" onClick={handleNavClick}>
           <Button className="w-full mb-4" size="sm">
             <Plus className="mr-2 h-4 w-4" />
             {t('newCv')}
@@ -111,6 +106,7 @@ export function Sidebar() {
             <Link
               key={item.key}
               href={item.href}
+              onClick={handleNavClick}
               className={cn(
                 'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -135,7 +131,7 @@ export function Sidebar() {
             <span>•</span>
             <span>{tSidebar('purchasedCredits', { count: purchasedCredits })}</span>
           </div>
-          <Link href="/credits">
+          <Link href="/credits" onClick={handleNavClick}>
             <Button variant="link" size="sm" className="h-auto p-0 text-xs mt-1">
               {tSidebar('buyMoreCredits')}
             </Button>
@@ -166,7 +162,7 @@ export function Sidebar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem asChild>
-              <Link href="/settings">
+              <Link href="/settings" onClick={handleNavClick}>
                 <User className="mr-2 h-4 w-4" />
                 {t('accountSettings')}
               </Link>
@@ -178,6 +174,56 @@ export function Sidebar() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+    </>
+  );
+}
+
+// Desktop sidebar (hidden on mobile)
+export function Sidebar() {
+  return (
+    <div className="hidden md:flex h-full w-64 flex-col border-r bg-card">
+      {/* Logo & Theme/Language */}
+      <div className="flex h-16 items-center justify-between border-b px-4">
+        <Link href="/dashboard">
+          <Logo size="sm" />
+        </Link>
+        <div className="flex items-center gap-1">
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
+      </div>
+      <SidebarContent />
+    </div>
+  );
+}
+
+// Mobile header with hamburger menu
+export function MobileHeader() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="md:hidden sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-background px-4">
+      <Link href="/dashboard">
+        <Logo size="sm" />
+      </Link>
+      <div className="flex items-center gap-1">
+        <ThemeSwitcher />
+        <LanguageSwitcher />
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0">
+            <div className="flex h-14 items-center border-b px-4">
+              <Logo size="sm" />
+            </div>
+            <SidebarContent onNavigate={() => setOpen(false)} />
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );

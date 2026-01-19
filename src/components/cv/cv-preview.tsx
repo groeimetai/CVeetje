@@ -288,7 +288,7 @@ export function CVPreview({
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Profile Info */}
                   <div className="space-y-2 p-3 border rounded-lg bg-background">
                     <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
@@ -451,15 +451,19 @@ export function CVPreview({
           </Accordion>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-              <TabsTrigger value="edit" className="flex items-center gap-1">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 h-auto">
+              <TabsTrigger value="preview" className="text-xs sm:text-sm">Preview</TabsTrigger>
+              <TabsTrigger value="edit" className="flex items-center gap-1 text-xs sm:text-sm">
                 <Pencil className="h-3 w-3" />
-                Bewerken
+                <span className="hidden sm:inline">Bewerken</span>
+                <span className="sm:hidden">Edit</span>
                 {hasEdits && <span className="ml-1 h-2 w-2 rounded-full bg-primary" />}
               </TabsTrigger>
-              <TabsTrigger value="style">Stijl Details</TabsTrigger>
-              <TabsTrigger value="html">HTML</TabsTrigger>
+              <TabsTrigger value="style" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Stijl Details</span>
+                <span className="sm:hidden">Stijl</span>
+              </TabsTrigger>
+              <TabsTrigger value="html" className="text-xs sm:text-sm">HTML</TabsTrigger>
             </TabsList>
 
             <TabsContent value="preview" className="space-y-4">
@@ -521,7 +525,7 @@ export function CVPreview({
 
             <TabsContent value="style" className="space-y-4">
               {/* Style tokens display */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Theme & Colors */}
                 <div className="space-y-3 p-4 border rounded-lg">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">

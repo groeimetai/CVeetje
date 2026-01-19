@@ -593,7 +593,7 @@ Wat we vragen:
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(handleEditSave)} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="title">Functietitel *</Label>
               <Input
@@ -616,7 +616,7 @@ Wat we vragen:
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="location">Locatie</Label>
               <Input
@@ -731,7 +731,7 @@ Wat we vragen:
             </div>
 
             {/* Salary Range */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="salaryMin" className="text-sm">Minimum Salaris</Label>
                 <Input
@@ -826,7 +826,7 @@ Wat we vragen:
             </div>
 
             {/* Bonus & Notes */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="bonusInfo" className="text-sm">Bonus (optioneel)</Label>
                 <Input
