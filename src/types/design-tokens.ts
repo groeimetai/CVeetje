@@ -51,6 +51,24 @@ export type HeaderGradient = 'none' | 'subtle' | 'radial';
 
 export type DecorationIntensity = 'none' | 'minimal' | 'moderate' | 'abundant';
 
+// Industry-based decoration themes (for creative mode)
+export type DecorationTheme =
+  | 'geometric'   // IT/Tech - circuits, nodes, hexagons
+  | 'organic'     // Healthcare/Nature - curves, leaves, waves
+  | 'minimal'     // Finance/Consulting - subtle lines, corners
+  | 'tech'        // Software/Engineering - code-like, digital
+  | 'creative'    // Design/Marketing - abstract, bold shapes
+  | 'abstract';   // General - versatile geometric patterns
+
+// Custom decoration element (for experimental mode)
+export interface CustomDecoration {
+  name: string;           // e.g., "code-bracket", "chart-bar", "lightbulb"
+  description: string;    // What this shape represents visually
+  placement: 'corner' | 'edge' | 'scattered';  // Where to place
+  size: 'small' | 'medium' | 'large';
+  quantity: number;       // How many of this shape (1-5)
+}
+
 // ============ Design Token Colors ============
 
 export interface DesignTokenColors {
@@ -103,6 +121,8 @@ export interface CVDesignTokens {
 
   // === Decorations ===
   decorations: DecorationIntensity;  // Background SVG decorations (none for professional, abundant for creative)
+  decorationTheme?: DecorationTheme; // Industry-based theme for decorations (creative mode)
+  customDecorations?: CustomDecoration[]; // LLM-generated custom decorations (experimental mode only)
 
   // === Section Order ===
   sectionOrder: string[];   // e.g., ['summary', 'experience', 'education', 'skills', 'languages', 'certifications']

@@ -95,6 +95,36 @@ const designTokensSchema = z.object({
     .describe('Order of CV sections. Use: summary, experience, education, skills, languages, certifications'),
 });
 
+// Extended schema for creative mode - includes decorationTheme
+const creativeTokensSchema = designTokensSchema.extend({
+  decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract'])
+    .describe(`Industry-based decoration theme:
+    - geometric: IT/Tech/Engineering - circuits, hexagons, triangles, grid patterns
+    - organic: Healthcare/Pharma/Nature - soft curves, leaves, waves, natural shapes
+    - minimal: Finance/Consulting/Legal - subtle lines, corners, clean accents
+    - tech: Software/Data/AI - code brackets, nodes, digital patterns
+    - creative: Design/Marketing/Art - bold abstract shapes, splashes, dynamic forms
+    - abstract: General/Versatile - balanced mix of geometric patterns`),
+});
+
+// Extended schema for experimental mode - includes custom decorations
+const experimentalTokensSchema = creativeTokensSchema.extend({
+  customDecorations: z.array(z.object({
+    name: z.string().describe('Unique name for this decoration, e.g., "code-bracket", "data-node", "growth-arrow"'),
+    description: z.string().describe('Visual description: what shape/symbol this represents (e.g., "curly brace like { }", "connected dots forming a network node", "upward arrow with bar chart")'),
+    placement: z.enum(['corner', 'edge', 'scattered']).describe('Where to place: corner (corners of page), edge (along margins), scattered (random positions)'),
+    size: z.enum(['small', 'medium', 'large']).describe('Size of decoration elements'),
+    quantity: z.number().min(1).max(5).describe('How many of this decoration to place (1-5)'),
+  })).min(2).max(5).describe(`Custom decorations that reflect the job/industry. Create 2-5 unique decorations.
+Examples:
+- Software Developer: code brackets, terminal prompts, git branches
+- Data Scientist: scatter plot dots, neural network nodes, bar charts
+- Marketing: speech bubbles, trend arrows, target circles
+- Finance: growth arrows, pie chart segments, currency symbols
+- Healthcare: heartbeat lines, molecule shapes, plus signs
+Make them SUBTLE and PROFESSIONAL, not literal clipart!`),
+});
+
 // ============ Temperature by Creativity Level ============
 
 const temperatureMap: Record<StyleCreativityLevel, number> = {

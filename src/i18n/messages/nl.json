@@ -294,7 +294,8 @@
     "availableCredits": "Beschikbare Credits",
     "freeCredits": "{count} gratis",
     "purchasedCredits": "{count} gekocht",
-    "buyMoreCredits": "Meer credits kopen"
+    "buyMoreCredits": "Meer credits kopen",
+    "user": "Gebruiker"
   },
   "credits": {
     "title": "Credits",

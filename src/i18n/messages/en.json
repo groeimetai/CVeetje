@@ -294,7 +294,8 @@
     "availableCredits": "Available Credits",
     "freeCredits": "{count} free",
     "purchasedCredits": "{count} purchased",
-    "buyMoreCredits": "Buy more credits"
+    "buyMoreCredits": "Buy more credits",
+    "user": "User"
   },
   "credits": {
     "title": "Credits",

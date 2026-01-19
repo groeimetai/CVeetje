@@ -49,9 +49,31 @@ export function Sidebar() {
     router.push('/');
   };
 
-  const getInitials = () => {
+  // Get the display name with proper fallbacks
+  const getDisplayName = () => {
+    // 1. Try userData displayName (from Firestore)
     if (userData?.displayName) {
-      return userData.displayName
+      return userData.displayName;
+    }
+    // 2. Try firebaseUser displayName (from Google/Apple auth)
+    if (firebaseUser?.displayName) {
+      return firebaseUser.displayName;
+    }
+    // 3. Extract name from email (niels@example.com -> Niels)
+    if (firebaseUser?.email) {
+      const emailName = firebaseUser.email.split('@')[0];
+      // Capitalize first letter
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+    }
+    // 4. Fallback
+    return null;
+  };
+
+  const displayName = getDisplayName();
+
+  const getInitials = () => {
+    if (displayName) {
+      return displayName
         .split(' ')
         .map((n) => n[0])
         .join('')
@@ -132,11 +154,13 @@ export function Sidebar() {
               </Avatar>
               <div className="flex flex-col items-start overflow-hidden">
                 <span className="text-sm font-medium truncate max-w-[140px]">
-                  {userData?.displayName || 'User'}
+                  {displayName || firebaseUser?.email || tSidebar('user')}
                 </span>
-                <span className="text-xs text-muted-foreground truncate max-w-[140px]">
-                  {firebaseUser?.email}
-                </span>
+                {displayName && firebaseUser?.email && (
+                  <span className="text-xs text-muted-foreground truncate max-w-[140px]">
+                    {firebaseUser.email}
+                  </span>
+                )}
               </div>
             </Button>
           </DropdownMenuTrigger>
