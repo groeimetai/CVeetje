@@ -415,6 +415,16 @@
     "error": {
       "title": "Er ging iets mis",
       "tryAgain": "Probeer Opnieuw"
+    },
+    "resumeDraft": {
+      "title": "Concept Gevonden",
+      "description": "Je hebt een onafgemaakte CV. Wil je doorgaan waar je was gebleven?",
+      "profile": "Profiel",
+      "vacancy": "Vacature",
+      "step": "Stap",
+      "saved": "Opgeslagen",
+      "resume": "Doorgaan",
+      "startNew": "Opnieuw Beginnen"
     }
   },
   "cvPreview": {

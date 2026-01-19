@@ -1,17 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
-import { ArrowLeft, Loader2, AlertTriangle, Key } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Loader2, AlertTriangle, Key, RefreshCw, Trash2 } from 'lucide-react';
 import { ProfileInput } from './profile-input';
 import { JobInput } from './job-input';
 import { DynamicStylePicker } from './dynamic-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TokenUsageDisplay } from './token-usage-display';
 import { useAuth } from '@/components/auth/auth-context';
+import { useWizardPersistence, formatTimeAgo, type WizardStep } from '@/hooks/use-wizard-persistence';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -27,11 +30,17 @@ import type { ModelInfo, ProviderInfo } from '@/lib/ai/models-registry';
 import { findModelInProviders } from '@/lib/ai/models-registry';
 import Link from 'next/link';
 
-type WizardStep = 'linkedin' | 'job' | 'style' | 'generating' | 'preview';
-
 export function CVWizard() {
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations('cvWizard');
+  const tCommon = useTranslations('common');
   const { userData, credits, refreshCredits } = useAuth();
+
+  // Draft persistence
+  const { hasDraft, draft, saveDraft, clearDraft, isLoading: isDraftLoading } = useWizardPersistence();
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [draftChecked, setDraftChecked] = useState(false);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState<WizardStep>('linkedin');
@@ -63,6 +72,58 @@ export function CVWizard() {
 
   // Token usage tracking
   const [tokenHistory, setTokenHistory] = useState<StepTokenUsage[]>([]);
+
+  // Check for draft on mount
+  useEffect(() => {
+    if (!isDraftLoading && !draftChecked) {
+      if (hasDraft) {
+        setShowResumeDialog(true);
+      }
+      setDraftChecked(true);
+    }
+  }, [isDraftLoading, hasDraft, draftChecked]);
+
+  // Save draft when relevant state changes
+  const saveCurrentDraft = useCallback(() => {
+    if (linkedInData) {
+      saveDraft({
+        currentStep,
+        linkedInData,
+        jobVacancy,
+        styleConfig,
+        designTokens,
+        avatarUrl,
+        outputLanguage,
+      });
+    }
+  }, [currentStep, linkedInData, jobVacancy, styleConfig, designTokens, avatarUrl, outputLanguage, saveDraft]);
+
+  // Auto-save draft on state changes (debounced by the effect dependencies)
+  useEffect(() => {
+    if (draftChecked && !showResumeDialog && currentStep !== 'generating' && currentStep !== 'preview') {
+      saveCurrentDraft();
+    }
+  }, [currentStep, linkedInData, jobVacancy, styleConfig, designTokens, avatarUrl, outputLanguage, draftChecked, showResumeDialog, saveCurrentDraft]);
+
+  // Resume from draft
+  const handleResumeDraft = () => {
+    if (draft) {
+      setCurrentStep(draft.currentStep);
+      setLinkedInData(draft.linkedInData);
+      setJobVacancy(draft.jobVacancy);
+      setStyleConfig(draft.styleConfig);
+      setDesignTokens(draft.designTokens);
+      setAvatarUrl(draft.avatarUrl);
+      setOutputLanguage(draft.outputLanguage);
+    }
+    setShowResumeDialog(false);
+  };
+
+  // Start fresh (discard draft)
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setShowResumeDialog(false);
+  };
 
   // Helper to add token usage to history
   const addTokenUsage = (step: StepTokenUsage['step'], usage: TokenUsage) => {
@@ -125,11 +186,11 @@ export function CVWizard() {
   }, [providers, userData?.apiKey]);
 
   const steps: { id: WizardStep; label: string }[] = [
-    { id: 'linkedin', label: 'Profiel' },
-    { id: 'job', label: 'Vacature' },
-    { id: 'style', label: 'Stijl' },
-    { id: 'generating', label: 'Genereren' },
-    { id: 'preview', label: 'Preview' },
+    { id: 'linkedin', label: t('steps.profile') },
+    { id: 'job', label: t('steps.job') },
+    { id: 'style', label: t('steps.style') },
+    { id: 'generating', label: t('steps.generating') },
+    { id: 'preview', label: t('steps.preview') },
   ];
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
@@ -189,6 +250,8 @@ export function CVWizard() {
       setGeneratedContent(result.content);
       setCvId(result.cvId);
       setCurrentStep('preview');
+      // Clear draft since CV was successfully generated
+      clearDraft();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setCurrentStep('style');
@@ -359,24 +422,97 @@ export function CVWizard() {
   };
 
   // Show API key warning if not configured
-  if (!hasApiKey && currentStep === 'linkedin') {
+  if (!hasApiKey && currentStep === 'linkedin' && !showResumeDialog) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <Alert>
           <Key className="h-4 w-4" />
           <div className="ml-2">
-            <p className="font-medium">API Key Required</p>
+            <p className="font-medium">{t('noApiKey.title')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              You need to configure your own AI API key before creating CVs.
-              This allows you to use your preferred AI provider (OpenAI, Anthropic, or Google).
+              {t('noApiKey.description')}
             </p>
             <Link href="/settings">
               <Button className="mt-3" size="sm">
-                Configure API Key
+                {t('noApiKey.button')}
               </Button>
             </Link>
           </div>
         </Alert>
+      </div>
+    );
+  }
+
+  // Show resume dialog if there's a saved draft
+  if (showResumeDialog && draft) {
+    const stepLabels: Record<WizardStep, string> = {
+      linkedin: t('steps.profile'),
+      job: t('steps.job'),
+      style: t('steps.style'),
+      generating: t('steps.generating'),
+      preview: t('steps.preview'),
+    };
+
+    return (
+      <div className="max-w-lg mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              {t('resumeDraft.title')}
+            </CardTitle>
+            <CardDescription>
+              {t('resumeDraft.description')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Draft info */}
+            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t('resumeDraft.profile')}:</span>
+                <span className="font-medium">{draft.linkedInData?.fullName || '-'}</span>
+              </div>
+              {draft.jobVacancy && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t('resumeDraft.vacancy')}:</span>
+                  <span className="font-medium truncate max-w-[200px]">
+                    {draft.jobVacancy.title}
+                    {draft.jobVacancy.company && ` @ ${draft.jobVacancy.company}`}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t('resumeDraft.step')}:</span>
+                <span className="font-medium">{stepLabels[draft.currentStep]}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t('resumeDraft.saved')}:</span>
+                <span className="font-medium">{formatTimeAgo(draft.savedAt, locale)}</span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={handleResumeDraft} className="flex-1">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {t('resumeDraft.resume')}
+              </Button>
+              <Button variant="outline" onClick={handleDiscardDraft} className="flex-1">
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t('resumeDraft.startNew')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Loading state while checking for draft
+  if (isDraftLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -408,7 +544,7 @@ export function CVWizard() {
             {currentStep !== 'linkedin' && currentStep !== 'generating' && (
               <Button variant="ghost" size="sm" onClick={goBack} className="-ml-2">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                {tCommon('back')}
               </Button>
             )}
           </div>

@@ -415,6 +415,16 @@
     "error": {
       "title": "Something went wrong",
       "tryAgain": "Try Again"
+    },
+    "resumeDraft": {
+      "title": "Draft Found",
+      "description": "You have an unfinished CV. Would you like to continue where you left off?",
+      "profile": "Profile",
+      "vacancy": "Job",
+      "step": "Step",
+      "saved": "Saved",
+      "resume": "Continue",
+      "startNew": "Start New"
     }
   },
   "cvPreview": {
