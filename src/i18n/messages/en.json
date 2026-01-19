@@ -427,6 +427,22 @@
     "allPages": "All Pages",
     "creditCost": "1 credit for download"
   },
+  "cvList": {
+    "title": "My CVs",
+    "subtitle": "Manage and download your CVs",
+    "allCvs": "All CVs",
+    "cvsCreated": "{count} CV(s) created",
+    "noCvs": "No CVs created yet",
+    "createFirst": "Create your first CV to get started",
+    "createCv": "Create CV",
+    "view": "View",
+    "downloadPdf": "Download PDF",
+    "deleteConfirm": "Are you sure you want to delete this CV?"
+  },
+  "cvNew": {
+    "title": "Create New CV",
+    "subtitle": "Follow the steps below to generate your professional CV"
+  },
   "errors": {
     "unauthorized": "You are not authorized for this action",
     "invalidToken": "Invalid session, please sign in again",
