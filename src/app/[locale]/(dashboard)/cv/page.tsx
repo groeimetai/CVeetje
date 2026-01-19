@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Plus, FileText, MoreVertical, Download, Trash2, Eye } from 'lucide-react';
+import { Plus, FileText, MoreVertical, Download, Trash2, Eye, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -112,13 +112,25 @@ export default function CVListPage() {
                     <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                       <FileText className="h-6 w-6 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
                         {cv.linkedInData?.fullName || tDashboard('recentCvs.untitled')}
                       </p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{cv.jobVacancy?.title || tDashboard('recentCvs.generalCv')}</span>
-                        <span>•</span>
+                        <span className="truncate">
+                          {cv.jobVacancy?.title || tDashboard('recentCvs.generalCv')}
+                        </span>
+                        {cv.jobVacancy?.company && (
+                          <>
+                            <span className="flex-shrink-0">@</span>
+                            <span className="flex items-center gap-1 truncate">
+                              <Building2 className="h-3 w-3 flex-shrink-0" />
+                              {cv.jobVacancy.company}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                         <span className="capitalize">{cv.template}</span>
                         <span>•</span>
                         <span>

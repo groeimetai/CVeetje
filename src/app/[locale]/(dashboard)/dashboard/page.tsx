@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Plus, FileText, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, AlertTriangle, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -136,20 +136,31 @@ export default function DashboardPage() {
                   href={`/cv/${cv.id}`}
                   className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     {getStatusIcon(cv.status)}
-                    <div>
-                      <p className="font-medium">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
                         {cv.linkedInData?.fullName || t('recentCvs.untitled')}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {cv.jobVacancy?.title || t('recentCvs.generalCv')} • {cv.template}
-                      </p>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <span className="truncate">
+                          {cv.jobVacancy?.title || t('recentCvs.generalCv')}
+                        </span>
+                        {cv.jobVacancy?.company && (
+                          <>
+                            <span className="flex-shrink-0">@</span>
+                            <span className="flex items-center gap-1 truncate">
+                              <Building2 className="h-3 w-3 flex-shrink-0" />
+                              {cv.jobVacancy.company}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-shrink-0">
                     {getStatusBadge(cv.status)}
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
                       {cv.createdAt?.toDate?.()?.toLocaleDateString() || tCommon('recently')}
                     </span>
                   </div>
