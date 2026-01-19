@@ -55,7 +55,11 @@ export async function POST(
     const userDoc = await db.collection('users').doc(userId).get();
     const userData = userDoc.data();
 
-    if (!userData || userData.credits.balance < 1) {
+    const freeCredits = userData?.credits?.free ?? 0;
+    const purchasedCredits = userData?.credits?.purchased ?? 0;
+    const totalCredits = freeCredits + purchasedCredits;
+
+    if (!userData || totalCredits < 1) {
       return NextResponse.json(
         { error: 'Insufficient credits. Please purchase more credits.' },
         { status: 402 }
@@ -109,17 +113,25 @@ export async function POST(
       personalMotivation
     );
 
-    // Deduct credit
-    await db.collection('users').doc(userId).update({
-      'credits.balance': FieldValue.increment(-1),
-      updatedAt: new Date(),
-    });
+    // Deduct credit (use free credits first, then purchased)
+    if (freeCredits >= 1) {
+      await db.collection('users').doc(userId).update({
+        'credits.free': FieldValue.increment(-1),
+        updatedAt: new Date(),
+      });
+    } else {
+      await db.collection('users').doc(userId).update({
+        'credits.purchased': FieldValue.increment(-1),
+        updatedAt: new Date(),
+      });
+    }
 
     // Log transaction
+    const creditSource = freeCredits >= 1 ? 'free' : 'purchased';
     await db.collection('users').doc(userId).collection('transactions').add({
       amount: -1,
       type: 'motivation_letter',
-      description: 'Motivation letter generation',
+      description: `Motivation letter generation (${creditSource} credit)`,
       molliePaymentId: null,
       cvId,
       createdAt: new Date(),

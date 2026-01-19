@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // Add credits to user account
+    // Add credits to user's purchased bucket (separate from free monthly credits)
     await db.collection('users').doc(userId).update({
-      'credits.balance': FieldValue.increment(credits),
+      'credits.purchased': FieldValue.increment(credits),
       updatedAt: new Date(),
     });
 

@@ -351,8 +351,8 @@ export function CVWizard() {
     setElementColors({});
     setCvId(null);
     setError(null);
-    // Keep token history for reference, but you could reset it too
-    // setTokenHistory([]);
+    // Reset token history for the new CV - each CV should track its own usage
+    setTokenHistory([]);
 
     // Go to job input step
     setCurrentStep('job');

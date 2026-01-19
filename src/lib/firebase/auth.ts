@@ -32,7 +32,8 @@ async function createUserDocument(firebaseUser: FirebaseUser): Promise<void> {
       photoURL: firebaseUser.photoURL,
       apiKey: null,
       credits: {
-        balance: 5, // 5 free credits
+        free: 5,        // 5 free monthly credits
+        purchased: 0,   // No purchased credits yet
         lastFreeReset: Timestamp.now(),
       },
       createdAt: serverTimestamp(),
