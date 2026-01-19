@@ -35,6 +35,7 @@ import {
   Briefcase,
   GraduationCap,
   Award,
+  ChevronDown,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -465,17 +466,18 @@ export function ProfileInput({
   };
 
   // Handle LinkedIn export
-  const handleLinkedInExport = async () => {
+  const handleLinkedInExport = async (language: 'nl' | 'en' = 'nl') => {
     if (!selectedProfileId) return;
 
     setIsExportingLinkedIn(true);
     setError(null);
+    setShowLinkedInDialog(true);
 
     try {
       const response = await fetch(`/api/profiles/${selectedProfileId}/linkedin-export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: 'nl' }),
+        body: JSON.stringify({ language }),
       });
 
       const result = await response.json();
@@ -1412,20 +1414,31 @@ export function ProfileInput({
                   <Sparkles className="h-4 w-4 mr-2" />
                   AI Verrijken
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowLinkedInDialog(true);
-                    handleLinkedInExport();
-                  }}
-                  className="border-blue-500/50 text-blue-600 hover:bg-blue-50"
-                >
-                  <Linkedin className="h-4 w-4 mr-2" />
-                  LinkedIn Export
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    <Coins className="h-3 w-3 mr-1" />1
-                  </Badge>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="border-blue-500/50 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Linkedin className="h-4 w-4 mr-2" />
+                      LinkedIn Export
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        <Coins className="h-3 w-3 mr-1" />1
+                      </Badge>
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleLinkedInExport('nl')}>
+                      <span className="mr-2">🇳🇱</span>
+                      Nederlands
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleLinkedInExport('en')}>
+                      <span className="mr-2">🇬🇧</span>
+                      English
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button
                   variant="ghost"
                   onClick={() => {
