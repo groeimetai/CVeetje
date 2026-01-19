@@ -884,7 +884,7 @@ export function ProfileInput({
           {/* Basic Fields */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Basis Gegevens</h3>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="edit-fullName">Naam</Label>
                 <Input
@@ -942,7 +942,7 @@ export function ProfileInput({
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-1">
                     <Label className="text-xs">Functie</Label>
                     <Input
@@ -1025,7 +1025,7 @@ export function ProfileInput({
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-1">
                     <Label className="text-xs">School / Universiteit</Label>
                     <Input
@@ -1194,7 +1194,7 @@ export function ProfileInput({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Naam</p>
               <p className="text-lg font-semibold">{parsed.fullName}</p>
@@ -1259,7 +1259,7 @@ export function ProfileInput({
             <p className="text-xs text-muted-foreground mb-3">
               LinkedIn exporteert geen contactgegevens - vul deze hieronder in!
             </p>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="email" className="text-xs text-muted-foreground">Email *</Label>
                 <Input

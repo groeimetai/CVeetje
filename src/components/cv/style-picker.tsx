@@ -84,7 +84,7 @@ export function StylePicker({ onSelect, initialTemplate, initialColorScheme }: S
         {/* Template Selection */}
         <div className="space-y-3">
           <Label>Template</Label>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             {templates.map((template) => (
               <button
                 key={template.id}

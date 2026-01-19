@@ -64,13 +64,13 @@ export default function CVListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">{t('subtitle')}</p>
         </div>
-        <Link href="/cv/new">
-          <Button>
+        <Link href="/cv/new" className="self-start sm:self-auto">
+          <Button size="sm" className="sm:size-default">
             <Plus className="mr-2 h-4 w-4" />
             {tDashboard('newCv')}
           </Button>
@@ -106,17 +106,17 @@ export default function CVListPage() {
               {cvs.map((cv) => (
                 <div
                   key={cv.id}
-                  className="flex items-center justify-between p-4 rounded-lg border"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border gap-3"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-primary" />
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">
+                      <p className="font-medium truncate text-sm sm:text-base">
                         {cv.linkedInData?.fullName || tDashboard('recentCvs.untitled')}
                       </p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
                         <span className="truncate">
                           {cv.jobVacancy?.title || tDashboard('recentCvs.generalCv')}
                         </span>
@@ -140,12 +140,12 @@ export default function CVListPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
                     {getStatusBadge(cv.status)}
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
-import { Sidebar } from '@/components/dashboard/sidebar';
+import { Sidebar, MobileHeader } from '@/components/dashboard/sidebar';
 import { AuthProvider, useAuth } from '@/components/auth/auth-context';
 import { Footer } from '@/components/footer';
 import { Loader2 } from 'lucide-react';
@@ -30,12 +30,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col md:flex-row">
       <Sidebar />
-      <main className="flex-1 overflow-auto flex flex-col">
-        <div className="container mx-auto p-6 flex-1">{children}</div>
-        <Footer minimal />
-      </main>
+      <div className="flex-1 flex flex-col min-h-screen md:min-h-0">
+        <MobileHeader />
+        <main className="flex-1 overflow-auto flex flex-col">
+          <div className="container mx-auto p-4 md:p-6 flex-1">{children}</div>
+          <Footer minimal />
+        </main>
+      </div>
     </div>
   );
 }
