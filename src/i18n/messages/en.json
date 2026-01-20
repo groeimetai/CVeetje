@@ -544,6 +544,12 @@
       "configureHint": "Configure the field positions so profile data is placed in the right spots.",
       "configureLater": "Configure Later",
       "configureNow": "Configure Now",
+      "aiMode": {
+        "title": "AI Content Replacement",
+        "enabledDescription": "AI analyzes the document and replaces existing content with your profile data, tailored to the job posting.",
+        "disabledDescription": "Only placeholders (like {{name}}) will be automatically filled.",
+        "creditWarning": "AI mode uses extra tokens from your API key"
+      },
       "errors": {
         "invalidFileType": "Only PDF and DOCX files are allowed",
         "fileTooLarge": "File must be less than 5MB"

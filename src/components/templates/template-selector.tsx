@@ -26,16 +26,19 @@ import {
   Settings,
   CheckCircle,
   Sparkles,
+  Brain,
 } from 'lucide-react';
-import type { PDFTemplate, PDFTemplateSummary, ParsedLinkedIn } from '@/types';
+import { Switch } from '@/components/ui/switch';
+import type { PDFTemplate, PDFTemplateSummary, ParsedLinkedIn, JobVacancy } from '@/types';
 
 interface TemplateSelectorProps {
   profileData: ParsedLinkedIn;
+  jobVacancy?: JobVacancy;
   onFill: (pdfBlob: Blob, templateName: string) => void;
   onBack: () => void;
 }
 
-export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelectorProps) {
+export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: TemplateSelectorProps) {
   const t = useTranslations('templates.selector');
   const tUpload = useTranslations('templates.upload');
   const tConfig = useTranslations('templates.configurator');
@@ -44,6 +47,9 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
   const [isLoading, setIsLoading] = useState(true);
   const [isFilling, setIsFilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // AI mode state
+  const [useAI, setUseAI] = useState(false);
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -199,7 +205,7 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
     // Check if template is ready to fill
     const isDocx = selectedTemplate.fileType === 'docx';
     const hasContent = isDocx
-      ? (selectedTemplate.placeholders && selectedTemplate.placeholders.length > 0)
+      ? (selectedTemplate.placeholders && selectedTemplate.placeholders.length > 0) || useAI
       : (selectedTemplate.fields && selectedTemplate.fields.length > 0);
 
     if (!hasContent) {
@@ -217,6 +223,8 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
         body: JSON.stringify({
           profileData,
           customValues,
+          useAI: isDocx ? useAI : undefined,
+          jobVacancy: useAI ? jobVacancy : undefined,
         }),
       });
 
@@ -533,6 +541,34 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
                   </div>
                 </div>
               </div>
+
+              {/* AI Mode Toggle for DOCX templates */}
+              {selectedTemplate.fileType === 'docx' && (
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-primary" />
+                      <Label htmlFor="ai-mode" className="font-medium">
+                        {t('aiMode.title')}
+                      </Label>
+                    </div>
+                    <Switch
+                      id="ai-mode"
+                      checked={useAI}
+                      onCheckedChange={setUseAI}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {useAI ? t('aiMode.enabledDescription') : t('aiMode.disabledDescription')}
+                  </p>
+                  {useAI && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                      <span className="text-amber-600">{t('aiMode.creditWarning')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Custom values input (for fields not in LinkedIn) */}
               {(needsBirthDate || needsNationality) && (

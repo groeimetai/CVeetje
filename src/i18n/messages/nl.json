@@ -544,6 +544,12 @@
       "configureHint": "Configureer de veld posities zodat de profieldata op de juiste plek wordt geplaatst.",
       "configureLater": "Later Configureren",
       "configureNow": "Nu Configureren",
+      "aiMode": {
+        "title": "AI Content Vervanging",
+        "enabledDescription": "AI analyseert het document en vervangt bestaande content met jouw profielgegevens, aangepast aan de vacature.",
+        "disabledDescription": "Alleen placeholders (zoals {{naam}}) worden automatisch ingevuld.",
+        "creditWarning": "AI mode gebruikt extra tokens van je API key"
+      },
       "errors": {
         "invalidFileType": "Alleen PDF en DOCX bestanden zijn toegestaan",
         "fileTooLarge": "Bestand mag maximaal 5MB zijn"

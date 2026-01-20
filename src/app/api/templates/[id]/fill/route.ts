@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
-import { fillDocxTemplateAuto, fillDocxTemplate, analyzeDocxTemplate } from '@/lib/docx/template-filler';
+import { fillSmartTemplate, analyzeTemplate } from '@/lib/docx/smart-template-filler';
 import { convertFilledTemplateToPdf } from '@/lib/docx/docx-to-pdf';
-import type { PDFTemplate, ParsedLinkedIn, DocxPlaceholder } from '@/types';
+import { decrypt } from '@/lib/encryption';
+import type { PDFTemplate, ParsedLinkedIn, JobVacancy } from '@/types';
 
 // POST - Fill a template with profile data
 export async function POST(
@@ -64,9 +65,11 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { profileData, customValues } = body as {
+    const { profileData, customValues, useAI, jobVacancy } = body as {
       profileData: ParsedLinkedIn;
       customValues?: Record<string, string>;
+      useAI?: boolean;
+      jobVacancy?: JobVacancy;
     };
 
     if (!profileData) {
@@ -103,47 +106,65 @@ export async function POST(
     const templateBytes = new Uint8Array(templateBuffer);
 
     let filledPdfBytes: Uint8Array;
-    let fillMethod: 'form' | 'coordinates' | 'docx-placeholders' | 'none' = 'none';
+    let fillMethod: 'form' | 'coordinates' | 'docx-placeholders' | 'docx-ai' | 'none' = 'none';
     let filledFields: string[] = [];
     let filledCount = 0;
 
     if (template.fileType === 'docx') {
-      // DOCX template flow
+      // DOCX template flow - use smart template filler
       const docxBuffer = templateBuffer;
 
-      // Get placeholders - use stored ones or re-analyze
-      let placeholders: DocxPlaceholder[] = template.placeholders || [];
-      if (placeholders.length === 0) {
-        // No stored placeholders - try to auto-detect
-        try {
-          const analysis = await analyzeDocxTemplate(docxBuffer);
-          placeholders = analysis.placeholders;
-        } catch (e) {
-          console.warn('Failed to analyze DOCX template:', e);
+      // Analyze template structure
+      const analysis = await analyzeTemplate(docxBuffer);
+      const totalDetectedPatterns = analysis.detectedPatterns.length;
+
+      // Get user's AI settings if AI mode is requested
+      let aiOptions = undefined;
+      if (useAI) {
+        const userApiKeyData = userData?.apiKey;
+        if (userApiKeyData?.encryptedKey) {
+          try {
+            const decryptedKey = decrypt(userApiKeyData.encryptedKey);
+            aiOptions = {
+              useAI: true,
+              aiProvider: userApiKeyData.provider,
+              aiApiKey: decryptedKey,
+              aiModel: userApiKeyData.model,
+              jobVacancy,
+            };
+          } catch (decryptError) {
+            console.error('Failed to decrypt API key:', decryptError);
+          }
         }
       }
 
-      if (placeholders.length === 0) {
+      // If no patterns detected and no AI mode, return error
+      if (totalDetectedPatterns === 0 && !aiOptions) {
         return NextResponse.json(
-          { error: 'No placeholders detected in DOCX template. The template may not have any recognizable placeholder patterns.' },
+          { error: 'No fillable patterns detected in DOCX template. Make sure the template has labels like "Naam:", "Voornaam:", etc., or enable AI mode.' },
           { status: 400 }
         );
       }
 
-      // Fill the DOCX template
-      const filledDocx = await fillDocxTemplate(
+      // Fill the DOCX template using smart filler
+      const fillResult = await fillSmartTemplate(
         docxBuffer,
-        placeholders,
         profileData,
-        customValues
+        customValues,
+        aiOptions
       );
 
+      // Log any warnings
+      if (fillResult.warnings.length > 0) {
+        console.warn('Template fill warnings:', fillResult.warnings);
+      }
+
       // Convert filled DOCX to PDF
-      const pdfBuffer = await convertFilledTemplateToPdf(filledDocx);
+      const pdfBuffer = await convertFilledTemplateToPdf(fillResult.filledBuffer);
       filledPdfBytes = new Uint8Array(pdfBuffer);
-      fillMethod = 'docx-placeholders';
-      filledCount = placeholders.length;
-      filledFields = placeholders.map(p => p.originalText);
+      fillMethod = fillResult.mode === 'ai' ? 'docx-ai' : 'docx-placeholders';
+      filledCount = fillResult.filledFields.length;
+      filledFields = fillResult.filledFields;
     } else {
       // PDF template flow (existing logic)
       const hasFields = await hasFormFields(templateBytes);
@@ -195,6 +216,9 @@ export async function POST(
         break;
       case 'docx-placeholders':
         methodDescription = `(DOCX, ${filledCount} placeholders)`;
+        break;
+      case 'docx-ai':
+        methodDescription = `(DOCX + AI, ${filledCount} replacements)`;
         break;
       case 'coordinates':
         methodDescription = '(coordinate-based)';

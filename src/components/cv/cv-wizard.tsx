@@ -15,7 +15,7 @@ import { DynamicStylePicker } from './dynamic-style-picker';
 import { TemplateStylePicker } from './template-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TokenUsageDisplay } from './token-usage-display';
-import { StyleOrTemplateChoice } from '@/components/templates';
+import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
 import { useAuth } from '@/components/auth/auth-context';
 import { useWizardPersistence, formatTimeAgo, type WizardStep } from '@/hooks/use-wizard-persistence';
 import type {
@@ -246,6 +246,26 @@ export function CVWizard() {
     setCurrentStep('template-style');
   };
 
+  const handleChooseTemplate = () => {
+    setCurrentStep('template');
+  };
+
+  // Handle template fill completion - download PDF directly
+  const handleTemplateFill = (pdfBlob: Blob, templateName: string) => {
+    // Create download link
+    const url = window.URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'template'}-${templateName.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    // Refresh credits after download
+    refreshCredits();
+  };
+
   // Handle template fill completion
   const handleFitAnalysisChangeJob = () => {
     // Go back to job input
@@ -437,6 +457,12 @@ export function CVWizard() {
   };
 
   const goBack = () => {
+    // Handle template step specially - always go back to style-choice
+    if (currentStep === 'template') {
+      setCurrentStep('style-choice');
+      return;
+    }
+
     // Determine which style step to use
     const styleStep: WizardStep = useTemplateStyleMode ? 'template-style' : 'style';
     const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style-choice', styleStep, 'preview'];
@@ -504,6 +530,7 @@ export function CVWizard() {
       'style-choice': t('steps.styleChoice'),
       style: t('steps.style'),
       'template-style': t('steps.templateStyle'),
+      template: t('steps.template'),
       generating: t('steps.generating'),
       preview: t('steps.preview'),
     };
@@ -650,6 +677,7 @@ export function CVWizard() {
         <StyleOrTemplateChoice
           onChooseStyle={handleChooseStyle}
           onChooseTemplateStyle={handleChooseTemplateStyle}
+          onChooseTemplate={handleChooseTemplate}
         />
       )}
 
@@ -745,6 +773,15 @@ export function CVWizard() {
             initialTokens={designTokens}
           />
         </div>
+      )}
+
+      {currentStep === 'template' && linkedInData && (
+        <TemplateSelector
+          profileData={linkedInData}
+          jobVacancy={jobVacancy || undefined}
+          onFill={handleTemplateFill}
+          onBack={() => setCurrentStep('style-choice')}
+        />
       )}
 
       {currentStep === 'generating' && (
