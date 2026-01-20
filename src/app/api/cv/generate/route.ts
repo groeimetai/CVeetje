@@ -3,6 +3,11 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { decrypt } from '@/lib/encryption';
 import { generateCV } from '@/lib/ai/cv-generator';
+import {
+  checkRateLimit,
+  RATE_LIMITS,
+  getRequestIdentifier,
+} from '@/lib/security/rate-limiter';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -34,6 +39,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
+      );
+    }
+
+    // Rate limiting for AI generation (expensive operation)
+    const rateLimitResult = checkRateLimit(
+      getRequestIdentifier(userId),
+      'cv-generation',
+      RATE_LIMITS.aiGeneration
+    );
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait and try again.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter || 60),
+          },
+        }
       );
     }
 

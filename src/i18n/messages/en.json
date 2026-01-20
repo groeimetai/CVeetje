@@ -70,7 +70,20 @@
     "signInDescription": "Sign in to your CVeetje account to manage your CVs",
     "signUpTitle": "Create Account",
     "signUpDescription": "Sign up to start creating professional CVs with AI",
-    "termsAgreement": "By signing up, you agree to our Terms of Service and Privacy Policy. You get 5 free credits per month."
+    "termsAgreement": "By signing up, you agree to our Terms of Service and Privacy Policy. You get 5 free credits per month.",
+    "verifyEmail": {
+      "title": "Verify your email",
+      "description": "We sent a verification email to {email}. Click the link in the email to activate your account.",
+      "checkButton": "I've verified my email",
+      "resendButton": "Resend verification email",
+      "checking": "Checking...",
+      "resending": "Sending...",
+      "resendSuccess": "Verification email has been resent!",
+      "resendError": "Could not send email. Please try again later.",
+      "notYetVerified": "Your email is not yet verified. Check your inbox and click the verification link.",
+      "checkError": "Could not check verification status. Please try again later.",
+      "checkSpam": "Also check your spam folder if you can't find the email."
+    }
   },
   "validation": {
     "emailRequired": "Email is required",

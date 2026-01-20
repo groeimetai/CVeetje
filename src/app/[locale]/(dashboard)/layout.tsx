@@ -8,7 +8,7 @@ import { Footer } from '@/components/footer';
 import { Loader2 } from 'lucide-react';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, loading } = useAuth();
+  const { firebaseUser, emailVerified, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -16,6 +16,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       router.push('/login');
     }
   }, [firebaseUser, loading, router]);
+
+  // Redirect to verify-email page if email not verified
+  useEffect(() => {
+    if (!loading && firebaseUser && !emailVerified) {
+      router.push('/verify-email');
+    }
+  }, [firebaseUser, emailVerified, loading, router]);
 
   if (loading) {
     return (
@@ -25,7 +32,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!firebaseUser) {
+  if (!firebaseUser || !emailVerified) {
     return null;
   }
 

@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signInWithEmail, signInWithGoogle, signInWithApple } from '@/lib/firebase/auth';
+import { useRecaptcha } from '@/lib/recaptcha/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +27,7 @@ export function LoginForm() {
   const tErrors = useTranslations('errors');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { execute: executeRecaptcha } = useRecaptcha();
 
   const loginSchema = z.object({
     email: z.string().email(tValidation('emailInvalid')),
@@ -45,7 +47,10 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await signInWithEmail(data.email, data.password);
+      // Get reCAPTCHA token
+      const captchaToken = await executeRecaptcha('login');
+
+      await signInWithEmail(data.email, data.password, captchaToken);
       router.push('/dashboard');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : tErrors('loginFailed');

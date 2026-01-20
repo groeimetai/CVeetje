@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { registerWithEmail, signInWithGoogle, signInWithApple } from '@/lib/firebase/auth';
+import { useRecaptcha } from '@/lib/recaptcha/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ export function RegisterForm() {
   const tErrors = useTranslations('errors');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { execute: executeRecaptcha } = useRecaptcha();
 
   const registerSchema = z.object({
     name: z.string().min(2, tValidation('nameMin')),
@@ -52,8 +54,12 @@ export function RegisterForm() {
     setLoading(true);
 
     try {
-      await registerWithEmail(data.email, data.password, data.name);
-      router.push('/dashboard');
+      // Get reCAPTCHA token
+      const captchaToken = await executeRecaptcha('register');
+
+      await registerWithEmail(data.email, data.password, data.name, captchaToken);
+      // Redirect to verify email page instead of dashboard
+      router.push('/verify-email');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : tErrors('registrationFailed');
       setError(errorMessage);

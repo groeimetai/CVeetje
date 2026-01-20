@@ -4,6 +4,12 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generatePDF } from '@/lib/pdf/generator';
 import { FieldValue } from 'firebase-admin/firestore';
 import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
+import {
+  checkRateLimit,
+  RATE_LIMITS,
+  getRequestIdentifier,
+} from '@/lib/security/rate-limiter';
+import { validateAvatarURL } from '@/lib/security/url-validator';
 import type { CV, GeneratedCVContent, CVStyleConfig, CVContactInfo, CVElementOverrides, ElementOverride, EditableElementType } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 
@@ -69,6 +75,25 @@ export async function POST(
       );
     }
 
+    // Rate limiting for PDF generation (resource-intensive)
+    const rateLimitResult = checkRateLimit(
+      getRequestIdentifier(userId),
+      'pdf-generation',
+      RATE_LIMITS.pdfGeneration
+    );
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many PDF requests. Please wait and try again.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter || 60),
+          },
+        }
+      );
+    }
+
     const db = getAdminDb();
 
     // Check user credits (free + purchased)
@@ -108,6 +133,18 @@ export async function POST(
         { error: 'CV content not generated yet' },
         { status: 400 }
       );
+    }
+
+    // Validate avatar URL to prevent SSRF attacks
+    let safeAvatarUrl: string | null = null;
+    if (cvData.avatarUrl) {
+      const urlValidation = validateAvatarURL(cvData.avatarUrl);
+      if (urlValidation.valid) {
+        safeAvatarUrl = urlValidation.sanitizedUrl || null;
+      } else {
+        console.warn(`Blocked unsafe avatar URL for CV ${cvId}: ${urlValidation.error}`);
+        // Continue without avatar rather than failing
+      }
     }
 
     // Get tokens - prefer edited tokens, then stored tokens, then convert from styleConfig
@@ -162,12 +199,12 @@ export async function POST(
       };
     }
 
-    // Generate PDF
+    // Generate PDF with validated avatar URL
     const pdfBuffer = await generatePDF(
       contentToRender,
       fullName,
       tokens,
-      cvData.avatarUrl as string | null,
+      safeAvatarUrl,
       headline as string | null,
       effectiveOverrides,
       contactInfo,

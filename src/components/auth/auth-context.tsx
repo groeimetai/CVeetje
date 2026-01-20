@@ -19,6 +19,7 @@ interface AuthContextType {
   credits: number;          // Total credits (free + purchased)
   freeCredits: number;      // Monthly free credits
   purchasedCredits: number; // Purchased credits
+  emailVerified: boolean;   // Whether email is verified
   loading: boolean;
   refreshCredits: () => Promise<void>;
   refreshUserData: () => Promise<void>;
@@ -153,6 +154,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(refreshInterval);
   }, [firebaseUser, refreshToken]);
 
+  // Compute emailVerified status
+  // Google/Apple OAuth users are considered verified
+  // Email/password users need to verify their email
+  const emailVerified = firebaseUser?.emailVerified ?? false;
+
   return (
     <AuthContext.Provider
       value={{
@@ -161,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credits,
         freeCredits,
         purchasedCredits,
+        emailVerified,
         loading,
         refreshCredits,
         refreshUserData,

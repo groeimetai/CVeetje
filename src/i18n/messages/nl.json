@@ -70,7 +70,20 @@
     "signInDescription": "Log in op je CVeetje account om je CVs te beheren",
     "signUpTitle": "Account Aanmaken",
     "signUpDescription": "Registreer om professionele CVs te maken met AI",
-    "termsAgreement": "Door te registreren ga je akkoord met onze Algemene Voorwaarden en Privacybeleid. Je krijgt 5 gratis credits per maand."
+    "termsAgreement": "Door te registreren ga je akkoord met onze Algemene Voorwaarden en Privacybeleid. Je krijgt 5 gratis credits per maand.",
+    "verifyEmail": {
+      "title": "Verifieer je email",
+      "description": "We hebben een verificatie email gestuurd naar {email}. Klik op de link in de email om je account te activeren.",
+      "checkButton": "Ik heb mijn email geverifieerd",
+      "resendButton": "Verstuur email opnieuw",
+      "checking": "Controleren...",
+      "resending": "Versturen...",
+      "resendSuccess": "Verificatie email is opnieuw verstuurd!",
+      "resendError": "Kon email niet versturen. Probeer het later opnieuw.",
+      "notYetVerified": "Je email is nog niet geverifieerd. Controleer je inbox en klik op de verificatielink.",
+      "checkError": "Kon verificatie status niet controleren. Probeer het later opnieuw.",
+      "checkSpam": "Controleer ook je spam folder als je de email niet kunt vinden."
+    }
   },
   "validation": {
     "emailRequired": "E-mail is verplicht",

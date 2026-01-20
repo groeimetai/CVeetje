@@ -10,6 +10,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
   updateProfile,
+  sendEmailVerification as firebaseSendEmailVerification,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auth, db } from './config';
@@ -44,12 +45,40 @@ async function createUserDocument(firebaseUser: FirebaseUser): Promise<void> {
   }
 }
 
-// Email/Password Registration
+/**
+ * Verify reCAPTCHA token before authentication
+ * Returns true if verification passes or is not configured
+ */
+async function verifyCaptcha(token: string | null, action: string): Promise<void> {
+  // Skip if no token (reCAPTCHA not configured)
+  if (!token) {
+    return;
+  }
+
+  const response = await fetch('/api/auth/verify-captcha', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token, action }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Security verification failed');
+  }
+}
+
+// Email/Password Registration with reCAPTCHA
 export async function registerWithEmail(
   email: string,
   password: string,
-  displayName: string
+  displayName: string,
+  captchaToken?: string | null
 ): Promise<FirebaseUser> {
+  // Verify reCAPTCHA first
+  await verifyCaptcha(captchaToken || null, 'register');
+
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
   // Update display name
@@ -58,26 +87,51 @@ export async function registerWithEmail(
   // Create user document
   await createUserDocument(userCredential.user);
 
+  // Send email verification
+  await firebaseSendEmailVerification(userCredential.user, {
+    url: `${window.location.origin}/dashboard`,
+    handleCodeInApp: false,
+  });
+
   return userCredential.user;
 }
 
-// Email/Password Sign In
+// Send email verification (for resend functionality)
+export async function sendEmailVerification(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user logged in');
+  }
+  if (user.emailVerified) {
+    throw new Error('Email already verified');
+  }
+  await firebaseSendEmailVerification(user, {
+    url: `${window.location.origin}/dashboard`,
+    handleCodeInApp: false,
+  });
+}
+
+// Email/Password Sign In with reCAPTCHA
 export async function signInWithEmail(
   email: string,
-  password: string
+  password: string,
+  captchaToken?: string | null
 ): Promise<FirebaseUser> {
+  // Verify reCAPTCHA first
+  await verifyCaptcha(captchaToken || null, 'login');
+
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   return userCredential.user;
 }
 
-// Google Sign In
+// Google Sign In (OAuth has built-in bot protection)
 export async function signInWithGoogle(): Promise<FirebaseUser> {
   const userCredential = await signInWithPopup(auth, googleProvider);
   await createUserDocument(userCredential.user);
   return userCredential.user;
 }
 
-// Apple Sign In
+// Apple Sign In (OAuth has built-in bot protection)
 export async function signInWithApple(): Promise<FirebaseUser> {
   const userCredential = await signInWithPopup(auth, appleProvider);
   await createUserDocument(userCredential.user);
