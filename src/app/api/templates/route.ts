@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb, getAdminStorage } from '@/lib/firebase/admin';
 import { getPDFPageCount } from '@/lib/pdf/template-filler';
-import { analyzeDocxTemplate, estimateDocxPageCount } from '@/lib/docx/template-filler';
+import { analyzeTemplate } from '@/lib/docx/smart-template-filler';
 import type { PDFTemplateSummary, PDFTemplate, TemplateFileType } from '@/types';
 
 const MAX_TEMPLATES_PER_USER = 10;
@@ -127,6 +127,13 @@ export async function POST(request: NextRequest) {
     // Validate file type
     const fileType = SUPPORTED_TYPES[file.type];
     if (!fileType) {
+      // Check if it's an old .doc file
+      if (file.type === 'application/msword' || file.name.toLowerCase().endsWith('.doc')) {
+        return NextResponse.json(
+          { error: 'Old Word format (.doc) is not supported. Please convert to .docx (Word 2007+) first.' },
+          { status: 400 }
+        );
+      }
       return NextResponse.json(
         { error: 'Only PDF and DOCX files are allowed' },
         { status: 400 }
@@ -147,25 +154,30 @@ export async function POST(request: NextRequest) {
 
     // Get page count and analyze template
     let pageCount: number;
-    let placeholders: PDFTemplate['placeholders'] = [];
+    let detectedPatternsCount = 0;
     let autoAnalyzed = false;
 
     try {
       if (fileType === 'pdf') {
         pageCount = await getPDFPageCount(fileBytes);
       } else {
-        // DOCX file - estimate page count and auto-detect placeholders
+        // DOCX file - analyze structure
         const docxBuffer = fileBuffer;
-        pageCount = await estimateDocxPageCount(docxBuffer);
 
-        // Auto-analyze DOCX template for placeholders
+        // Auto-analyze DOCX template
         try {
-          const analysis = await analyzeDocxTemplate(docxBuffer);
-          placeholders = analysis.placeholders;
-          autoAnalyzed = true;
+          const analysis = await analyzeTemplate(docxBuffer);
+          // Estimate page count based on text length (~3000 chars per page)
+          pageCount = Math.max(1, Math.ceil(analysis.text.length / 3000));
+          detectedPatternsCount = analysis.detectedPatterns.length;
+          autoAnalyzed = detectedPatternsCount > 0;
         } catch (analysisError) {
-          console.warn('Failed to auto-analyze DOCX template:', analysisError);
-          // Continue without placeholders - user can configure manually
+          console.error('Failed to auto-analyze DOCX template:', analysisError);
+          console.error('File name:', file.name, 'File type:', file.type, 'File size:', file.size);
+          return NextResponse.json(
+            { error: `Invalid DOCX file: ${analysisError instanceof Error ? analysisError.message : 'Unknown error'}` },
+            { status: 400 }
+          );
         }
       }
     } catch {
@@ -202,7 +214,7 @@ export async function POST(request: NextRequest) {
       storageUrl: signedUrl,
       pageCount,
       fields: [], // Fields will be added later via configuration (for PDFs)
-      placeholders: placeholders || [], // Auto-detected placeholders (for DOCX)
+      placeholders: [], // Legacy field - smart filler detects patterns dynamically
       autoAnalyzed,
       createdAt: now,
       updatedAt: now,
