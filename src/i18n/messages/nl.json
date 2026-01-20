@@ -512,6 +512,8 @@
       "description": "Selecteer een template om in te vullen met je profielgegevens.",
       "noTemplates": "Geen templates gevonden",
       "noTemplatesHint": "Upload eerst een template in je instellingen.",
+      "uploadFirst": "Upload je eerste template",
+      "dropzone": "Sleep een PDF hierheen of klik om te bladeren",
       "back": "Terug naar keuze",
       "pages": "pagina's",
       "fields": "velden",
@@ -528,7 +530,16 @@
       "nationality": "Nationaliteit",
       "changeTemplate": "Andere Template",
       "filling": "Invullen...",
-      "fillAndDownload": "Invullen & Downloaden"
+      "fillAndDownload": "Invullen & Downloaden",
+      "uploadSuccess": "Template geüpload!",
+      "uploadSuccessDesc": "Je template is succesvol geüpload. Om de template te gebruiken moet je eerst configureren waar de velden staan.",
+      "configureHint": "Configureer de veld posities zodat de profieldata op de juiste plek wordt geplaatst.",
+      "configureLater": "Later Configureren",
+      "configureNow": "Nu Configureren",
+      "errors": {
+        "invalidFileType": "Alleen PDF bestanden zijn toegestaan",
+        "fileTooLarge": "Bestand mag maximaal 5MB zijn"
+      }
     },
     "choice": {
       "title": "Hoe wil je je CV maken?",

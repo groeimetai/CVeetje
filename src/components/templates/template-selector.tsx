@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,11 @@ import {
   FileText,
   Loader2,
   AlertTriangle,
-  Check,
   Download,
   ArrowRight,
+  Upload,
+  Plus,
+  Settings,
 } from 'lucide-react';
 import type { PDFTemplate, PDFTemplateSummary, ParsedLinkedIn } from '@/types';
 
@@ -32,11 +34,24 @@ interface TemplateSelectorProps {
 
 export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelectorProps) {
   const t = useTranslations('templates.selector');
+  const tUpload = useTranslations('templates.upload');
+  const tConfig = useTranslations('templates.configurator');
   const [templates, setTemplates] = useState<PDFTemplateSummary[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PDFTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFilling, setIsFilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Configure state - show after upload
+  const [showConfigurePrompt, setShowConfigurePrompt] = useState(false);
+  const [newlyUploadedTemplate, setNewlyUploadedTemplate] = useState<PDFTemplate | null>(null);
 
   // Custom values for fields not in LinkedIn data
   const [customValues, setCustomValues] = useState<Record<string, string>>({
@@ -65,6 +80,92 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
       setError(err instanceof Error ? err.message : 'Failed to fetch templates');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        setError(t('errors.invalidFileType'));
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError(t('errors.fileTooLarge'));
+        return;
+      }
+      setSelectedFile(file);
+      // Auto-fill name from filename if empty
+      if (!newTemplateName) {
+        const nameWithoutExt = file.name.replace(/\.pdf$/i, '');
+        setNewTemplateName(nameWithoutExt);
+      }
+      setError(null);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !newTemplateName.trim()) return;
+
+    try {
+      setIsUploading(true);
+      setError(null);
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('name', newTemplateName.trim());
+
+      const response = await fetch('/api/templates', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload template');
+      }
+
+      // Refresh templates list
+      await fetchTemplates();
+
+      // Store newly uploaded template and show configure prompt
+      setNewlyUploadedTemplate(data.template);
+      setShowConfigurePrompt(true);
+
+      // Close upload dialog and reset
+      setUploadDialogOpen(false);
+      setNewTemplateName('');
+      setSelectedFile(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload template');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDropzoneClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        setError(t('errors.invalidFileType'));
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError(t('errors.fileTooLarge'));
+        return;
+      }
+      setSelectedFile(file);
+      if (!newTemplateName) {
+        const nameWithoutExt = file.name.replace(/\.pdf$/i, '');
+        setNewTemplateName(nameWithoutExt);
+      }
+      setError(null);
     }
   };
 
@@ -137,6 +238,68 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
     );
   }
 
+  // Show configure prompt after upload
+  if (showConfigurePrompt && newlyUploadedTemplate) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-600">
+              <FileText className="h-5 w-5" />
+              {t('uploadSuccess')}
+            </CardTitle>
+            <CardDescription>
+              {t('uploadSuccessDesc')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-muted/50 p-4">
+              <div className="flex items-center gap-3">
+                <FileText className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="font-medium">{newlyUploadedTemplate.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {newlyUploadedTemplate.fileName} • {newlyUploadedTemplate.pageCount} {t('pages')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Alert>
+              <Settings className="h-4 w-4" />
+              <span className="ml-2">{t('configureHint')}</span>
+            </Alert>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowConfigurePrompt(false);
+                  setNewlyUploadedTemplate(null);
+                }}
+                className="flex-1"
+              >
+                {t('configureLater')}
+              </Button>
+              <Button
+                onClick={() => {
+                  // Open settings in new tab for configuration
+                  window.open(`/settings?tab=templates&configure=${newlyUploadedTemplate.id}`, '_blank');
+                  setShowConfigurePrompt(false);
+                  setNewlyUploadedTemplate(null);
+                }}
+                className="flex-1"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                {t('configureNow')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {error && (
@@ -146,22 +309,99 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
         </Alert>
       )}
 
+      {/* Upload Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tUpload('title')}</DialogTitle>
+            <DialogDescription>{tUpload('description')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="template-name">{tUpload('nameLabel')}</Label>
+              <Input
+                id="template-name"
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                placeholder={tUpload('namePlaceholder')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{tUpload('fileLabel')}</Label>
+              <div
+                onClick={handleDropzoneClick}
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {t('dropzone')}
+                </p>
+              </div>
+              {selectedFile && (
+                <p className="text-sm text-muted-foreground">
+                  {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={handleUpload}
+              disabled={!selectedFile || !newTemplateName.trim() || isUploading}
+              className="w-full"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {tUpload('uploading')}
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  {tUpload('submit')}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Template selection */}
       {!selectedTemplate ? (
         <>
-          <div>
-            <h3 className="text-lg font-medium mb-2">{t('title')}</h3>
-            <p className="text-sm text-muted-foreground">{t('description')}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium">{t('title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('description')}</p>
+            </div>
+            <Button onClick={() => setUploadDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {tUpload('button')}
+            </Button>
           </div>
 
           {templates.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-center">{t('noTemplates')}</p>
-                <p className="text-sm text-muted-foreground text-center mt-1">
-                  {t('noTemplatesHint')}
-                </p>
+                <div
+                  onClick={() => setUploadDialogOpen(true)}
+                  onDrop={handleDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  className="w-full border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+                >
+                  <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="font-medium">{t('uploadFirst')}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {t('dropzone')}
+                  </p>
+                </div>
                 <Button variant="outline" onClick={onBack} className="mt-4">
                   {t('back')}
                 </Button>

@@ -512,6 +512,8 @@
       "description": "Select a template to fill with your profile data.",
       "noTemplates": "No templates found",
       "noTemplatesHint": "Upload a template in your settings first.",
+      "uploadFirst": "Upload your first template",
+      "dropzone": "Drag a PDF here or click to browse",
       "back": "Back to choice",
       "pages": "pages",
       "fields": "fields",
@@ -528,7 +530,16 @@
       "nationality": "Nationality",
       "changeTemplate": "Change Template",
       "filling": "Filling...",
-      "fillAndDownload": "Fill & Download"
+      "fillAndDownload": "Fill & Download",
+      "uploadSuccess": "Template uploaded!",
+      "uploadSuccessDesc": "Your template has been uploaded successfully. To use the template you need to configure where the fields are located.",
+      "configureHint": "Configure the field positions so profile data is placed in the right spots.",
+      "configureLater": "Configure Later",
+      "configureNow": "Configure Now",
+      "errors": {
+        "invalidFileType": "Only PDF files are allowed",
+        "fileTooLarge": "File must be less than 5MB"
+      }
     },
     "choice": {
       "title": "How do you want to create your CV?",
