@@ -89,14 +89,14 @@ export default async function LandingPage({ params }: Props) {
             <Link href="/">
               <Logo size="sm" />
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <ThemeSwitcher />
               <LanguageSwitcher />
-              <Link href="/login">
+              <Link href="/login" className="hidden sm:block">
                 <Button variant="ghost">{locale === 'nl' ? 'Inloggen' : 'Sign In'}</Button>
               </Link>
               <Link href="/register">
-                <Button>{t('ctaStart')}</Button>
+                <Button size="sm" className="sm:size-default">{t('ctaStart')}</Button>
               </Link>
             </div>
           </div>
@@ -656,7 +656,7 @@ export default async function LandingPage({ params }: Props) {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
                 {/* Free Tier */}
                 <Card>
                   <CardHeader>

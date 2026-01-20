@@ -232,21 +232,23 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">{t('title')}</h1>
         <p className="text-muted-foreground">
           {t('subtitle')}
         </p>
       </div>
 
       <Tabs defaultValue="api-key">
-        <TabsList>
-          <TabsTrigger value="api-key">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="api-key" className="flex-1 sm:flex-initial">
             <Key className="mr-2 h-4 w-4" />
-            {t('tabs.apiKey')}
+            <span className="hidden sm:inline">{t('tabs.apiKey')}</span>
+            <span className="sm:hidden">API</span>
           </TabsTrigger>
-          <TabsTrigger value="account">
+          <TabsTrigger value="account" className="flex-1 sm:flex-initial">
             <User className="mr-2 h-4 w-4" />
-            {t('tabs.account')}
+            <span className="hidden sm:inline">{t('tabs.account')}</span>
+            <span className="sm:hidden">Account</span>
           </TabsTrigger>
         </TabsList>
 
