@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb, getAdminStorage } from '@/lib/firebase/admin';
 import { getPDFPageCount } from '@/lib/pdf/template-filler';
-import type { PDFTemplateSummary, PDFTemplate } from '@/types';
+import { analyzeDocxTemplate, estimateDocxPageCount } from '@/lib/docx/template-filler';
+import type { PDFTemplateSummary, PDFTemplate, TemplateFileType } from '@/types';
 
 const MAX_TEMPLATES_PER_USER = 10;
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// Supported file types
+const SUPPORTED_TYPES: Record<string, TemplateFileType> = {
+  'application/pdf': 'pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+};
 
 // GET - List all templates for the user
 export async function GET(request: NextRequest) {
@@ -45,8 +52,11 @@ export async function GET(request: NextRequest) {
         id: doc.id,
         name: data.name,
         fileName: data.fileName,
+        fileType: data.fileType || 'pdf', // Default to pdf for backwards compatibility
         pageCount: data.pageCount,
         fieldCount: data.fields?.length || 0,
+        placeholderCount: data.placeholders?.length || 0,
+        autoAnalyzed: data.autoAnalyzed || false,
         updatedAt: data.updatedAt instanceof Date ? data.updatedAt : data.updatedAt?.toDate?.() || new Date(),
       };
     });
@@ -115,9 +125,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    if (file.type !== 'application/pdf') {
+    const fileType = SUPPORTED_TYPES[file.type];
+    if (!fileType) {
       return NextResponse.json(
-        { error: 'Only PDF files are allowed' },
+        { error: 'Only PDF and DOCX files are allowed' },
         { status: 400 }
       );
     }
@@ -134,13 +145,32 @@ export async function POST(request: NextRequest) {
     const fileBuffer = await file.arrayBuffer();
     const fileBytes = new Uint8Array(fileBuffer);
 
-    // Get page count
+    // Get page count and analyze template
     let pageCount: number;
+    let placeholders: PDFTemplate['placeholders'] = [];
+    let autoAnalyzed = false;
+
     try {
-      pageCount = await getPDFPageCount(fileBytes);
+      if (fileType === 'pdf') {
+        pageCount = await getPDFPageCount(fileBytes);
+      } else {
+        // DOCX file - estimate page count and auto-detect placeholders
+        const docxBuffer = fileBuffer;
+        pageCount = await estimateDocxPageCount(docxBuffer);
+
+        // Auto-analyze DOCX template for placeholders
+        try {
+          const analysis = await analyzeDocxTemplate(docxBuffer);
+          placeholders = analysis.placeholders;
+          autoAnalyzed = true;
+        } catch (analysisError) {
+          console.warn('Failed to auto-analyze DOCX template:', analysisError);
+          // Continue without placeholders - user can configure manually
+        }
+      }
     } catch {
       return NextResponse.json(
-        { error: 'Invalid PDF file' },
+        { error: `Invalid ${fileType.toUpperCase()} file` },
         { status: 400 }
       );
     }
@@ -148,12 +178,12 @@ export async function POST(request: NextRequest) {
     // Upload to Firebase Storage
     const storage = getAdminStorage();
     const bucket = storage.bucket();
-    const fileName = `templates/${userId}/${Date.now()}-${file.name}`;
-    const fileRef = bucket.file(fileName);
+    const storagePath = `templates/${userId}/${Date.now()}-${file.name}`;
+    const fileRef = bucket.file(storagePath);
 
     await fileRef.save(Buffer.from(fileBytes), {
       metadata: {
-        contentType: 'application/pdf',
+        contentType: file.type,
       },
     });
 
@@ -168,9 +198,12 @@ export async function POST(request: NextRequest) {
     const templateData: Omit<PDFTemplate, 'id'> = {
       name,
       fileName: file.name,
+      fileType,
       storageUrl: signedUrl,
       pageCount,
-      fields: [], // Fields will be added later via configuration
+      fields: [], // Fields will be added later via configuration (for PDFs)
+      placeholders: placeholders || [], // Auto-detected placeholders (for DOCX)
+      autoAnalyzed,
       createdAt: now,
       updatedAt: now,
       userId,

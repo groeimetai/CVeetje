@@ -456,26 +456,29 @@
   "templates": {
     "pages": "pagina's",
     "fields": "velden",
+    "placeholders": "placeholders",
     "fieldsConfigured": "velden geconfigureerd",
+    "autoDetected": "Auto-gedetecteerd",
+    "readyToFill": "Klaar om in te vullen",
     "configure": "Configureren",
     "delete": "Verwijderen",
     "deleteConfirm": "Weet je zeker dat je deze template wilt verwijderen?",
     "empty": {
       "title": "Nog geen templates",
-      "description": "Upload je eerste PDF template om te beginnen."
+      "description": "Upload je eerste PDF of Word template om te beginnen."
     },
     "upload": {
       "button": "Template Uploaden",
       "title": "Nieuwe Template Uploaden",
-      "description": "Upload een PDF template die je wilt invullen met kandidaatgegevens.",
+      "description": "Upload een PDF of Word (DOCX) template die je wilt invullen met kandidaatgegevens.",
       "nameLabel": "Template naam",
       "namePlaceholder": "bijv. Recruitment Bureau Template",
-      "fileLabel": "PDF bestand",
+      "fileLabel": "PDF of DOCX bestand",
       "uploading": "Uploaden...",
       "submit": "Template Uploaden"
     },
     "errors": {
-      "invalidFileType": "Alleen PDF bestanden zijn toegestaan",
+      "invalidFileType": "Alleen PDF en DOCX bestanden zijn toegestaan",
       "fileTooLarge": "Bestand mag maximaal 5MB zijn"
     },
     "configurator": {
@@ -513,11 +516,15 @@
       "noTemplates": "Geen templates gevonden",
       "noTemplatesHint": "Upload eerst een template in je instellingen.",
       "uploadFirst": "Upload je eerste template",
-      "dropzone": "Sleep een PDF hierheen of klik om te bladeren",
+      "dropzone": "Sleep een PDF of DOCX hierheen of klik om te bladeren",
       "back": "Terug naar keuze",
       "pages": "pagina's",
       "fields": "velden",
+      "placeholders": "placeholders",
+      "autoDetected": "Auto-gedetecteerd",
+      "readyToFill": "Klaar",
       "noFieldsConfigured": "Deze template heeft nog geen velden geconfigureerd. Configureer eerst de velden in de template instellingen.",
+      "noPlaceholdersDetected": "Er zijn geen placeholders gedetecteerd in deze DOCX template. Zorg ervoor dat de template placeholders bevat zoals {{naam}} of [VOORNAAM].",
       "dataToFill": "Gegevens die worden ingevuld",
       "name": "Naam",
       "email": "E-mail",
@@ -532,12 +539,13 @@
       "filling": "Invullen...",
       "fillAndDownload": "Invullen & Downloaden",
       "uploadSuccess": "Template geüpload!",
-      "uploadSuccessDesc": "Je template is succesvol geüpload. Om de template te gebruiken moet je eerst configureren waar de velden staan.",
+      "uploadSuccessDesc": "Je template is succesvol geüpload. Voor PDF templates moet je configureren waar de velden staan. Voor DOCX templates worden placeholders automatisch gedetecteerd.",
+      "uploadSuccessDocx": "Je DOCX template is geüpload en geanalyseerd. {count} placeholders zijn automatisch gedetecteerd!",
       "configureHint": "Configureer de veld posities zodat de profieldata op de juiste plek wordt geplaatst.",
       "configureLater": "Later Configureren",
       "configureNow": "Nu Configureren",
       "errors": {
-        "invalidFileType": "Alleen PDF bestanden zijn toegestaan",
+        "invalidFileType": "Alleen PDF en DOCX bestanden zijn toegestaan",
         "fileTooLarge": "Bestand mag maximaal 5MB zijn"
       }
     },

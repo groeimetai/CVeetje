@@ -1023,7 +1023,10 @@ export interface MotivationLetterResponse {
   error?: string;
 }
 
-// ============ PDF Template Types ============
+// ============ PDF/DOCX Template Types ============
+
+// Supported template file types
+export type TemplateFileType = 'pdf' | 'docx';
 
 // Field mapping - which profile data goes into this field
 export type ProfileFieldMapping =
@@ -1034,6 +1037,15 @@ export type ProfileFieldMapping =
   | { type: 'language'; index: number; field: 'language' | 'proficiency' }
   | { type: 'certification'; index: number }
   | { type: 'custom'; value: string };
+
+// DOCX placeholder - detected placeholder in a DOCX template
+export interface DocxPlaceholder {
+  id: string;
+  originalText: string;               // "{{naam}}" or "[FUNCTIE]" or "Voornaam: _____"
+  placeholderType: 'explicit' | 'label-with-space'; // Type of placeholder pattern
+  mapping: ProfileFieldMapping;
+  confidence: 'low' | 'medium' | 'high';
+}
 
 // Individual field position in the template
 export interface PDFTemplateField {
@@ -1057,9 +1069,12 @@ export interface PDFTemplate {
   id: string;
   name: string;
   fileName: string;
+  fileType: TemplateFileType;         // 'pdf' or 'docx'
   storageUrl: string;
   pageCount: number;
   fields: PDFTemplateField[];
+  placeholders?: DocxPlaceholder[];    // For DOCX templates
+  autoAnalyzed?: boolean;              // AI has analyzed this template
   createdAt: Date | Timestamp;
   updatedAt: Date | Timestamp;
   userId: string;
@@ -1070,8 +1085,11 @@ export interface PDFTemplateSummary {
   id: string;
   name: string;
   fileName: string;
+  fileType: TemplateFileType;
   pageCount: number;
   fieldCount: number;
+  placeholderCount?: number;           // For DOCX templates
+  autoAnalyzed?: boolean;
   updatedAt: Date;
 }
 
@@ -1090,7 +1108,9 @@ export interface DetectedTemplateField {
 export interface TemplateAnalysisResult {
   pageCount: number;
   detectedFields: DetectedTemplateField[];
+  detectedPlaceholders?: DocxPlaceholder[];  // For DOCX templates
   templateType?: string;           // e.g., "recruitment", "academic", "generic"
+  fileType: TemplateFileType;
 }
 
 // Request to fill a template

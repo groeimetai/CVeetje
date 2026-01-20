@@ -456,26 +456,29 @@
   "templates": {
     "pages": "pages",
     "fields": "fields",
+    "placeholders": "placeholders",
     "fieldsConfigured": "fields configured",
+    "autoDetected": "Auto-detected",
+    "readyToFill": "Ready to fill",
     "configure": "Configure",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this template?",
     "empty": {
       "title": "No templates yet",
-      "description": "Upload your first PDF template to get started."
+      "description": "Upload your first PDF or Word template to get started."
     },
     "upload": {
       "button": "Upload Template",
       "title": "Upload New Template",
-      "description": "Upload a PDF template that you want to fill with candidate data.",
+      "description": "Upload a PDF or Word (DOCX) template that you want to fill with candidate data.",
       "nameLabel": "Template name",
       "namePlaceholder": "e.g. Acme Recruitment Template",
-      "fileLabel": "PDF file",
+      "fileLabel": "PDF or DOCX file",
       "uploading": "Uploading...",
       "submit": "Upload Template"
     },
     "errors": {
-      "invalidFileType": "Only PDF files are allowed",
+      "invalidFileType": "Only PDF and DOCX files are allowed",
       "fileTooLarge": "File must be less than 5MB"
     },
     "configurator": {
@@ -513,11 +516,15 @@
       "noTemplates": "No templates found",
       "noTemplatesHint": "Upload a template in your settings first.",
       "uploadFirst": "Upload your first template",
-      "dropzone": "Drag a PDF here or click to browse",
+      "dropzone": "Drag a PDF or DOCX here or click to browse",
       "back": "Back to choice",
       "pages": "pages",
       "fields": "fields",
+      "placeholders": "placeholders",
+      "autoDetected": "Auto-detected",
+      "readyToFill": "Ready",
       "noFieldsConfigured": "This template has no fields configured yet. Configure the fields in the template settings first.",
+      "noPlaceholdersDetected": "No placeholders detected in this DOCX template. Make sure the template contains placeholders like {{name}} or [FIRSTNAME].",
       "dataToFill": "Data that will be filled",
       "name": "Name",
       "email": "Email",
@@ -532,12 +539,13 @@
       "filling": "Filling...",
       "fillAndDownload": "Fill & Download",
       "uploadSuccess": "Template uploaded!",
-      "uploadSuccessDesc": "Your template has been uploaded successfully. To use the template you need to configure where the fields are located.",
+      "uploadSuccessDesc": "Your template has been uploaded successfully. For PDF templates you need to configure where the fields are located. For DOCX templates, placeholders are detected automatically.",
+      "uploadSuccessDocx": "Your DOCX template has been uploaded and analyzed. {count} placeholders were automatically detected!",
       "configureHint": "Configure the field positions so profile data is placed in the right spots.",
       "configureLater": "Configure Later",
       "configureNow": "Configure Now",
       "errors": {
-        "invalidFileType": "Only PDF files are allowed",
+        "invalidFileType": "Only PDF and DOCX files are allowed",
         "fileTooLarge": "File must be less than 5MB"
       }
     },

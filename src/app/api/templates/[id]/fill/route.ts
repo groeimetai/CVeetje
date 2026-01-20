@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
-import type { PDFTemplate, ParsedLinkedIn } from '@/types';
+import { fillDocxTemplateAuto, fillDocxTemplate, analyzeDocxTemplate } from '@/lib/docx/template-filler';
+import { convertFilledTemplateToPdf } from '@/lib/docx/docx-to-pdf';
+import type { PDFTemplate, ParsedLinkedIn, DocxPlaceholder } from '@/types';
 
 // POST - Fill a template with profile data
 export async function POST(
@@ -49,9 +51,12 @@ export async function POST(
       id: templateDoc.id,
       name: templateData?.name,
       fileName: templateData?.fileName,
+      fileType: templateData?.fileType || 'pdf', // Default to pdf for backwards compatibility
       storageUrl: templateData?.storageUrl,
       pageCount: templateData?.pageCount,
       fields: templateData?.fields || [],
+      placeholders: templateData?.placeholders || [],
+      autoAnalyzed: templateData?.autoAnalyzed || false,
       createdAt: templateData?.createdAt,
       updatedAt: templateData?.updatedAt,
       userId: templateData?.userId,
@@ -97,38 +102,78 @@ export async function POST(
     const templateBuffer = await templateResponse.arrayBuffer();
     const templateBytes = new Uint8Array(templateBuffer);
 
-    // Check if PDF has form fields (AcroForm)
-    const hasFields = await hasFormFields(templateBytes);
-
     let filledPdfBytes: Uint8Array;
-    let fillMethod: 'form' | 'coordinates' | 'none' = 'none';
+    let fillMethod: 'form' | 'coordinates' | 'docx-placeholders' | 'none' = 'none';
     let filledFields: string[] = [];
+    let filledCount = 0;
 
-    if (hasFields) {
-      // Try auto-filling form fields first
-      const autoResult = await fillPDFTemplateAuto(
-        templateBytes,
+    if (template.fileType === 'docx') {
+      // DOCX template flow
+      const docxBuffer = templateBuffer;
+
+      // Get placeholders - use stored ones or re-analyze
+      let placeholders: DocxPlaceholder[] = template.placeholders || [];
+      if (placeholders.length === 0) {
+        // No stored placeholders - try to auto-detect
+        try {
+          const analysis = await analyzeDocxTemplate(docxBuffer);
+          placeholders = analysis.placeholders;
+        } catch (e) {
+          console.warn('Failed to analyze DOCX template:', e);
+        }
+      }
+
+      if (placeholders.length === 0) {
+        return NextResponse.json(
+          { error: 'No placeholders detected in DOCX template. The template may not have any recognizable placeholder patterns.' },
+          { status: 400 }
+        );
+      }
+
+      // Fill the DOCX template
+      const filledDocx = await fillDocxTemplate(
+        docxBuffer,
+        placeholders,
         profileData,
         customValues
       );
-      filledPdfBytes = autoResult.pdfBytes;
-      fillMethod = autoResult.method;
-      filledFields = autoResult.filledFields || [];
-    } else if (template.fields && template.fields.length > 0) {
-      // Fall back to coordinate-based filling if template has configured fields
-      filledPdfBytes = await fillPDFTemplate(
-        templateBytes,
-        template,
-        profileData,
-        customValues
-      );
-      fillMethod = 'coordinates';
+
+      // Convert filled DOCX to PDF
+      const pdfBuffer = await convertFilledTemplateToPdf(filledDocx);
+      filledPdfBytes = new Uint8Array(pdfBuffer);
+      fillMethod = 'docx-placeholders';
+      filledCount = placeholders.length;
+      filledFields = placeholders.map(p => p.originalText);
     } else {
-      // No form fields and no configured coordinates
-      return NextResponse.json(
-        { error: 'Template has no fillable form fields and no coordinate fields configured.' },
-        { status: 400 }
-      );
+      // PDF template flow (existing logic)
+      const hasFields = await hasFormFields(templateBytes);
+
+      if (hasFields) {
+        // Try auto-filling form fields first
+        const autoResult = await fillPDFTemplateAuto(
+          templateBytes,
+          profileData,
+          customValues
+        );
+        filledPdfBytes = autoResult.pdfBytes;
+        fillMethod = autoResult.method;
+        filledFields = autoResult.filledFields || [];
+      } else if (template.fields && template.fields.length > 0) {
+        // Fall back to coordinate-based filling if template has configured fields
+        filledPdfBytes = await fillPDFTemplate(
+          templateBytes,
+          template,
+          profileData,
+          customValues
+        );
+        fillMethod = 'coordinates';
+      } else {
+        // No form fields and no configured coordinates
+        return NextResponse.json(
+          { error: 'Template has no fillable form fields and no coordinate fields configured.' },
+          { status: 400 }
+        );
+      }
     }
 
     // Deduct credit (deduct from free first, then purchased)
@@ -143,9 +188,20 @@ export async function POST(
     }
 
     // Record transaction
-    const methodDescription = fillMethod === 'form'
-      ? `(auto-filled ${filledFields.length} form fields)`
-      : '(coordinate-based)';
+    let methodDescription: string;
+    switch (fillMethod) {
+      case 'form':
+        methodDescription = `(auto-filled ${filledFields.length} form fields)`;
+        break;
+      case 'docx-placeholders':
+        methodDescription = `(DOCX, ${filledCount} placeholders)`;
+        break;
+      case 'coordinates':
+        methodDescription = '(coordinate-based)';
+        break;
+      default:
+        methodDescription = '';
+    }
     await db.collection('users').doc(userId).collection('transactions').add({
       amount: -1,
       type: 'cv_generation',
@@ -156,11 +212,16 @@ export async function POST(
     });
 
     // Return the filled PDF as binary
+    // For DOCX templates, the output is always PDF (after conversion)
+    const outputFileName = template.fileType === 'docx'
+      ? `filled-${template.fileName.replace(/\.docx$/i, '.pdf')}`
+      : `filled-${template.fileName}`;
+
     return new NextResponse(Buffer.from(filledPdfBytes), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="filled-${template.fileName}"`,
+        'Content-Disposition': `attachment; filename="${outputFileName}"`,
       },
     });
   } catch (error) {

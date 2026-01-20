@@ -48,9 +48,12 @@ export async function GET(
       id: templateDoc.id,
       name: data?.name,
       fileName: data?.fileName,
+      fileType: data?.fileType || 'pdf', // Default to pdf for backwards compatibility
       storageUrl: data?.storageUrl,
       pageCount: data?.pageCount,
       fields: data?.fields || [],
+      placeholders: data?.placeholders || [],
+      autoAnalyzed: data?.autoAnalyzed || false,
       createdAt: data?.createdAt instanceof Date ? data.createdAt : data?.createdAt?.toDate?.() || new Date(),
       updatedAt: data?.updatedAt instanceof Date ? data.updatedAt : data?.updatedAt?.toDate?.() || new Date(),
       userId: data?.userId,

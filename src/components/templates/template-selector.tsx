@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   FileText,
+  FileType,
   Loader2,
   AlertTriangle,
   Download,
@@ -23,6 +24,8 @@ import {
   Upload,
   Plus,
   Settings,
+  CheckCircle,
+  Sparkles,
 } from 'lucide-react';
 import type { PDFTemplate, PDFTemplateSummary, ParsedLinkedIn } from '@/types';
 
@@ -83,10 +86,15 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
     }
   };
 
+  const SUPPORTED_TYPES = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ];
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type !== 'application/pdf') {
+      if (!SUPPORTED_TYPES.includes(file.type)) {
         setError(t('errors.invalidFileType'));
         return;
       }
@@ -97,7 +105,7 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
       setSelectedFile(file);
       // Auto-fill name from filename if empty
       if (!newTemplateName) {
-        const nameWithoutExt = file.name.replace(/\.pdf$/i, '');
+        const nameWithoutExt = file.name.replace(/\.(pdf|docx)$/i, '');
         setNewTemplateName(nameWithoutExt);
       }
       setError(null);
@@ -152,7 +160,7 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file) {
-      if (file.type !== 'application/pdf') {
+      if (!SUPPORTED_TYPES.includes(file.type)) {
         setError(t('errors.invalidFileType'));
         return;
       }
@@ -162,7 +170,7 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
       }
       setSelectedFile(file);
       if (!newTemplateName) {
-        const nameWithoutExt = file.name.replace(/\.pdf$/i, '');
+        const nameWithoutExt = file.name.replace(/\.(pdf|docx)$/i, '');
         setNewTemplateName(nameWithoutExt);
       }
       setError(null);
@@ -188,9 +196,14 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
   const handleFill = async () => {
     if (!selectedTemplate) return;
 
-    // Check if template has fields
-    if (!selectedTemplate.fields || selectedTemplate.fields.length === 0) {
-      setError(t('noFieldsConfigured'));
+    // Check if template is ready to fill
+    const isDocx = selectedTemplate.fileType === 'docx';
+    const hasContent = isDocx
+      ? (selectedTemplate.placeholders && selectedTemplate.placeholders.length > 0)
+      : (selectedTemplate.fields && selectedTemplate.fields.length > 0);
+
+    if (!hasContent) {
+      setError(isDocx ? t('noPlaceholdersDetected') : t('noFieldsConfigured'));
       return;
     }
 
@@ -337,7 +350,7 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,application/pdf"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -409,31 +422,54 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {templates.map((template) => (
-                <Card
-                  key={template.id}
-                  className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => selectTemplate(template.id)}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      {template.name}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {template.fileName}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {template.pageCount} {t('pages')} • {template.fieldCount} {t('fields')}
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {templates.map((template) => {
+                const isDocx = template.fileType === 'docx';
+                const hasDetectedItems = isDocx
+                  ? (template.placeholderCount || 0) > 0
+                  : template.fieldCount > 0;
+
+                return (
+                  <Card
+                    key={template.id}
+                    className="cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => selectTemplate(template.id)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {isDocx ? (
+                          <FileType className="h-4 w-4 text-blue-600" />
+                        ) : (
+                          <FileText className="h-4 w-4 text-red-600" />
+                        )}
+                        {template.name}
+                        {template.autoAnalyzed && hasDetectedItems && (
+                          <span className="flex items-center gap-1 text-xs font-normal bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
+                            <Sparkles className="h-3 w-3" />
+                            {t('autoDetected')}
+                          </span>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="text-xs flex items-center gap-1">
+                        <span className="uppercase text-[10px] font-medium bg-muted px-1 rounded">
+                          {template.fileType}
+                        </span>
+                        {template.fileName}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {template.pageCount} {t('pages')}
+                          {isDocx
+                            ? ` • ${template.placeholderCount || 0} ${t('placeholders')}`
+                            : ` • ${template.fieldCount} ${t('fields')}`}
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </>
@@ -443,11 +479,27 @@ export function TemplateSelector({ profileData, onFill, onBack }: TemplateSelect
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" />
+                {selectedTemplate.fileType === 'docx' ? (
+                  <FileType className="h-5 w-5 text-blue-600" />
+                ) : (
+                  <FileText className="h-5 w-5 text-red-600" />
+                )}
                 {selectedTemplate.name}
+                {selectedTemplate.autoAnalyzed && (
+                  <span className="flex items-center gap-1 text-xs font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    <CheckCircle className="h-3 w-3" />
+                    {t('readyToFill')}
+                  </span>
+                )}
               </CardTitle>
               <CardDescription>
-                {selectedTemplate.fileName} • {selectedTemplate.pageCount} {t('pages')} • {selectedTemplate.fields?.length || 0} {t('fields')}
+                <span className="uppercase text-[10px] font-medium bg-muted px-1 rounded mr-1">
+                  {selectedTemplate.fileType}
+                </span>
+                {selectedTemplate.fileName} • {selectedTemplate.pageCount} {t('pages')}
+                {selectedTemplate.fileType === 'docx'
+                  ? ` • ${selectedTemplate.placeholders?.length || 0} ${t('placeholders')}`
+                  : ` • ${selectedTemplate.fields?.length || 0} ${t('fields')}`}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

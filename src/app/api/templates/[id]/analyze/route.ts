@@ -239,6 +239,7 @@ For experience/education sections that have multiple entries (like job 1, job 2,
       pageCount,
       detectedFields,
       templateType: result.templateType,
+      fileType: 'pdf', // This analyze endpoint is only for PDF templates
     };
 
     return NextResponse.json({
