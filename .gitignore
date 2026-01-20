@@ -35,7 +35,9 @@ ui-debug.log
 
 # local test files
 pdf-outputs/
+pdf-template-examples/
 trigger-config.yaml
+linkedin-bio.txt
 
 # social media posts
 /posts/
