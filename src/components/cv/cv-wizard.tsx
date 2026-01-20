@@ -587,9 +587,9 @@ export function CVWizard() {
           <div className="rounded-lg border p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-sm">CV Taal</p>
+                <p className="font-medium text-sm">{t('languageSelection.title')}</p>
                 <p className="text-xs text-muted-foreground">
-                  In welke taal moet je CV gegenereerd worden?
+                  {t('languageSelection.description')}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -601,7 +601,7 @@ export function CVWizard() {
                       : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                   }`}
                 >
-                  🇳🇱 Nederlands
+                  🇳🇱 {t('languageSelection.dutch')}
                 </button>
                 <button
                   onClick={() => setOutputLanguage('en')}
@@ -611,7 +611,7 @@ export function CVWizard() {
                       : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                   }`}
                 >
-                  🇬🇧 English
+                  🇬🇧 {t('languageSelection.english')}
                 </button>
               </div>
             </div>
@@ -633,9 +633,9 @@ export function CVWizard() {
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Generating your CV...</h3>
+            <h3 className="text-lg font-semibold">{t('generating.title')}</h3>
             <p className="text-muted-foreground">
-              AI is tailoring your CV based on your profile, the job, and your style preferences.
+              {t('generating.creating')}
             </p>
           </div>
         </div>

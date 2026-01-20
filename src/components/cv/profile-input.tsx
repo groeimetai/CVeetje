@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,7 @@ export function ProfileInput({
   modelInfo,
   apiKey,
 }: ProfileInputProps) {
+  const t = useTranslations('profileInput');
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
   const [sources, setSources] = useState<ProfileInputSource[]>([]);
   const [parsed, setParsed] = useState<ParsedLinkedIn | null>(initialData || null);
@@ -1187,10 +1189,10 @@ export function ProfileInput({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
-            Profiel Verwerkt
+            {t('processed.title')}
           </CardTitle>
           <CardDescription>
-            De volgende informatie is gevonden in je profiel
+            {t('processed.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1330,13 +1332,13 @@ export function ProfileInput({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FolderOpen className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Opgeslagen Profielen</span>
+                  <span className="text-sm font-medium">{t('savedProfiles.label')}</span>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
                       <User className="h-4 w-4 mr-2" />
-                      Wissel profiel
+                      {t('savedProfiles.switchProfile')}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-64">
@@ -1365,7 +1367,7 @@ export function ProfileInput({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleReset}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Nieuw profiel invoeren
+                      {t('savedProfiles.newProfile')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -1935,13 +1937,12 @@ export function ProfileInput({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Profiel Informatie</CardTitle>
+          <CardTitle>{t('title')}</CardTitle>
           <CardDescription>
-            Voeg je profiel informatie toe via bestanden, screenshots of tekst.
-            Je kunt meerdere bronnen combineren.
+            {t('description')}
             {fileInputSupported && (
               <span className="block mt-1 text-primary">
-                Tip: In LinkedIn kun je je profiel exporteren via Profiel → Meer → Opslaan als PDF
+                {t('tip')}
               </span>
             )}
           </CardDescription>
@@ -1959,7 +1960,7 @@ export function ProfileInput({
             <div className="border rounded-lg p-4 bg-muted/30">
               <div className="flex items-center gap-2 mb-3">
                 <FolderOpen className="h-4 w-4 text-primary" />
-                <Label className="text-sm font-medium">Opgeslagen Profielen</Label>
+                <Label className="text-sm font-medium">{t('savedProfiles.label')}</Label>
               </div>
               <div className="space-y-2">
                 {savedProfiles.map((profile) => (
@@ -1995,7 +1996,7 @@ export function ProfileInput({
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleLoadProfile(profile.id); }}>
                           <FolderOpen className="h-4 w-4 mr-2" />
-                          Laden
+                          {t('savedProfiles.load')}
                         </DropdownMenuItem>
                         {!profile.isDefault && (
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleSetDefault(profile.id); }}>
@@ -2027,7 +2028,7 @@ export function ProfileInput({
           {isLoadingProfiles && (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">Profielen laden...</span>
+              <span className="ml-2 text-sm text-muted-foreground">{t('savedProfiles.loading')}</span>
             </div>
           )}
 
@@ -2039,7 +2040,7 @@ export function ProfileInput({
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Bestand toevoegen
+                {t('addFile')}
               </Button>
             )}
             <Button
@@ -2047,7 +2048,7 @@ export function ProfileInput({
               onClick={() => setShowTextInput(!showTextInput)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Tekst toevoegen
+              {t('addText')}
             </Button>
             <input
               ref={fileInputRef}
@@ -2123,7 +2124,7 @@ export function ProfileInput({
             >
               <Upload className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4 text-sm text-muted-foreground">
-                Sleep je LinkedIn PDF of screenshots hierheen, of klik om te bladeren
+                {t('dropzone')}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
                 PDF, PNG, JPG, WebP (max 10MB per bestand)

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -34,6 +35,7 @@ interface JobInputProps {
 }
 
 export function JobInput({ onSubmit, onTokenUsage, initialData }: JobInputProps) {
+  const t = useTranslations('jobInput');
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
   const [rawText, setRawText] = useState(initialData?.rawText || '');
   const [parsedJob, setParsedJob] = useState<JobVacancy | null>(initialData || null);
@@ -243,31 +245,18 @@ export function JobInput({ onSubmit, onTokenUsage, initialData }: JobInputProps)
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Briefcase className="h-5 w-5" />
-            Vacature toevoegen
+            {t('title')}
           </CardTitle>
           <CardDescription>
-            Plak de volledige vacaturetekst en we analyseren automatisch alle relevante informatie
+            {t('description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="vacancy-text">Vacaturetekst</Label>
+            <Label htmlFor="vacancy-text">{t('pasteVacancy')}</Label>
             <Textarea
               id="vacancy-text"
-              placeholder="Plak hier de volledige vacaturetekst...
-
-Voorbeeld:
-Senior Software Engineer bij TechCorp
-Locatie: Amsterdam (Hybrid)
-Full-time
-
-Over de functie:
-We zoeken een ervaren developer...
-
-Wat we vragen:
-- 5+ jaar ervaring met React
-- Kennis van TypeScript
-..."
+              placeholder={t('vacancyPlaceholder')}
               rows={12}
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}

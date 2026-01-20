@@ -480,6 +480,147 @@
     "title": "Nieuwe CV Maken",
     "subtitle": "Volg de stappen om je professionele CV te genereren"
   },
+  "profileInput": {
+    "title": "Profiel Informatie",
+    "description": "Voeg je profiel informatie toe via bestanden, screenshots of tekst. Je kunt meerdere bronnen combineren.",
+    "tip": "Tip: In LinkedIn kun je je profiel exporteren via Profiel → Meer → Opslaan als PDF",
+    "savedProfiles": {
+      "label": "Opgeslagen Profielen",
+      "switchProfile": "Wissel profiel",
+      "newProfile": "Nieuw profiel invoeren",
+      "loading": "Profielen laden...",
+      "load": "Laden",
+      "experiences": "ervaringen"
+    },
+    "addNewBelow": "Of voeg hieronder nieuw profiel informatie toe",
+    "addFile": "Bestand toevoegen",
+    "addText": "Tekst toevoegen",
+    "visionRequired": "Gebruik een model dat vision ondersteunt (zoals GPT-4o, Claude Sonnet, of Gemini) of plak je profiel als tekst.",
+    "configureApiKey": "Configureer je AI API key in Instellingen om bestanden te uploaden.",
+    "extraTextInfo": "Extra tekst informatie",
+    "textPlaceholder": "Plak hier je LinkedIn profiel tekst, extra ervaring, of andere relevante informatie...",
+    "textTip": "Tip: Selecteer en kopieer je LinkedIn profiel pagina (Ctrl+A, Ctrl+C)",
+    "add": "Toevoegen",
+    "dropzone": "Sleep je LinkedIn PDF of screenshots hierheen, of klik om te bladeren",
+    "addedSources": "Toegevoegde bronnen",
+    "textInput": "Tekst invoer",
+    "addMoreFiles": "Meer bestanden toevoegen",
+    "largeRequest": "Dit is een grote request. Overweeg om minder bestanden toe te voegen.",
+    "textOnlyFree": "Alleen tekst bronnen → gratis verwerking (geen AI call)",
+    "confirmLargeRequest": "Weet je zeker dat je wilt doorgaan? Je kunt ook minder bestanden toevoegen om kosten te besparen.",
+    "cancel": "Annuleren",
+    "continue": "Doorgaan",
+    "process": "Profiel Verwerken",
+    "processing": "Verwerken...",
+    "errors": {
+      "couldNotLoad": "Kon profiel niet laden",
+      "couldNotSave": "Kon profiel niet opslaan",
+      "couldNotUpdate": "Kon profiel niet bijwerken",
+      "enterText": "Voer tekst in om toe te voegen",
+      "addSource": "Voeg minimaal 1 bron toe",
+      "noNameFound": "Kon geen naam vinden. Controleer of je de volledige profielinformatie hebt toegevoegd.",
+      "configureApiKey": "Configureer je API key in Instellingen om bestanden te verwerken.",
+      "noProfileInfo": "Kon geen profiel informatie extraheren. Probeer andere bronnen."
+    },
+    "editProfile": {
+      "title": "Profiel Bewerken",
+      "experience": "Werkervaring",
+      "education": "Opleiding",
+      "skills": "Vaardigheden",
+      "addExperience": "Toevoegen",
+      "addEducation": "Toevoegen",
+      "addSkill": "Toevoegen",
+      "experienceNum": "Ervaring {num}",
+      "educationNum": "Opleiding {num}",
+      "skillPlaceholder": "Vaardigheid",
+      "save": "Opslaan",
+      "saving": "Opslaan..."
+    },
+    "processed": {
+      "title": "Profiel Verwerkt",
+      "description": "De volgende informatie is gevonden in je profiel",
+      "experienceCount": "{count} Werkervaring(en)",
+      "educationCount": "{count} Opleiding(en)",
+      "skillCount": "{count} Vaardighe(i)d(en)",
+      "experiencePreview": "Werkervaring Preview"
+    },
+    "contactInfo": {
+      "title": "Contactgegevens voor je CV",
+      "description": "LinkedIn exporteert geen contactgegevens - vul deze hieronder in!"
+    },
+    "saveProfile": {
+      "title": "Profiel Opslaan",
+      "description": "Sla dit profiel op om het later snel te kunnen hergebruiken voor andere vacatures.",
+      "namePlaceholder": "bijv. ServiceNow Developer Profiel",
+      "nameHint": "Geef een herkenbare naam voor dit profiel",
+      "setDefault": "Als standaard profiel instellen",
+      "save": "Opslaan",
+      "saving": "Opslaan...",
+      "saveButton": "Profiel opslaan",
+      "updateButton": "Profiel bijwerken",
+      "saveAsNew": "Als nieuw opslaan"
+    },
+    "enrichProfile": {
+      "title": "Profiel Verrijken met AI",
+      "description": "Beschrijf wat je wilt toevoegen aan je profiel. AI analyseert je tekst en voegt automatisch nieuwe ervaringen, vaardigheden of opleidingen toe.",
+      "label": "Wat wil je toevoegen?",
+      "placeholder": "Beschrijf projecten, cursussen, certificaten of nieuwe ervaring die je wilt toevoegen.",
+      "enrich": "Verrijken",
+      "enriching": "Verrijken...",
+      "whatWillBeAdded": "Wat wordt toegevoegd:",
+      "newExperience": "Nieuwe Werkervaring",
+      "newSkills": "Nieuwe Vaardigheden",
+      "newEducation": "Nieuwe Opleidingen",
+      "apply": "Wijzigingen Toepassen",
+      "credits": "credits"
+    },
+    "linkedinExport": {
+      "title": "LinkedIn Profiel Content",
+      "description": "Geoptimaliseerde content voor je LinkedIn profiel. Kopieer en plak naar LinkedIn.",
+      "experienceDescriptions": "Werkervaring Beschrijvingen",
+      "educationDescriptions": "Opleiding Beschrijvingen",
+      "recommendedSkills": "Aanbevolen Skills om toe te voegen",
+      "profileTips": "Tips voor je LinkedIn Profiel",
+      "copied": "Gekopieerd!",
+      "copy": "Kopiëren",
+      "credits": "credits"
+    }
+  },
+  "jobInput": {
+    "title": "Vacature Details",
+    "description": "Voeg een vacature toe om een op maat gemaakt CV te genereren. Laat leeg voor een algemeen CV.",
+    "pasteVacancy": "Vacature plakken",
+    "vacancyPlaceholder": "Plak hier de volledige vacaturetekst, inclusief titel, bedrijf, eisen en verantwoordelijkheden...",
+    "analyze": "Vacature Analyseren",
+    "analyzing": "Analyseren...",
+    "skipVacancy": "Overslaan (Algemeen CV)",
+    "continueWithJob": "Doorgaan met deze vacature",
+    "errors": {
+      "couldNotAnalyze": "Kon vacature niet analyseren",
+      "somethingWentWrong": "Er ging iets mis",
+      "titleRequired": "Functietitel is verplicht",
+      "descriptionRequired": "Geef meer details over de functie"
+    },
+    "parsed": {
+      "title": "Vacature Analyse",
+      "editDetails": "Details bewerken",
+      "jobTitle": "Functietitel",
+      "company": "Bedrijf",
+      "location": "Locatie",
+      "salaryEstimate": "Salarisinschatting",
+      "salaryConfidence": {
+        "high": "Hoge betrouwbaarheid",
+        "medium": "Gemiddelde betrouwbaarheid",
+        "low": "Lage betrouwbaarheid"
+      },
+      "requirements": "Eisen",
+      "keywords": "Trefwoorden",
+      "benefits": "Voordelen",
+      "addRequirement": "Eis toevoegen",
+      "addKeyword": "Trefwoord toevoegen",
+      "addBenefit": "Voordeel toevoegen"
+    }
+  },
   "errors": {
     "unauthorized": "Je bent niet gemachtigd voor deze actie",
     "invalidToken": "Ongeldige sessie, log opnieuw in",

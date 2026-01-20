@@ -480,6 +480,147 @@
     "title": "Create New CV",
     "subtitle": "Follow the steps below to generate your professional CV"
   },
+  "profileInput": {
+    "title": "Profile Information",
+    "description": "Add your profile information via files, screenshots, or text. You can combine multiple sources.",
+    "tip": "Tip: In LinkedIn you can export your profile via Profile → More → Save as PDF",
+    "savedProfiles": {
+      "label": "Saved Profiles",
+      "switchProfile": "Switch profile",
+      "newProfile": "Enter new profile",
+      "loading": "Loading profiles...",
+      "load": "Load",
+      "experiences": "experiences"
+    },
+    "addNewBelow": "Or add new profile information below",
+    "addFile": "Add file",
+    "addText": "Add text",
+    "visionRequired": "Use a model that supports vision (like GPT-4o, Claude Sonnet, or Gemini) or paste your profile as text.",
+    "configureApiKey": "Configure your AI API key in Settings to upload files.",
+    "extraTextInfo": "Extra text information",
+    "textPlaceholder": "Paste your LinkedIn profile text, extra experience, or other relevant information here...",
+    "textTip": "Tip: Select and copy your LinkedIn profile page (Ctrl+A, Ctrl+C)",
+    "add": "Add",
+    "dropzone": "Drag your LinkedIn PDF or screenshots here, or click to browse",
+    "addedSources": "Added sources",
+    "textInput": "Text input",
+    "addMoreFiles": "Add more files",
+    "largeRequest": "This is a large request. Consider adding fewer files.",
+    "textOnlyFree": "Text sources only → free processing (no AI call)",
+    "confirmLargeRequest": "Are you sure you want to continue? You can also add fewer files to save costs.",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "process": "Process Profile",
+    "processing": "Processing...",
+    "errors": {
+      "couldNotLoad": "Could not load profile",
+      "couldNotSave": "Could not save profile",
+      "couldNotUpdate": "Could not update profile",
+      "enterText": "Enter text to add",
+      "addSource": "Add at least 1 source",
+      "noNameFound": "Could not find name. Check if you have added complete profile information.",
+      "configureApiKey": "Configure your API key in Settings to process files.",
+      "noProfileInfo": "Could not extract profile information. Try other sources."
+    },
+    "editProfile": {
+      "title": "Edit Profile",
+      "experience": "Work Experience",
+      "education": "Education",
+      "skills": "Skills",
+      "addExperience": "Add",
+      "addEducation": "Add",
+      "addSkill": "Add",
+      "experienceNum": "Experience {num}",
+      "educationNum": "Education {num}",
+      "skillPlaceholder": "Skill",
+      "save": "Save",
+      "saving": "Saving..."
+    },
+    "processed": {
+      "title": "Profile Processed",
+      "description": "The following information was found in your profile",
+      "experienceCount": "{count} Work Experience(s)",
+      "educationCount": "{count} Education(s)",
+      "skillCount": "{count} Skill(s)",
+      "experiencePreview": "Work Experience Preview"
+    },
+    "contactInfo": {
+      "title": "Contact Information for your CV",
+      "description": "LinkedIn doesn't export contact info - fill it in below!"
+    },
+    "saveProfile": {
+      "title": "Save Profile",
+      "description": "Save this profile to quickly reuse it for other job applications.",
+      "namePlaceholder": "e.g., ServiceNow Developer Profile",
+      "nameHint": "Give a recognizable name for this profile",
+      "setDefault": "Set as default profile",
+      "save": "Save",
+      "saving": "Saving...",
+      "saveButton": "Save Profile",
+      "updateButton": "Update Profile",
+      "saveAsNew": "Save as new"
+    },
+    "enrichProfile": {
+      "title": "Enrich Profile with AI",
+      "description": "Describe what you want to add to your profile. AI analyzes your text and automatically adds new experiences, skills, or education.",
+      "label": "What do you want to add?",
+      "placeholder": "Describe projects, courses, certificates, or new experience you want to add.",
+      "enrich": "Enrich",
+      "enriching": "Enriching...",
+      "whatWillBeAdded": "What will be added:",
+      "newExperience": "New Work Experience",
+      "newSkills": "New Skills",
+      "newEducation": "New Education",
+      "apply": "Apply Changes",
+      "credits": "credits"
+    },
+    "linkedinExport": {
+      "title": "LinkedIn Profile Content",
+      "description": "Optimized content for your LinkedIn profile. Copy and paste to LinkedIn.",
+      "experienceDescriptions": "Work Experience Descriptions",
+      "educationDescriptions": "Education Descriptions",
+      "recommendedSkills": "Recommended Skills to Add",
+      "profileTips": "Tips for your LinkedIn Profile",
+      "copied": "Copied!",
+      "copy": "Copy",
+      "credits": "credits"
+    }
+  },
+  "jobInput": {
+    "title": "Job Details",
+    "description": "Add a job posting to generate a tailored CV. Leave empty for a general CV.",
+    "pasteVacancy": "Paste job posting",
+    "vacancyPlaceholder": "Paste the full job posting here, including title, company, requirements, and responsibilities...",
+    "analyze": "Analyze Job Posting",
+    "analyzing": "Analyzing...",
+    "skipVacancy": "Skip (General CV)",
+    "continueWithJob": "Continue with this job",
+    "errors": {
+      "couldNotAnalyze": "Could not analyze job posting",
+      "somethingWentWrong": "Something went wrong",
+      "titleRequired": "Job title is required",
+      "descriptionRequired": "Provide more details about the job"
+    },
+    "parsed": {
+      "title": "Job Analysis",
+      "editDetails": "Edit details",
+      "jobTitle": "Job Title",
+      "company": "Company",
+      "location": "Location",
+      "salaryEstimate": "Salary Estimate",
+      "salaryConfidence": {
+        "high": "High confidence",
+        "medium": "Medium confidence",
+        "low": "Low confidence"
+      },
+      "requirements": "Requirements",
+      "keywords": "Keywords",
+      "benefits": "Benefits",
+      "addRequirement": "Add requirement",
+      "addKeyword": "Add keyword",
+      "addBenefit": "Add benefit"
+    }
+  },
   "errors": {
     "unauthorized": "You are not authorized for this action",
     "invalidToken": "Invalid session, please sign in again",
