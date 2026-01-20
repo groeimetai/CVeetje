@@ -12,6 +12,7 @@ import { ProfileInput } from './profile-input';
 import { JobInput } from './job-input';
 import { FitAnalysisCard } from './fit-analysis-card';
 import { DynamicStylePicker } from './dynamic-style-picker';
+import { TemplateStylePicker } from './template-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TokenUsageDisplay } from './token-usage-display';
 import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
@@ -187,17 +188,27 @@ export function CVWizard() {
     }
   }, [providers, userData?.apiKey]);
 
-  // Track whether user chose template mode
+  // Track whether user chose template mode or template-style mode
   const [useTemplateMode, setUseTemplateMode] = useState(false);
+  const [useTemplateStyleMode, setUseTemplateStyleMode] = useState(false);
+
+  // Determine which step to show in progress bar
+  const getStyleStepConfig = (): { id: WizardStep; label: string } => {
+    if (useTemplateMode) {
+      return { id: 'template' as WizardStep, label: t('steps.template') };
+    }
+    if (useTemplateStyleMode) {
+      return { id: 'template-style' as WizardStep, label: t('steps.templateStyle') };
+    }
+    return { id: 'style' as WizardStep, label: t('steps.style') };
+  };
 
   const steps: { id: WizardStep; label: string }[] = [
     { id: 'linkedin', label: t('steps.profile') },
     { id: 'job', label: t('steps.job') },
     { id: 'fit-analysis', label: t('steps.fitAnalysis') },
     { id: 'style-choice', label: t('steps.styleChoice') },
-    ...(useTemplateMode
-      ? [{ id: 'template' as WizardStep, label: t('steps.template') }]
-      : [{ id: 'style' as WizardStep, label: t('steps.style') }]),
+    getStyleStepConfig(),
     { id: 'generating', label: t('steps.generating') },
     { id: 'preview', label: t('steps.preview') },
   ];
@@ -228,15 +239,23 @@ export function CVWizard() {
     setCurrentStep('style-choice');
   };
 
-  // Handle choice between own style or template
+  // Handle choice between own style, template, or template-style
   const handleChooseStyle = () => {
     setUseTemplateMode(false);
+    setUseTemplateStyleMode(false);
     setCurrentStep('style');
   };
 
   const handleChooseTemplate = () => {
     setUseTemplateMode(true);
+    setUseTemplateStyleMode(false);
     setCurrentStep('template');
+  };
+
+  const handleChooseTemplateStyle = () => {
+    setUseTemplateMode(false);
+    setUseTemplateStyleMode(true);
+    setCurrentStep('template-style');
   };
 
   // Handle template fill completion
@@ -448,7 +467,13 @@ export function CVWizard() {
   };
 
   const goBack = () => {
-    const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style-choice', useTemplateMode ? 'template' : 'style', 'preview'];
+    // Determine which style step to use
+    const styleStep: WizardStep = useTemplateMode
+      ? 'template'
+      : useTemplateStyleMode
+        ? 'template-style'
+        : 'style';
+    const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style-choice', styleStep, 'preview'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
       // Skip fit-analysis when going back if there's no job vacancy
@@ -473,6 +498,9 @@ export function CVWizard() {
     setElementColors({});
     setCvId(null);
     setError(null);
+    // Reset mode flags
+    setUseTemplateMode(false);
+    setUseTemplateStyleMode(false);
     // Reset token history for the new CV - each CV should track its own usage
     setTokenHistory([]);
 
@@ -511,6 +539,7 @@ export function CVWizard() {
       'style-choice': t('steps.styleChoice'),
       style: t('steps.style'),
       template: t('steps.template'),
+      'template-style': t('steps.templateStyle'),
       generating: t('steps.generating'),
       preview: t('steps.preview'),
     };
@@ -657,6 +686,7 @@ export function CVWizard() {
         <StyleOrTemplateChoice
           onChooseStyle={handleChooseStyle}
           onChooseTemplate={handleChooseTemplate}
+          onChooseTemplateStyle={handleChooseTemplateStyle}
         />
       )}
 
@@ -666,6 +696,52 @@ export function CVWizard() {
           onFill={handleTemplateFilled}
           onBack={() => setCurrentStep('style-choice')}
         />
+      )}
+
+      {currentStep === 'template-style' && linkedInData && (
+        <div className="space-y-6">
+          {/* Language Selection */}
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm">{t('languageSelection.title')}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('languageSelection.description')}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOutputLanguage('nl')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    outputLanguage === 'nl'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  🇳🇱 {t('languageSelection.dutch')}
+                </button>
+                <button
+                  onClick={() => setOutputLanguage('en')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    outputLanguage === 'en'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  🇬🇧 {t('languageSelection.english')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <TemplateStylePicker
+            linkedInData={linkedInData}
+            jobVacancy={jobVacancy}
+            onStyleSelected={handleStyleGenerated}
+            onTokenUsage={(usage) => addTokenUsage('style', usage)}
+            onBack={() => setCurrentStep('style-choice')}
+          />
+        </div>
       )}
 
       {currentStep === 'style' && linkedInData && (

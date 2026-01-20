@@ -569,6 +569,14 @@
         "feature3": "Vul automatisch in met profieldata",
         "button": "Templates Beheren",
         "buttonWithTemplates": "Template Kiezen"
+      },
+      "templateStyle": {
+        "title": "Eigen Design Gebruiken",
+        "description": "Upload een DOCX template en laat AI de stijl analyseren om een CV in dezelfde look te genereren.",
+        "feature1": "Upload je eigen DOCX template of voorbeeld CV",
+        "feature2": "AI analyseert kleuren, fonts en layout",
+        "feature3": "Genereer nieuwe CV in dezelfde stijl",
+        "button": "Design Uploaden"
       }
     }
   },
@@ -580,6 +588,7 @@
       "styleChoice": "Keuze",
       "style": "Stijl",
       "template": "Template",
+      "templateStyle": "Design",
       "generating": "Genereren",
       "preview": "Preview"
     },
@@ -638,6 +647,54 @@
     "advice": "Advies",
     "confirmProceedWarning": "Dit profiel heeft significante mismatches met de vacature. Je kunt nog steeds een CV genereren, maar de kans op succes is mogelijk lager. Wil je toch doorgaan?",
     "criticalWarningsNote": "Let op: er zijn kritieke aandachtspunten gevonden"
+  },
+  "templateStyle": {
+    "title": "Stijl van Template",
+    "description": "Upload een DOCX template en laat AI de visuele stijl analyseren. Je CV wordt gegenereerd in dezelfde look.",
+    "back": "Terug",
+    "dropzone": {
+      "title": "Sleep je DOCX template hierheen",
+      "subtitle": "of klik om te bladeren (max 10MB)"
+    },
+    "changeFile": "Ander bestand kiezen",
+    "analyzeButton": "Template Analyseren",
+    "analyzing": "Analyseren...",
+    "analyzingProgress": {
+      "step1": "Template wordt geconverteerd...",
+      "step2": "AI analyseert het design"
+    },
+    "preview": {
+      "template": "Originele Template",
+      "extracted": "Geëxtraheerde Stijl"
+    },
+    "confidence": {
+      "high": "Hoge betrouwbaarheid",
+      "medium": "Gemiddelde betrouwbaarheid",
+      "low": "Lage betrouwbaarheid"
+    },
+    "details": {
+      "title": "Stijl Details"
+    },
+    "decorations": {
+      "title": "Achtergrond Decoraties",
+      "description": "Subtiele SVG vormen als achtergrond",
+      "none": "Geen",
+      "minimal": "Minimaal",
+      "moderate": "Gemiddeld",
+      "abundant": "Veel"
+    },
+    "instructions": {
+      "title": "Hoe werkt het?",
+      "item1": "Upload een DOCX template (CV, brief, of design)",
+      "item2": "AI analyseert kleuren, fonts, layout en decoraties",
+      "item3": "Genereer een nieuwe CV in exact dezelfde stijl"
+    },
+    "tryAnother": "Andere Template",
+    "useStyle": "Gebruik Deze Stijl",
+    "errors": {
+      "invalidType": "Alleen DOCX bestanden worden ondersteund",
+      "tooLarge": "Bestand is te groot (max 10MB)"
+    }
   },
   "cvPreview": {
     "download": "Download PDF",

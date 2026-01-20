@@ -569,6 +569,14 @@
         "feature3": "Automatically fill with profile data",
         "button": "Manage Templates",
         "buttonWithTemplates": "Choose Template"
+      },
+      "templateStyle": {
+        "title": "Use Your Own Design",
+        "description": "Upload a DOCX template and let AI analyze the style to generate a CV with the same look.",
+        "feature1": "Upload your own DOCX template or sample CV",
+        "feature2": "AI analyzes colors, fonts and layout",
+        "feature3": "Generate new CV in the same style",
+        "button": "Upload Design"
       }
     }
   },
@@ -580,6 +588,7 @@
       "styleChoice": "Choice",
       "style": "Style",
       "template": "Template",
+      "templateStyle": "Design",
       "generating": "Generating",
       "preview": "Preview"
     },
@@ -638,6 +647,54 @@
     "advice": "Advice",
     "confirmProceedWarning": "This profile has significant mismatches with the job posting. You can still generate a CV, but the chance of success may be lower. Do you want to continue anyway?",
     "criticalWarningsNote": "Note: critical issues were found"
+  },
+  "templateStyle": {
+    "title": "Style from Template",
+    "description": "Upload a DOCX template and let AI analyze the visual style. Your CV will be generated with the same look.",
+    "back": "Back",
+    "dropzone": {
+      "title": "Drop your DOCX template here",
+      "subtitle": "or click to browse (max 10MB)"
+    },
+    "changeFile": "Choose different file",
+    "analyzeButton": "Analyze Template",
+    "analyzing": "Analyzing...",
+    "analyzingProgress": {
+      "step1": "Converting template...",
+      "step2": "AI is analyzing the design"
+    },
+    "preview": {
+      "template": "Original Template",
+      "extracted": "Extracted Style"
+    },
+    "confidence": {
+      "high": "High confidence",
+      "medium": "Medium confidence",
+      "low": "Low confidence"
+    },
+    "details": {
+      "title": "Style Details"
+    },
+    "decorations": {
+      "title": "Background Decorations",
+      "description": "Subtle SVG shapes as background",
+      "none": "None",
+      "minimal": "Minimal",
+      "moderate": "Moderate",
+      "abundant": "Abundant"
+    },
+    "instructions": {
+      "title": "How does it work?",
+      "item1": "Upload a DOCX template (CV, letter, or design)",
+      "item2": "AI analyzes colors, fonts, layout and decorations",
+      "item3": "Generate a new CV in exactly the same style"
+    },
+    "tryAnother": "Try Another Template",
+    "useStyle": "Use This Style",
+    "errors": {
+      "invalidType": "Only DOCX files are supported",
+      "tooLarge": "File is too large (max 10MB)"
+    }
   },
   "cvPreview": {
     "download": "Download PDF",
