@@ -13,7 +13,6 @@ import {
   User,
   Users,
   Menu,
-  X,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -31,8 +30,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useAuth } from '@/components/auth/auth-context';
@@ -46,41 +43,31 @@ const navigationItems = [
   { key: 'settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+// Sidebar content component (shared between desktop and mobile)
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { firebaseUser, userData, credits, freeCredits, purchasedCredits } = useAuth();
   const t = useTranslations('navigation');
   const tSidebar = useTranslations('sidebar');
-  const tCommon = useTranslations('common');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
   };
 
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
-  };
-
   // Get the display name with proper fallbacks
   const getDisplayName = () => {
-    // 1. Try userData displayName (from Firestore)
     if (userData?.displayName) {
       return userData.displayName;
     }
-    // 2. Try firebaseUser displayName (from Google/Apple auth)
     if (firebaseUser?.displayName) {
       return firebaseUser.displayName;
     }
-    // 3. Extract name from email (niels@example.com -> Niels)
     if (firebaseUser?.email) {
       const emailName = firebaseUser.email.split('@')[0];
-      // Capitalize first letter
       return emailName.charAt(0).toUpperCase() + emailName.slice(1);
     }
-    // 4. Fallback
     return null;
   };
 
@@ -98,12 +85,15 @@ export function Sidebar() {
     return firebaseUser?.email?.[0].toUpperCase() || 'U';
   };
 
-  // Shared navigation content
-  const NavigationContent = ({ onItemClick }: { onItemClick?: () => void }) => (
+  const handleNavClick = () => {
+    onNavigate?.();
+  };
+
+  return (
     <>
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        <Link href="/cv/new" onClick={onItemClick}>
+        <Link href="/cv/new" onClick={handleNavClick}>
           <Button className="w-full mb-4" size="sm">
             <Plus className="mr-2 h-4 w-4" />
             {t('newCv')}
@@ -116,7 +106,7 @@ export function Sidebar() {
             <Link
               key={item.key}
               href={item.href}
-              onClick={onItemClick}
+              onClick={handleNavClick}
               className={cn(
                 'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -141,7 +131,7 @@ export function Sidebar() {
             <span>•</span>
             <span>{tSidebar('purchasedCredits', { count: purchasedCredits })}</span>
           </div>
-          <Link href="/credits" onClick={onItemClick}>
+          <Link href="/credits" onClick={handleNavClick}>
             <Button variant="link" size="sm" className="h-auto p-0 text-xs mt-1">
               {tSidebar('buyMoreCredits')}
             </Button>
@@ -172,7 +162,7 @@ export function Sidebar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem asChild>
-              <Link href="/settings" onClick={onItemClick}>
+              <Link href="/settings" onClick={handleNavClick}>
                 <User className="mr-2 h-4 w-4" />
                 {t('accountSettings')}
               </Link>
@@ -187,61 +177,54 @@ export function Sidebar() {
       </div>
     </>
   );
+}
+
+// Desktop sidebar (hidden on mobile)
+export function Sidebar() {
+  return (
+    <div className="hidden md:flex h-full w-64 flex-col border-r bg-card">
+      {/* Logo & Theme/Language */}
+      <div className="flex h-16 items-center justify-between border-b px-4">
+        <Link href="/dashboard">
+          <Logo size="sm" />
+        </Link>
+        <div className="flex items-center gap-1">
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
+      </div>
+      <SidebarContent />
+    </div>
+  );
+}
+
+// Mobile header with hamburger menu
+export function MobileHeader() {
+  const [open, setOpen] = useState(false);
 
   return (
-    <>
-      {/* Mobile Header - visible on small screens */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-full items-center justify-between px-4">
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <SheetHeader className="h-14 border-b px-4 flex flex-row items-center justify-between">
-                <SheetTitle className="sr-only">Navigation</SheetTitle>
-                <Link href="/dashboard" onClick={closeMobileMenu}>
-                  <Logo size="sm" />
-                </Link>
-              </SheetHeader>
-              <div className="flex flex-col h-[calc(100%-3.5rem)]">
-                <NavigationContent onItemClick={closeMobileMenu} />
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          <Link href="/dashboard">
-            <Logo size="sm" />
-          </Link>
-
-          <div className="flex items-center gap-1">
-            <ThemeSwitcher />
-            <LanguageSwitcher />
-          </div>
-        </div>
+    <div className="md:hidden sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-background px-4">
+      <Link href="/dashboard">
+        <Logo size="sm" />
+      </Link>
+      <div className="flex items-center gap-1">
+        <ThemeSwitcher />
+        <LanguageSwitcher />
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0">
+            <div className="flex h-14 items-center border-b px-4">
+              <Logo size="sm" />
+            </div>
+            <SidebarContent onNavigate={() => setOpen(false)} />
+          </SheetContent>
+        </Sheet>
       </div>
-
-      {/* Spacer for mobile header */}
-      <div className="lg:hidden h-14" />
-
-      {/* Desktop Sidebar - hidden on small screens */}
-      <div className="hidden lg:flex h-full w-64 flex-col border-r bg-card">
-        {/* Logo & Theme/Language */}
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          <Link href="/dashboard">
-            <Logo size="sm" />
-          </Link>
-          <div className="flex items-center gap-1">
-            <ThemeSwitcher />
-            <LanguageSwitcher />
-          </div>
-        </div>
-
-        <NavigationContent />
-      </div>
-    </>
+    </div>
   );
 }

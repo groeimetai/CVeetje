@@ -76,7 +76,7 @@ export default function CreditsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm sm:text-base">
           {t('subtitle')}
         </p>
       </div>
@@ -105,12 +105,12 @@ export default function CreditsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="text-4xl sm:text-5xl font-bold">{credits}</p>
-              <p className="text-muted-foreground">{t('balance.available')}</p>
+              <p className="text-muted-foreground text-sm sm:text-base">{t('balance.available')}</p>
             </div>
-            <div className="text-left sm:text-right">
+            <div className="sm:text-right">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
                 <span>{t('balance.resetIn', { days: daysUntilReset })}</span>

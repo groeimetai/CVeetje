@@ -61,17 +61,17 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">
             {t('welcome', { name: userData?.displayName || 'there' })}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm sm:text-base">
             {t('subtitle')}
           </p>
         </div>
-        <Link href="/cv/new" className="w-full sm:w-auto">
-          <Button className="w-full sm:w-auto">
+        <Link href="/cv/new" className="self-start sm:self-auto">
+          <Button size="sm" className="sm:size-default">
             <Plus className="mr-2 h-4 w-4" />
             {t('newCv')}
           </Button>

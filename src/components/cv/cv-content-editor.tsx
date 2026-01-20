@@ -311,7 +311,7 @@ export function CVContentEditor({
             {/* Contact Info */}
             <div className="pt-2 border-t space-y-2">
               <span className="text-xs text-muted-foreground font-medium">Contactgegevens</span>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <EditableField

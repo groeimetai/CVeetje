@@ -62,14 +62,14 @@ export default function ProfilesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             {t('subtitle')}
           </p>
         </div>
-        <Button onClick={() => router.push('/cv/new')} className="w-full sm:w-auto">
+        <Button onClick={() => router.push('/cv/new')} size="sm" className="self-start sm:self-auto sm:size-default">
           <Plus className="h-4 w-4 mr-2" />
           {t('newProfile')}
         </Button>
