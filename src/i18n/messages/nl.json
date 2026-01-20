@@ -569,10 +569,10 @@
       },
       "template": {
         "title": "Template Invullen",
-        "description": "Vul een bestaande PDF template in met je profielgegevens. Ideaal voor recruiters met eigen templates.",
-        "feature1": "Upload je eigen recruiter PDF template",
-        "feature2": "Configureer eenmalig waar de velden staan",
-        "feature3": "Vul automatisch in met profieldata",
+        "description": "Vul een bestaande DOCX of PDF template in met je profielgegevens. Het originele document wordt behouden.",
+        "feature1": "Upload je eigen Word (DOCX) of PDF template",
+        "feature2": "Placeholders worden automatisch gedetecteerd",
+        "feature3": "AI kan content intelligent vervangen",
         "button": "Templates Beheren",
         "buttonWithTemplates": "Template Kiezen"
       },

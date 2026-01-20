@@ -569,10 +569,10 @@
       },
       "template": {
         "title": "Fill Template",
-        "description": "Fill an existing PDF template with your profile data. Ideal for recruiters with their own templates.",
-        "feature1": "Upload your own recruiter PDF template",
-        "feature2": "Configure once where the fields are",
-        "feature3": "Automatically fill with profile data",
+        "description": "Fill an existing DOCX or PDF template with your profile data. The original document is preserved.",
+        "feature1": "Upload your own Word (DOCX) or PDF template",
+        "feature2": "Placeholders are automatically detected",
+        "feature3": "AI can intelligently replace content",
         "button": "Manage Templates",
         "buttonWithTemplates": "Choose Template"
       },
