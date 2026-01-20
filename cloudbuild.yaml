@@ -4,10 +4,11 @@
 # ============================================
 
 steps:
-  # Step 1: Build the Docker image
+  # Step 1: Build the Docker image (--no-cache for security updates)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '--no-cache'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REPO}/${_SERVICE_NAME}:${SHORT_SHA}'
       - '-t'
