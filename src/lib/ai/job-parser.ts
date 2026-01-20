@@ -24,6 +24,14 @@ const salaryEstimateSchema = z.object({
   marketInsight: z.string().describe('Marktinzicht: hoe verhoudt deze functie zich tot de markt? Is het een schaarse skill? Groeiende sector?'),
 });
 
+// Schema for experience requirements (for fit analysis)
+const experienceRequiredSchema = z.object({
+  minYears: z.number().describe('Minimum aantal jaren ervaring dat gevraagd wordt (0 als niet gespecificeerd of "starter")'),
+  maxYears: z.number().nullable().describe('Maximum aantal jaren ervaring indien gespecificeerd (bijv. bij "3-5 jaar"), anders null'),
+  level: z.enum(['junior', 'medior', 'senior', 'lead', 'executive']).describe('Het ervaringsniveau dat gevraagd wordt, gebaseerd op taalgebruik en jaren'),
+  isStrict: z.boolean().describe('Is de ervaring eis strikt vermeld (bijv. "minimaal 5 jaar vereist") of flexibel (bijv. "bij voorkeur ervaring met")?'),
+}).nullable();
+
 // Schema for parsed job vacancy
 const jobVacancySchema = z.object({
   title: z.string().describe('De functietitel/job title'),
@@ -36,6 +44,13 @@ const jobVacancySchema = z.object({
   employmentType: z.string().nullable().describe('Dienstverband type (fulltime/parttime/freelance) indien vermeld, anders null'),
   compensation: compensationSchema.describe('Compensatie en secundaire arbeidsvoorwaarden indien vermeld in de vacature'),
   salaryEstimate: salaryEstimateSchema.describe('AI-inschatting van het marktsalaris voor deze functie, gebaseerd op functie, locatie, industrie en ervaringsniveau'),
+
+  // New fields for fit analysis
+  experienceRequired: experienceRequiredSchema.describe('Vereiste werkervaring: jaren en niveau. Analyseer zorgvuldig of er specifieke jaren ervaring gevraagd worden.'),
+  mustHaveSkills: z.array(z.string()).describe('Skills die EXPLICIET als vereist/must-have worden genoemd. Let op woorden als "vereist", "must have", "noodzakelijk", "je hebt". Max 10 items.'),
+  niceToHaveSkills: z.array(z.string()).describe('Skills die als "nice to have", "bonus", "pré", of "bij voorkeur" worden genoemd. Max 8 items.'),
+  requiredEducation: z.string().nullable().describe('Minimale opleiding indien expliciet vereist (bijv. "HBO", "WO", "Master"), anders null'),
+  requiredCertifications: z.array(z.string()).describe('Specifieke certificeringen die als vereist worden genoemd (bijv. "AWS Certified", "PMP", "CISSP"). Alleen vermelden als expliciet genoemd.'),
 });
 
 function buildParsePrompt(rawText: string): string {
@@ -107,6 +122,27 @@ ${rawText}
    - Geef een betrouwbaarheidsniveau (low/medium/high)
    - Onderbouw je schatting met concrete factoren
    - Geef marktinzicht: is dit een schaarse skill? Groeiende sector?
+
+11. **Ervaringsvereisten (Fit Analyse)**: Analyseer de gevraagde werkervaring:
+   - Zoek naar expliciete jaren ervaring (bijv. "5+ jaar", "minimaal 3 jaar", "3-5 jaar ervaring")
+   - Bepaal het niveau: junior (0-2), medior (2-5), senior (5-10), lead (8+), executive
+   - Let op sleutelwoorden: "starter", "ervaren", "senior", "expert", "lead", "principal"
+   - Markeer of de eis strikt is ("vereist", "minimaal") of flexibel ("bij voorkeur", "liefst")
+
+12. **Must-Have Skills (Fit Analyse)**: Identificeer ABSOLUUT VEREISTE skills:
+   - Let op: "vereist", "must have", "noodzakelijk", "je hebt", "je beschikt over"
+   - Dit zijn skills waar de kandidaat NIET zonder kan
+   - Wees selectief: alleen expliciete must-haves, niet alle genoemde skills
+   - Max 10 items
+
+13. **Nice-to-Have Skills (Fit Analyse)**: Identificeer BONUS skills:
+   - Let op: "nice to have", "pré", "bonus", "bij voorkeur", "ervaring met X is een plus"
+   - Dit zijn skills die de kandidaat sterker maken, maar niet vereist zijn
+   - Max 8 items
+
+14. **Opleiding & Certificeringen (Fit Analyse)**:
+   - requiredEducation: Alleen invullen als expliciet een minimaal niveau vereist is (HBO, WO, Master)
+   - requiredCertifications: Specifieke certificeringen die als vereist genoemd worden
 
 Wees accuraat en baseer alles op de tekst. Als informatie niet duidelijk is, geef null terug voor optionele velden.`;
 }

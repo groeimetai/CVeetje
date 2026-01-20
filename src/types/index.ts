@@ -163,6 +163,14 @@ export interface SalaryEstimate {
   marketInsight: string;        // Market context and insights
 }
 
+// Experience requirements for fit analysis
+export interface ExperienceRequired {
+  minYears: number;           // Minimum years required
+  maxYears?: number;          // Maximum years (for ranges like "3-5 years")
+  level: ExperienceLevel;     // junior/medior/senior/lead/executive
+  isStrict: boolean;          // Is this a strict requirement or flexible?
+}
+
 export interface JobVacancy {
   title: string;
   company: string | null;
@@ -175,6 +183,65 @@ export interface JobVacancy {
   rawText?: string;         // Original vacancy text
   compensation?: JobCompensation; // Optional compensation details
   salaryEstimate?: SalaryEstimate; // AI-estimated salary for this role
+
+  // New fields for fit analysis
+  experienceRequired?: ExperienceRequired;  // Required experience (years + level)
+  mustHaveSkills?: string[];                // Absolutely required skills
+  niceToHaveSkills?: string[];              // Nice-to-have/bonus skills
+  requiredEducation?: string;               // Minimum education level if specified
+  requiredCertifications?: string[];        // Specific required certifications
+}
+
+// ============ Fit Analysis Types ============
+
+export type FitVerdict = 'excellent' | 'good' | 'moderate' | 'challenging' | 'unlikely';
+export type FitWarningSeverity = 'info' | 'warning' | 'critical';
+export type FitWarningCategory = 'experience' | 'skills' | 'education' | 'industry' | 'certification';
+
+export interface FitWarning {
+  severity: FitWarningSeverity;
+  category: FitWarningCategory;
+  message: string;           // Short message (e.g., "Onvoldoende ervaring")
+  detail: string;            // Detailed explanation
+}
+
+export interface FitStrength {
+  category: FitWarningCategory | 'general';
+  message: string;
+  detail: string;
+}
+
+export interface FitAnalysis {
+  overallScore: number;      // 1-100
+  verdict: FitVerdict;
+  verdictExplanation: string; // Why this verdict
+  warnings: FitWarning[];
+  strengths: FitStrength[];
+  skillMatch: {
+    matched: string[];       // Skills candidate has that job requires
+    missing: string[];       // Skills job requires that candidate lacks
+    bonus: string[];         // Nice-to-have skills candidate has
+    matchPercentage: number; // Percentage of must-have skills matched
+  };
+  experienceMatch: {
+    candidateYears: number;  // Estimated years of relevant experience
+    requiredYears: number;   // Years required by job
+    gap: number;             // Difference (negative = shortfall)
+    levelMatch: boolean;     // Does experience level match?
+  };
+  advice: string;            // Actionable advice for the candidate
+}
+
+export interface FitAnalysisRequest {
+  linkedInData: ParsedLinkedIn;
+  jobVacancy: JobVacancy;
+}
+
+export interface FitAnalysisResponse {
+  success: boolean;
+  analysis?: FitAnalysis;
+  usage?: TokenUsage;
+  error?: string;
 }
 
 // ============ CV Types ============

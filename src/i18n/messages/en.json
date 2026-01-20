@@ -457,6 +457,7 @@
     "steps": {
       "profile": "Profile",
       "job": "Job",
+      "fitAnalysis": "Match",
       "style": "Style",
       "generating": "Generating",
       "preview": "Preview"
@@ -491,6 +492,31 @@
       "resume": "Continue",
       "startNew": "Start New"
     }
+  },
+  "fitAnalysis": {
+    "title": "Fit Analysis",
+    "description": "Analyze how well your profile matches this job before continuing.",
+    "beforeAnalysis": "This analysis compares your profile with the job requirements and gives you insight into your chances. You can skip this and go directly to style selection.",
+    "analyzeButton": "Analyze Match",
+    "skipButton": "Skip",
+    "analyzing": "Comparing your profile with the job posting...",
+    "retryButton": "Try Again",
+    "continueAnywayButton": "Continue Anyway",
+    "continueButton": "Continue",
+    "yesConfirmButton": "Yes, Continue Anyway",
+    "changeJobButton": "Different Job",
+    "skillsMatch": "Skills Match",
+    "matchedSkills": "Found",
+    "missingSkills": "Missing",
+    "experienceMatch": "Experience",
+    "yourExperience": "Your experience",
+    "required": "Required",
+    "years": "years",
+    "warnings": "Points of Attention",
+    "strengths": "Strengths",
+    "advice": "Advice",
+    "confirmProceedWarning": "This profile has significant mismatches with the job posting. You can still generate a CV, but the chance of success may be lower. Do you want to continue anyway?",
+    "criticalWarningsNote": "Note: critical issues were found"
   },
   "cvPreview": {
     "download": "Download PDF",

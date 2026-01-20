@@ -113,6 +113,49 @@ const cvContentSchema = z.object({
   certifications: z.array(z.string()).describe('Relevant certifications'),
 });
 
+// HONESTY RULES - Critical safeguards against fabrication
+const honestyRules = `
+⚠️ ABSOLUTE HONESTY RULES - VIOLATION IS UNACCEPTABLE:
+
+You are a CV OPTIMIZER, not a CV FABRICATOR. Your role is to present the candidate's REAL
+experience in the best possible light for the target role. You must NEVER:
+
+❌ FORBIDDEN - NEVER DO THESE:
+- Invent job titles, companies, or employment dates that don't exist
+- Fabricate skills, technologies, or certifications the candidate doesn't have
+- Claim years of experience beyond what the candidate actually has
+- Add achievements, metrics, or responsibilities not mentioned or reasonably implied
+- Create education credentials or degrees that don't exist
+- Manufacture projects, clients, or accomplishments
+- Inflate team sizes, revenue figures, or impact metrics beyond reasonable estimates
+- Add industry experience the candidate has never worked in
+
+✅ ALLOWED - THESE ARE ACCEPTABLE:
+- Reframe job titles to highlight relevant aspects (if truthful to their actual work)
+  Example: "Developer" → "Full-Stack Developer" (ONLY if they demonstrably did both frontend and backend)
+- Use industry synonyms and professional terminology for existing skills
+  Example: "Made websites" → "Developed responsive web applications"
+- Emphasize and prioritize the most relevant experiences and skills
+- Improve language, grammar, and professional phrasing
+- Reorganize content to prioritize relevance to the target job
+- Estimate reasonable metrics where the original text implies scale
+  Example: "Handled many customer requests" → "Handled 50+ customer requests daily" (if realistic for the role)
+  Example: "Managed a small team" → "Managed team of 3-5" (reasonable for context)
+- Translate soft descriptions into professional language
+  Example: "Helped fix bugs" → "Contributed to debugging and code quality improvements"
+
+📋 WHEN IN DOUBT:
+- If you're unsure whether something is true, DON'T include it
+- Omission is better than fabrication
+- Focus on what IS there, not what SHOULD be there
+- If the candidate lacks experience for a requirement, acknowledge the gap internally but don't invent experience
+
+🔒 VERIFICATION MINDSET:
+For every piece of content you generate, ask yourself:
+"Can this be traced back to something in the candidate's actual profile?"
+If the answer is no, remove it.
+`;
+
 // Language-specific instructions
 const languageInstructions: Record<OutputLanguage, { intro: string; outputNote: string }> = {
   en: {
@@ -141,6 +184,8 @@ function buildPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy | null, st
   const langInstructions = languageInstructions[language];
 
   let prompt = `${langInstructions.intro}
+
+${honestyRules}
 
 ## CRITICAL: Output Language
 ${langInstructions.outputNote}
@@ -238,12 +283,15 @@ Before writing, score EACH experience 1-5 on relevance to "${jobVacancy.title}":
 
 **OUTPUT experiences ORDERED BY RELEVANCE (highest first), NOT chronologically!**
 
-**Step 3 - Job Title Adaptation:**
-IMPORTANT: Adapt job titles to highlight relevance to the target role:
-- If applying for "Backend Developer" and candidate was "Software Engineer" → Use "Software Engineer (Backend Focus)" or "Backend Software Engineer" if that accurately reflects their work
-- If applying for "Product Manager" and candidate was "Project Lead" → Use "Project Lead / Product Owner" if they did product work
-- NEVER invent titles, but DO reframe to show relevance
-- Keep original title if it already matches well or if adaptation would be misleading
+**Step 3 - Job Title Adaptation (HONESTY FIRST!):**
+You may adapt job titles ONLY to highlight aspects that are TRUE about their actual work:
+- ✅ "Software Engineer" → "Software Engineer (Backend Focus)" - ONLY if job description shows they did backend work
+- ✅ "Project Lead" → "Project Lead / Product Owner" - ONLY if they actually did product ownership tasks
+- ✅ "IT Consultant" → "ServiceNow Consultant" - ONLY if they specifically worked with ServiceNow
+- ❌ NEVER add specializations they didn't actually do
+- ❌ NEVER upgrade job levels (Developer → Senior Developer) unless explicitly stated
+- ❌ NEVER add technologies to titles they didn't work with
+- When in doubt, keep the ORIGINAL title - misleading titles are worse than generic ones
 
 **Step 4 - Professional Headline (CRITICAL!):**
 Create a headline that BRIDGES the candidate's experience WITH the target role:

@@ -457,6 +457,7 @@
     "steps": {
       "profile": "Profiel",
       "job": "Vacature",
+      "fitAnalysis": "Match",
       "style": "Stijl",
       "generating": "Genereren",
       "preview": "Preview"
@@ -491,6 +492,31 @@
       "resume": "Doorgaan",
       "startNew": "Opnieuw Beginnen"
     }
+  },
+  "fitAnalysis": {
+    "title": "Fit Analyse",
+    "description": "Analyseer hoe goed je profiel past bij deze vacature voordat je doorgaat.",
+    "beforeAnalysis": "Deze analyse vergelijkt je profiel met de vacaturevereisten en geeft je inzicht in je kansen. Je kunt dit overslaan en direct doorgaan naar de stijlkeuze.",
+    "analyzeButton": "Analyseer Match",
+    "skipButton": "Overslaan",
+    "analyzing": "Je profiel wordt vergeleken met de vacature...",
+    "retryButton": "Opnieuw Proberen",
+    "continueAnywayButton": "Toch Doorgaan",
+    "continueButton": "Doorgaan",
+    "yesConfirmButton": "Ja, Toch Doorgaan",
+    "changeJobButton": "Andere Vacature",
+    "skillsMatch": "Skills Match",
+    "matchedSkills": "Gevonden",
+    "missingSkills": "Ontbreken",
+    "experienceMatch": "Ervaring",
+    "yourExperience": "Jouw ervaring",
+    "required": "Vereist",
+    "years": "jaar",
+    "warnings": "Aandachtspunten",
+    "strengths": "Sterke Punten",
+    "advice": "Advies",
+    "confirmProceedWarning": "Dit profiel heeft significante mismatches met de vacature. Je kunt nog steeds een CV genereren, maar de kans op succes is mogelijk lager. Wil je toch doorgaan?",
+    "criticalWarningsNote": "Let op: er zijn kritieke aandachtspunten gevonden"
   },
   "cvPreview": {
     "download": "Download PDF",

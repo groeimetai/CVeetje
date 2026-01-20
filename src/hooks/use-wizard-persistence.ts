@@ -12,7 +12,7 @@ import type { CVDesignTokens } from '@/types/design-tokens';
 const STORAGE_KEY = 'cveetje_wizard_draft';
 const EXPIRY_HOURS = 24; // Draft expires after 24 hours
 
-export type WizardStep = 'linkedin' | 'job' | 'style' | 'generating' | 'preview';
+export type WizardStep = 'linkedin' | 'job' | 'fit-analysis' | 'style' | 'generating' | 'preview';
 
 export interface WizardDraft {
   currentStep: WizardStep;

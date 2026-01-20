@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, Loader2, AlertTriangle, Key, RefreshCw, Trash2 } from 'lucide-react';
 import { ProfileInput } from './profile-input';
 import { JobInput } from './job-input';
+import { FitAnalysisCard } from './fit-analysis-card';
 import { DynamicStylePicker } from './dynamic-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TokenUsageDisplay } from './token-usage-display';
@@ -188,6 +189,7 @@ export function CVWizard() {
   const steps: { id: WizardStep; label: string }[] = [
     { id: 'linkedin', label: t('steps.profile') },
     { id: 'job', label: t('steps.job') },
+    { id: 'fit-analysis', label: t('steps.fitAnalysis') },
     { id: 'style', label: t('steps.style') },
     { id: 'generating', label: t('steps.generating') },
     { id: 'preview', label: t('steps.preview') },
@@ -206,7 +208,22 @@ export function CVWizard() {
 
   const handleJobSubmit = (data: JobVacancy | null) => {
     setJobVacancy(data);
+    // If there's a job vacancy, go to fit analysis first
+    // If skipped (null), go directly to style
+    if (data) {
+      setCurrentStep('fit-analysis');
+    } else {
+      setCurrentStep('style');
+    }
+  };
+
+  const handleFitAnalysisContinue = () => {
     setCurrentStep('style');
+  };
+
+  const handleFitAnalysisChangeJob = () => {
+    // Go back to job input
+    setCurrentStep('job');
   };
 
   const handleStyleGenerated = async (config: CVStyleConfig, tokens: CVDesignTokens) => {
@@ -394,10 +411,15 @@ export function CVWizard() {
   };
 
   const goBack = () => {
-    const stepOrder: WizardStep[] = ['linkedin', 'job', 'style', 'preview'];
+    const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style', 'preview'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
-      setCurrentStep(stepOrder[currentIndex - 1]);
+      // Skip fit-analysis when going back if there's no job vacancy
+      if (stepOrder[currentIndex - 1] === 'fit-analysis' && !jobVacancy) {
+        setCurrentStep('job');
+      } else {
+        setCurrentStep(stepOrder[currentIndex - 1]);
+      }
     }
   };
 
@@ -448,6 +470,7 @@ export function CVWizard() {
     const stepLabels: Record<WizardStep, string> = {
       linkedin: t('steps.profile'),
       job: t('steps.job'),
+      'fit-analysis': t('steps.fitAnalysis'),
       style: t('steps.style'),
       generating: t('steps.generating'),
       preview: t('steps.preview'),
@@ -578,6 +601,16 @@ export function CVWizard() {
           onSubmit={handleJobSubmit}
           onTokenUsage={(usage) => addTokenUsage('job', usage)}
           initialData={jobVacancy}
+        />
+      )}
+
+      {currentStep === 'fit-analysis' && linkedInData && jobVacancy && (
+        <FitAnalysisCard
+          linkedInData={linkedInData}
+          jobVacancy={jobVacancy}
+          onContinue={handleFitAnalysisContinue}
+          onChangeJob={handleFitAnalysisChangeJob}
+          onTokenUsage={(usage) => addTokenUsage('style', usage)}
         />
       )}
 
