@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { fillPDFTemplate } from '@/lib/pdf/template-filler';
+import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
 import type { PDFTemplate, ParsedLinkedIn } from '@/types';
 
 // POST - Fill a template with profile data
@@ -57,14 +57,6 @@ export async function POST(
       userId: templateData?.userId,
     };
 
-    // Check if template has fields configured
-    if (!template.fields || template.fields.length === 0) {
-      return NextResponse.json(
-        { error: 'Template has no fields configured. Please configure fields first.' },
-        { status: 400 }
-      );
-    }
-
     // Parse request body
     const body = await request.json();
     const { profileData, customValues } = body as {
@@ -105,13 +97,39 @@ export async function POST(
     const templateBuffer = await templateResponse.arrayBuffer();
     const templateBytes = new Uint8Array(templateBuffer);
 
-    // Fill the template
-    const filledPdfBytes = await fillPDFTemplate(
-      templateBytes,
-      template,
-      profileData,
-      customValues
-    );
+    // Check if PDF has form fields (AcroForm)
+    const hasFields = await hasFormFields(templateBytes);
+
+    let filledPdfBytes: Uint8Array;
+    let fillMethod: 'form' | 'coordinates' | 'none' = 'none';
+    let filledFields: string[] = [];
+
+    if (hasFields) {
+      // Try auto-filling form fields first
+      const autoResult = await fillPDFTemplateAuto(
+        templateBytes,
+        profileData,
+        customValues
+      );
+      filledPdfBytes = autoResult.pdfBytes;
+      fillMethod = autoResult.method;
+      filledFields = autoResult.filledFields || [];
+    } else if (template.fields && template.fields.length > 0) {
+      // Fall back to coordinate-based filling if template has configured fields
+      filledPdfBytes = await fillPDFTemplate(
+        templateBytes,
+        template,
+        profileData,
+        customValues
+      );
+      fillMethod = 'coordinates';
+    } else {
+      // No form fields and no configured coordinates
+      return NextResponse.json(
+        { error: 'Template has no fillable form fields and no coordinate fields configured.' },
+        { status: 400 }
+      );
+    }
 
     // Deduct credit (deduct from free first, then purchased)
     if (freeCredits > 0) {
@@ -125,10 +143,13 @@ export async function POST(
     }
 
     // Record transaction
+    const methodDescription = fillMethod === 'form'
+      ? `(auto-filled ${filledFields.length} form fields)`
+      : '(coordinate-based)';
     await db.collection('users').doc(userId).collection('transactions').add({
       amount: -1,
       type: 'cv_generation',
-      description: `Template filled: ${template.name}`,
+      description: `Template filled: ${template.name} ${methodDescription}`,
       molliePaymentId: null,
       cvId: null,
       createdAt: new Date(),

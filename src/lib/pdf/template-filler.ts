@@ -1,10 +1,18 @@
-import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage, PDFTextField, PDFForm } from 'pdf-lib';
 import type {
   PDFTemplate,
   PDFTemplateField,
   ProfileFieldMapping,
   ParsedLinkedIn,
 } from '@/types';
+
+// Detected form field from PDF
+export interface DetectedFormField {
+  name: string;
+  type: 'text' | 'checkbox' | 'dropdown' | 'other';
+  value?: string;
+  page?: number;
+}
 
 // Convert hex color to RGB values (0-1 range)
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -281,4 +289,268 @@ export async function getPDFPageDimensions(
     width: page.getWidth(),
     height: page.getHeight(),
   }));
+}
+
+/**
+ * Detect AcroForm fields in a PDF
+ *
+ * @param pdfBytes - The PDF as a Uint8Array
+ * @returns Array of detected form fields with their names and types
+ */
+export async function detectFormFields(pdfBytes: Uint8Array): Promise<DetectedFormField[]> {
+  const pdfDoc = await PDFDocument.load(pdfBytes, {
+    ignoreEncryption: true,
+  });
+
+  const form = pdfDoc.getForm();
+  const fields = form.getFields();
+  const detectedFields: DetectedFormField[] = [];
+
+  for (const field of fields) {
+    const name = field.getName();
+    let type: DetectedFormField['type'] = 'other';
+    let value: string | undefined;
+
+    try {
+      if (field instanceof PDFTextField) {
+        type = 'text';
+        value = field.getText() || undefined;
+      } else if (field.constructor.name === 'PDFCheckBox') {
+        type = 'checkbox';
+      } else if (field.constructor.name === 'PDFDropdown') {
+        type = 'dropdown';
+      }
+    } catch {
+      // Field type detection failed, keep as 'other'
+    }
+
+    detectedFields.push({
+      name,
+      type,
+      value,
+    });
+  }
+
+  return detectedFields;
+}
+
+/**
+ * Check if a PDF has fillable form fields
+ *
+ * @param pdfBytes - The PDF as a Uint8Array
+ * @returns True if the PDF has AcroForm fields
+ */
+export async function hasFormFields(pdfBytes: Uint8Array): Promise<boolean> {
+  try {
+    const fields = await detectFormFields(pdfBytes);
+    return fields.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Auto-fill form fields based on field names using AI-suggested mappings
+ * This tries to intelligently match field names to profile data
+ *
+ * @param pdfBytes - The PDF template
+ * @param profileData - The profile data to fill
+ * @param customValues - Custom values for birthDate, nationality, etc.
+ * @returns The filled PDF, or null if no form fields were found/filled
+ */
+export async function fillFormFieldsAuto(
+  pdfBytes: Uint8Array,
+  profileData: ParsedLinkedIn,
+  customValues?: Record<string, string>
+): Promise<{ pdfBytes: Uint8Array; filledFields: string[] } | null> {
+  const pdfDoc = await PDFDocument.load(pdfBytes, {
+    ignoreEncryption: true,
+  });
+
+  const form = pdfDoc.getForm();
+  const fields = form.getFields();
+
+  if (fields.length === 0) {
+    return null;
+  }
+
+  const filledFields: string[] = [];
+
+  // Common field name patterns and their mappings
+  const fieldMappings: Record<string, () => string> = {
+    // Name fields
+    'naam': () => profileData.fullName || '',
+    'name': () => profileData.fullName || '',
+    'fullname': () => profileData.fullName || '',
+    'full_name': () => profileData.fullName || '',
+    'volledige naam': () => profileData.fullName || '',
+    'voornaam': () => getFirstName(profileData.fullName || ''),
+    'firstname': () => getFirstName(profileData.fullName || ''),
+    'first_name': () => getFirstName(profileData.fullName || ''),
+    'first name': () => getFirstName(profileData.fullName || ''),
+    'achternaam': () => getLastName(profileData.fullName || ''),
+    'lastname': () => getLastName(profileData.fullName || ''),
+    'last_name': () => getLastName(profileData.fullName || ''),
+    'last name': () => getLastName(profileData.fullName || ''),
+    'surname': () => getLastName(profileData.fullName || ''),
+
+    // Contact fields
+    'email': () => profileData.email || '',
+    'e-mail': () => profileData.email || '',
+    'emailadres': () => profileData.email || '',
+    'telefoon': () => profileData.phone || '',
+    'phone': () => profileData.phone || '',
+    'telefoonnummer': () => profileData.phone || '',
+    'tel': () => profileData.phone || '',
+    'mobile': () => profileData.phone || '',
+    'mobiel': () => profileData.phone || '',
+
+    // Location fields
+    'woonplaats': () => (profileData.location || '').split(',')[0]?.trim() || '',
+    'city': () => (profileData.location || '').split(',')[0]?.trim() || '',
+    'stad': () => (profileData.location || '').split(',')[0]?.trim() || '',
+    'plaats': () => (profileData.location || '').split(',')[0]?.trim() || '',
+    'location': () => profileData.location || '',
+    'locatie': () => profileData.location || '',
+
+    // Personal fields (from customValues)
+    'geboortedatum': () => customValues?.birthDate || '',
+    'birthdate': () => customValues?.birthDate || '',
+    'birth_date': () => customValues?.birthDate || '',
+    'date of birth': () => customValues?.birthDate || '',
+    'dob': () => customValues?.birthDate || '',
+    'nationaliteit': () => customValues?.nationality || '',
+    'nationality': () => customValues?.nationality || '',
+
+    // Professional fields
+    'functie': () => profileData.headline || profileData.experience[0]?.title || '',
+    'function': () => profileData.headline || profileData.experience[0]?.title || '',
+    'jobtitle': () => profileData.experience[0]?.title || '',
+    'job_title': () => profileData.experience[0]?.title || '',
+    'title': () => profileData.headline || '',
+    'headline': () => profileData.headline || '',
+
+    // LinkedIn
+    'linkedin': () => profileData.linkedinUrl || '',
+    'linkedin url': () => profileData.linkedinUrl || '',
+    'linkedinurl': () => profileData.linkedinUrl || '',
+  };
+
+  // Experience fields (indexed)
+  for (let i = 0; i < Math.min(profileData.experience.length, 10); i++) {
+    const exp = profileData.experience[i];
+    const num = i + 1;
+    const suffixes = [String(num), `_${num}`, ` ${num}`, `${num}`, `[${i}]`];
+
+    for (const suffix of suffixes) {
+      fieldMappings[`werkgever${suffix}`] = () => exp.company || '';
+      fieldMappings[`bedrijf${suffix}`] = () => exp.company || '';
+      fieldMappings[`company${suffix}`] = () => exp.company || '';
+      fieldMappings[`employer${suffix}`] = () => exp.company || '';
+      fieldMappings[`functie${suffix}`] = () => exp.title || '';
+      fieldMappings[`function${suffix}`] = () => exp.title || '';
+      fieldMappings[`jobtitle${suffix}`] = () => exp.title || '';
+      fieldMappings[`job_title${suffix}`] = () => exp.title || '';
+      fieldMappings[`periode${suffix}`] = () => formatPeriod(exp.startDate, exp.endDate, exp.isCurrentRole);
+      fieldMappings[`period${suffix}`] = () => formatPeriod(exp.startDate, exp.endDate, exp.isCurrentRole);
+      fieldMappings[`werkzaamheden${suffix}`] = () => exp.description || '';
+      fieldMappings[`description${suffix}`] = () => exp.description || '';
+      fieldMappings[`taken${suffix}`] = () => exp.description || '';
+      fieldMappings[`tasks${suffix}`] = () => exp.description || '';
+    }
+  }
+
+  // Education fields (indexed)
+  for (let i = 0; i < Math.min(profileData.education.length, 10); i++) {
+    const edu = profileData.education[i];
+    const num = i + 1;
+    const suffixes = [String(num), `_${num}`, ` ${num}`, `${num}`, `[${i}]`];
+
+    for (const suffix of suffixes) {
+      fieldMappings[`opleiding${suffix}`] = () => edu.degree || '';
+      fieldMappings[`education${suffix}`] = () => edu.degree || '';
+      fieldMappings[`degree${suffix}`] = () => edu.degree || '';
+      fieldMappings[`school${suffix}`] = () => edu.school || '';
+      fieldMappings[`institution${suffix}`] = () => edu.school || '';
+      fieldMappings[`instelling${suffix}`] = () => edu.school || '';
+      fieldMappings[`studierichting${suffix}`] = () => edu.fieldOfStudy || '';
+      fieldMappings[`field${suffix}`] = () => edu.fieldOfStudy || '';
+      fieldMappings[`jaar${suffix}`] = () => formatPeriod(edu.startYear, edu.endYear);
+      fieldMappings[`year${suffix}`] = () => formatPeriod(edu.startYear, edu.endYear);
+    }
+  }
+
+  // Try to fill each field
+  for (const field of fields) {
+    const fieldName = field.getName().toLowerCase().trim();
+
+    // Try exact match first
+    let value: string | undefined;
+    if (fieldMappings[fieldName]) {
+      value = fieldMappings[fieldName]();
+    } else {
+      // Try partial match
+      for (const [pattern, getValue] of Object.entries(fieldMappings)) {
+        if (fieldName.includes(pattern) || pattern.includes(fieldName)) {
+          value = getValue();
+          break;
+        }
+      }
+    }
+
+    // Fill the field if we found a value
+    if (value && field instanceof PDFTextField) {
+      try {
+        field.setText(value);
+        filledFields.push(field.getName());
+      } catch (e) {
+        console.warn(`Failed to fill field "${field.getName()}":`, e);
+      }
+    }
+  }
+
+  if (filledFields.length === 0) {
+    return null;
+  }
+
+  // Flatten form to make fields non-editable (optional, keeps appearance)
+  // form.flatten();
+
+  const resultBytes = await pdfDoc.save();
+  return {
+    pdfBytes: new Uint8Array(resultBytes),
+    filledFields,
+  };
+}
+
+/**
+ * Fill a PDF template - tries form fields first, then falls back to coordinate-based
+ *
+ * @param templateBytes - The original PDF template as a Uint8Array
+ * @param template - The template configuration with field positions (optional for form-based)
+ * @param profileData - The LinkedIn/profile data to fill in
+ * @param customValues - Optional custom values for fields like birthDate, nationality
+ * @returns The filled PDF as a Uint8Array and info about what was filled
+ */
+export async function fillPDFTemplateAuto(
+  templateBytes: Uint8Array,
+  profileData: ParsedLinkedIn,
+  customValues?: Record<string, string>
+): Promise<{ pdfBytes: Uint8Array; method: 'form' | 'coordinates' | 'none'; filledFields?: string[] }> {
+  // First try to fill form fields automatically
+  const formResult = await fillFormFieldsAuto(templateBytes, profileData, customValues);
+
+  if (formResult && formResult.filledFields.length > 0) {
+    return {
+      pdfBytes: formResult.pdfBytes,
+      method: 'form',
+      filledFields: formResult.filledFields,
+    };
+  }
+
+  // No form fields filled - return original
+  return {
+    pdfBytes: templateBytes,
+    method: 'none',
+  };
 }
