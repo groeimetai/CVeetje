@@ -453,12 +453,114 @@
       "tips": "Tips for your LinkedIn Profile"
     }
   },
+  "templates": {
+    "pages": "pages",
+    "fields": "fields",
+    "fieldsConfigured": "fields configured",
+    "configure": "Configure",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this template?",
+    "empty": {
+      "title": "No templates yet",
+      "description": "Upload your first PDF template to get started."
+    },
+    "upload": {
+      "button": "Upload Template",
+      "title": "Upload New Template",
+      "description": "Upload a PDF template that you want to fill with candidate data.",
+      "nameLabel": "Template name",
+      "namePlaceholder": "e.g. Search4You CV Template",
+      "fileLabel": "PDF file",
+      "uploading": "Uploading...",
+      "submit": "Upload Template"
+    },
+    "errors": {
+      "invalidFileType": "Only PDF files are allowed",
+      "fileTooLarge": "File must be less than 5MB"
+    },
+    "configurator": {
+      "notFound": "Template not found",
+      "pages": "pages",
+      "analyzeWithAI": "Analyze with AI",
+      "save": "Save",
+      "saved": "Template saved!",
+      "instructions": {
+        "title": "Instructions",
+        "description": "Configure where candidate data should be placed in the template.",
+        "step1": "Add fields for each fill-in field in your template",
+        "step2": "Set the X and Y coordinates (in PDF points)",
+        "step3": "Map each field to the correct profile data"
+      },
+      "fields": "Fields",
+      "addField": "Add Field",
+      "noFields": "No fields configured yet. Add fields to be able to fill the template.",
+      "fieldLabel": "Label",
+      "mappingType": "Data type",
+      "field": "Field",
+      "index": "Index (0=first)",
+      "page": "Page",
+      "fontSize": "Font size",
+      "help": {
+        "title": "Tips for coordinates",
+        "coordinates": "PDF coordinates are measured in points (1 point = 1/72 inch)",
+        "a4Size": "An A4 page is 595 points wide and 842 points tall",
+        "yAxis": "The Y-axis starts at the bottom of the page (Y=0 is at the bottom)"
+      }
+    },
+    "selector": {
+      "title": "Choose a Template",
+      "description": "Select a template to fill with your profile data.",
+      "noTemplates": "No templates found",
+      "noTemplatesHint": "Upload a template in your settings first.",
+      "back": "Back to choice",
+      "pages": "pages",
+      "fields": "fields",
+      "noFieldsConfigured": "This template has no fields configured yet. Configure the fields in the template settings first.",
+      "dataToFill": "Data that will be filled",
+      "name": "Name",
+      "email": "Email",
+      "location": "Location",
+      "experience": "Work experience",
+      "education": "Education",
+      "items": "items",
+      "additionalInfo": "Additional information",
+      "birthDate": "Date of birth",
+      "nationality": "Nationality",
+      "changeTemplate": "Change Template",
+      "filling": "Filling...",
+      "fillAndDownload": "Fill & Download"
+    },
+    "choice": {
+      "title": "How do you want to create your CV?",
+      "description": "Choose between an AI-generated style or fill your own recruiter template.",
+      "recommended": "Recommended",
+      "ownStyle": {
+        "title": "Generate Own Style",
+        "description": "Let AI generate a unique, professional style that matches your profile and the job posting.",
+        "feature1": "AI generates colors and layout matching your industry",
+        "feature2": "Complete CV content is written by AI",
+        "feature3": "Preview and adjust before downloading",
+        "button": "Generate Style"
+      },
+      "template": {
+        "title": "Fill Template",
+        "description": "Fill an existing PDF template with your profile data. Ideal for recruiters with their own templates.",
+        "feature1": "Upload your own recruiter PDF template",
+        "feature2": "Configure once where the fields are",
+        "feature3": "Automatically fill with profile data",
+        "button": "Manage Templates",
+        "buttonWithTemplates": "Choose Template"
+      }
+    }
+  },
   "cvWizard": {
     "steps": {
       "profile": "Profile",
       "job": "Job",
       "fitAnalysis": "Match",
+      "styleChoice": "Choice",
       "style": "Style",
+      "template": "Template",
       "generating": "Generating",
       "preview": "Preview"
     },

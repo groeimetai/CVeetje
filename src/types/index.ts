@@ -1022,3 +1022,88 @@ export interface MotivationLetterResponse {
   usage?: TokenUsage;
   error?: string;
 }
+
+// ============ PDF Template Types ============
+
+// Field mapping - which profile data goes into this field
+export type ProfileFieldMapping =
+  | { type: 'personal'; field: 'firstName' | 'lastName' | 'fullName' | 'birthDate' | 'nationality' | 'city' | 'email' | 'phone' }
+  | { type: 'experience'; index: number; field: 'company' | 'title' | 'period' | 'description' | 'location' }
+  | { type: 'education'; index: number; field: 'school' | 'degree' | 'fieldOfStudy' | 'period' }
+  | { type: 'skill'; index: number }
+  | { type: 'language'; index: number; field: 'language' | 'proficiency' }
+  | { type: 'certification'; index: number }
+  | { type: 'custom'; value: string };
+
+// Individual field position in the template
+export interface PDFTemplateField {
+  id: string;
+  name: string;                    // e.g., "firstName", "lastName"
+  label: string;                   // e.g., "Voornaam", "Achternaam"
+  page: number;                    // 0-indexed
+  x: number;                       // Coordinate from left (in points, 1pt = 1/72 inch)
+  y: number;                       // Coordinate from bottom (in points)
+  width?: number;                  // Max width for text wrapping
+  height?: number;                 // Max height for multi-line text
+  fontSize?: number;               // Default: 11
+  fontColor?: string;              // Default: #000000
+  mapping: ProfileFieldMapping;    // Which profile data goes here
+  isMultiLine?: boolean;           // Whether to wrap text
+  maxLines?: number;               // Maximum number of lines for multi-line fields
+}
+
+// Template metadata
+export interface PDFTemplate {
+  id: string;
+  name: string;
+  fileName: string;
+  storageUrl: string;
+  pageCount: number;
+  fields: PDFTemplateField[];
+  createdAt: Date | Timestamp;
+  updatedAt: Date | Timestamp;
+  userId: string;
+}
+
+// Summary for list views
+export interface PDFTemplateSummary {
+  id: string;
+  name: string;
+  fileName: string;
+  pageCount: number;
+  fieldCount: number;
+  updatedAt: Date;
+}
+
+// AI-detected field from template analysis
+export interface DetectedTemplateField {
+  label: string;                   // Detected label text (e.g., "Voornaam:")
+  page: number;
+  x: number;                       // Estimated x coordinate
+  y: number;                       // Estimated y coordinate
+  width?: number;                  // Estimated width
+  suggestedMapping?: ProfileFieldMapping; // AI's suggested mapping
+  confidence: 'low' | 'medium' | 'high';
+}
+
+// Response from template analysis
+export interface TemplateAnalysisResult {
+  pageCount: number;
+  detectedFields: DetectedTemplateField[];
+  templateType?: string;           // e.g., "recruitment", "academic", "generic"
+}
+
+// Request to fill a template
+export interface FillTemplateRequest {
+  templateId: string;
+  profileData: ParsedLinkedIn;
+  customValues?: Record<string, string>; // For custom field mappings
+}
+
+// Response from filling a template
+export interface FillTemplateResponse {
+  success: boolean;
+  pdfUrl?: string;                 // URL to download filled PDF
+  pdfBase64?: string;              // Base64 encoded PDF (alternative)
+  error?: string;
+}

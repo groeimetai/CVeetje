@@ -453,12 +453,114 @@
       "tips": "Tips voor je LinkedIn Profiel"
     }
   },
+  "templates": {
+    "pages": "pagina's",
+    "fields": "velden",
+    "fieldsConfigured": "velden geconfigureerd",
+    "configure": "Configureren",
+    "delete": "Verwijderen",
+    "deleteConfirm": "Weet je zeker dat je deze template wilt verwijderen?",
+    "empty": {
+      "title": "Nog geen templates",
+      "description": "Upload je eerste PDF template om te beginnen."
+    },
+    "upload": {
+      "button": "Template Uploaden",
+      "title": "Nieuwe Template Uploaden",
+      "description": "Upload een PDF template die je wilt invullen met kandidaatgegevens.",
+      "nameLabel": "Template naam",
+      "namePlaceholder": "bijv. Search4You CV Template",
+      "fileLabel": "PDF bestand",
+      "uploading": "Uploaden...",
+      "submit": "Template Uploaden"
+    },
+    "errors": {
+      "invalidFileType": "Alleen PDF bestanden zijn toegestaan",
+      "fileTooLarge": "Bestand mag maximaal 5MB zijn"
+    },
+    "configurator": {
+      "notFound": "Template niet gevonden",
+      "pages": "pagina's",
+      "analyzeWithAI": "Analyseren met AI",
+      "save": "Opslaan",
+      "saved": "Template opgeslagen!",
+      "instructions": {
+        "title": "Instructies",
+        "description": "Configureer waar de kandidaatgegevens in de template moeten worden geplaatst.",
+        "step1": "Voeg velden toe voor elk invulveld in je template",
+        "step2": "Stel de X en Y coördinaten in (in PDF punten)",
+        "step3": "Koppel elk veld aan de juiste profieldata"
+      },
+      "fields": "Velden",
+      "addField": "Veld Toevoegen",
+      "noFields": "Nog geen velden geconfigureerd. Voeg velden toe om de template te kunnen invullen.",
+      "fieldLabel": "Label",
+      "mappingType": "Data type",
+      "field": "Veld",
+      "index": "Index (0=eerste)",
+      "page": "Pagina",
+      "fontSize": "Lettergrootte",
+      "help": {
+        "title": "Tips voor coördinaten",
+        "coordinates": "PDF coördinaten worden gemeten in punten (1 punt = 1/72 inch)",
+        "a4Size": "Een A4 pagina is 595 punten breed en 842 punten hoog",
+        "yAxis": "De Y-as begint onderaan de pagina (Y=0 is onderaan)"
+      }
+    },
+    "selector": {
+      "title": "Kies een Template",
+      "description": "Selecteer een template om in te vullen met je profielgegevens.",
+      "noTemplates": "Geen templates gevonden",
+      "noTemplatesHint": "Upload eerst een template in je instellingen.",
+      "back": "Terug naar keuze",
+      "pages": "pagina's",
+      "fields": "velden",
+      "noFieldsConfigured": "Deze template heeft nog geen velden geconfigureerd. Configureer eerst de velden in de template instellingen.",
+      "dataToFill": "Gegevens die worden ingevuld",
+      "name": "Naam",
+      "email": "E-mail",
+      "location": "Locatie",
+      "experience": "Werkervaring",
+      "education": "Opleiding",
+      "items": "items",
+      "additionalInfo": "Aanvullende informatie",
+      "birthDate": "Geboortedatum",
+      "nationality": "Nationaliteit",
+      "changeTemplate": "Andere Template",
+      "filling": "Invullen...",
+      "fillAndDownload": "Invullen & Downloaden"
+    },
+    "choice": {
+      "title": "Hoe wil je je CV maken?",
+      "description": "Kies tussen een door AI gegenereerde stijl of vul je eigen recruiter template in.",
+      "recommended": "Aanbevolen",
+      "ownStyle": {
+        "title": "Eigen Stijl Genereren",
+        "description": "Laat AI een unieke, professionele stijl genereren die past bij jouw profiel en de vacature.",
+        "feature1": "AI genereert kleuren en layout passend bij je industrie",
+        "feature2": "Volledige CV content wordt geschreven door AI",
+        "feature3": "Preview en aanpassen voordat je download",
+        "button": "Stijl Genereren"
+      },
+      "template": {
+        "title": "Template Invullen",
+        "description": "Vul een bestaande PDF template in met je profielgegevens. Ideaal voor recruiters met eigen templates.",
+        "feature1": "Upload je eigen recruiter PDF template",
+        "feature2": "Configureer eenmalig waar de velden staan",
+        "feature3": "Vul automatisch in met profieldata",
+        "button": "Templates Beheren",
+        "buttonWithTemplates": "Template Kiezen"
+      }
+    }
+  },
   "cvWizard": {
     "steps": {
       "profile": "Profiel",
       "job": "Vacature",
       "fitAnalysis": "Match",
+      "styleChoice": "Keuze",
       "style": "Stijl",
+      "template": "Template",
       "generating": "Genereren",
       "preview": "Preview"
     },

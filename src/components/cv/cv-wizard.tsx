@@ -14,6 +14,7 @@ import { FitAnalysisCard } from './fit-analysis-card';
 import { DynamicStylePicker } from './dynamic-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TokenUsageDisplay } from './token-usage-display';
+import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
 import { useAuth } from '@/components/auth/auth-context';
 import { useWizardPersistence, formatTimeAgo, type WizardStep } from '@/hooks/use-wizard-persistence';
 import type {
@@ -186,11 +187,17 @@ export function CVWizard() {
     }
   }, [providers, userData?.apiKey]);
 
+  // Track whether user chose template mode
+  const [useTemplateMode, setUseTemplateMode] = useState(false);
+
   const steps: { id: WizardStep; label: string }[] = [
     { id: 'linkedin', label: t('steps.profile') },
     { id: 'job', label: t('steps.job') },
     { id: 'fit-analysis', label: t('steps.fitAnalysis') },
-    { id: 'style', label: t('steps.style') },
+    { id: 'style-choice', label: t('steps.styleChoice') },
+    ...(useTemplateMode
+      ? [{ id: 'template' as WizardStep, label: t('steps.template') }]
+      : [{ id: 'style' as WizardStep, label: t('steps.style') }]),
     { id: 'generating', label: t('steps.generating') },
     { id: 'preview', label: t('steps.preview') },
   ];
@@ -209,16 +216,46 @@ export function CVWizard() {
   const handleJobSubmit = (data: JobVacancy | null) => {
     setJobVacancy(data);
     // If there's a job vacancy, go to fit analysis first
-    // If skipped (null), go directly to style
+    // If skipped (null), go directly to style choice
     if (data) {
       setCurrentStep('fit-analysis');
     } else {
-      setCurrentStep('style');
+      setCurrentStep('style-choice');
     }
   };
 
   const handleFitAnalysisContinue = () => {
+    setCurrentStep('style-choice');
+  };
+
+  // Handle choice between own style or template
+  const handleChooseStyle = () => {
+    setUseTemplateMode(false);
     setCurrentStep('style');
+  };
+
+  const handleChooseTemplate = () => {
+    setUseTemplateMode(true);
+    setCurrentStep('template');
+  };
+
+  // Handle template fill completion
+  const handleTemplateFilled = (pdfBlob: Blob, templateName: string) => {
+    // Download the filled PDF directly
+    const url = window.URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'download'}-${templateName.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    // Refresh credits
+    refreshCredits();
+
+    // Clear draft since template was filled
+    clearDraft();
   };
 
   const handleFitAnalysisChangeJob = () => {
@@ -411,7 +448,7 @@ export function CVWizard() {
   };
 
   const goBack = () => {
-    const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style', 'preview'];
+    const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style-choice', useTemplateMode ? 'template' : 'style', 'preview'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
       // Skip fit-analysis when going back if there's no job vacancy
@@ -471,7 +508,9 @@ export function CVWizard() {
       linkedin: t('steps.profile'),
       job: t('steps.job'),
       'fit-analysis': t('steps.fitAnalysis'),
+      'style-choice': t('steps.styleChoice'),
       style: t('steps.style'),
+      template: t('steps.template'),
       generating: t('steps.generating'),
       preview: t('steps.preview'),
     };
@@ -611,6 +650,21 @@ export function CVWizard() {
           onContinue={handleFitAnalysisContinue}
           onChangeJob={handleFitAnalysisChangeJob}
           onTokenUsage={(usage) => addTokenUsage('style', usage)}
+        />
+      )}
+
+      {currentStep === 'style-choice' && linkedInData && (
+        <StyleOrTemplateChoice
+          onChooseStyle={handleChooseStyle}
+          onChooseTemplate={handleChooseTemplate}
+        />
+      )}
+
+      {currentStep === 'template' && linkedInData && (
+        <TemplateSelector
+          profileData={linkedInData}
+          onFill={handleTemplateFilled}
+          onBack={() => setCurrentStep('style-choice')}
         />
       )}
 
