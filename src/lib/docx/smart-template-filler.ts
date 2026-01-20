@@ -232,7 +232,7 @@ export async function fillSmartTemplate(
   // Get the main document XML
   const documentXmlFile = zip.file('word/document.xml');
   if (!documentXmlFile) {
-    throw new Error('Invalid DOCX file: missing word/document.xml');
+    throw new Error('Invalid DOCX file: missing word/document.xml. Note: Only .docx files are supported, not .doc (Word 97-2003) files.');
   }
 
   let docXml = await documentXmlFile.async('string');
