@@ -12,7 +12,7 @@ import type { CVDesignTokens } from '@/types/design-tokens';
 const STORAGE_KEY = 'cveetje_wizard_draft';
 const EXPIRY_HOURS = 24; // Draft expires after 24 hours
 
-export type WizardStep = 'linkedin' | 'job' | 'fit-analysis' | 'style-choice' | 'style' | 'template' | 'template-style' | 'generating' | 'preview';
+export type WizardStep = 'linkedin' | 'job' | 'fit-analysis' | 'style-choice' | 'style' | 'template-style' | 'generating' | 'preview';
 
 export interface WizardDraft {
   currentStep: WizardStep;
@@ -77,8 +77,8 @@ export function useWizardPersistence(): UseWizardPersistenceResult {
   }, []);
 
   const saveDraft = useCallback((draftData: Omit<WizardDraft, 'savedAt'>) => {
-    // Don't save if we're in generating, preview, template, or template-style step
-    if (draftData.currentStep === 'generating' || draftData.currentStep === 'preview' || draftData.currentStep === 'template' || draftData.currentStep === 'template-style') {
+    // Don't save if we're in generating, preview, or template-style step
+    if (draftData.currentStep === 'generating' || draftData.currentStep === 'preview' || draftData.currentStep === 'template-style') {
       return;
     }
 

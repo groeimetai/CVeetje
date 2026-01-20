@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import {
   Palette,
-  FileText,
   ArrowRight,
   Sparkles,
   Upload,
@@ -14,16 +13,12 @@ import {
 
 interface StyleOrTemplateChoiceProps {
   onChooseStyle: () => void;
-  onChooseTemplate: () => void;
-  onChooseTemplateStyle?: () => void;
-  hasTemplates?: boolean;
+  onChooseTemplateStyle: () => void;
 }
 
 export function StyleOrTemplateChoice({
   onChooseStyle,
-  onChooseTemplate,
   onChooseTemplateStyle,
-  hasTemplates = false,
 }: StyleOrTemplateChoiceProps) {
   const t = useTranslations('templates.choice');
 
@@ -34,8 +29,8 @@ export function StyleOrTemplateChoice({
         <p className="text-muted-foreground mt-1">{t('description')}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Own Style Option */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* AI Style Option */}
         <Card
           className="cursor-pointer hover:border-primary transition-colors relative overflow-hidden"
           onClick={onChooseStyle}
@@ -76,75 +71,37 @@ export function StyleOrTemplateChoice({
           </CardContent>
         </Card>
 
-        {/* Template Style Option */}
-        {onChooseTemplateStyle && (
-          <Card
-            className="cursor-pointer hover:border-primary transition-colors"
-            onClick={onChooseTemplateStyle}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-secondary">
-                  <Eye className="h-5 w-5" />
-                </div>
-                {t('templateStyle.title')}
-              </CardTitle>
-              <CardDescription>{t('templateStyle.description')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="text-sm space-y-2">
-                <li className="flex items-start gap-2">
-                  <Upload className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <span>{t('templateStyle.feature1')}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Eye className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <span>{t('templateStyle.feature2')}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Sparkles className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <span>{t('templateStyle.feature3')}</span>
-                </li>
-              </ul>
-              <Button variant="outline" className="w-full">
-                {t('templateStyle.button')}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Template Fill Option */}
+        {/* Own Design Option */}
         <Card
           className="cursor-pointer hover:border-primary transition-colors"
-          onClick={onChooseTemplate}
+          onClick={onChooseTemplateStyle}
         >
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-secondary">
-                <FileText className="h-5 w-5" />
+                <Eye className="h-5 w-5" />
               </div>
-              {t('template.title')}
+              {t('templateStyle.title')}
             </CardTitle>
-            <CardDescription>{t('template.description')}</CardDescription>
+            <CardDescription>{t('templateStyle.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="text-sm space-y-2">
               <li className="flex items-start gap-2">
                 <Upload className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <span>{t('template.feature1')}</span>
+                <span>{t('templateStyle.feature1')}</span>
               </li>
               <li className="flex items-start gap-2">
-                <Upload className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <span>{t('template.feature2')}</span>
+                <Eye className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <span>{t('templateStyle.feature2')}</span>
               </li>
               <li className="flex items-start gap-2">
-                <Upload className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                <span>{t('template.feature3')}</span>
+                <Sparkles className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <span>{t('templateStyle.feature3')}</span>
               </li>
             </ul>
             <Button variant="outline" className="w-full">
-              {hasTemplates ? t('template.buttonWithTemplates') : t('template.button')}
+              {t('templateStyle.button')}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardContent>

@@ -130,13 +130,16 @@ export interface DocxToImageResult {
  * @param buffer - The DOCX file as an ArrayBuffer
  * @returns Base64-encoded PNG image
  */
-export async function docxToImage(buffer: ArrayBuffer): Promise<DocxToImageResult> {
+export async function docxToImage(arrayBuffer: ArrayBuffer): Promise<DocxToImageResult> {
   let browser;
 
   try {
+    // Convert ArrayBuffer to Node.js Buffer for mammoth (server-side)
+    const buffer = Buffer.from(arrayBuffer);
+
     // 1. Convert DOCX to HTML using mammoth
     const { value: html, messages } = await mammoth.convertToHtml(
-      { arrayBuffer: buffer },
+      { buffer: buffer },
       {
         // Preserve styles as much as possible
         styleMap: [

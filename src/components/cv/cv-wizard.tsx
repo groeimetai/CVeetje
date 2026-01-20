@@ -15,7 +15,7 @@ import { DynamicStylePicker } from './dynamic-style-picker';
 import { TemplateStylePicker } from './template-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TokenUsageDisplay } from './token-usage-display';
-import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
+import { StyleOrTemplateChoice } from '@/components/templates';
 import { useAuth } from '@/components/auth/auth-context';
 import { useWizardPersistence, formatTimeAgo, type WizardStep } from '@/hooks/use-wizard-persistence';
 import type {
@@ -188,15 +188,11 @@ export function CVWizard() {
     }
   }, [providers, userData?.apiKey]);
 
-  // Track whether user chose template mode or template-style mode
-  const [useTemplateMode, setUseTemplateMode] = useState(false);
+  // Track whether user chose template-style mode (upload own design)
   const [useTemplateStyleMode, setUseTemplateStyleMode] = useState(false);
 
   // Determine which step to show in progress bar
   const getStyleStepConfig = (): { id: WizardStep; label: string } => {
-    if (useTemplateMode) {
-      return { id: 'template' as WizardStep, label: t('steps.template') };
-    }
     if (useTemplateStyleMode) {
       return { id: 'template-style' as WizardStep, label: t('steps.templateStyle') };
     }
@@ -239,44 +235,18 @@ export function CVWizard() {
     setCurrentStep('style-choice');
   };
 
-  // Handle choice between own style, template, or template-style
+  // Handle choice between AI style or template-style (own design)
   const handleChooseStyle = () => {
-    setUseTemplateMode(false);
     setUseTemplateStyleMode(false);
     setCurrentStep('style');
   };
 
-  const handleChooseTemplate = () => {
-    setUseTemplateMode(true);
-    setUseTemplateStyleMode(false);
-    setCurrentStep('template');
-  };
-
   const handleChooseTemplateStyle = () => {
-    setUseTemplateMode(false);
     setUseTemplateStyleMode(true);
     setCurrentStep('template-style');
   };
 
   // Handle template fill completion
-  const handleTemplateFilled = (pdfBlob: Blob, templateName: string) => {
-    // Download the filled PDF directly
-    const url = window.URL.createObjectURL(pdfBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'download'}-${templateName.toLowerCase().replace(/\s+/g, '-')}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-    // Refresh credits
-    refreshCredits();
-
-    // Clear draft since template was filled
-    clearDraft();
-  };
-
   const handleFitAnalysisChangeJob = () => {
     // Go back to job input
     setCurrentStep('job');
@@ -468,11 +438,7 @@ export function CVWizard() {
 
   const goBack = () => {
     // Determine which style step to use
-    const styleStep: WizardStep = useTemplateMode
-      ? 'template'
-      : useTemplateStyleMode
-        ? 'template-style'
-        : 'style';
+    const styleStep: WizardStep = useTemplateStyleMode ? 'template-style' : 'style';
     const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style-choice', styleStep, 'preview'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
@@ -498,8 +464,7 @@ export function CVWizard() {
     setElementColors({});
     setCvId(null);
     setError(null);
-    // Reset mode flags
-    setUseTemplateMode(false);
+    // Reset mode flag
     setUseTemplateStyleMode(false);
     // Reset token history for the new CV - each CV should track its own usage
     setTokenHistory([]);
@@ -538,7 +503,6 @@ export function CVWizard() {
       'fit-analysis': t('steps.fitAnalysis'),
       'style-choice': t('steps.styleChoice'),
       style: t('steps.style'),
-      template: t('steps.template'),
       'template-style': t('steps.templateStyle'),
       generating: t('steps.generating'),
       preview: t('steps.preview'),
@@ -685,16 +649,7 @@ export function CVWizard() {
       {currentStep === 'style-choice' && linkedInData && (
         <StyleOrTemplateChoice
           onChooseStyle={handleChooseStyle}
-          onChooseTemplate={handleChooseTemplate}
           onChooseTemplateStyle={handleChooseTemplateStyle}
-        />
-      )}
-
-      {currentStep === 'template' && linkedInData && (
-        <TemplateSelector
-          profileData={linkedInData}
-          onFill={handleTemplateFilled}
-          onBack={() => setCurrentStep('style-choice')}
         />
       )}
 
