@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import type { SavedProfile, SavedProfileSummary, ParsedLinkedIn } from '@/types';
+import { profileSaveRequestSchema, validateRequestBody, isValidationError } from '@/lib/validation/schemas';
+import type { SavedProfileSummary, ParsedLinkedIn } from '@/types';
 
 // GET - List all profiles for the user
 export async function GET(request: NextRequest) {
@@ -89,18 +90,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Parse request body
+    // Parse and VALIDATE request body
     const body = await request.json();
-    const { name, description, parsedData, avatarUrl, sourceInfo, isDefault } = body;
-    console.log('[API Profiles POST] Body parsed:', { name, hasDescription: !!description, hasParsedData: !!parsedData, hasAvatarUrl: !!avatarUrl, hasSourceInfo: !!sourceInfo, isDefault });
+    console.log('[API Profiles POST] Received body, validating...');
 
-    if (!name || !parsedData) {
-      console.log('[API Profiles POST] Validation failed - missing name or parsedData');
+    let validatedData;
+    try {
+      validatedData = validateRequestBody(profileSaveRequestSchema, body);
+      console.log('[API Profiles POST] Validation passed:', {
+        name: validatedData.name,
+        hasDescription: !!validatedData.description,
+        hasParsedData: !!validatedData.parsedData,
+        hasAvatarUrl: !!validatedData.avatarUrl,
+        isDefault: validatedData.isDefault
+      });
+    } catch (validationError) {
+      console.log('[API Profiles POST] Validation failed:', validationError);
+      if (isValidationError(validationError)) {
+        return NextResponse.json(validationError.toJSON(), { status: 400 });
+      }
       return NextResponse.json(
-        { error: 'Name and parsedData are required' },
+        { error: 'Invalid request data' },
         { status: 400 }
       );
     }
+
+    const { name, description, parsedData, avatarUrl, isDefault } = validatedData;
 
     console.log('[API Profiles POST] Getting Firestore...');
     const db = getAdminDb();
@@ -146,19 +161,6 @@ export async function POST(request: NextRequest) {
     // Only add avatarUrl if it has a value
     if (avatarUrl) {
       profileData.avatarUrl = avatarUrl;
-    }
-
-    // Only add sourceInfo if it exists, and filter out undefined fileNames
-    if (sourceInfo) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const normalizedSourceInfo: Record<string, any> = {
-        inputType: sourceInfo.inputType as 'text' | 'file' | 'mixed',
-        lastUpdated: new Date(),
-      };
-      if (sourceInfo.fileNames && sourceInfo.fileNames.length > 0) {
-        normalizedSourceInfo.fileNames = sourceInfo.fileNames;
-      }
-      profileData.sourceInfo = normalizedSourceInfo;
     }
 
     console.log('[API Profiles POST] Creating profile document...');

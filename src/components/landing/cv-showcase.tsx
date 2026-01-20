@@ -30,7 +30,7 @@ export function CVShowcase() {
           </div>
           <div className="flex-1 mx-4">
             <div className="bg-background rounded px-3 py-1 text-xs text-muted-foreground text-center">
-              cveetje.nl/dashboard
+              maakcveetje.nl/dashboard
             </div>
           </div>
         </div>
@@ -196,7 +196,7 @@ export function ProfileSelectionMockup() {
         </div>
         <div className="flex-1 mx-4">
           <div className="bg-background rounded px-3 py-1 text-xs text-muted-foreground text-center">
-            cveetje.nl/dashboard
+            maakcveetje.nl/dashboard
           </div>
         </div>
       </div>
@@ -278,7 +278,7 @@ export function JobAnalysisMockup() {
         </div>
         <div className="flex-1 mx-4">
           <div className="bg-background rounded px-3 py-1 text-xs text-muted-foreground text-center">
-            cveetje.nl/dashboard
+            maakcveetje.nl/dashboard
           </div>
         </div>
       </div>
@@ -359,7 +359,7 @@ export function StyleGeneratorMockup() {
         </div>
         <div className="flex-1 mx-4">
           <div className="bg-background rounded px-3 py-1 text-xs text-muted-foreground text-center">
-            cveetje.nl/dashboard
+            maakcveetje.nl/dashboard
           </div>
         </div>
       </div>

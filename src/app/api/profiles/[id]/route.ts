@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
+import { profileSaveRequestSchema, validateRequestBody, isValidationError } from '@/lib/validation/schemas';
 import type { SavedProfile, ParsedLinkedIn } from '@/types';
 
 // GET - Get a specific profile
@@ -96,9 +97,21 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Parse request body
+    // Parse and VALIDATE request body
     const body = await request.json();
-    const { name, description, parsedData, avatarUrl, sourceInfo, isDefault } = body;
+
+    let validatedData;
+    try {
+      // Use partial validation for updates (all fields optional)
+      validatedData = validateRequestBody(profileSaveRequestSchema.partial(), body);
+    } catch (validationError) {
+      if (isValidationError(validationError)) {
+        return NextResponse.json(validationError.toJSON(), { status: 400 });
+      }
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+    }
+
+    const { name, description, parsedData, avatarUrl, isDefault } = validatedData;
 
     const db = getAdminDb();
     const profileRef = db
@@ -142,7 +155,6 @@ export async function PUT(
     if (description !== undefined) updateData.description = description;
     if (parsedData !== undefined) updateData.parsedData = parsedData as ParsedLinkedIn;
     if (avatarUrl !== undefined) (updateData as Record<string, unknown>).avatarUrl = avatarUrl;
-    if (sourceInfo !== undefined) updateData.sourceInfo = sourceInfo;
     if (isDefault !== undefined) updateData.isDefault = isDefault;
 
     await profileRef.update(updateData);
