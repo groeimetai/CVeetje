@@ -108,14 +108,15 @@ const creativeTokensSchema = designTokensSchema.extend({
 });
 
 // Extended schema for experimental mode - includes custom decorations
+// Note: Anthropic API only supports minItems of 0 or 1, so we validate min count in code
 const experimentalTokensSchema = creativeTokensSchema.extend({
   customDecorations: z.array(z.object({
     name: z.string().describe('Unique name for this decoration, e.g., "code-bracket", "data-node", "growth-arrow"'),
     description: z.string().describe('Visual description: what shape/symbol this represents (e.g., "curly brace like { }", "connected dots forming a network node", "upward arrow with bar chart")'),
     placement: z.enum(['corner', 'edge', 'scattered']).describe('Where to place: corner (corners of page), edge (along margins), scattered (random positions)'),
     size: z.enum(['small', 'medium', 'large']).describe('Size of decoration elements'),
-    quantity: z.number().min(1).max(5).describe('How many of this decoration to place (1-5)'),
-  })).min(2).max(5).describe(`Custom decorations that reflect the job/industry. Create 2-5 unique decorations.
+    quantity: z.number().describe('How many of this decoration to place (1-5, will be clamped)'),
+  })).describe(`Custom decorations that reflect the job/industry. Create 2-5 unique decorations.
 Examples:
 - Software Developer: code brackets, terminal prompts, git branches
 - Data Scientist: scatter plot dots, neural network nodes, bar charts

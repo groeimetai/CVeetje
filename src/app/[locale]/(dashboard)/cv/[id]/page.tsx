@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
@@ -55,7 +55,7 @@ export default function CVDetailPage() {
     fetchCV();
   }, [firebaseUser, cvId]);
 
-  const handleDownload = async () => {
+  const handleDownload = async (pageMode: 'multi-page' | 'single-page' = 'multi-page') => {
     if (!cvId || credits < 1) return;
 
     setIsDownloading(true);
@@ -64,6 +64,10 @@ export default function CVDetailPage() {
     try {
       const response = await fetch(`/api/cv/${cvId}/pdf`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pageMode }),
       });
 
       if (!response.ok) {
@@ -152,12 +156,6 @@ export default function CVDetailPage() {
           </div>
         </div>
 
-        {cv.generatedContent && (
-          <Button onClick={handleDownload} disabled={isDownloading || credits < 1}>
-            <Download className="mr-2 h-4 w-4" />
-            {isDownloading ? 'Generating...' : 'Download PDF (1 credit)'}
-          </Button>
-        )}
       </div>
 
       {error && (
@@ -187,8 +185,20 @@ export default function CVDetailPage() {
           fullName={cv.linkedInData.fullName}
           headline={(cv.generatedContent as GeneratedCVContent).headline ?? cv.linkedInData.headline}
           avatarUrl={cv.avatarUrl}
+          contactInfo={{
+            email: cv.linkedInData.email,
+            phone: cv.linkedInData.phone,
+            location: cv.linkedInData.location || undefined,
+            linkedinUrl: cv.linkedInData.linkedinUrl,
+            website: cv.linkedInData.website,
+            github: cv.linkedInData.github,
+          }}
+          jobVacancy={cv.jobVacancy}
+          cvId={cvId}
+          language={(cv as CV & { language?: 'nl' | 'en' }).language || 'nl'}
           onDownload={handleDownload}
           onRegenerate={() => router.push('/cv/new')}
+          onCreditsRefresh={refreshCredits}
           isDownloading={isDownloading}
           isRegenerating={false}
           credits={credits}

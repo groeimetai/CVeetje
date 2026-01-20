@@ -1,4 +1,9 @@
 {
+  "footer": {
+    "copyright": "© {year} CVeetje. Alle rechten voorbehouden.",
+    "privacy": "Privacy",
+    "terms": "Voorwaarden"
+  },
   "cookieConsent": {
     "title": "Cookies & Privacy",
     "description": "Wij gebruiken cookies om je ervaring te verbeteren en onze website te analyseren. Door te accepteren ga je akkoord met het gebruik van analytische cookies.",

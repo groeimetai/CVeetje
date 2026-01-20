@@ -37,6 +37,9 @@ ui-debug.log
 pdf-outputs/
 trigger-config.yaml
 
+# social media posts
+/posts/
+
 # env files (can opt-in for committing if needed)
 .env*
 

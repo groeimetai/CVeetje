@@ -62,12 +62,12 @@ export function ProfileCard({
         onClick={() => onSelect?.(profile.id)}
       >
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+          <div className="h-10 w-10 flex-shrink-0 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
                 alt={profile.name}
-                className="h-10 w-10 rounded-full object-cover"
+                className="h-full w-full rounded-full object-cover"
               />
             ) : (
               <User className="h-5 w-5 text-primary" />
@@ -131,12 +131,12 @@ export function ProfileCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+            <div className="h-12 w-12 flex-shrink-0 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
               {profile.avatarUrl ? (
                 <img
                   src={profile.avatarUrl}
                   alt={profile.name}
-                  className="h-12 w-12 rounded-full object-cover"
+                  className="h-full w-full rounded-full object-cover"
                 />
               ) : (
                 <User className="h-6 w-6 text-primary" />
