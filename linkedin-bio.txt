@@ -1,6 +1,0 @@
-As a Technical Founder @ GroeimetAI I prepare businesses for the AI Agent Economy by transforming existing APIs into agent-accessible platforms through Model Context Protocol (MCP) integration—bridging current infrastructure with the autonomous AI future.
-
-I built Snow-Flow, an open-source AI platform with 419+ MCP tools that replaces $150K+ enterprise software, giving organizations freedom to use any LLM (on-premise, geo-approved, or cloud).
-Alongside this I developed Snelnotuleren.nl for automated meeting transcription, CVeetje.nl for AI-powered CV generation that tailors resumes to specific job postings, and created AI-powered websites with SEO optimization for various clients.
-
-Since early 2025 we've been first movers in MCP implementation, helping organizations go from agent-blind to agent-ready through our Assess → Build → Monitor methodology. With AI agents becoming mainstream in 2025, we ensure businesses are prepared for autonomous workflows and intelligent process automation.
