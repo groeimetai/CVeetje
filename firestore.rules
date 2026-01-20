@@ -1,0 +1,138 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============ Helper Functions ============
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user owns this resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if a field exists and is not null
+    function fieldExists(field) {
+      return field != null;
+    }
+
+    // ============ Users Collection ============
+    // /users/{userId}
+    //
+    // SECURITY NOTE: Sensitive fields (credits, apiKey) are ONLY modified via Admin SDK
+    // Client-side updates are restricted to non-sensitive fields only
+
+    match /users/{userId} {
+      // Users can read their own document
+      allow read: if isOwner(userId);
+
+      // Users can create their own document (on signup)
+      // But cannot set credits or apiKey directly - these are set by Admin SDK
+      allow create: if isOwner(userId)
+        && !request.resource.data.keys().hasAny(['credits', 'apiKey']);
+
+      // Users can update ONLY non-sensitive fields
+      // credits and apiKey can ONLY be modified via Admin SDK (server-side)
+      allow update: if isOwner(userId) && isValidUserUpdate();
+
+      // Users cannot delete their own document from client
+      // (account deletion should go through API with Admin SDK)
+      allow delete: if false;
+
+      // Validation function for user updates
+      // BLOCKS any attempt to modify credits or apiKey from client
+      function isValidUserUpdate() {
+        let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
+
+        // These fields can NEVER be modified from client-side
+        // They are only modified via Admin SDK (server-side API routes)
+        let forbiddenFields = ['credits', 'apiKey'];
+
+        // Allowed fields that can be updated from client
+        let allowedFields = ['displayName', 'photoURL', 'updatedAt'];
+
+        // Ensure no forbidden fields are being modified
+        return !affectedKeys.hasAny(forbiddenFields);
+      }
+
+      // ============ Transactions Subcollection ============
+      // /users/{userId}/transactions/{transactionId}
+
+      match /transactions/{transactionId} {
+        // Users can read their own transactions
+        allow read: if isOwner(userId);
+
+        // Transactions can ONLY be created via Admin SDK (server-side)
+        // This prevents users from creating fake purchase transactions
+        // All transaction logging happens in API routes using Admin SDK
+        allow create: if false;
+
+        // Transactions are immutable - no updates or deletes
+        allow update, delete: if false;
+      }
+
+      // ============ CVs Subcollection ============
+      // /users/{userId}/cvs/{cvId}
+
+      match /cvs/{cvId} {
+        // Users can read their own CVs
+        allow read: if isOwner(userId);
+
+        // Users can create CVs
+        allow create: if isOwner(userId) && validCVCreate();
+
+        // Users can update their own CVs
+        allow update: if isOwner(userId);
+
+        // Users can delete their own CVs
+        allow delete: if isOwner(userId);
+
+        function validCVCreate() {
+          let data = request.resource.data;
+
+          // Required fields for CV creation
+          return fieldExists(data.linkedInData)
+            && fieldExists(data.template)
+            && fieldExists(data.colorScheme)
+            && fieldExists(data.status);
+        }
+      }
+
+      // ============ Profiles Subcollection ============
+      // /users/{userId}/profiles/{profileId}
+
+      match /profiles/{profileId} {
+        // Users can read their own profiles
+        allow read: if isOwner(userId);
+
+        // Users can create profiles
+        allow create: if isOwner(userId) && validProfileCreate();
+
+        // Users can update their own profiles
+        allow update: if isOwner(userId);
+
+        // Users can delete their own profiles
+        allow delete: if isOwner(userId);
+
+        function validProfileCreate() {
+          let data = request.resource.data;
+
+          // Required fields for profile creation
+          return fieldExists(data.name)
+            && fieldExists(data.parsedData);
+        }
+      }
+    }
+
+    // ============ Default Deny ============
+    // Deny all other access by default
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

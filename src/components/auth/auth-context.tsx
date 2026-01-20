@@ -11,7 +11,6 @@ import {
 import { User as FirebaseUser } from 'firebase/auth';
 import { onAuthStateChange, signOut as firebaseSignOut } from '@/lib/firebase/auth';
 import { getUserData, getUserCredits, getUserCreditsBreakdown, type CreditBreakdown } from '@/lib/firebase/firestore';
-import { checkAndResetMonthlyCredits } from '@/lib/credits/manager';
 import type { User } from '@/types';
 
 interface AuthContextType {
@@ -113,8 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Failed to get ID token:', error);
         }
 
-        // Check for monthly credit reset
-        await checkAndResetMonthlyCredits(user.uid);
+        // Check for monthly credit reset (via API to prevent client-side manipulation)
+        try {
+          await fetch('/api/credits/check-reset', { method: 'POST' });
+        } catch (error) {
+          console.error('Failed to check credit reset:', error);
+        }
 
         // Fetch user data and credits
         const data = await getUserData(user.uid);
