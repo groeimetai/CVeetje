@@ -469,7 +469,7 @@
       "title": "Nieuwe Template Uploaden",
       "description": "Upload een PDF template die je wilt invullen met kandidaatgegevens.",
       "nameLabel": "Template naam",
-      "namePlaceholder": "bijv. Search4You CV Template",
+      "namePlaceholder": "bijv. Recruitment Bureau Template",
       "fileLabel": "PDF bestand",
       "uploading": "Uploaden...",
       "submit": "Template Uploaden"

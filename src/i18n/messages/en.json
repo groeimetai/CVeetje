@@ -469,7 +469,7 @@
       "title": "Upload New Template",
       "description": "Upload a PDF template that you want to fill with candidate data.",
       "nameLabel": "Template name",
-      "namePlaceholder": "e.g. Search4You CV Template",
+      "namePlaceholder": "e.g. Acme Recruitment Template",
       "fileLabel": "PDF file",
       "uploading": "Uploading...",
       "submit": "Upload Template"
