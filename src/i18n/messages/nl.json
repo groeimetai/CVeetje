@@ -85,7 +85,7 @@
     "heroTitle": "Stop het Priegelwerk",
     "heroTitleHighlight": "Start met Solliciteren",
     "heroBadge": "Automatisch gefit op elke vacature",
-    "heroDescription": "Geen urenlang CV's aanpassen meer. Sla je profiel één keer op, plak een vacature, en ontvang een CV dat automatisch is geoptimaliseerd voor die specifieke baan.",
+    "heroDescription": "Geen urenlang CV's aanpassen meer. Sla je profiel één keer op, plak een vacature, en ontvang een CV waarin je ervaring automatisch wordt gematcht op wat de vacature vraagt. Dezelfde jij, perfecte fit.",
     "ctaStart": "Gratis Starten",
     "ctaHowItWorks": "Bekijk Hoe Het Werkt",
     "freeNote": "5 gratis downloads per maand. Geen creditcard nodig.",
@@ -93,7 +93,7 @@
       "enterOnce": "Eén keer invoeren",
       "enterOnceDesc": "Sla je profiel op en hergebruik het voor elke sollicitatie",
       "autoFit": "Automatisch gefit",
-      "autoFitDesc": "AI analyseert de vacature en optimaliseert je CV",
+      "autoFitDesc": "AI matcht jouw ervaring op wat de vacature vraagt",
       "readyInMinutes": "Klaar in minuten",
       "readyInMinutesDesc": "Van vacature naar sollicitatie-klaar CV in een paar klikken"
     },
@@ -105,7 +105,7 @@
       "step1Desc": "Plak je LinkedIn, upload screenshots van een oud CV, of voer handmatig in. Je hoeft dit maar één keer te doen.",
       "step2Label": "Stap 2 - Per Sollicitatie",
       "step2Title": "Plak de Vacature",
-      "step2Desc": "Copy-paste de vacaturetekst. AI analyseert de functie-eisen en past je CV automatisch aan.",
+      "step2Desc": "Copy-paste de vacaturetekst. AI vindt de juiste invalshoek en matcht jouw ervaring op de functie-eisen.",
       "step3Label": "Stap 3",
       "step3Title": "Download & Solliciteer",
       "step3Desc": "Download je CV als PDF. Voeg optioneel een AI-gegenereerde motivatiebrief toe."
@@ -114,7 +114,7 @@
       "badge": "Preview",
       "title": "Professioneel Resultaat,",
       "titleHighlight": "Automatisch Gegenereerd",
-      "description": "Je ontvangt een volledig opgemaakte CV met jouw gegevens, geoptimaliseerd voor de vacature waar je op solliciteert. Inclusief professionele styling, duidelijke secties, en ATS-vriendelijke opmaak.",
+      "description": "Je ontvangt een volledig opgemaakte CV met jouw gegevens, gematcht op de vacature waar je op solliciteert. Je ervaring blijft dezelfde - alleen de presentatie is afgestemd op wat deze baan vraagt.",
       "keywordsProcessed": "Keywords uit de vacature automatisch verwerkt",
       "experiencePrioritized": "Ervaring en skills geprioriteerd op relevantie",
       "industryStyle": "Stijl passend bij jouw industrie en functie",
@@ -166,7 +166,7 @@
       "mainFeatureBadge": "Belangrijkste feature",
       "autoFit": {
         "title": "Automatisch Gefit op Vacatures",
-        "description": "AI leest de vacature en optimaliseert je CV",
+        "description": "AI matcht jouw achtergrond op wat de vacature vraagt",
         "keywords": "Relevante keywords automatisch verwerkt",
         "experience": "Ervaring geprioriteerd op functie-eisen",
         "skills": "Skills die matchen komen bovenaan",
@@ -265,7 +265,7 @@
     },
     "cta": {
       "title": "Klaar met Priegelwerk?",
-      "description": "Sla je profiel op, plak een vacature, en download je perfect gefitte CV. Zo simpel is het.",
+      "description": "Sla je profiel op, plak een vacature, en download een CV waarin jouw ervaring perfect matcht met de functie-eisen. Dezelfde jij, betere fit.",
       "button": "Gratis Beginnen"
     },
     "footer": {
@@ -413,6 +413,31 @@
       "cancel": "Annuleren",
       "delete": "Verwijderen",
       "deleting": "Verwijderen..."
+    }
+  },
+  "linkedInExport": {
+    "title": "LinkedIn Profiel Content",
+    "description": "Geoptimaliseerde content voor je LinkedIn profiel. Kopieer en plak naar LinkedIn.",
+    "selectLanguage": "Genereer geoptimaliseerde LinkedIn content voor {name}",
+    "chooseLanguage": "Kies de taal voor je LinkedIn content",
+    "creditCost": "Dit kost 1 credit",
+    "generating": "LinkedIn content genereren...",
+    "dutch": "Nederlands",
+    "english": "Engels",
+    "tryAgain": "Opnieuw proberen",
+    "close": "Sluiten",
+    "error": {
+      "failed": "Export mislukt"
+    },
+    "sections": {
+      "headline": "Headline",
+      "headlineHint": "Max 220 tekens - verschijnt onder je naam",
+      "about": "Over mij / About",
+      "experience": "Werkervaring Beschrijvingen",
+      "education": "Opleiding Beschrijvingen",
+      "skills": "Skills",
+      "recommendedSkills": "Aanbevolen Skills om toe te voegen",
+      "tips": "Tips voor je LinkedIn Profiel"
     }
   },
   "cvWizard": {

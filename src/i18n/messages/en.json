@@ -85,7 +85,7 @@
     "heroTitle": "Stop the Fiddling",
     "heroTitleHighlight": "Start Applying",
     "heroBadge": "Automatically tailored to every job",
-    "heroDescription": "No more hours of tweaking CVs. Save your profile once, paste a job posting, and receive a CV that's automatically optimized for that specific position.",
+    "heroDescription": "No more hours of tweaking CVs. Save your profile once, paste a job posting, and receive a CV where your experience is automatically matched to what the job requires. Same you, perfect fit.",
     "ctaStart": "Get Started Free",
     "ctaHowItWorks": "See How It Works",
     "freeNote": "5 free downloads per month. No credit card required.",
@@ -93,7 +93,7 @@
       "enterOnce": "Enter once",
       "enterOnceDesc": "Save your profile and reuse it for every application",
       "autoFit": "Auto-tailored",
-      "autoFitDesc": "AI analyzes the job posting and optimizes your CV",
+      "autoFitDesc": "AI matches your experience to what the job requires",
       "readyInMinutes": "Ready in minutes",
       "readyInMinutesDesc": "From job posting to application-ready CV in a few clicks"
     },
@@ -105,7 +105,7 @@
       "step1Desc": "Paste your LinkedIn, upload screenshots of an old CV, or enter manually. You only need to do this once.",
       "step2Label": "Step 2 - Per Application",
       "step2Title": "Paste the Job Posting",
-      "step2Desc": "Copy-paste the job description. AI analyzes the requirements and automatically tailors your CV.",
+      "step2Desc": "Copy-paste the job description. AI finds the right angle and matches your experience to the job requirements.",
       "step3Label": "Step 3",
       "step3Title": "Download & Apply",
       "step3Desc": "Download your CV as PDF. Optionally add an AI-generated cover letter."
@@ -114,7 +114,7 @@
       "badge": "Preview",
       "title": "Professional Result,",
       "titleHighlight": "Automatically Generated",
-      "description": "You'll receive a fully formatted CV with your details, optimized for the job you're applying for. Including professional styling, clear sections, and ATS-friendly formatting.",
+      "description": "You'll receive a fully formatted CV with your details, matched to the job you're applying for. Your experience stays the same - only the presentation is tailored to what this job requires.",
       "keywordsProcessed": "Keywords from job posting automatically included",
       "experiencePrioritized": "Experience and skills prioritized by relevance",
       "industryStyle": "Style matching your industry and role",
@@ -166,7 +166,7 @@
       "mainFeatureBadge": "Main feature",
       "autoFit": {
         "title": "Automatically Tailored to Jobs",
-        "description": "AI reads the job posting and optimizes your CV",
+        "description": "AI matches your background to what the job requires",
         "keywords": "Relevant keywords automatically included",
         "experience": "Experience prioritized by job requirements",
         "skills": "Matching skills appear at the top",
@@ -265,7 +265,7 @@
     },
     "cta": {
       "title": "Done with Fiddling?",
-      "description": "Save your profile, paste a job posting, and download your perfectly tailored CV. It's that simple.",
+      "description": "Save your profile, paste a job posting, and download a CV where your experience perfectly matches the job requirements. Same you, better fit.",
       "button": "Get Started Free"
     },
     "footer": {
@@ -413,6 +413,31 @@
       "cancel": "Cancel",
       "delete": "Delete",
       "deleting": "Deleting..."
+    }
+  },
+  "linkedInExport": {
+    "title": "LinkedIn Profile Content",
+    "description": "Optimized content for your LinkedIn profile. Copy and paste to LinkedIn.",
+    "selectLanguage": "Generate optimized LinkedIn content for {name}",
+    "chooseLanguage": "Choose the language for your LinkedIn content",
+    "creditCost": "This costs 1 credit",
+    "generating": "Generating LinkedIn content...",
+    "dutch": "Dutch",
+    "english": "English",
+    "tryAgain": "Try Again",
+    "close": "Close",
+    "error": {
+      "failed": "Export failed"
+    },
+    "sections": {
+      "headline": "Headline",
+      "headlineHint": "Max 220 characters - appears under your name",
+      "about": "About / Summary",
+      "experience": "Work Experience Descriptions",
+      "education": "Education Descriptions",
+      "skills": "Skills",
+      "recommendedSkills": "Recommended Skills to Add",
+      "tips": "Tips for your LinkedIn Profile"
     }
   },
   "cvWizard": {
