@@ -91,13 +91,14 @@ export function TemplatePreview({
           ignoreFonts: false,
           breakPages: true,
           ignoreLastRenderedPageBreak: false,
-          experimental: false,
+          experimental: true, // Enable experimental features for better rendering
           trimXmlDeclaration: true,
           useBase64URL: true,
           renderHeaders: true,
           renderFooters: true,
           renderFootnotes: true,
           renderEndnotes: true,
+          debug: false,
         });
       } catch (err) {
         console.error('Failed to render DOCX:', err);
@@ -275,14 +276,15 @@ export function TemplatePreview({
       {/* Styles for docx-preview */}
       <style jsx global>{`
         .docx-preview-container .docx-wrapper {
-          background: white;
           padding: 20px;
         }
         .docx-preview-container .docx-wrapper > section.docx {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
           margin-bottom: 20px;
-          padding: 40px 60px;
-          background: white;
+        }
+        /* Preserve document backgrounds */
+        .docx-preview-container .docx-wrapper section.docx {
+          overflow: visible;
         }
         /* Disable text selection */
         .docx-preview-container * {
