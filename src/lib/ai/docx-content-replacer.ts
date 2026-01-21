@@ -4,108 +4,102 @@ import { createAIProvider, type LLMProvider } from './providers';
 import type { ParsedLinkedIn, JobVacancy } from '@/types';
 
 /**
- * Schema for content replacements identified by AI
+ * Schema for indexed content filling
+ * AI receives numbered text segments and returns filled values for each
  */
-const contentReplacementSchema = z.object({
-  replacements: z.array(z.object({
-    searchText: z.string().describe('Exact text to search for in the document'),
-    replaceWith: z.string().describe('New text to replace with'),
-    type: z.enum(['name', 'title', 'company', 'period', 'description', 'skill', 'education', 'contact', 'summary']).describe('Type of content being replaced'),
-    confidence: z.enum(['high', 'medium', 'low']).describe('Confidence level of the replacement'),
-  })),
-  warnings: z.array(z.string()).optional().describe('Any warnings about issues that could not be auto-fixed'),
+const indexedFillSchema = z.object({
+  filledSegments: z.record(z.string(), z.string()).describe('Map of segment index to filled value. Key is the segment number, value is the filled text.'),
+  warnings: z.array(z.string()).optional().describe('Any warnings about the fill process'),
 });
 
-export type ContentReplacement = z.infer<typeof contentReplacementSchema>['replacements'][number];
-
-export interface ContentReplacementResult {
-  replacements: ContentReplacement[];
+export interface IndexedFillResult {
+  filledSegments: Record<string, string>;
   warnings: string[];
 }
 
 /**
- * Analyze document text and generate AI-powered replacements based on profile data
+ * Fill document using indexed segments approach
+ *
+ * Instead of search/replace, we:
+ * 1. Number each text segment in the document
+ * 2. AI returns filled values for each segment number
+ * 3. We replace by index (no text matching needed)
  */
-export async function analyzeAndGenerateReplacements(
-  documentText: string,
+export async function fillDocumentWithAI(
+  indexedSegments: { index: number; text: string }[],
   profileData: ParsedLinkedIn,
   provider: LLMProvider,
   apiKey: string,
   model: string,
   jobVacancy?: JobVacancy,
-): Promise<ContentReplacementResult> {
+): Promise<IndexedFillResult> {
   const aiProvider = createAIProvider(provider, apiKey);
 
-  // Build profile summary for the prompt
+  // Build profile summary
   const profileSummary = buildProfileSummary(profileData);
   const jobSummary = jobVacancy ? buildJobSummary(jobVacancy) : null;
 
-  const systemPrompt = `Je bent een CV invul-specialist. Je vult CV templates in met profieldata.
+  // Create numbered document representation
+  const numberedDoc = indexedSegments
+    .map(seg => `[${seg.index}] ${seg.text}`)
+    .join('\n');
 
-TEMPLATE STRUCTUUR:
-Het document bevat placeholder velden die JIJ moet invullen:
-- Periodes: "2024-Heden :", "2023-2024 :", "2022-2022 :", etc.
-- Functie labels: "Functie :"
-- Taken labels: "Werkzaamheden :"
-- Persoonlijke velden: naam, email, telefoon, adres, etc.
+  const systemPrompt = `Je bent een CV invul-specialist. Je krijgt een genummerd CV template en moet de waarden invullen.
 
-JE MOET ELKE PLACEHOLDER INVULLEN!
+INSTRUCTIES:
+1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
+2. Vul elk segment in met de juiste profieldata
+3. Retourneer een object met het nummer als key en de ingevulde waarde als value
+4. Als een segment niet ingevuld hoeft te worden (bijv. een label), geef dan de originele tekst terug
 
-Voor ELKE werkervaring slot in het document (periode + functie + werkzaamheden):
-1. Vervang de periode "YYYY-YYYY :" met echte periode + bedrijf
-2. Vervang "Functie :" met "Functie : [echte functietitel]"
-3. Vervang "Werkzaamheden :" met "Werkzaamheden : [echte taken/beschrijving]"
+VOORBEELD:
+Input:
+[0] Naam :
+[1]
+[2] Functie :
+[3]
+[4] 2024-Heden :
+[5] Bedrijf
 
-KRITISCH:
-- Genereer een replacement voor ELKE placeholder die je vindt
-- Als er 4 werkervaring slots zijn, genereer 4x periode + 4x functie + 4x werkzaamheden = 12 replacements
-- searchText moet EXACT matchen met de tekst in het document
-- Kijk GOED naar de exacte tekst inclusief spaties en dubbele punten`;
+Als de persoon "Jan Jansen" heet en "Developer" is bij "Google" sinds 2020:
+Output: { "1": "Jan Jansen", "3": "Developer", "4": "2020-Heden :", "5": "Google" }
 
-  const userPrompt = `TEMPLATE:
-"""
-${documentText.substring(0, 15000)}
-"""
+Let op: Lege segmenten [1], [3] zijn waar de waarden moeten komen!
+Segmenten met labels zoals "Naam :" of "Functie :" blijven meestal ongewijzigd.`;
+
+  const userPrompt = `GENUMMERD TEMPLATE:
+${numberedDoc}
 
 PROFIELDATA:
 ${profileSummary}
-${jobSummary ? `\nDOELVACATURE:\n${jobSummary}` : ''}
+${jobSummary ? `\nDOELVACATURE (pas content hierop aan):\n${jobSummary}` : ''}
 
-OPDRACHT: Genereer een replacement voor ELKE placeholder in het document.
+Vul alle segmenten in met de juiste profieldata. Retourneer een object met segment nummers als keys.
 
-Als het document bijvoorbeeld bevat:
-- "2024-Heden :" (1e werkervaring periode)
-- "Functie :" (1e werkervaring titel)
-- "Werkzaamheden :" (1e werkervaring taken)
-- "2023-2024 :" (2e werkervaring periode)
-- "Functie :" (2e werkervaring titel)
-- "Werkzaamheden :" (2e werkervaring taken)
+WERKERVARING VOLGORDE:
+De eerste "Functie :" en "Werkzaamheden :" na een periode horen bij werkervaring 1.
+De tweede set hoort bij werkervaring 2, etc.
 
-Dan moet je 6 replacements genereren (of meer als er meer slots zijn).
-
-WERKERVARING MAPPING (in volgorde van document):
-Slot 1 → Werkervaring 1 uit profiel
-Slot 2 → Werkervaring 2 uit profiel
-Slot 3 → Werkervaring 3 uit profiel
-Etc.
-
-Let op: "Functie :" komt meerdere keren voor - elke keer voor een andere werkervaring!`;
+BELANGRIJK:
+- Vul ALLE lege segmenten in waar data hoort
+- Periodes aanpassen naar echte datums
+- Beschikbaarheid, vervoer etc. ook invullen indien bekend`;
 
   try {
     const result = await generateObject({
       model: aiProvider(model),
-      schema: contentReplacementSchema,
+      schema: indexedFillSchema,
       system: systemPrompt,
       prompt: userPrompt,
     });
 
     return {
-      replacements: result.object.replacements,
+      filledSegments: result.object.filledSegments,
       warnings: result.object.warnings || [],
     };
   } catch (error) {
-    console.error('Error generating content replacements:', error);
-    throw new Error('Failed to analyze document for content replacement');
+    console.error('Error filling document with AI:', error);
+    throw new Error('Failed to fill document with AI');
   }
 }
 

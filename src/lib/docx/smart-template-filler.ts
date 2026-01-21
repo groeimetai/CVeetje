@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 import mammoth from 'mammoth';
 import type { ParsedLinkedIn, JobVacancy } from '@/types';
 import type { LLMProvider } from '@/lib/ai/providers';
-import { analyzeAndGenerateReplacements } from '@/lib/ai/docx-content-replacer';
+import { fillDocumentWithAI } from '@/lib/ai/docx-content-replacer';
 
 /**
  * Options for filling a template
@@ -35,47 +35,73 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function escapeRegexPattern(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Extract all text segments from DOCX XML with their indices
+ * Returns both the segments and the positions in the XML for replacement
+ */
+function extractIndexedSegments(docXml: string): {
+  segments: { index: number; text: string; start: number; end: number }[];
+} {
+  const segments: { index: number; text: string; start: number; end: number }[] = [];
+  const regex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
+  let match;
+  let index = 0;
+
+  while ((match = regex.exec(docXml)) !== null) {
+    segments.push({
+      index,
+      text: match[1], // The text content
+      start: match.index,
+      end: match.index + match[0].length,
+    });
+    index++;
+  }
+
+  return { segments };
 }
 
 /**
- * Replace FIRST occurrence of text in DOCX XML while preserving styling
- *
- * IMPORTANT: Only replaces the FIRST match, not all matches!
- * This allows the AI to specify multiple replacements for repeated placeholders
- * like "Functie :" which appears multiple times (once per job).
+ * Apply filled segments back to the DOCX XML
+ * Replaces text content by index while preserving XML structure
  */
-function replaceTextPreservingStyle(docXml: string, searchText: string, replaceText: string): string {
-  const escapedSearch = escapeXml(searchText);
-  const escapedReplace = escapeXml(replaceText);
+function applyFilledSegments(
+  docXml: string,
+  filledSegments: Record<string, string>
+): string {
+  let result = docXml;
+  let offset = 0; // Track position offset as we make replacements
 
-  // Track if we've made a replacement (only replace FIRST occurrence)
-  let replaced = false;
+  const regex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
+  let match;
+  let index = 0;
 
-  // Only replace text within <w:t> tags, keeping the tag structure intact
-  const result = docXml.replace(
-    /(<w:t[^>]*>)([^<]*?)(<\/w:t>)/g,
-    (match, openTag, content, closeTag) => {
-      // Skip if we already made a replacement
-      if (replaced) {
-        return match;
-      }
+  // We need to collect all matches first, then replace in order
+  const matches: { fullMatch: string; attrs: string; content: string; start: number }[] = [];
 
-      // Check if this content contains our search text (case-insensitive)
-      if (content.toLowerCase().includes(escapedSearch.toLowerCase())) {
-        // Replace only the FIRST occurrence within this tag
-        const newContent = content.replace(
-          new RegExp(escapeRegexPattern(escapedSearch), 'i'), // No 'g' flag - only first match
-          escapedReplace
-        );
-        replaced = true;
-        return openTag + newContent + closeTag;
-      }
-      // Return unchanged if no match
-      return match;
+  while ((match = regex.exec(docXml)) !== null) {
+    matches.push({
+      fullMatch: match[0],
+      attrs: match[1],
+      content: match[2],
+      start: match.index,
+    });
+  }
+
+  // Apply replacements in reverse order to avoid offset issues
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const m = matches[i];
+    const indexStr = i.toString();
+
+    if (filledSegments[indexStr] !== undefined) {
+      const newContent = escapeXml(filledSegments[indexStr]);
+      const newTag = `<w:t${m.attrs}>${newContent}</w:t>`;
+
+      result =
+        result.substring(0, m.start) +
+        newTag +
+        result.substring(m.start + m.fullMatch.length);
     }
-  );
+  }
 
   return result;
 }
@@ -119,12 +145,15 @@ export async function fillSmartTemplate(
   let docXml = await documentXmlFile.async('string');
 
   try {
-    // Extract text for AI analysis
-    const documentText = await extractDocxText(docxBuffer);
+    // Extract indexed segments from the document
+    const { segments } = extractIndexedSegments(docXml);
 
-    // Get AI-generated replacements
-    const aiResult = await analyzeAndGenerateReplacements(
-      documentText,
+    // Prepare segments for AI (just index and text)
+    const segmentsForAI = segments.map(s => ({ index: s.index, text: s.text }));
+
+    // Get AI to fill the segments
+    const aiResult = await fillDocumentWithAI(
+      segmentsForAI,
       profileData,
       options.aiProvider,
       options.aiApiKey,
@@ -132,21 +161,13 @@ export async function fillSmartTemplate(
       options.jobVacancy
     );
 
-    // Apply AI replacements to the document XML while preserving styling
-    for (const replacement of aiResult.replacements) {
-      if (replacement.confidence !== 'low') {
-        const originalXml = docXml;
-        docXml = replaceTextPreservingStyle(
-          docXml,
-          replacement.searchText,
-          replacement.replaceWith
-        );
+    // Apply filled segments back to the XML
+    docXml = applyFilledSegments(docXml, aiResult.filledSegments);
 
-        // Check if replacement was made
-        if (docXml !== originalXml) {
-          filledFields.push(`ai_${replacement.type}`);
-        }
-      }
+    // Count filled fields
+    const filledCount = Object.keys(aiResult.filledSegments).length;
+    for (let i = 0; i < filledCount; i++) {
+      filledFields.push(`ai_segment_${i}`);
     }
 
     // Add AI warnings
@@ -155,7 +176,7 @@ export async function fillSmartTemplate(
     // Update the document
     zip.file('word/document.xml', docXml);
 
-    // Also process headers and footers with AI replacements
+    // Also process headers and footers
     const headerFooterFiles = Object.keys(zip.files).filter(
       name => name.match(/word\/(header|footer)\d*\.xml/)
     );
@@ -165,15 +186,22 @@ export async function fillSmartTemplate(
       if (file) {
         let content = await file.async('string');
 
-        // Apply same AI replacements to headers/footers while preserving styling
-        for (const replacement of aiResult.replacements) {
-          if (replacement.confidence !== 'low') {
-            content = replaceTextPreservingStyle(
-              content,
-              replacement.searchText,
-              replacement.replaceWith
-            );
-          }
+        // Extract and fill segments in headers/footers too
+        const { segments: hfSegments } = extractIndexedSegments(content);
+        if (hfSegments.length > 0) {
+          const hfSegmentsForAI = hfSegments.map(s => ({ index: s.index, text: s.text }));
+
+          // Use same AI to fill header/footer segments
+          const hfResult = await fillDocumentWithAI(
+            hfSegmentsForAI,
+            profileData,
+            options.aiProvider,
+            options.aiApiKey,
+            options.aiModel,
+            options.jobVacancy
+          );
+
+          content = applyFilledSegments(content, hfResult.filledSegments);
         }
 
         zip.file(fileName, content);
