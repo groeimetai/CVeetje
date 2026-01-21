@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 import mammoth from 'mammoth';
 import type { ParsedLinkedIn, JobVacancy } from '@/types';
 import type { LLMProvider } from '@/lib/ai/providers';
-import { analyzeAndGenerateReplacements, type ContentReplacement } from '@/lib/ai/docx-content-replacer';
+import { analyzeAndGenerateReplacements } from '@/lib/ai/docx-content-replacer';
 
 /**
  * Options for filling a template
@@ -22,7 +22,17 @@ export interface FillResult {
   filledBuffer: ArrayBuffer;
   filledFields: string[];
   warnings: string[];
-  mode: 'placeholder' | 'ai' | 'none';
+  mode: 'placeholder' | 'ai' | 'hybrid' | 'none';
+}
+
+/**
+ * Detected placeholder in the document
+ */
+export interface DetectedPlaceholder {
+  type: 'curly' | 'bracket' | 'underscore' | 'label' | 'slot';
+  pattern: string;
+  fieldKey: string;
+  originalText: string;
 }
 
 /**
@@ -34,6 +44,7 @@ export interface TemplateAnalysis {
   educationSlots: number;
   experienceSlots: number;
   extraFields: string[];
+  detectedPlaceholders: DetectedPlaceholder[];
   detectedPatterns: {
     type: 'personal' | 'education' | 'experience' | 'extra';
     label: string;
@@ -77,6 +88,121 @@ function formatDateDutch(dateStr: string | null): string {
     return month ? `${month} ${year}` : year;
   }
   return dateStr;
+}
+
+// ==================== Multi-Pattern Placeholder Detection ====================
+
+/**
+ * Detect all placeholder patterns in the document XML
+ * Supports: {{placeholder}}, [PLACEHOLDER], Label: _____, Label:
+ */
+function detectAllPlaceholders(docXml: string): DetectedPlaceholder[] {
+  const placeholders: DetectedPlaceholder[] = [];
+
+  // Pattern 1: Mustache/Handlebars style {{placeholder}}
+  // Need to handle XML tags that might split the placeholder
+  const curlyPattern = /\{\{([^}]+)\}\}/gi;
+  let match;
+  while ((match = curlyPattern.exec(docXml)) !== null) {
+    const fieldKey = match[1].trim().toLowerCase();
+    placeholders.push({
+      type: 'curly',
+      pattern: match[0],
+      fieldKey,
+      originalText: match[0],
+    });
+  }
+
+  // Pattern 2: Bracket style [PLACEHOLDER] - common in templates
+  const bracketPattern = /\[([A-Z_][A-Z0-9_]*)\]/g;
+  while ((match = bracketPattern.exec(docXml)) !== null) {
+    const fieldKey = match[1].trim().toLowerCase().replace(/_/g, ' ');
+    placeholders.push({
+      type: 'bracket',
+      pattern: match[0],
+      fieldKey,
+      originalText: match[0],
+    });
+  }
+
+  // Pattern 3: Underscore placeholders (Label: _____ or _______)
+  // At least 3 underscores in a row
+  const underscorePattern = /([a-zA-Z\u00C0-\u024F]+)\s*:\s*(_{3,})/gi;
+  while ((match = underscorePattern.exec(docXml)) !== null) {
+    const fieldKey = match[1].trim().toLowerCase();
+    placeholders.push({
+      type: 'underscore',
+      pattern: match[0],
+      fieldKey,
+      originalText: match[0],
+    });
+  }
+
+  // Pattern 4: Standalone underscores (common for fill-in-blank sections)
+  const standaloneUnderscorePattern = />_{5,}</g;
+  while ((match = standaloneUnderscorePattern.exec(docXml)) !== null) {
+    placeholders.push({
+      type: 'underscore',
+      pattern: match[0],
+      fieldKey: 'unknown',
+      originalText: match[0],
+    });
+  }
+
+  return placeholders;
+}
+
+/**
+ * Fill a single curly brace placeholder {{naam}} -> value
+ */
+function fillCurlyPlaceholder(docXml: string, placeholder: string, value: string): string {
+  // Handle cases where XML tags split the placeholder
+  // E.g., {{<w:r>naam</w:r>}} or {<w:t>{naam}</w:t>}
+  const cleanPlaceholder = placeholder.replace(/\{\{|\}\}/g, '');
+
+  // Try direct replacement first
+  let result = docXml.replace(placeholder, escapeXml(value));
+
+  // If not found, try with flexible XML tag handling
+  if (result === docXml) {
+    const flexPattern = createFlexibleCurlyPattern(cleanPlaceholder);
+    result = result.replace(flexPattern, escapeXml(value));
+  }
+
+  return result;
+}
+
+/**
+ * Create a pattern that matches {{placeholder}} even with XML tags in between
+ */
+function createFlexibleCurlyPattern(fieldName: string): RegExp {
+  // Match {{ with optional XML, then the field name with optional XML, then }}
+  const escapedField = escapeRegexPattern(fieldName);
+  return new RegExp(
+    `\\{(?:</w:t></w:r><w:r[^>]*><w:t[^>]*>)?\\{(?:</w:t></w:r><w:r[^>]*><w:t[^>]*>)?` +
+    escapedField +
+    `(?:</w:t></w:r><w:r[^>]*><w:t[^>]*>)?\\}(?:</w:t></w:r><w:r[^>]*><w:t[^>]*>)?\\}`,
+    'gi'
+  );
+}
+
+/**
+ * Fill a bracket placeholder [NAAM] -> value
+ */
+function fillBracketPlaceholder(docXml: string, placeholder: string, value: string): string {
+  return docXml.split(placeholder).join(escapeXml(value));
+}
+
+/**
+ * Fill an underscore placeholder (Label: _____) -> (Label: value)
+ */
+function fillUnderscorePlaceholder(docXml: string, placeholder: string, label: string, value: string): string {
+  // Replace the underscore portion with the value
+  const pattern = new RegExp(
+    `(${escapeRegexPattern(label)}\\s*:\\s*)_{3,}`,
+    'gi'
+  );
+  return docXml.replace(pattern, `$1${escapeXml(value)}`);
 }
 
 // ==================== Personal Field Mappings ====================
@@ -123,6 +249,7 @@ const PERSONAL_FIELD_MAPPINGS: Record<string, FieldMapper> = {
 
 /**
  * Analyze a DOCX template to understand its structure
+ * Now includes detection of all placeholder patterns
  */
 export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<TemplateAnalysis> {
   // mammoth expects a Buffer, not an ArrayBuffer
@@ -132,8 +259,54 @@ export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<Template
   const textLower = text.toLowerCase();
 
   const detectedPatterns: TemplateAnalysis['detectedPatterns'] = [];
+  const detectedPlaceholders: DetectedPlaceholder[] = [];
 
-  // Find personal fields
+  // === Detect multi-pattern placeholders ===
+
+  // Pattern 1: Curly braces {{placeholder}}
+  const curlyMatches = text.match(/\{\{([^}]+)\}\}/gi);
+  if (curlyMatches) {
+    for (const match of curlyMatches) {
+      const fieldKey = match.replace(/\{\{|\}\}/g, '').trim().toLowerCase();
+      detectedPlaceholders.push({
+        type: 'curly',
+        pattern: match,
+        fieldKey,
+        originalText: match,
+      });
+    }
+  }
+
+  // Pattern 2: Bracket style [PLACEHOLDER]
+  const bracketMatches = text.match(/\[([A-Z_][A-Z0-9_]*)\]/g);
+  if (bracketMatches) {
+    for (const match of bracketMatches) {
+      const fieldKey = match.replace(/\[|\]/g, '').trim().toLowerCase().replace(/_/g, ' ');
+      detectedPlaceholders.push({
+        type: 'bracket',
+        pattern: match,
+        fieldKey,
+        originalText: match,
+      });
+    }
+  }
+
+  // Pattern 3: Underscore placeholders (Label: _____)
+  const underscoreMatches = text.match(/([a-zA-Z\u00C0-\u024F]+)\s*:\s*_{3,}/gi);
+  if (underscoreMatches) {
+    for (const match of underscoreMatches) {
+      const parts = match.split(':');
+      const fieldKey = parts[0].trim().toLowerCase();
+      detectedPlaceholders.push({
+        type: 'underscore',
+        pattern: match,
+        fieldKey,
+        originalText: match,
+      });
+    }
+  }
+
+  // === Find personal fields (Label: style) ===
   const personalFields: string[] = [];
   for (const fieldName of Object.keys(PERSONAL_FIELD_MAPPINGS)) {
     if (textLower.includes(`${fieldName}:`) || textLower.includes(`${fieldName} :`)) {
@@ -146,7 +319,7 @@ export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<Template
     }
   }
 
-  // Count education slots (YYYY - YYYY : pattern)
+  // === Count education slots (YYYY - YYYY : pattern) ===
   const eduMatches = text.match(/\d{4}\s*-\s*\d{4}\s*:/g);
   const educationSlots = eduMatches ? eduMatches.length : 0;
   if (eduMatches) {
@@ -156,10 +329,16 @@ export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<Template
         label: match.trim(),
         pattern: match,
       });
+      detectedPlaceholders.push({
+        type: 'slot',
+        pattern: match,
+        fieldKey: 'education',
+        originalText: match,
+      });
     });
   }
 
-  // Count experience slots (YYYY-Heden or YYYY-YYYY patterns, plus Functie/Werkzaamheden)
+  // === Count experience slots (YYYY-Heden or YYYY-YYYY patterns) ===
   const expPeriodMatches = text.match(/\d{4}\s*-\s*(?:\d{4}|Heden|heden|Present|present|Now|now)\s*:/gi);
   const functieMatches = text.match(/(?:Functie|Function|Job Title|Position)\s*:/gi);
   const experienceSlots = Math.max(
@@ -174,10 +353,16 @@ export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<Template
         label: match.trim(),
         pattern: match,
       });
+      detectedPlaceholders.push({
+        type: 'slot',
+        pattern: match,
+        fieldKey: 'experience',
+        originalText: match,
+      });
     });
   }
 
-  // Find extra fields
+  // === Find extra fields ===
   const extraFieldPatterns = [
     'beschikbaarheid', 'availability',
     'vervoer', 'transport',
@@ -203,6 +388,7 @@ export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<Template
     educationSlots,
     experienceSlots,
     extraFields,
+    detectedPlaceholders,
     detectedPatterns,
   };
 }
@@ -210,14 +396,18 @@ export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<Template
 // ==================== Smart Template Filling ====================
 
 /**
- * Fill a DOCX template intelligently by detecting patterns and filling them
+ * Fill a DOCX template intelligently by detecting ALL placeholder patterns
  *
- * This handles:
- * - Fixed personal info fields (Naam:, Voornaam:, etc.)
- * - Fixed slots for education (YYYY - YYYY:)
- * - Fixed slots for experience with periods (YYYY-Heden:, Functie:, Werkzaamheden:)
- * - Extra fields (Beschikbaarheid:, Vervoer:, etc.)
- * - AI-powered content replacement (when useAI is true)
+ * Placeholder detection order:
+ * 1. Curly braces: {{naam}}, {{voornaam}}, etc.
+ * 2. Brackets: [NAAM], [VOORNAAM], etc.
+ * 3. Underscores: Naam: _____, Voornaam: _____
+ * 4. Labels: Naam:, Voornaam: (followed by empty space)
+ * 5. Slots: YYYY - YYYY: for education, experience periods
+ *
+ * After placeholder filling, if AI mode is enabled:
+ * - AI analyzes the document for remaining content to replace
+ * - AI enhances/fills content that placeholders couldn't handle
  */
 export async function fillSmartTemplate(
   docxBuffer: ArrayBuffer,
@@ -239,7 +429,46 @@ export async function fillSmartTemplate(
 
   let docXml = await documentXmlFile.async('string');
 
-  // === STEP 1: Fill personal info fields ===
+  // Build a combined value lookup from profile data and custom values
+  const valueLookup = buildValueLookup(profileData, customValues);
+
+  // === STEP 1: Fill curly brace placeholders {{placeholder}} ===
+  const curlyPattern = /\{\{([^}]+)\}\}/gi;
+  docXml = docXml.replace(curlyPattern, (match, fieldName) => {
+    const key = fieldName.trim().toLowerCase();
+    const value = valueLookup[key];
+    if (value) {
+      filledFields.push(`curly_${key}`);
+      return escapeXml(value);
+    }
+    return match; // Keep original if no value found
+  });
+
+  // === STEP 2: Fill bracket placeholders [PLACEHOLDER] ===
+  const bracketPattern = /\[([A-Z_][A-Z0-9_]*)\]/g;
+  docXml = docXml.replace(bracketPattern, (match, fieldName) => {
+    const key = fieldName.toLowerCase().replace(/_/g, ' ');
+    const value = valueLookup[key] || valueLookup[fieldName.toLowerCase()];
+    if (value) {
+      filledFields.push(`bracket_${key}`);
+      return escapeXml(value);
+    }
+    return match;
+  });
+
+  // === STEP 3: Fill underscore placeholders (Label: _____) ===
+  const underscorePattern = /([a-zA-Z\u00C0-\u024F]+)(\s*:\s*)(_{3,})/gi;
+  docXml = docXml.replace(underscorePattern, (match, label, separator, underscores) => {
+    const key = label.toLowerCase();
+    const value = valueLookup[key];
+    if (value) {
+      filledFields.push(`underscore_${key}`);
+      return `${label}${separator}${escapeXml(value)}`;
+    }
+    return match;
+  });
+
+  // === STEP 4: Fill label placeholders (Label: </w:t>) ===
   for (const [fieldKey, getValue] of Object.entries(PERSONAL_FIELD_MAPPINGS)) {
     const value = getValue(profileData, customValues);
     if (value) {
@@ -247,13 +476,14 @@ export async function fillSmartTemplate(
       const pattern = new RegExp(`(${escapeRegexPattern(fieldKey)}\\s*:\\s*)(<\\/w:t>)`, 'gi');
       if (docXml.match(pattern)) {
         docXml = docXml.replace(pattern, `$1${escapeXml(value)}$2`);
-        filledFields.push(fieldKey);
+        if (!filledFields.includes(fieldKey)) {
+          filledFields.push(fieldKey);
+        }
       }
     }
   }
 
-  // === STEP 2: Fill education slots ===
-  // Detect all YYYY - YYYY : patterns and fill them in order
+  // === STEP 5: Fill education slots (YYYY - YYYY :) ===
   const eduPattern = /(\d{4}\s*-\s*\d{4}\s*:\s*)(<\/w:t>)/gi;
   let eduIndex = 0;
   const eduMatches = docXml.match(eduPattern);
@@ -279,8 +509,7 @@ export async function fillSmartTemplate(
     warnings.push(`Template heeft ${eduCount} opleiding slots, maar profiel heeft er ${profileData.education.length}`);
   }
 
-  // === STEP 3: Fill experience slots ===
-  // Detect experience period patterns (YYYY-Heden, YYYY-YYYY followed by :)
+  // === STEP 6: Fill experience slots ===
   const expPeriodPattern = /(\d{4}\s*-\s*(?:\d{4}|Heden|heden|Present|present|Now|now)\s*:\s*)(<\/w:t>)/gi;
   let expIndex = 0;
   const expMatches = docXml.match(expPeriodPattern);
@@ -316,7 +545,6 @@ export async function fillSmartTemplate(
     const exp = profileData.experience[descIndex];
     descIndex++;
     if (exp && exp.description) {
-      // Truncate very long descriptions
       const desc = exp.description.length > 300
         ? exp.description.substring(0, 297) + '...'
         : exp.description;
@@ -330,12 +558,11 @@ export async function fillSmartTemplate(
     warnings.push(`Template heeft ${expCount} werkervaring slots, maar profiel heeft er ${profileData.experience.length}`);
   }
 
-  // === STEP 4: Fill custom/extra fields from customValues ===
+  // === STEP 7: Fill custom/extra fields from customValues ===
   if (customValues) {
     for (const [key, value] of Object.entries(customValues)) {
       if (value) {
         const keyLower = key.toLowerCase();
-        // Skip fields we already handled
         if (PERSONAL_FIELD_MAPPINGS[keyLower]) continue;
 
         const pattern = new RegExp(`(${escapeRegexPattern(key)}\\s*:\\s*)(<\\/w:t>)`, 'gi');
@@ -360,7 +587,21 @@ export async function fillSmartTemplate(
     if (file) {
       let content = await file.async('string');
 
-      // Apply same personal field replacements to headers/footers
+      // Apply curly brace replacements
+      content = content.replace(curlyPattern, (match, fieldName) => {
+        const key = fieldName.trim().toLowerCase();
+        const value = valueLookup[key];
+        return value ? escapeXml(value) : match;
+      });
+
+      // Apply bracket replacements
+      content = content.replace(bracketPattern, (match, fieldName) => {
+        const key = fieldName.toLowerCase().replace(/_/g, ' ');
+        const value = valueLookup[key] || valueLookup[fieldName.toLowerCase()];
+        return value ? escapeXml(value) : match;
+      });
+
+      // Apply label replacements
       for (const [fieldKey, getValue] of Object.entries(PERSONAL_FIELD_MAPPINGS)) {
         const value = getValue(profileData, customValues);
         if (value) {
@@ -373,11 +614,12 @@ export async function fillSmartTemplate(
     }
   }
 
-  // Check if placeholder mode found anything
+  // Track if placeholder mode found anything
   const placeholderModeWorked = filledFields.length > 0;
 
-  // If placeholder mode didn't work and AI mode is enabled, try AI replacement
-  if (!placeholderModeWorked && options?.useAI && options.aiApiKey && options.aiProvider && options.aiModel) {
+  // === STEP 8: AI Enhancement (runs AFTER placeholders, not just as fallback) ===
+  // If AI mode is enabled, let AI analyze and fill any remaining content
+  if (options?.useAI && options.aiApiKey && options.aiProvider && options.aiModel) {
     try {
       // Extract text for AI analysis
       const documentText = await extractDocxText(docxBuffer);
@@ -393,18 +635,20 @@ export async function fillSmartTemplate(
       );
 
       // Apply AI replacements to the document XML
-      let aiDocXml = docXml;
+      let aiReplacementsMade = 0;
+      let currentDocXml = await zip.file('word/document.xml')!.async('string');
+
       for (const replacement of aiResult.replacements) {
         if (replacement.confidence !== 'low') {
-          // Escape the search text for use in XML
           const searchPattern = escapeXml(replacement.searchText);
           const replaceValue = escapeXml(replacement.replaceWith);
 
           // Try to find and replace in the XML (handling XML tags between words)
           const flexiblePattern = createFlexibleXmlPattern(searchPattern);
-          if (aiDocXml.match(flexiblePattern)) {
-            aiDocXml = aiDocXml.replace(flexiblePattern, replaceValue);
+          if (currentDocXml.match(flexiblePattern)) {
+            currentDocXml = currentDocXml.replace(flexiblePattern, replaceValue);
             filledFields.push(`ai_${replacement.type}`);
+            aiReplacementsMade++;
           }
         }
       }
@@ -413,24 +657,38 @@ export async function fillSmartTemplate(
       warnings.push(...(aiResult.warnings || []));
 
       // Update the document with AI replacements
-      zip.file('word/document.xml', aiDocXml);
+      if (aiReplacementsMade > 0) {
+        zip.file('word/document.xml', currentDocXml);
+      }
 
-      // Generate the AI-filled DOCX
-      const aiFilledBuffer = await zip.generateAsync({ type: 'arraybuffer' });
+      // Generate the filled DOCX
+      const filledBuffer = await zip.generateAsync({ type: 'arraybuffer' });
+
+      // Determine mode based on what was used
+      let mode: 'placeholder' | 'ai' | 'hybrid' | 'none';
+      if (placeholderModeWorked && aiReplacementsMade > 0) {
+        mode = 'hybrid';
+      } else if (aiReplacementsMade > 0) {
+        mode = 'ai';
+      } else if (placeholderModeWorked) {
+        mode = 'placeholder';
+      } else {
+        mode = 'none';
+      }
 
       return {
-        filledBuffer: aiFilledBuffer,
+        filledBuffer,
         filledFields,
         warnings,
-        mode: 'ai' as const,
+        mode,
       };
     } catch (aiError) {
       console.error('AI content replacement failed:', aiError);
-      warnings.push('AI content replacement failed, using original document');
+      warnings.push('AI content replacement failed, using placeholder results only');
     }
   }
 
-  // Generate the filled DOCX (placeholder mode or fallback)
+  // Generate the filled DOCX (placeholder mode only)
   const filledBuffer = await zip.generateAsync({ type: 'arraybuffer' });
 
   return {
@@ -439,6 +697,74 @@ export async function fillSmartTemplate(
     warnings,
     mode: placeholderModeWorked ? 'placeholder' as const : 'none' as const,
   };
+}
+
+/**
+ * Build a lookup table for placeholder values from profile data and custom values
+ */
+function buildValueLookup(
+  profileData: ParsedLinkedIn,
+  customValues?: Record<string, string>
+): Record<string, string> {
+  const lookup: Record<string, string> = {};
+
+  // Add all personal field mappings
+  for (const [key, getValue] of Object.entries(PERSONAL_FIELD_MAPPINGS)) {
+    const value = getValue(profileData, customValues);
+    if (value) {
+      lookup[key] = value;
+    }
+  }
+
+  // Add custom values
+  if (customValues) {
+    for (const [key, value] of Object.entries(customValues)) {
+      if (value) {
+        lookup[key.toLowerCase()] = value;
+      }
+    }
+  }
+
+  // Add some common aliases
+  if (profileData.fullName) {
+    lookup['full_name'] = profileData.fullName;
+    lookup['fullname'] = profileData.fullName;
+    lookup['name'] = profileData.fullName;
+    lookup['naam'] = profileData.fullName;
+  }
+
+  if (profileData.email) {
+    lookup['email'] = profileData.email;
+    lookup['e-mail'] = profileData.email;
+    lookup['mail'] = profileData.email;
+  }
+
+  if (profileData.phone) {
+    lookup['phone'] = profileData.phone;
+    lookup['telefoon'] = profileData.phone;
+    lookup['tel'] = profileData.phone;
+    lookup['mobile'] = profileData.phone;
+    lookup['mobiel'] = profileData.phone;
+  }
+
+  if (profileData.location) {
+    lookup['location'] = profileData.location;
+    lookup['locatie'] = profileData.location;
+    lookup['city'] = profileData.location.split(',')[0]?.trim() || profileData.location;
+    lookup['stad'] = profileData.location.split(',')[0]?.trim() || profileData.location;
+    lookup['woonplaats'] = profileData.location.split(',')[0]?.trim() || profileData.location;
+    lookup['adres'] = profileData.location;
+    lookup['address'] = profileData.location;
+  }
+
+  if (profileData.headline) {
+    lookup['headline'] = profileData.headline;
+    lookup['title'] = profileData.headline;
+    lookup['functie'] = profileData.headline;
+    lookup['function'] = profileData.headline;
+  }
+
+  return lookup;
 }
 
 /**
