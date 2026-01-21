@@ -40,57 +40,56 @@ export async function analyzeAndGenerateReplacements(
   const profileSummary = buildProfileSummary(profileData);
   const jobSummary = jobVacancy ? buildJobSummary(jobVacancy) : null;
 
-  const systemPrompt = `Je bent een CV specialist die CV TEMPLATES invult met profieldata.
+  const systemPrompt = `Je bent een CV invul-specialist. Je vult CV templates in met profieldata.
 
-BELANGRIJK: Het document is een TEMPLATE met PLACEHOLDER tekst die vervangen moet worden:
-- Datums zoals "2012 - 2015 :" zijn PLACEHOLDERS, niet echte datums
-- "Functie :" is een placeholder voor de functietitel
-- "Werkzaamheden :" is een placeholder voor de taakomschrijving
-- Namen, bedrijven, etc. in het document zijn voorbeelden die vervangen moeten worden
+TEMPLATE STRUCTUUR:
+Het document bevat placeholder velden die JIJ moet invullen:
+- Periodes: "2024-Heden :", "2023-2024 :", "2022-2022 :", etc.
+- Functie labels: "Functie :"
+- Taken labels: "Werkzaamheden :"
+- Persoonlijke velden: naam, email, telefoon, adres, etc.
 
-Je taak:
-1. Identificeer ALLE placeholder patronen in het document (datums, "Functie:", "Werkzaamheden:", namen, etc.)
-2. Vervang ze IN VOLGORDE met de echte profieldata:
-   - Eerste "YYYY - YYYY :" bij werkervaring → eerste werkervaring uit profiel
-   - Tweede "YYYY - YYYY :" bij werkervaring → tweede werkervaring uit profiel
-   - Etc.
-3. Als er meer slots zijn dan data: laat de placeholder staan of vervang met lege string
-4. Als er meer data is dan slots: vul alleen de beschikbare slots
+JE MOET ELKE PLACEHOLDER INVULLEN!
 
-REPLACEMENT REGELS:
-- searchText moet EXACT overeenkomen met tekst in het document
-- Voor datums: zoek "2012 - 2015" (of welke datum er staat) en vervang met echte periode
-- Voor "Functie :" → vervang met "Functie : Software Developer" (of de echte titel)
-- Voor "Werkzaamheden :" → vervang met "Werkzaamheden : [echte taken]"
-- Behoud de labels ("Functie :", "Werkzaamheden :") en voeg alleen de waarde toe`;
+Voor ELKE werkervaring slot in het document (periode + functie + werkzaamheden):
+1. Vervang de periode "YYYY-YYYY :" met echte periode + bedrijf
+2. Vervang "Functie :" met "Functie : [echte functietitel]"
+3. Vervang "Werkzaamheden :" met "Werkzaamheden : [echte taken/beschrijving]"
 
-  const userPrompt = `TEMPLATE DOCUMENT:
+KRITISCH:
+- Genereer een replacement voor ELKE placeholder die je vindt
+- Als er 4 werkervaring slots zijn, genereer 4x periode + 4x functie + 4x werkzaamheden = 12 replacements
+- searchText moet EXACT matchen met de tekst in het document
+- Kijk GOED naar de exacte tekst inclusief spaties en dubbele punten`;
+
+  const userPrompt = `TEMPLATE:
 """
 ${documentText.substring(0, 15000)}
 """
 
-PROFIELDATA OM IN TE VULLEN:
+PROFIELDATA:
 ${profileSummary}
+${jobSummary ? `\nDOELVACATURE:\n${jobSummary}` : ''}
 
-${jobSummary ? `DOELVACATURE (pas beschrijvingen hierop aan):
-${jobSummary}
-` : ''}
+OPDRACHT: Genereer een replacement voor ELKE placeholder in het document.
 
-INSTRUCTIES:
-1. Vind alle placeholder tekst in het document (datums, "Functie :", namen, etc.)
-2. Vervang elke placeholder met de juiste profieldata IN VOLGORDE
-3. Geef voor elke vervanging:
-   - searchText: EXACTE tekst uit het document (bijv. "2024-Heden :" of "Functie :")
-   - replaceWith: De nieuwe waarde (bijv. "2020-2023 : Google" of "Functie : Software Engineer")
-   - type: Type content (name, title, company, period, description, skill, education, contact, summary)
-   - confidence: high/medium/low
+Als het document bijvoorbeeld bevat:
+- "2024-Heden :" (1e werkervaring periode)
+- "Functie :" (1e werkervaring titel)
+- "Werkzaamheden :" (1e werkervaring taken)
+- "2023-2024 :" (2e werkervaring periode)
+- "Functie :" (2e werkervaring titel)
+- "Werkzaamheden :" (2e werkervaring taken)
 
-VOORBEELD:
-Als document bevat "2024-Heden :" en "Functie :" bij eerste werkervaring, en profiel heeft:
-- Werkervaring 1: Software Developer bij Google (2020-2023)
-Dan:
-- {"searchText": "2024-Heden :", "replaceWith": "2020-2023 : Google", "type": "period", "confidence": "high"}
-- {"searchText": "Functie :", "replaceWith": "Functie : Software Developer", "type": "title", "confidence": "high"}`;
+Dan moet je 6 replacements genereren (of meer als er meer slots zijn).
+
+WERKERVARING MAPPING (in volgorde van document):
+Slot 1 → Werkervaring 1 uit profiel
+Slot 2 → Werkervaring 2 uit profiel
+Slot 3 → Werkervaring 3 uit profiel
+Etc.
+
+Let op: "Functie :" komt meerdere keren voor - elke keer voor een andere werkervaring!`;
 
   try {
     const result = await generateObject({
