@@ -40,41 +40,57 @@ export async function analyzeAndGenerateReplacements(
   const profileSummary = buildProfileSummary(profileData);
   const jobSummary = jobVacancy ? buildJobSummary(jobVacancy) : null;
 
-  const systemPrompt = `Je bent een CV specialist die bestaande CV documenten analyseert en de content vervangt met nieuwe profieldata.
+  const systemPrompt = `Je bent een CV specialist die CV TEMPLATES invult met profieldata.
 
-Je taak is om:
-1. Alle persoonlijke informatie, functies, bedrijven, datums en beschrijvingen in het document te identificeren
-2. Deze te vervangen met de juiste profieldata
-3. Nieuwe beschrijvingen te genereren die relevant zijn voor de doelvacature (indien opgegeven)
-4. De originele documentstructuur te behouden maar content te verplaatsen als het op de verkeerde plek staat
-5. Zorgen dat alles logisch klopt: naam bij persoonsgegevens, werkervaring bij werkervaring, etc.
+BELANGRIJK: Het document is een TEMPLATE met PLACEHOLDER tekst die vervangen moet worden:
+- Datums zoals "2012 - 2015 :" zijn PLACEHOLDERS, niet echte datums
+- "Functie :" is een placeholder voor de functietitel
+- "Werkzaamheden :" is een placeholder voor de taakomschrijving
+- Namen, bedrijven, etc. in het document zijn voorbeelden die vervangen moeten worden
 
-BELANGRIJK:
-- Zoek naar exacte tekst in het document om te vervangen
-- Genereer professionele, relevante beschrijvingen
-- Behoud de toon en stijl van het originele document
-- Als content op de verkeerde plek staat, pas het direct aan (niet alleen waarschuwen)
-- Zorg dat de juiste data op de juiste plek komt
-- Wees proactief: verbeter de structuur waar nodig`;
+Je taak:
+1. Identificeer ALLE placeholder patronen in het document (datums, "Functie:", "Werkzaamheden:", namen, etc.)
+2. Vervang ze IN VOLGORDE met de echte profieldata:
+   - Eerste "YYYY - YYYY :" bij werkervaring → eerste werkervaring uit profiel
+   - Tweede "YYYY - YYYY :" bij werkervaring → tweede werkervaring uit profiel
+   - Etc.
+3. Als er meer slots zijn dan data: laat de placeholder staan of vervang met lege string
+4. Als er meer data is dan slots: vul alleen de beschikbare slots
 
-  const userPrompt = `DOCUMENT TEKST:
+REPLACEMENT REGELS:
+- searchText moet EXACT overeenkomen met tekst in het document
+- Voor datums: zoek "2012 - 2015" (of welke datum er staat) en vervang met echte periode
+- Voor "Functie :" → vervang met "Functie : Software Developer" (of de echte titel)
+- Voor "Werkzaamheden :" → vervang met "Werkzaamheden : [echte taken]"
+- Behoud de labels ("Functie :", "Werkzaamheden :") en voeg alleen de waarde toe`;
+
+  const userPrompt = `TEMPLATE DOCUMENT:
 """
 ${documentText.substring(0, 15000)}
 """
 
-NIEUWE PROFIELDATA:
+PROFIELDATA OM IN TE VULLEN:
 ${profileSummary}
 
-${jobSummary ? `DOELVACATURE:
+${jobSummary ? `DOELVACATURE (pas beschrijvingen hierop aan):
 ${jobSummary}
+` : ''}
 
-Pas de beschrijvingen aan om relevant te zijn voor deze vacature.` : ''}
+INSTRUCTIES:
+1. Vind alle placeholder tekst in het document (datums, "Functie :", namen, etc.)
+2. Vervang elke placeholder met de juiste profieldata IN VOLGORDE
+3. Geef voor elke vervanging:
+   - searchText: EXACTE tekst uit het document (bijv. "2024-Heden :" of "Functie :")
+   - replaceWith: De nieuwe waarde (bijv. "2020-2023 : Google" of "Functie : Software Engineer")
+   - type: Type content (name, title, company, period, description, skill, education, contact, summary)
+   - confidence: high/medium/low
 
-Analyseer het document en geef een lijst van vervangingen terug. Voor elke vervanging:
-- searchText: De exacte tekst uit het document om te vervangen
-- replaceWith: De nieuwe tekst gebaseerd op de profieldata
-- type: Het type content (name, title, company, period, description, skill, education, contact, summary)
-- confidence: Hoe zeker je bent (high, medium, low)`;
+VOORBEELD:
+Als document bevat "2024-Heden :" en "Functie :" bij eerste werkervaring, en profiel heeft:
+- Werkervaring 1: Software Developer bij Google (2020-2023)
+Dan:
+- {"searchText": "2024-Heden :", "replaceWith": "2020-2023 : Google", "type": "period", "confidence": "high"}
+- {"searchText": "Functie :", "replaceWith": "Functie : Software Developer", "type": "title", "confidence": "high"}`;
 
   try {
     const result = await generateObject({
