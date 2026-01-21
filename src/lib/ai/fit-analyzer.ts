@@ -13,8 +13,9 @@ import type {
 } from '@/types';
 
 // Schema for AI-generated fit analysis
+// Note: Anthropic doesn't support min/max on numbers, so constraints are in descriptions
 const fitAnalysisSchema = z.object({
-  overallScore: z.number().min(0).max(100).describe('Overall fit score from 0-100. 80+ = excellent, 60-79 = good, 40-59 = moderate, 20-39 = challenging, <20 = unlikely'),
+  overallScore: z.number().describe('Overall fit score from 0-100. Must be between 0 and 100. 80+ = excellent, 60-79 = good, 40-59 = moderate, 20-39 = challenging, <20 = unlikely'),
   verdict: z.enum(['excellent', 'good', 'moderate', 'challenging', 'unlikely']).describe('Overall verdict on the fit'),
   verdictExplanation: z.string().describe('Brief explanation of the verdict (1-2 sentences)'),
 
@@ -35,7 +36,7 @@ const fitAnalysisSchema = z.object({
     matched: z.array(z.string()).describe('Skills candidate has that match job requirements'),
     missing: z.array(z.string()).describe('Required skills candidate appears to lack'),
     bonus: z.array(z.string()).describe('Nice-to-have skills candidate has'),
-    matchPercentage: z.number().min(0).max(100).describe('Percentage of must-have skills matched'),
+    matchPercentage: z.number().describe('Percentage of must-have skills matched (0-100)'),
   }),
 
   experienceMatch: z.object({

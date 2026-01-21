@@ -4,7 +4,7 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
 import { fillSmartTemplate } from '@/lib/docx/smart-template-filler';
 import { decrypt } from '@/lib/encryption';
-import type { PDFTemplate, ParsedLinkedIn, JobVacancy } from '@/types';
+import type { PDFTemplate, ParsedLinkedIn, JobVacancy, OutputLanguage } from '@/types';
 
 // POST - Fill a template with profile data
 export async function POST(
@@ -64,11 +64,12 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { profileData, customValues, useAI, jobVacancy } = body as {
+    const { profileData, customValues, useAI, jobVacancy, language } = body as {
       profileData: ParsedLinkedIn;
       customValues?: Record<string, string>;
       useAI?: boolean;
       jobVacancy?: JobVacancy;
+      language?: OutputLanguage;
     };
 
     if (!profileData) {
@@ -133,6 +134,7 @@ export async function POST(
           aiApiKey: decryptedKey,
           aiModel: userApiKeyData.model,
           jobVacancy,
+          language: language || 'nl',
         };
       } catch (decryptError) {
         console.error('Failed to decrypt API key:', decryptError);

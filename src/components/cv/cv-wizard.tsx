@@ -783,6 +783,7 @@ export function CVWizard() {
         <TemplateSelector
           profileData={linkedInData}
           jobVacancy={jobVacancy || undefined}
+          language={outputLanguage}
           onFill={handleTemplateFill}
           onBack={() => setCurrentStep('style-choice')}
         />

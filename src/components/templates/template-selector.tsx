@@ -28,16 +28,17 @@ import {
   Sparkles,
   Brain,
 } from 'lucide-react';
-import type { PDFTemplate, PDFTemplateSummary, ParsedLinkedIn, JobVacancy } from '@/types';
+import type { PDFTemplate, PDFTemplateSummary, ParsedLinkedIn, JobVacancy, OutputLanguage } from '@/types';
 
 interface TemplateSelectorProps {
   profileData: ParsedLinkedIn;
   jobVacancy?: JobVacancy;
+  language?: OutputLanguage;
   onFill: (pdfBlob: Blob, templateName: string) => void;
   onBack: () => void;
 }
 
-export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: TemplateSelectorProps) {
+export function TemplateSelector({ profileData, jobVacancy, language = 'nl', onFill, onBack }: TemplateSelectorProps) {
   const t = useTranslations('templates.selector');
   const tUpload = useTranslations('templates.upload');
   const tConfig = useTranslations('templates.configurator');
@@ -222,6 +223,7 @@ export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: Te
           customValues,
           useAI: isDocx ? true : undefined, // Always use AI for DOCX
           jobVacancy: isDocx ? jobVacancy : undefined,
+          language: isDocx ? language : undefined,
         }),
       });
 

@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import mammoth from 'mammoth';
-import type { ParsedLinkedIn, JobVacancy } from '@/types';
+import type { ParsedLinkedIn, JobVacancy, OutputLanguage } from '@/types';
 import type { LLMProvider } from '@/lib/ai/providers';
 import { fillDocumentWithAI } from '@/lib/ai/docx-content-replacer';
 
@@ -12,6 +12,7 @@ export interface FillOptions {
   aiApiKey: string;
   aiModel: string;
   jobVacancy?: JobVacancy;
+  language?: OutputLanguage;
 }
 
 /**
@@ -158,7 +159,8 @@ export async function fillSmartTemplate(
       options.aiProvider,
       options.aiApiKey,
       options.aiModel,
-      options.jobVacancy
+      options.jobVacancy,
+      options.language || 'nl'
     );
 
     // Apply filled segments back to the XML
@@ -198,7 +200,8 @@ export async function fillSmartTemplate(
             options.aiProvider,
             options.aiApiKey,
             options.aiModel,
-            options.jobVacancy
+            options.jobVacancy,
+            options.language || 'nl'
           );
 
           content = applyFilledSegments(content, hfResult.filledSegments);
