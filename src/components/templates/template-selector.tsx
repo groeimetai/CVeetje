@@ -567,6 +567,13 @@ export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: Te
                       <span className="text-amber-600">{t('aiMode.creditWarning')}</span>
                     </div>
                   )}
+                  {/* Show hint when no placeholders but AI is off */}
+                  {!useAI && (!selectedTemplate.placeholders || selectedTemplate.placeholders.length === 0) && (
+                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span>{t('aiMode.noPlaceholdersHint')}</span>
+                    </div>
+                  )}
                 </div>
               )}
 

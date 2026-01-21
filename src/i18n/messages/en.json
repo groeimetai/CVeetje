@@ -548,7 +548,8 @@
         "title": "AI Content Replacement",
         "enabledDescription": "AI analyzes the document and replaces existing content with your profile data, tailored to the job posting.",
         "disabledDescription": "Only placeholders (like {{name}}) will be automatically filled.",
-        "creditWarning": "AI mode uses extra tokens from your API key"
+        "creditWarning": "AI mode uses extra tokens from your API key",
+        "noPlaceholdersHint": "No placeholders found. Enable AI mode to fill the document anyway."
       },
       "errors": {
         "invalidFileType": "Only PDF and DOCX files are allowed",
