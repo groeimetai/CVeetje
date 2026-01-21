@@ -6,6 +6,7 @@ import type {
   JobVacancy,
   CVStyleConfig,
   OutputLanguage,
+  FitAnalysis,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 
@@ -18,6 +19,7 @@ export interface WizardDraft {
   currentStep: WizardStep;
   linkedInData: ParsedLinkedIn | null;
   jobVacancy: JobVacancy | null;
+  fitAnalysis: FitAnalysis | null;
   styleConfig: CVStyleConfig | null;
   designTokens: CVDesignTokens | null;
   avatarUrl: string | null;

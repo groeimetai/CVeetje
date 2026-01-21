@@ -31,6 +31,7 @@ interface FitAnalysisCardProps {
   onContinue: () => void;
   onChangeJob: () => void;
   onTokenUsage?: (usage: TokenUsage) => void;
+  onAnalysisComplete?: (analysis: FitAnalysis) => void;
 }
 
 // Helper functions for colors and icons
@@ -132,6 +133,7 @@ export function FitAnalysisCard({
   onContinue,
   onChangeJob,
   onTokenUsage,
+  onAnalysisComplete,
 }: FitAnalysisCardProps) {
   const t = useTranslations('fitAnalysis');
   const [isLoading, setIsLoading] = useState(false);
@@ -159,6 +161,9 @@ export function FitAnalysisCard({
 
       if (result.success && result.analysis) {
         setAnalysis(result.analysis);
+        if (onAnalysisComplete) {
+          onAnalysisComplete(result.analysis);
+        }
         if (result.usage && onTokenUsage) {
           onTokenUsage(result.usage);
         }

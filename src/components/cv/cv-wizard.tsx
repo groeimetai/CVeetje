@@ -27,6 +27,7 @@ import type {
   StepTokenUsage,
   CVContactInfo,
   OutputLanguage,
+  FitAnalysis,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { ModelInfo, ProviderInfo } from '@/lib/ai/models-registry';
@@ -49,6 +50,7 @@ export function CVWizard() {
   const [currentStep, setCurrentStep] = useState<WizardStep>('linkedin');
   const [linkedInData, setLinkedInData] = useState<ParsedLinkedIn | null>(null);
   const [jobVacancy, setJobVacancy] = useState<JobVacancy | null>(null);
+  const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [styleConfig, setStyleConfig] = useState<CVStyleConfig | null>(null);
   const [designTokens, setDesignTokens] = useState<CVDesignTokens | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -93,20 +95,21 @@ export function CVWizard() {
         currentStep,
         linkedInData,
         jobVacancy,
+        fitAnalysis,
         styleConfig,
         designTokens,
         avatarUrl,
         outputLanguage,
       });
     }
-  }, [currentStep, linkedInData, jobVacancy, styleConfig, designTokens, avatarUrl, outputLanguage, saveDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, styleConfig, designTokens, avatarUrl, outputLanguage, saveDraft]);
 
   // Auto-save draft on state changes (debounced by the effect dependencies)
   useEffect(() => {
     if (draftChecked && !showResumeDialog && currentStep !== 'generating' && currentStep !== 'preview') {
       saveCurrentDraft();
     }
-  }, [currentStep, linkedInData, jobVacancy, styleConfig, designTokens, avatarUrl, outputLanguage, draftChecked, showResumeDialog, saveCurrentDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, styleConfig, designTokens, avatarUrl, outputLanguage, draftChecked, showResumeDialog, saveCurrentDraft]);
 
   // Resume from draft
   const handleResumeDraft = () => {
@@ -114,6 +117,7 @@ export function CVWizard() {
       setCurrentStep(draft.currentStep);
       setLinkedInData(draft.linkedInData);
       setJobVacancy(draft.jobVacancy);
+      setFitAnalysis(draft.fitAnalysis);
       setStyleConfig(draft.styleConfig);
       setDesignTokens(draft.designTokens);
       setAvatarUrl(draft.avatarUrl);
@@ -485,6 +489,7 @@ export function CVWizard() {
   const handleNewVacancy = () => {
     // Reset job, style, and content - but keep profile data (linkedInData, avatarUrl)
     setJobVacancy(null);
+    setFitAnalysis(null);
     setStyleConfig(null);
     setDesignTokens(null);
     setGeneratedContent(null);
@@ -674,6 +679,7 @@ export function CVWizard() {
           onContinue={handleFitAnalysisContinue}
           onChangeJob={handleFitAnalysisChangeJob}
           onTokenUsage={(usage) => addTokenUsage('style', usage)}
+          onAnalysisComplete={setFitAnalysis}
         />
       )}
 
@@ -783,6 +789,7 @@ export function CVWizard() {
         <TemplateSelector
           profileData={linkedInData}
           jobVacancy={jobVacancy || undefined}
+          fitAnalysis={fitAnalysis || undefined}
           language={outputLanguage}
           onFill={handleTemplateFill}
           onBack={() => setCurrentStep('style-choice')}

@@ -1,7 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, type LLMProvider } from './providers';
-import type { ParsedLinkedIn, JobVacancy, OutputLanguage } from '@/types';
+import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 
 /**
  * Schema for indexed content filling
@@ -142,6 +142,66 @@ BELANGRIJK:
 }
 
 /**
+ * Build a compact summary of fit analysis for the AI prompt
+ * Helps AI emphasize matched skills and strengths
+ */
+function buildFitAnalysisSummary(
+  fitAnalysis: FitAnalysis | undefined,
+  language: OutputLanguage
+): string {
+  if (!fitAnalysis) return '';
+
+  const isEn = language === 'en';
+  const parts: string[] = [];
+
+  // Header
+  parts.push(isEn
+    ? '\n--- FIT ANALYSIS (use this to optimize content) ---'
+    : '\n--- FIT ANALYSE (gebruik dit om content te optimaliseren) ---'
+  );
+
+  // Matched skills (top 5)
+  if (fitAnalysis.skillMatch.matched.length > 0) {
+    const skills = fitAnalysis.skillMatch.matched.slice(0, 5).join(', ');
+    parts.push(isEn
+      ? `EMPHASIZE these matched skills in descriptions: ${skills}`
+      : `BENADRUK deze matchende skills in beschrijvingen: ${skills}`
+    );
+  }
+
+  // Strengths (top 3)
+  if (fitAnalysis.strengths.length > 0) {
+    const strengths = fitAnalysis.strengths
+      .slice(0, 3)
+      .map(s => s.message)
+      .join('; ');
+    parts.push(isEn
+      ? `KEY STRENGTHS to highlight: ${strengths}`
+      : `STERKE PUNTEN om uit te lichten: ${strengths}`
+    );
+  }
+
+  // Bonus skills (top 3)
+  if (fitAnalysis.skillMatch.bonus.length > 0) {
+    const bonus = fitAnalysis.skillMatch.bonus.slice(0, 3).join(', ');
+    parts.push(isEn
+      ? `BONUS skills that add value: ${bonus}`
+      : `BONUS skills die waarde toevoegen: ${bonus}`
+    );
+  }
+
+  // Strategic instruction based on verdict
+  if (fitAnalysis.verdict === 'challenging' || fitAnalysis.verdict === 'unlikely') {
+    parts.push(isEn
+      ? 'NOTE: Fit is moderate - emphasize transferable skills and learning ability'
+      : 'LET OP: Fit is matig - benadruk overdraagbare skills en leervermogen'
+    );
+  }
+
+  return parts.join('\n');
+}
+
+/**
  * Fill document using indexed segments approach
  *
  * Instead of search/replace, we:
@@ -157,12 +217,14 @@ export async function fillDocumentWithAI(
   model: string,
   jobVacancy?: JobVacancy,
   language: OutputLanguage = 'nl',
+  fitAnalysis?: FitAnalysis,
 ): Promise<IndexedFillResult> {
   const aiProvider = createAIProvider(provider, apiKey);
 
   // Build profile summary
   const profileSummary = buildProfileSummary(profileData, language);
   const jobSummary = jobVacancy ? buildJobSummary(jobVacancy, language) : null;
+  const fitSummary = buildFitAnalysisSummary(fitAnalysis, language);
 
   // Create numbered document representation
   const numberedDoc = indexedSegments
@@ -179,7 +241,7 @@ ${numberedDoc}
 
 ${prompts.profileHeader}:
 ${profileSummary}
-${jobSummary ? `\n${prompts.jobHeader}:\n${jobSummary}` : ''}
+${jobSummary ? `\n${prompts.jobHeader}:\n${jobSummary}` : ''}${fitSummary}
 
 ${prompts.instructions}`;
 
