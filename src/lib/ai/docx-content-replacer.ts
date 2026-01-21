@@ -56,7 +56,9 @@ KRITIEKE REGELS:
 - Gebruik ALLEEN de exacte gegevens uit de profieldata
 - VERZIN NOOIT extra opleidingen, ervaringen of jaren
 - Als data "Onbekend" is, laat het veld dan leeg of gebruik "-"
-- Het aantal opleidingen/ervaringen in de output moet EXACT overeenkomen met de profieldata
+- VUL ALLE werkervaring en opleidingen in, ook oudere - sla NIETS over!
+- Als er meer ervaringen zijn dan template slots, vul dan de beschikbare slots met de meest recente/relevante
+- Maak je GEEN zorgen over ruimte of volgende secties - vul alles in wat past
 
 INSTRUCTIES:
 1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
@@ -101,7 +103,10 @@ BELANGRIJK:
 - Vul ALLE lege segmenten in waar data hoort
 - Periodes aanpassen naar echte datums
 - Beschikbaarheid, vervoer etc. ook invullen indien bekend
-- Retourneer ALLEEN segmenten die gewijzigd moeten worden`;
+- Retourneer ALLEEN segmenten die gewijzigd moeten worden
+- VUL ALLE werkervaring in - ook oudere banen! Sla geen ervaring over.
+- Als er meerdere werkervaring slots zijn, vul ze ALLEMAAL in met de beschikbare ervaringen
+- Ruimte is GEEN probleem - vul alles in wat in het profiel staat`;
 
   try {
     const result = await generateObject({
@@ -152,16 +157,18 @@ function buildProfileSummary(profile: ParsedLinkedIn): string {
   }
 
   if (profile.experience && profile.experience.length > 0) {
-    parts.push('\nWERKERVARING:');
+    parts.push(`\nWERKERVARING (${profile.experience.length} ervaringen - vul ze ALLEMAAL in!):`);
     profile.experience.forEach((exp, index) => {
-      parts.push(`\n${index + 1}. ${exp.title || 'Functie'} bij ${exp.company || 'Bedrijf'}`);
-      if (exp.startDate || exp.endDate) {
-        parts.push(`   Periode: ${exp.startDate || '?'} - ${exp.endDate || 'Heden'}`);
-      }
+      parts.push(`\nWerkervaring ${index + 1} van ${profile.experience.length}:`);
+      parts.push(`   Functie: ${exp.title || 'Onbekend'}`);
+      parts.push(`   Bedrijf: ${exp.company || 'Onbekend'}`);
+      parts.push(`   Startdatum: ${exp.startDate || 'Onbekend'}`);
+      parts.push(`   Einddatum: ${exp.endDate || 'Heden'}`);
       if (exp.description) {
-        parts.push(`   Beschrijving: ${exp.description.substring(0, 500)}`);
+        parts.push(`   Werkzaamheden: ${exp.description.substring(0, 800)}`);
       }
     });
+    parts.push(`\nTOTAAL: ${profile.experience.length} werkervaringen. Vul ALLE ${profile.experience.length} in!`);
   }
 
   if (profile.education && profile.education.length > 0) {
