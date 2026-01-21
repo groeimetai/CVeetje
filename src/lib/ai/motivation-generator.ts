@@ -27,7 +27,7 @@ const motivationLetterSchema = z.object({
   whyCompany: z.string().describe('Why this company/role: demonstrate research about the company, understanding of their mission/values/products, and genuine interest. 2-3 sentences.'),
   whyMe: z.string().describe('Why I am a good fit: connect specific experiences and skills to the job requirements. Use concrete examples. 3-4 sentences.'),
   motivation: z.string().describe('Personal motivation and enthusiasm: what drives you, why this role excites you, how it fits your career goals. Include personal motivation if provided. 2-3 sentences.'),
-  closing: z.string().describe('Strong closing: express enthusiasm, mention availability, and include a clear call to action. 2 sentences.'),
+  closing: z.string().describe('Final call to action paragraph: express enthusiasm, mention availability for an interview. 1-2 sentences. DO NOT include a greeting or sign-off like "Kind regards" - that will be added separately.'),
 });
 
 // Build the system prompt for motivation letter generation
@@ -62,7 +62,7 @@ STRUCTURE:
 - Why Company: Demonstrate genuine interest and research
 - Why Me: Evidence-based pitch connecting your experience to their needs
 - Motivation: Personal drive and enthusiasm (incorporate user's motivation if provided)
-- Closing: Confident call to action
+- Closing: Confident call to action (DO NOT include sign-off greeting like "Kind regards" - it will be added automatically)
 
 TONE:
 - Professional but personable
