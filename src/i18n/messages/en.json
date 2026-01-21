@@ -713,6 +713,15 @@
     "allPages": "All Pages",
     "creditCost": "1 credit for download"
   },
+  "templatePreview": {
+    "title": "CV Preview",
+    "docxInfo": "This is a PDF preview of your filled DOCX template. You can also download the original DOCX file for further editing.",
+    "downloadPdf": "Download PDF",
+    "downloadDocx": "Download DOCX",
+    "downloading": "Downloading...",
+    "changeTemplate": "Change Template",
+    "newVacancy": "New Vacancy"
+  },
   "cvList": {
     "title": "My CVs",
     "subtitle": "Manage and download your CVs",

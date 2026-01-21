@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
 import { fillSmartTemplate } from '@/lib/docx/smart-template-filler';
+import { convertDocxToPdf } from '@/lib/docx/docx-to-pdf';
+import { addWatermarkToPdf } from '@/lib/pdf/add-watermark';
 import { decrypt } from '@/lib/encryption';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 
@@ -62,6 +64,12 @@ export async function POST(
       userId: templateData?.userId,
     };
 
+    // Parse query parameters
+    const url = new URL(request.url);
+    const outputFormat = url.searchParams.get('format'); // 'pdf' | 'docx' | null
+    const skipCredit = url.searchParams.get('skipCredit') === 'true';
+    const isPreview = url.searchParams.get('preview') === 'true'; // Add watermark for preview
+
     // Parse request body
     const body = await request.json();
     const { profileData, customValues, useAI, jobVacancy, language, fitAnalysis } = body as {
@@ -80,14 +88,14 @@ export async function POST(
       );
     }
 
-    // Check user credits
+    // Check user credits (unless skipCredit is true)
     const userDoc = await db.collection('users').doc(userId).get();
     const userData = userDoc.data();
     const freeCredits = userData?.credits?.free || 0;
     const purchasedCredits = userData?.credits?.purchased || 0;
     const totalCredits = freeCredits + purchasedCredits;
 
-    if (totalCredits < 1) {
+    if (!skipCredit && totalCredits < 1) {
       return NextResponse.json(
         { error: 'Insufficient credits. You need at least 1 credit to fill a template.' },
         { status: 402 }
@@ -198,43 +206,68 @@ export async function POST(
       }
     }
 
-    // Deduct credit (deduct from free first, then purchased)
-    if (freeCredits > 0) {
-      await db.collection('users').doc(userId).update({
-        'credits.free': freeCredits - 1,
-      });
-    } else {
-      await db.collection('users').doc(userId).update({
-        'credits.purchased': purchasedCredits - 1,
+    // Deduct credit (deduct from free first, then purchased) - unless skipCredit is true
+    if (!skipCredit) {
+      if (freeCredits > 0) {
+        await db.collection('users').doc(userId).update({
+          'credits.free': freeCredits - 1,
+        });
+      } else {
+        await db.collection('users').doc(userId).update({
+          'credits.purchased': purchasedCredits - 1,
+        });
+      }
+
+      // Record transaction
+      let methodDescription: string;
+      switch (fillMethod) {
+        case 'form':
+          methodDescription = `(auto-filled ${filledFields.length} form fields)`;
+          break;
+        case 'docx-ai':
+          methodDescription = `(DOCX + AI, ${filledCount} replacements)`;
+          break;
+        case 'coordinates':
+          methodDescription = '(coordinate-based)';
+          break;
+        default:
+          methodDescription = '';
+      }
+      await db.collection('users').doc(userId).collection('transactions').add({
+        amount: -1,
+        type: 'cv_generation',
+        description: `Template filled: ${template.name} ${methodDescription}`,
+        molliePaymentId: null,
+        cvId: null,
+        createdAt: new Date(),
       });
     }
 
-    // Record transaction
-    let methodDescription: string;
-    switch (fillMethod) {
-      case 'form':
-        methodDescription = `(auto-filled ${filledFields.length} form fields)`;
-        break;
-      case 'docx-ai':
-        methodDescription = `(DOCX + AI, ${filledCount} replacements)`;
-        break;
-      case 'coordinates':
-        methodDescription = '(coordinate-based)';
-        break;
-      default:
-        methodDescription = '';
+    // Handle PDF conversion for DOCX templates if requested
+    if (template.fileType === 'docx' && outputFormat === 'pdf') {
+      // Convert Uint8Array to ArrayBuffer for the PDF conversion
+      const arrayBuffer = new ArrayBuffer(filledBytes.length);
+      const view = new Uint8Array(arrayBuffer);
+      view.set(filledBytes);
+      let pdfBuffer = await convertDocxToPdf(arrayBuffer);
+
+      // Add watermark for preview mode
+      if (isPreview) {
+        const watermarkedPdf = await addWatermarkToPdf(pdfBuffer, 'CVeetje PREVIEW');
+        pdfBuffer = Buffer.from(watermarkedPdf);
+      }
+
+      return new NextResponse(new Uint8Array(pdfBuffer), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${template.name}.pdf"`,
+        },
+      });
     }
-    await db.collection('users').doc(userId).collection('transactions').add({
-      amount: -1,
-      type: 'cv_generation',
-      description: `Template filled: ${template.name} ${methodDescription}`,
-      molliePaymentId: null,
-      cvId: null,
-      createdAt: new Date(),
-    });
 
     // Return the filled file
-    // DOCX templates return DOCX (preserves styling), PDF templates return PDF
+    // DOCX templates return DOCX by default (preserves styling), PDF templates return PDF
     return new NextResponse(Buffer.from(filledBytes), {
       status: 200,
       headers: {

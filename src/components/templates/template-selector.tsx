@@ -35,7 +35,7 @@ interface TemplateSelectorProps {
   jobVacancy?: JobVacancy;
   fitAnalysis?: FitAnalysis;
   language?: OutputLanguage;
-  onFill: (pdfBlob: Blob, templateName: string) => void;
+  onFill: (templateId: string, templateName: string) => void;
   onBack: () => void;
 }
 
@@ -46,7 +46,6 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
   const [templates, setTemplates] = useState<PDFTemplateSummary[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PDFTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFilling, setIsFilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
 
@@ -212,37 +211,8 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
       return;
     }
 
-    try {
-      setIsFilling(true);
-      setError(null);
-
-      const response = await fetch(`/api/templates/${selectedTemplate.id}/fill`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          profileData,
-          customValues,
-          useAI: isDocx ? true : undefined, // Always use AI for DOCX
-          jobVacancy: isDocx ? jobVacancy : undefined,
-          language: isDocx ? language : undefined,
-          fitAnalysis: isDocx ? fitAnalysis : undefined,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fill template');
-      }
-
-      // Get the filled file blob (DOCX for DOCX templates, PDF for PDF templates)
-      const blob = await response.blob();
-      const fileName = isDocx ? selectedTemplate.name : selectedTemplate.name;
-      onFill(blob, fileName);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fill template');
-    } finally {
-      setIsFilling(false);
-    }
+    // Pass templateId to parent - parent will handle the API call and preview
+    onFill(selectedTemplate.id, selectedTemplate.name);
   };
 
   // Check which custom fields are needed
@@ -599,18 +569,9 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
                 <Button variant="outline" onClick={() => setSelectedTemplate(null)}>
                   {t('changeTemplate')}
                 </Button>
-                <Button onClick={handleFill} disabled={isFilling} className="flex-1">
-                  {isFilling ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('filling')}
-                    </>
-                  ) : (
-                    <>
-                      <Download className="mr-2 h-4 w-4" />
-                      {t('fillAndDownload')}
-                    </>
-                  )}
+                <Button onClick={handleFill} className="flex-1">
+                  <Download className="mr-2 h-4 w-4" />
+                  {t('fillAndDownload')}
                 </Button>
               </div>
             </CardContent>

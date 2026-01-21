@@ -713,6 +713,15 @@
     "allPages": "Alle Pagina's",
     "creditCost": "1 credit voor download"
   },
+  "templatePreview": {
+    "title": "CV Preview",
+    "docxInfo": "Dit is een PDF preview van je ingevulde DOCX template. Je kunt ook het originele DOCX bestand downloaden voor verdere bewerking.",
+    "downloadPdf": "Download PDF",
+    "downloadDocx": "Download DOCX",
+    "downloading": "Downloaden...",
+    "changeTemplate": "Andere Template",
+    "newVacancy": "Nieuwe Vacature"
+  },
   "cvList": {
     "title": "Mijn CVs",
     "subtitle": "Beheer en download je CVs",

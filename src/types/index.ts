@@ -51,6 +51,9 @@ export interface ModelCapabilities {
 // Now supports any provider from models.dev
 export type LLMProvider = string;
 
+// User roles for access control
+export type UserRole = 'user' | 'admin';
+
 export interface UserApiKey {
   provider: string;
   encryptedKey: string;
@@ -72,6 +75,10 @@ export interface User {
   photoURL: string | null;
   apiKey: UserApiKey | null;
   credits: UserCredits;
+  role: UserRole;                    // User role (defaults to 'user')
+  disabled?: boolean;                // Account disabled by admin
+  disabledAt?: Timestamp;            // When the account was disabled
+  disabledReason?: string;           // Reason for disabling
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
