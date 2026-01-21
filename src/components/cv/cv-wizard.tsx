@@ -278,8 +278,9 @@ export function CVWizard() {
     setTemplateFileName(templateName);
 
     try {
-      // Fetch PDF for preview with watermark (credits are deducted here)
-      const response = await fetch(`/api/templates/${templateId}/fill?format=pdf&preview=true`, {
+      // Fetch DOCX for preview (credits are deducted here)
+      // We use DOCX directly for preview as it preserves formatting better
+      const response = await fetch(`/api/templates/${templateId}/fill?format=docx`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -294,11 +295,11 @@ export function CVWizard() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to generate PDF');
+        throw new Error(data.error || 'Failed to generate document');
       }
 
-      const pdfBlob = await response.blob();
-      setTemplatePdfBlob(pdfBlob);
+      const docxBlob = await response.blob();
+      setTemplatePdfBlob(docxBlob); // Reusing same state, but now it's DOCX
       setCurrentStep('preview');
       refreshCredits();
     } catch (err) {
@@ -313,12 +314,17 @@ export function CVWizard() {
   const handleTemplateDownload = async (format: 'pdf' | 'docx') => {
     if (!selectedTemplateId) return;
 
+    // DOCX can be downloaded directly from the blob we already have
+    if (format === 'docx' && templatePdfBlob) {
+      downloadTemplateBlob(templatePdfBlob, 'docx');
+      return;
+    }
+
+    // PDF needs to be generated fresh (convert DOCX to PDF on server)
     setIsDownloading(true);
     try {
-      // Both PDF and DOCX need to be fetched fresh (PDF preview has watermarks)
-      // skipCredit=true since we already paid during preview generation
       const response = await fetch(
-        `/api/templates/${selectedTemplateId}/fill?format=${format}&skipCredit=true`,
+        `/api/templates/${selectedTemplateId}/fill?format=pdf&skipCredit=true`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -335,13 +341,13 @@ export function CVWizard() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || `Failed to download ${format.toUpperCase()}`);
+        throw new Error(data.error || 'Failed to download PDF');
       }
 
       const blob = await response.blob();
-      downloadTemplateBlob(blob, format);
+      downloadTemplateBlob(blob, 'pdf');
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to download ${format.toUpperCase()}`);
+      setError(err instanceof Error ? err.message : 'Failed to download PDF');
     } finally {
       setIsDownloading(false);
     }
@@ -937,7 +943,7 @@ export function CVWizard() {
       {/* Template Preview - for filled templates */}
       {currentStep === 'preview' && templatePdfBlob && linkedInData && (
         <TemplatePreview
-          pdfBlob={templatePdfBlob}
+          docxBlob={templatePdfBlob}
           fileName={templateFileName}
           onDownload={handleTemplateDownload}
           onBack={() => {
@@ -949,7 +955,6 @@ export function CVWizard() {
           onNewVacancy={handleNewVacancy}
           isDownloading={isDownloading}
           credits={credits}
-          isDocxTemplate={true}
         />
       )}
 

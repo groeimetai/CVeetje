@@ -718,12 +718,10 @@
   "templatePreview": {
     "title": "CV Ready",
     "fillSuccess": "Template Successfully Filled!",
-    "fillSuccessDesc": "Your CV has been generated based on your profile and the job vacancy. Download the file to view the result.",
-    "previewLimited": "Preview Limited",
-    "previewLimitedDesc": "The PDF preview could not be fully generated due to complex formatting in the template. Download the DOCX file for the complete result with original formatting.",
-    "docxInfo": "For the best quality and original formatting, download the DOCX file. The PDF is a simplified version.",
+    "fillSuccessDesc": "Your CV has been generated based on your profile and the job vacancy. View the preview below or download the file.",
+    "rendering": "Loading document...",
     "downloadPdf": "Download PDF",
-    "downloadDocx": "Download DOCX (Recommended)",
+    "downloadDocx": "Download DOCX",
     "downloading": "Downloading...",
     "changeTemplate": "Change Template",
     "newVacancy": "New Vacancy"

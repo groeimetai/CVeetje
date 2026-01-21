@@ -718,12 +718,10 @@
   "templatePreview": {
     "title": "CV Klaar",
     "fillSuccess": "Template Succesvol Ingevuld!",
-    "fillSuccessDesc": "Je CV is gegenereerd op basis van je profiel en de vacature. Download het bestand om het resultaat te bekijken.",
-    "previewLimited": "Preview Beperkt Beschikbaar",
-    "previewLimitedDesc": "De PDF preview kon niet volledig worden gegenereerd vanwege complexe opmaak in de template. Download het DOCX bestand voor het volledige resultaat met originele opmaak.",
-    "docxInfo": "Voor de beste kwaliteit en originele opmaak, download het DOCX bestand. De PDF is een vereenvoudigde versie.",
+    "fillSuccessDesc": "Je CV is gegenereerd op basis van je profiel en de vacature. Bekijk de preview hieronder of download het bestand.",
+    "rendering": "Document laden...",
     "downloadPdf": "Download PDF",
-    "downloadDocx": "Download DOCX (Aanbevolen)",
+    "downloadDocx": "Download DOCX",
     "downloading": "Downloaden...",
     "changeTemplate": "Andere Template",
     "newVacancy": "Nieuwe Vacature"

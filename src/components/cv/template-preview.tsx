@@ -1,42 +1,80 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { FileText, FileType, Loader2, RefreshCw, ArrowLeft, Info, AlertTriangle, CheckCircle } from 'lucide-react';
+import { FileText, FileType, Loader2, RefreshCw, ArrowLeft, CheckCircle } from 'lucide-react';
 
 interface TemplatePreviewProps {
-  pdfBlob: Blob;
+  docxBlob: Blob;
   fileName: string;
   onDownload: (format: 'pdf' | 'docx') => void;
   onBack: () => void;
   onNewVacancy?: () => void;
   isDownloading: boolean;
   credits: number;
-  isDocxTemplate?: boolean;
 }
 
 export function TemplatePreview({
-  pdfBlob,
+  docxBlob,
   fileName,
   onDownload,
   onBack,
   onNewVacancy,
   isDownloading,
-  credits,
-  isDocxTemplate = true,
 }: TemplatePreviewProps) {
   const t = useTranslations('templatePreview');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isRendering, setIsRendering] = useState(true);
+  const [renderError, setRenderError] = useState<string | null>(null);
 
-  // Create object URL for PDF preview
-  const pdfUrl = useMemo(() => {
-    return URL.createObjectURL(pdfBlob);
-  }, [pdfBlob]);
+  // Render DOCX using docx-preview
+  useEffect(() => {
+    const renderDocx = async () => {
+      if (!containerRef.current || !docxBlob) return;
 
-  // Check if PDF is very small (likely empty or failed conversion)
-  const isPdfSmall = pdfBlob.size < 5000; // Less than 5KB is suspicious
+      setIsRendering(true);
+      setRenderError(null);
+
+      try {
+        // Dynamic import to avoid SSR issues
+        const { renderAsync } = await import('docx-preview');
+
+        // Clear previous content
+        containerRef.current.innerHTML = '';
+
+        // Convert blob to ArrayBuffer
+        const arrayBuffer = await docxBlob.arrayBuffer();
+
+        // Render the DOCX
+        await renderAsync(arrayBuffer, containerRef.current, undefined, {
+          className: 'docx-preview-wrapper',
+          inWrapper: true,
+          ignoreWidth: false,
+          ignoreHeight: false,
+          ignoreFonts: false,
+          breakPages: true,
+          ignoreLastRenderedPageBreak: false,
+          experimental: false,
+          trimXmlDeclaration: true,
+          useBase64URL: true,
+          renderHeaders: true,
+          renderFooters: true,
+          renderFootnotes: true,
+          renderEndnotes: true,
+        });
+      } catch (err) {
+        console.error('Failed to render DOCX:', err);
+        setRenderError(err instanceof Error ? err.message : 'Failed to render document');
+      } finally {
+        setIsRendering(false);
+      }
+    };
+
+    renderDocx();
+  }, [docxBlob]);
 
   return (
     <div className="space-y-6">
@@ -57,59 +95,74 @@ export function TemplatePreview({
             </AlertDescription>
           </Alert>
 
-          {/* PDF Preview or fallback message */}
-          {isPdfSmall ? (
-            <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="text-amber-800 dark:text-amber-400">{t('previewLimited')}</AlertTitle>
-              <AlertDescription className="text-amber-700 dark:text-amber-300">
-                {t('previewLimitedDesc')}
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="relative rounded-lg border bg-muted/20 overflow-hidden">
-              <embed
-                src={pdfUrl}
-                type="application/pdf"
-                width="100%"
-                height="800px"
-                className="min-h-[600px]"
-              />
+          {/* DOCX Preview */}
+          <div className="relative rounded-lg border bg-white overflow-hidden">
+            {/* Watermark overlay */}
+            <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute text-6xl font-bold text-gray-300/30 dark:text-gray-600/30 whitespace-nowrap select-none"
+                    style={{
+                      transform: `rotate(-45deg) translate(${(i - 1) * 200}px, ${(i - 1) * 150}px)`,
+                    }}
+                  >
+                    CVeetje PREVIEW
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
 
-          {/* Info about original format */}
-          {isDocxTemplate && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription className="ml-2">{t('docxInfo')}</AlertDescription>
-            </Alert>
-          )}
+            {/* Loading state */}
+            {isRendering && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-muted-foreground">{t('rendering')}</span>
+              </div>
+            )}
+
+            {/* Error state */}
+            {renderError && (
+              <div className="flex items-center justify-center py-20 text-destructive">
+                <span>{renderError}</span>
+              </div>
+            )}
+
+            {/* DOCX render container */}
+            <div
+              ref={containerRef}
+              className="docx-preview-container min-h-[600px] max-h-[800px] overflow-auto"
+              style={{
+                // Prevent text selection in preview
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+              }}
+            />
+          </div>
 
           {/* Download buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            {isDocxTemplate && (
-              <Button
-                onClick={() => onDownload('docx')}
-                disabled={isDownloading}
-                className="flex-1"
-              >
-                {isDownloading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('downloading')}
-                  </>
-                ) : (
-                  <>
-                    <FileType className="mr-2 h-4 w-4" />
-                    {t('downloadDocx')}
-                  </>
-                )}
-              </Button>
-            )}
+            <Button
+              onClick={() => onDownload('docx')}
+              disabled={isDownloading}
+              className="flex-1"
+            >
+              {isDownloading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('downloading')}
+                </>
+              ) : (
+                <>
+                  <FileType className="mr-2 h-4 w-4" />
+                  {t('downloadDocx')}
+                </>
+              )}
+            </Button>
 
             <Button
-              variant={isDocxTemplate ? 'outline' : 'default'}
+              variant="outline"
               onClick={() => onDownload('pdf')}
               disabled={isDownloading}
               className="flex-1"
@@ -144,6 +197,25 @@ export function TemplatePreview({
           </div>
         </CardContent>
       </Card>
+
+      {/* Styles for docx-preview */}
+      <style jsx global>{`
+        .docx-preview-container .docx-wrapper {
+          background: white;
+          padding: 20px;
+        }
+        .docx-preview-container .docx-wrapper > section.docx {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          margin-bottom: 20px;
+          padding: 40px 60px;
+          background: white;
+        }
+        /* Disable text selection */
+        .docx-preview-container * {
+          user-select: none !important;
+          -webkit-user-select: none !important;
+        }
+      `}</style>
     </div>
   );
 }
