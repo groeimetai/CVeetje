@@ -230,9 +230,10 @@ export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: Te
         throw new Error(data.error || 'Failed to fill template');
       }
 
-      // Get the PDF blob
+      // Get the filled file blob (DOCX for DOCX templates, PDF for PDF templates)
       const blob = await response.blob();
-      onFill(blob, selectedTemplate.name);
+      const fileName = isDocx ? selectedTemplate.name : selectedTemplate.name;
+      onFill(blob, fileName);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fill template');
     } finally {

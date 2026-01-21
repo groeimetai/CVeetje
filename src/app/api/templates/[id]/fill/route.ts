@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
 import { fillSmartTemplate } from '@/lib/docx/smart-template-filler';
-import { convertFilledTemplateToPdf } from '@/lib/docx/docx-to-pdf';
 import { decrypt } from '@/lib/encryption';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy } from '@/types';
 
@@ -105,13 +104,16 @@ export async function POST(
     const templateBuffer = await templateResponse.arrayBuffer();
     const templateBytes = new Uint8Array(templateBuffer);
 
-    let filledPdfBytes: Uint8Array;
+    let filledBytes: Uint8Array;
     let fillMethod: 'form' | 'coordinates' | 'docx-ai' | 'none' = 'none';
     let filledFields: string[] = [];
     let filledCount = 0;
+    let outputContentType = 'application/pdf';
+    let outputFileName = `filled-${template.fileName}`;
 
     if (template.fileType === 'docx') {
       // DOCX template flow - AI fills everything
+      // Returns DOCX directly to preserve all styling
       const docxBuffer = templateBuffer;
 
       // Get user's AI settings (required for DOCX)
@@ -153,9 +155,10 @@ export async function POST(
         console.warn('Template fill warnings:', fillResult.warnings);
       }
 
-      // Convert filled DOCX to PDF
-      const pdfBuffer = await convertFilledTemplateToPdf(fillResult.filledBuffer);
-      filledPdfBytes = new Uint8Array(pdfBuffer);
+      // Return DOCX directly (preserves all styling)
+      filledBytes = new Uint8Array(fillResult.filledBuffer);
+      outputContentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      outputFileName = `filled-${template.fileName}`;
       fillMethod = 'docx-ai';
       filledCount = fillResult.filledFields.length;
       filledFields = fillResult.filledFields;
@@ -170,12 +173,12 @@ export async function POST(
           profileData,
           customValues
         );
-        filledPdfBytes = autoResult.pdfBytes;
+        filledBytes = autoResult.pdfBytes;
         fillMethod = autoResult.method;
         filledFields = autoResult.filledFields || [];
       } else if (template.fields && template.fields.length > 0) {
         // Fall back to coordinate-based filling if template has configured fields
-        filledPdfBytes = await fillPDFTemplate(
+        filledBytes = await fillPDFTemplate(
           templateBytes,
           template,
           profileData,
@@ -226,16 +229,12 @@ export async function POST(
       createdAt: new Date(),
     });
 
-    // Return the filled PDF as binary
-    // For DOCX templates, the output is always PDF (after conversion)
-    const outputFileName = template.fileType === 'docx'
-      ? `filled-${template.fileName.replace(/\.docx$/i, '.pdf')}`
-      : `filled-${template.fileName}`;
-
-    return new NextResponse(Buffer.from(filledPdfBytes), {
+    // Return the filled file
+    // DOCX templates return DOCX (preserves styling), PDF templates return PDF
+    return new NextResponse(Buffer.from(filledBytes), {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
+        'Content-Type': outputContentType,
         'Content-Disposition': `attachment; filename="${outputFileName}"`,
       },
     });
