@@ -52,6 +52,12 @@ export async function fillDocumentWithAI(
 
   const systemPrompt = `Je bent een CV invul-specialist. Je krijgt een genummerd CV template en moet de waarden invullen.
 
+KRITIEKE REGELS:
+- Gebruik ALLEEN de exacte gegevens uit de profieldata
+- VERZIN NOOIT extra opleidingen, ervaringen of jaren
+- Als data "Onbekend" is, laat het veld dan leeg of gebruik "-"
+- Het aantal opleidingen/ervaringen in de output moet EXACT overeenkomen met de profieldata
+
 INSTRUCTIES:
 1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
 2. Vul elk segment in met de juiste profieldata
@@ -159,14 +165,16 @@ function buildProfileSummary(profile: ParsedLinkedIn): string {
   }
 
   if (profile.education && profile.education.length > 0) {
-    parts.push('\nOPLEIDING:');
+    parts.push('\nOPLEIDING (gebruik EXACT deze gegevens, verzin GEEN andere jaren of opleidingen):');
     profile.education.forEach((edu, index) => {
-      parts.push(`\n${index + 1}. ${edu.degree || 'Diploma'} - ${edu.fieldOfStudy || ''}`);
-      parts.push(`   School: ${edu.school || 'Instituut'}`);
-      if (edu.startYear || edu.endYear) {
-        parts.push(`   Periode: ${edu.startYear || '?'} - ${edu.endYear || '?'}`);
-      }
+      parts.push(`\nOpleiding ${index + 1}:`);
+      parts.push(`   School: ${edu.school || 'Onbekend'}`);
+      parts.push(`   Diploma/Niveau: ${edu.degree || 'Onbekend'}`);
+      parts.push(`   Richting: ${edu.fieldOfStudy || 'Onbekend'}`);
+      parts.push(`   Startjaar: ${edu.startYear || 'Onbekend'}`);
+      parts.push(`   Eindjaar: ${edu.endYear || 'Onbekend'}`);
     });
+    parts.push('\nBELANGRIJK: Er zijn PRECIES ' + profile.education.length + ' opleidingen. Vul niet meer of minder in!');
   }
 
   if (profile.skills && profile.skills.length > 0) {
