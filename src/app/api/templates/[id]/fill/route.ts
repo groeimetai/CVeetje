@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
-import { fillSmartTemplate, analyzeTemplate } from '@/lib/docx/smart-template-filler';
+import { fillSmartTemplate } from '@/lib/docx/smart-template-filler';
 import { convertFilledTemplateToPdf } from '@/lib/docx/docx-to-pdf';
 import { decrypt } from '@/lib/encryption';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy } from '@/types';
@@ -106,47 +106,41 @@ export async function POST(
     const templateBytes = new Uint8Array(templateBuffer);
 
     let filledPdfBytes: Uint8Array;
-    let fillMethod: 'form' | 'coordinates' | 'docx-placeholders' | 'docx-ai' | 'none' = 'none';
+    let fillMethod: 'form' | 'coordinates' | 'docx-ai' | 'none' = 'none';
     let filledFields: string[] = [];
     let filledCount = 0;
 
     if (template.fileType === 'docx') {
-      // DOCX template flow - use smart template filler
+      // DOCX template flow - AI fills everything
       const docxBuffer = templateBuffer;
 
-      // Analyze template structure
-      const analysis = await analyzeTemplate(docxBuffer);
-      const totalDetectedPatterns = analysis.detectedPatterns.length;
-
-      // Get user's AI settings if AI mode is requested
-      let aiOptions = undefined;
-      if (useAI) {
-        const userApiKeyData = userData?.apiKey;
-        if (userApiKeyData?.encryptedKey) {
-          try {
-            const decryptedKey = decrypt(userApiKeyData.encryptedKey);
-            aiOptions = {
-              useAI: true,
-              aiProvider: userApiKeyData.provider,
-              aiApiKey: decryptedKey,
-              aiModel: userApiKeyData.model,
-              jobVacancy,
-            };
-          } catch (decryptError) {
-            console.error('Failed to decrypt API key:', decryptError);
-          }
-        }
-      }
-
-      // If no patterns detected and no AI mode, return error
-      if (totalDetectedPatterns === 0 && !aiOptions) {
+      // Get user's AI settings (required for DOCX)
+      const userApiKeyData = userData?.apiKey;
+      if (!userApiKeyData?.encryptedKey) {
         return NextResponse.json(
-          { error: 'No fillable patterns detected in DOCX template. Make sure the template has labels like "Naam:", "Voornaam:", etc., or enable AI mode.' },
+          { error: 'AI API key is required for DOCX template filling. Please configure your API key in settings.' },
           { status: 400 }
         );
       }
 
-      // Fill the DOCX template using smart filler
+      let aiOptions;
+      try {
+        const decryptedKey = decrypt(userApiKeyData.encryptedKey);
+        aiOptions = {
+          aiProvider: userApiKeyData.provider,
+          aiApiKey: decryptedKey,
+          aiModel: userApiKeyData.model,
+          jobVacancy,
+        };
+      } catch (decryptError) {
+        console.error('Failed to decrypt API key:', decryptError);
+        return NextResponse.json(
+          { error: 'Failed to decrypt API key. Please re-enter your API key in settings.' },
+          { status: 400 }
+        );
+      }
+
+      // Fill the DOCX template using AI
       const fillResult = await fillSmartTemplate(
         docxBuffer,
         profileData,
@@ -162,7 +156,7 @@ export async function POST(
       // Convert filled DOCX to PDF
       const pdfBuffer = await convertFilledTemplateToPdf(fillResult.filledBuffer);
       filledPdfBytes = new Uint8Array(pdfBuffer);
-      fillMethod = fillResult.mode === 'ai' ? 'docx-ai' : 'docx-placeholders';
+      fillMethod = 'docx-ai';
       filledCount = fillResult.filledFields.length;
       filledFields = fillResult.filledFields;
     } else {
@@ -213,9 +207,6 @@ export async function POST(
     switch (fillMethod) {
       case 'form':
         methodDescription = `(auto-filled ${filledFields.length} form fields)`;
-        break;
-      case 'docx-placeholders':
-        methodDescription = `(DOCX, ${filledCount} placeholders)`;
         break;
       case 'docx-ai':
         methodDescription = `(DOCX + AI, ${filledCount} replacements)`;

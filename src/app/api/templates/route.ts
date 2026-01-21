@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb, getAdminStorage } from '@/lib/firebase/admin';
 import { getPDFPageCount } from '@/lib/pdf/template-filler';
-import { analyzeTemplate } from '@/lib/docx/smart-template-filler';
+import { extractDocxText } from '@/lib/docx/smart-template-filler';
 import type { PDFTemplateSummary, PDFTemplate, TemplateFileType } from '@/types';
 
 const MAX_TEMPLATES_PER_USER = 10;
@@ -152,30 +152,24 @@ export async function POST(request: NextRequest) {
     const fileBuffer = await file.arrayBuffer();
     const fileBytes = new Uint8Array(fileBuffer);
 
-    // Get page count and analyze template
+    // Get page count
     let pageCount: number;
-    let detectedPatternsCount = 0;
-    let autoAnalyzed = false;
+    const autoAnalyzed = true; // AI handles everything for DOCX
 
     try {
       if (fileType === 'pdf') {
         pageCount = await getPDFPageCount(fileBytes);
       } else {
-        // DOCX file - analyze structure
-        const docxBuffer = fileBuffer;
-
-        // Auto-analyze DOCX template
+        // DOCX file - extract text to estimate page count
         try {
-          const analysis = await analyzeTemplate(docxBuffer);
+          const text = await extractDocxText(fileBuffer);
           // Estimate page count based on text length (~3000 chars per page)
-          pageCount = Math.max(1, Math.ceil(analysis.text.length / 3000));
-          detectedPatternsCount = analysis.detectedPatterns.length;
-          autoAnalyzed = detectedPatternsCount > 0;
-        } catch (analysisError) {
-          console.error('Failed to auto-analyze DOCX template:', analysisError);
+          pageCount = Math.max(1, Math.ceil(text.length / 3000));
+        } catch (extractError) {
+          console.error('Failed to extract DOCX text:', extractError);
           console.error('File name:', file.name, 'File type:', file.type, 'File size:', file.size);
           return NextResponse.json(
-            { error: `Invalid DOCX file: ${analysisError instanceof Error ? analysisError.message : 'Unknown error'}` },
+            { error: `Invalid DOCX file: ${extractError instanceof Error ? extractError.message : 'Unknown error'}` },
             { status: 400 }
           );
         }

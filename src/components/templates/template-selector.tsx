@@ -28,7 +28,6 @@ import {
   Sparkles,
   Brain,
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import type { PDFTemplate, PDFTemplateSummary, ParsedLinkedIn, JobVacancy } from '@/types';
 
 interface TemplateSelectorProps {
@@ -48,8 +47,6 @@ export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: Te
   const [isFilling, setIsFilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // AI mode state
-  const [useAI, setUseAI] = useState(false);
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -205,11 +202,11 @@ export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: Te
     // Check if template is ready to fill
     const isDocx = selectedTemplate.fileType === 'docx';
     const hasContent = isDocx
-      ? (selectedTemplate.placeholders && selectedTemplate.placeholders.length > 0) || useAI
+      ? true // AI handles everything for DOCX
       : (selectedTemplate.fields && selectedTemplate.fields.length > 0);
 
     if (!hasContent) {
-      setError(isDocx ? t('noPlaceholdersDetected') : t('noFieldsConfigured'));
+      setError(t('noFieldsConfigured'));
       return;
     }
 
@@ -223,8 +220,8 @@ export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: Te
         body: JSON.stringify({
           profileData,
           customValues,
-          useAI: isDocx ? useAI : undefined,
-          jobVacancy: useAI ? jobVacancy : undefined,
+          useAI: isDocx ? true : undefined, // Always use AI for DOCX
+          jobVacancy: isDocx ? jobVacancy : undefined,
         }),
       });
 
@@ -542,38 +539,20 @@ export function TemplateSelector({ profileData, jobVacancy, onFill, onBack }: Te
                 </div>
               </div>
 
-              {/* AI Mode Toggle for DOCX templates */}
+              {/* AI Mode Info for DOCX templates */}
               {selectedTemplate.fileType === 'docx' && (
-                <div className="rounded-lg border p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Brain className="h-4 w-4 text-primary" />
-                      <Label htmlFor="ai-mode" className="font-medium">
-                        {t('aiMode.title')}
-                      </Label>
-                    </div>
-                    <Switch
-                      id="ai-mode"
-                      checked={useAI}
-                      onCheckedChange={setUseAI}
-                    />
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-primary" />
+                    <span className="font-medium text-sm">{t('aiMode.title')}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {useAI ? t('aiMode.enabledDescription') : t('aiMode.disabledDescription')}
+                    {t('aiMode.enabledDescription')}
                   </p>
-                  {useAI && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Sparkles className="h-3 w-3 text-amber-500" />
-                      <span className="text-amber-600">{t('aiMode.creditWarning')}</span>
-                    </div>
-                  )}
-                  {/* Show hint when no placeholders but AI is off */}
-                  {!useAI && (!selectedTemplate.placeholders || selectedTemplate.placeholders.length === 0) && (
-                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                      <AlertTriangle className="h-3 w-3" />
-                      <span>{t('aiMode.noPlaceholdersHint')}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-xs">
+                    <Sparkles className="h-3 w-3 text-amber-500" />
+                    <span className="text-amber-600">{t('aiMode.creditWarning')}</span>
+                  </div>
                 </div>
               )}
 
