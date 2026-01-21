@@ -40,29 +40,36 @@ function escapeRegexPattern(str: string): string {
 }
 
 /**
- * Replace text in DOCX XML while preserving ALL styling and structure
+ * Replace FIRST occurrence of text in DOCX XML while preserving styling
  *
- * This is a conservative approach that ONLY replaces text content within
- * individual <w:t> tags, never touching the XML structure itself.
- * This ensures backgrounds, fonts, colors, etc. are never affected.
+ * IMPORTANT: Only replaces the FIRST match, not all matches!
+ * This allows the AI to specify multiple replacements for repeated placeholders
+ * like "Functie :" which appears multiple times (once per job).
  */
 function replaceTextPreservingStyle(docXml: string, searchText: string, replaceText: string): string {
   const escapedSearch = escapeXml(searchText);
   const escapedReplace = escapeXml(replaceText);
 
+  // Track if we've made a replacement (only replace FIRST occurrence)
+  let replaced = false;
+
   // Only replace text within <w:t> tags, keeping the tag structure intact
-  // This regex captures: (opening tag)(content)(closing tag)
-  // We only modify the content part
   const result = docXml.replace(
     /(<w:t[^>]*>)([^<]*?)(<\/w:t>)/g,
     (match, openTag, content, closeTag) => {
+      // Skip if we already made a replacement
+      if (replaced) {
+        return match;
+      }
+
       // Check if this content contains our search text (case-insensitive)
       if (content.toLowerCase().includes(escapedSearch.toLowerCase())) {
-        // Replace only the search text, keeping everything else
+        // Replace only the FIRST occurrence within this tag
         const newContent = content.replace(
-          new RegExp(escapeRegexPattern(escapedSearch), 'gi'),
+          new RegExp(escapeRegexPattern(escapedSearch), 'i'), // No 'g' flag - only first match
           escapedReplace
         );
+        replaced = true;
         return openTag + newContent + closeTag;
       }
       // Return unchanged if no match
