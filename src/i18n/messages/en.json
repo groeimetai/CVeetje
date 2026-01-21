@@ -716,10 +716,14 @@
     "creditCost": "1 credit for download"
   },
   "templatePreview": {
-    "title": "CV Preview",
-    "docxInfo": "This is a PDF preview of your filled DOCX template. You can also download the original DOCX file for further editing.",
+    "title": "CV Ready",
+    "fillSuccess": "Template Successfully Filled!",
+    "fillSuccessDesc": "Your CV has been generated based on your profile and the job vacancy. Download the file to view the result.",
+    "previewLimited": "Preview Limited",
+    "previewLimitedDesc": "The PDF preview could not be fully generated due to complex formatting in the template. Download the DOCX file for the complete result with original formatting.",
+    "docxInfo": "For the best quality and original formatting, download the DOCX file. The PDF is a simplified version.",
     "downloadPdf": "Download PDF",
-    "downloadDocx": "Download DOCX",
+    "downloadDocx": "Download DOCX (Recommended)",
     "downloading": "Downloading...",
     "changeTemplate": "Change Template",
     "newVacancy": "New Vacancy"

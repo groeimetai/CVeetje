@@ -716,10 +716,14 @@
     "creditCost": "1 credit voor download"
   },
   "templatePreview": {
-    "title": "CV Preview",
-    "docxInfo": "Dit is een PDF preview van je ingevulde DOCX template. Je kunt ook het originele DOCX bestand downloaden voor verdere bewerking.",
+    "title": "CV Klaar",
+    "fillSuccess": "Template Succesvol Ingevuld!",
+    "fillSuccessDesc": "Je CV is gegenereerd op basis van je profiel en de vacature. Download het bestand om het resultaat te bekijken.",
+    "previewLimited": "Preview Beperkt Beschikbaar",
+    "previewLimitedDesc": "De PDF preview kon niet volledig worden gegenereerd vanwege complexe opmaak in de template. Download het DOCX bestand voor het volledige resultaat met originele opmaak.",
+    "docxInfo": "Voor de beste kwaliteit en originele opmaak, download het DOCX bestand. De PDF is een vereenvoudigde versie.",
     "downloadPdf": "Download PDF",
-    "downloadDocx": "Download DOCX",
+    "downloadDocx": "Download DOCX (Aanbevolen)",
     "downloading": "Downloaden...",
     "changeTemplate": "Andere Template",
     "newVacancy": "Nieuwe Vacature"

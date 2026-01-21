@@ -25,18 +25,32 @@ async function getBrowser() {
 
 /**
  * Custom style map for mammoth to preserve common formatting
+ * Includes Dutch and English style names
  */
 const STYLE_MAP = [
-  // Preserve headings
+  // Preserve headings (English)
   "p[style-name='Heading 1'] => h1:fresh",
   "p[style-name='Heading 2'] => h2:fresh",
   "p[style-name='Heading 3'] => h3:fresh",
   "p[style-name='Heading 4'] => h4:fresh",
+  // Preserve headings (Dutch)
+  "p[style-name='Kop 1'] => h1:fresh",
+  "p[style-name='Kop 2'] => h2:fresh",
+  "p[style-name='Kop 3'] => h3:fresh",
+  "p[style-name='Kop 4'] => h4:fresh",
+  // Preserve body text (Dutch)
+  "p[style-name='Hoofdtekst'] => p:fresh",
+  "p[style-name='Body Text'] => p:fresh",
+  "p[style-name='Standaard'] => p:fresh",
+  "p[style-name='Normal'] => p:fresh",
   // Preserve list styles
   "p[style-name='List Paragraph'] => li:fresh",
+  "p[style-name='Lijstalinea'] => li:fresh",
   // Preserve some common styles
   "r[style-name='Strong'] => strong",
   "r[style-name='Emphasis'] => em",
+  "r[style-name='Vet'] => strong",
+  "r[style-name='Cursief'] => em",
 ];
 
 /**
@@ -176,6 +190,13 @@ export async function convertDocxToHtml(docxBytes: ArrayBuffer): Promise<string>
   if (result.messages.length > 0) {
     console.log('DOCX to HTML conversion messages:', result.messages);
   }
+
+  // Log HTML content length for debugging
+  console.log('DOCX to HTML conversion result:', {
+    htmlLength: result.value.length,
+    messageCount: result.messages.length,
+    firstChars: result.value.substring(0, 500),
+  });
 
   return result.value;
 }
