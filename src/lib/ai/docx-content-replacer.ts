@@ -13,7 +13,7 @@ const contentReplacementSchema = z.object({
     type: z.enum(['name', 'title', 'company', 'period', 'description', 'skill', 'education', 'contact', 'summary']).describe('Type of content being replaced'),
     confidence: z.enum(['high', 'medium', 'low']).describe('Confidence level of the replacement'),
   })),
-  warnings: z.array(z.string()).optional().describe('Any warnings about the replacement process'),
+  warnings: z.array(z.string()).optional().describe('Any warnings about issues that could not be auto-fixed'),
 });
 
 export type ContentReplacement = z.infer<typeof contentReplacementSchema>['replacements'][number];
@@ -40,20 +40,22 @@ export async function analyzeAndGenerateReplacements(
   const profileSummary = buildProfileSummary(profileData);
   const jobSummary = jobVacancy ? buildJobSummary(jobVacancy) : null;
 
-  const systemPrompt = `Je bent een CV specialist die bestaande CV documenten analyseert en bepaalt welke tekst moet worden vervangen met nieuwe profieldata.
+  const systemPrompt = `Je bent een CV specialist die bestaande CV documenten analyseert en de content vervangt met nieuwe profieldata.
 
 Je taak is om:
-1. Bestaande namen, functies, bedrijven, datums en beschrijvingen in het document te identificeren
-2. Te bepalen welke onderdelen vervangen moeten worden met de verstrekte profieldata
+1. Alle persoonlijke informatie, functies, bedrijven, datums en beschrijvingen in het document te identificeren
+2. Deze te vervangen met de juiste profieldata
 3. Nieuwe beschrijvingen te genereren die relevant zijn voor de doelvacature (indien opgegeven)
-4. De originele documentstructuur en opmaak zoveel mogelijk te behouden
+4. De originele documentstructuur te behouden maar content te verplaatsen als het op de verkeerde plek staat
+5. Zorgen dat alles logisch klopt: naam bij persoonsgegevens, werkervaring bij werkervaring, etc.
 
 BELANGRIJK:
 - Zoek naar exacte tekst in het document om te vervangen
 - Genereer professionele, relevante beschrijvingen
 - Behoud de toon en stijl van het originele document
-- Vervang alleen content die duidelijk persoonlijke of professionele informatie is
-- Markeer met lage confidence als je niet zeker bent`;
+- Als content op de verkeerde plek staat, pas het direct aan (niet alleen waarschuwen)
+- Zorg dat de juiste data op de juiste plek komt
+- Wees proactief: verbeter de structuur waar nodig`;
 
   const userPrompt = `DOCUMENT TEKST:
 """
