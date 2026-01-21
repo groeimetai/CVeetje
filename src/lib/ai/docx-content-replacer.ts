@@ -6,9 +6,15 @@ import type { ParsedLinkedIn, JobVacancy } from '@/types';
 /**
  * Schema for indexed content filling
  * AI receives numbered text segments and returns filled values for each
+ * Using array instead of record because Anthropic doesn't support propertyNames in JSON schema
  */
 const indexedFillSchema = z.object({
-  filledSegments: z.record(z.string(), z.string()).describe('Map of segment index to filled value. Key is the segment number, value is the filled text.'),
+  filledSegments: z.array(
+    z.object({
+      index: z.string().describe('The segment number as a string (e.g., "0", "1", "5")'),
+      value: z.string().describe('The filled text value for this segment'),
+    })
+  ).describe('Array of segments to fill. Only include segments that need to be changed.'),
   warnings: z.array(z.string()).optional().describe('Any warnings about the fill process'),
 });
 
@@ -49,8 +55,8 @@ export async function fillDocumentWithAI(
 INSTRUCTIES:
 1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
 2. Vul elk segment in met de juiste profieldata
-3. Retourneer een object met het nummer als key en de ingevulde waarde als value
-4. Als een segment niet ingevuld hoeft te worden (bijv. een label), geef dan de originele tekst terug
+3. Retourneer een ARRAY van objecten met index en value
+4. Alleen segmenten die GEWIJZIGD moeten worden hoeven in de output
 
 VOORBEELD:
 Input:
@@ -62,10 +68,15 @@ Input:
 [5] Bedrijf
 
 Als de persoon "Jan Jansen" heet en "Developer" is bij "Google" sinds 2020:
-Output: { "1": "Jan Jansen", "3": "Developer", "4": "2020-Heden :", "5": "Google" }
+Output: [
+  { "index": "1", "value": "Jan Jansen" },
+  { "index": "3", "value": "Developer" },
+  { "index": "4", "value": "2020-Heden :" },
+  { "index": "5", "value": "Google" }
+]
 
 Let op: Lege segmenten [1], [3] zijn waar de waarden moeten komen!
-Segmenten met labels zoals "Naam :" of "Functie :" blijven meestal ongewijzigd.`;
+Segmenten met labels zoals "Naam :" of "Functie :" hoeven NIET in de output.`;
 
   const userPrompt = `GENUMMERD TEMPLATE:
 ${numberedDoc}
@@ -74,7 +85,7 @@ PROFIELDATA:
 ${profileSummary}
 ${jobSummary ? `\nDOELVACATURE (pas content hierop aan):\n${jobSummary}` : ''}
 
-Vul alle segmenten in met de juiste profieldata. Retourneer een object met segment nummers als keys.
+Vul alle segmenten in met de juiste profieldata. Retourneer een array van { index, value } objecten.
 
 WERKERVARING VOLGORDE:
 De eerste "Functie :" en "Werkzaamheden :" na een periode horen bij werkervaring 1.
@@ -83,7 +94,8 @@ De tweede set hoort bij werkervaring 2, etc.
 BELANGRIJK:
 - Vul ALLE lege segmenten in waar data hoort
 - Periodes aanpassen naar echte datums
-- Beschikbaarheid, vervoer etc. ook invullen indien bekend`;
+- Beschikbaarheid, vervoer etc. ook invullen indien bekend
+- Retourneer ALLEEN segmenten die gewijzigd moeten worden`;
 
   try {
     const result = await generateObject({
@@ -93,8 +105,14 @@ BELANGRIJK:
       prompt: userPrompt,
     });
 
+    // Convert array format to Record format for compatibility
+    const filledSegmentsRecord: Record<string, string> = {};
+    for (const segment of result.object.filledSegments) {
+      filledSegmentsRecord[segment.index] = segment.value;
+    }
+
     return {
-      filledSegments: result.object.filledSegments,
+      filledSegments: filledSegmentsRecord,
       warnings: result.object.warnings || [],
     };
   } catch (error) {
