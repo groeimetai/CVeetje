@@ -162,8 +162,10 @@ function generatePDFStyles(): string {
  * @returns HTML string
  */
 export async function convertDocxToHtml(docxBytes: ArrayBuffer): Promise<string> {
+  // mammoth expects a Buffer, not an ArrayBuffer
+  const buffer = Buffer.from(docxBytes);
   const result = await mammoth.convertToHtml(
-    { arrayBuffer: docxBytes },
+    { buffer },
     {
       styleMap: STYLE_MAP,
       ignoreEmptyParagraphs: false,
