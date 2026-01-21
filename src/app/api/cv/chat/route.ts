@@ -1,12 +1,13 @@
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { streamText, tool } from 'ai';
+import { streamText, tool, convertToModelMessages } from 'ai';
 import { z } from 'zod';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { decrypt } from '@/lib/encryption';
 import { createAIProvider, getModelId } from '@/lib/ai/providers';
 import type { CVChatContext } from '@/types/chat';
 import type { LLMProvider } from '@/types';
+import type { UIMessage } from 'ai';
 
 // Build the system prompt with full context
 function buildSystemPrompt(context: CVChatContext): string {
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
     // Get request body
     const body = await request.json();
     const { messages, context } = body as {
-      messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+      messages: UIMessage[];
       context: CVChatContext;
     };
 
@@ -122,6 +123,9 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    // Convert UIMessage[] to ModelMessage[] for streamText
+    const modelMessages = await convertToModelMessages(messages);
 
     // Get user data with API key
     const db = getAdminDb();
@@ -247,10 +251,7 @@ export async function POST(request: NextRequest) {
     const result = streamText({
       model: aiProvider(modelId),
       system: systemPrompt,
-      messages: messages.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
+      messages: modelMessages,
       tools,
     });
 
