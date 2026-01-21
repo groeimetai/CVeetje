@@ -24,6 +24,7 @@ import {
 import { useProfiles } from '@/hooks/use-profiles';
 import { ProfileCard } from '@/components/profiles/profile-card';
 import { LinkedInExportDialog } from '@/components/profiles/linkedin-export-dialog';
+import { ProfileDetailDialog } from '@/components/profiles/profile-detail-dialog';
 
 export default function ProfilesPage() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function ProfilesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [linkedInExportProfile, setLinkedInExportProfile] = useState<{id: string; name: string} | null>(null);
+  const [viewProfileId, setViewProfileId] = useState<string | null>(null);
 
   const handleDelete = async (profileId: string) => {
     setIsDeleting(true);
@@ -55,6 +57,10 @@ export default function ProfilesPage() {
     if (profile) {
       setLinkedInExportProfile({ id: profileId, name: profile.name });
     }
+  };
+
+  const handleView = (profileId: string) => {
+    setViewProfileId(profileId);
   };
 
   if (isLoading) {
@@ -113,6 +119,7 @@ export default function ProfilesPage() {
               onCreateCV={handleCreateCV}
               onEnrich={handleEnrich}
               onLinkedInExport={handleLinkedInExport}
+              onView={handleView}
             />
           ))}
         </div>
@@ -161,6 +168,15 @@ export default function ProfilesPage() {
           onOpenChange={(open) => !open && setLinkedInExportProfile(null)}
         />
       )}
+
+      {/* Profile detail dialog */}
+      <ProfileDetailDialog
+        profileId={viewProfileId}
+        open={!!viewProfileId}
+        onOpenChange={(open) => !open && setViewProfileId(null)}
+        onCreateCV={handleCreateCV}
+        onEnrich={handleEnrich}
+      />
     </div>
   );
 }

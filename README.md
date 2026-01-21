@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CVeetje
+
+An AI-powered CV generator that creates tailored, professional CVs based on your profile data and target job requirements.
+
+## Why Open Source?
+
+This project is intentionally open source. We believe in transparency and want to show exactly how your data is handled. Your profile information stays on your device and in your own Firebase project - we don't store or process your data on our servers. By making the code public, you can verify this yourself.
+
+## Features
+
+- **AI-Powered CV Generation** - Uses your preferred AI provider (OpenAI, Anthropic, Google, etc.) to generate tailored CV content
+- **Bring Your Own API Key** - Your AI API key is stored encrypted; we never see your raw key
+- **Dynamic Styling** - AI generates unique visual designs based on your profile and target role
+- **Template System** - Use pre-designed templates or let AI create a custom design
+- **Fit Analysis** - Get insights on how well your profile matches a job vacancy
+- **Multi-language Support** - Generate CVs in Dutch or English
+- **Profile Management** - Save and manage multiple profiles for different roles
+- **PDF Export** - Download your CV as a professionally formatted PDF
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Database**: Firebase Firestore
+- **Auth**: Firebase Authentication
+- **AI**: Vercel AI SDK with multiple provider support
+- **PDF**: Puppeteer with @sparticuz/chromium
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+
+- A Firebase project
+- An AI provider API key (OpenAI, Anthropic, etc.)
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/yourusername/cveetje.git
+cd cveetje
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Copy the environment example and configure:
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Fill in your environment variables (see `.env.example` for required values)
 
-## Learn More
+5. Run the development server:
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See `.env.example` for the complete list. Key variables include:
 
-## Deploy on Vercel
+- `NEXT_PUBLIC_FIREBASE_*` - Firebase client configuration
+- `FIREBASE_ADMIN_*` - Firebase Admin SDK credentials
+- `ENCRYPTION_KEY` - For encrypting user API keys
+- `NEXT_PUBLIC_APP_URL` - Your application URL
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/                    # Next.js App Router pages and API routes
+│   ├── [locale]/          # Internationalized routes
+│   └── api/               # API endpoints
+├── components/            # React components
+│   ├── cv/               # CV-related components
+│   ├── ui/               # shadcn/ui components
+│   └── auth/             # Authentication components
+├── lib/                  # Core business logic
+│   ├── ai/              # AI provider integration
+│   ├── cv/              # HTML/PDF generation
+│   └── firebase/        # Firebase configuration
+└── types/               # TypeScript type definitions
+```
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+## License
+
+This project is open source. See the license file for details.

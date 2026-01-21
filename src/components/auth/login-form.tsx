@@ -50,7 +50,10 @@ export function LoginForm() {
       // Get reCAPTCHA token
       const captchaToken = await executeRecaptcha('login');
 
-      await signInWithEmail(data.email, data.password, captchaToken);
+      const user = await signInWithEmail(data.email, data.password, captchaToken);
+      // Set the token cookie before redirect to avoid middleware race condition
+      const token = await user.getIdToken();
+      document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
       router.push('/dashboard');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : tErrors('loginFailed');
@@ -65,7 +68,10 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await signInWithGoogle();
+      const user = await signInWithGoogle();
+      // Set the token cookie before redirect to avoid middleware race condition
+      const token = await user.getIdToken();
+      document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
       router.push('/dashboard');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : tErrors('googleSignInFailed');
@@ -80,7 +86,10 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await signInWithApple();
+      const user = await signInWithApple();
+      // Set the token cookie before redirect to avoid middleware race condition
+      const token = await user.getIdToken();
+      document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
       router.push('/dashboard');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : tErrors('appleSignInFailed');

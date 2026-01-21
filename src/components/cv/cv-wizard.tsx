@@ -14,6 +14,7 @@ import { FitAnalysisCard } from './fit-analysis-card';
 import { DynamicStylePicker } from './dynamic-style-picker';
 import { TemplateStylePicker } from './template-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
+import { TemplatePreview } from './template-preview';
 import { TokenUsageDisplay } from './token-usage-display';
 import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
 import { useAuth } from '@/components/auth/auth-context';
@@ -194,9 +195,19 @@ export function CVWizard() {
 
   // Track whether user chose template-style mode (upload own design)
   const [useTemplateStyleMode, setUseTemplateStyleMode] = useState(false);
+  // Track whether user chose template fill mode (use existing template)
+  const [useTemplateMode, setUseTemplateMode] = useState(false);
+
+  // Template preview state
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [templatePdfBlob, setTemplatePdfBlob] = useState<Blob | null>(null);
+  const [templateFileName, setTemplateFileName] = useState<string>('');
 
   // Determine which step to show in progress bar
   const getStyleStepConfig = (): { id: WizardStep; label: string } => {
+    if (useTemplateMode) {
+      return { id: 'template' as WizardStep, label: t('steps.template') };
+    }
     if (useTemplateStyleMode) {
       return { id: 'template-style' as WizardStep, label: t('steps.templateStyle') };
     }
@@ -239,39 +250,113 @@ export function CVWizard() {
     setCurrentStep('style-choice');
   };
 
-  // Handle choice between AI style or template-style (own design)
+  // Handle choice between AI style or template-style (own design) or template fill
   const handleChooseStyle = () => {
     setUseTemplateStyleMode(false);
+    setUseTemplateMode(false);
     setCurrentStep('style');
   };
 
   const handleChooseTemplateStyle = () => {
     setUseTemplateStyleMode(true);
+    setUseTemplateMode(false);
     setCurrentStep('template-style');
   };
 
   const handleChooseTemplate = () => {
+    setUseTemplateMode(true);
+    setUseTemplateStyleMode(false);
     setCurrentStep('template');
   };
 
-  // Handle template fill completion - download file (DOCX or PDF)
-  const handleTemplateFill = (fileBlob: Blob, templateName: string) => {
-    // Determine file extension based on blob type
-    const isDocx = fileBlob.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    const extension = isDocx ? 'docx' : 'pdf';
+  // Handle template fill - go to generating then preview
+  const handleTemplateFill = async (templateId: string, templateName: string) => {
+    setCurrentStep('generating');
+    setIsGenerating(true);
+    setError(null);
+    setSelectedTemplateId(templateId);
+    setTemplateFileName(templateName);
 
-    // Create download link
-    const url = window.URL.createObjectURL(fileBlob);
+    try {
+      // Fetch PDF for preview with watermark (credits are deducted here)
+      const response = await fetch(`/api/templates/${templateId}/fill?format=pdf&preview=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileData: linkedInData,
+          customValues: {},
+          useAI: true,
+          jobVacancy,
+          language: outputLanguage,
+          fitAnalysis,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to generate PDF');
+      }
+
+      const pdfBlob = await response.blob();
+      setTemplatePdfBlob(pdfBlob);
+      setCurrentStep('preview');
+      refreshCredits();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setCurrentStep('template');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Handle template download (from preview)
+  const handleTemplateDownload = async (format: 'pdf' | 'docx') => {
+    if (!selectedTemplateId) return;
+
+    setIsDownloading(true);
+    try {
+      // Both PDF and DOCX need to be fetched fresh (PDF preview has watermarks)
+      // skipCredit=true since we already paid during preview generation
+      const response = await fetch(
+        `/api/templates/${selectedTemplateId}/fill?format=${format}&skipCredit=true`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            profileData: linkedInData,
+            customValues: {},
+            useAI: true,
+            jobVacancy,
+            language: outputLanguage,
+            fitAnalysis,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || `Failed to download ${format.toUpperCase()}`);
+      }
+
+      const blob = await response.blob();
+      downloadTemplateBlob(blob, format);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Failed to download ${format.toUpperCase()}`);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Helper to download template blob
+  const downloadTemplateBlob = (blob: Blob, extension: string) => {
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'template'}-${templateName.toLowerCase().replace(/\s+/g, '-')}.${extension}`;
+    a.download = `cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'template'}-${templateFileName.toLowerCase().replace(/\s+/g, '-')}.${extension}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-
-    // Refresh credits after download
-    refreshCredits();
   };
 
   // Handle template fill completion
@@ -499,8 +584,13 @@ export function CVWizard() {
     setElementColors({});
     setCvId(null);
     setError(null);
-    // Reset mode flag
+    // Reset mode flags
     setUseTemplateStyleMode(false);
+    setUseTemplateMode(false);
+    // Reset template preview state
+    setSelectedTemplateId(null);
+    setTemplatePdfBlob(null);
+    setTemplateFileName('');
     // Reset token history for the new CV - each CV should track its own usage
     setTokenHistory([]);
 
@@ -786,14 +876,50 @@ export function CVWizard() {
       )}
 
       {currentStep === 'template' && linkedInData && (
-        <TemplateSelector
-          profileData={linkedInData}
-          jobVacancy={jobVacancy || undefined}
-          fitAnalysis={fitAnalysis || undefined}
-          language={outputLanguage}
-          onFill={handleTemplateFill}
-          onBack={() => setCurrentStep('style-choice')}
-        />
+        <div className="space-y-6">
+          {/* Language Selection */}
+          <div className="rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm">{t('languageSelection.title')}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('languageSelection.description')}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOutputLanguage('nl')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    outputLanguage === 'nl'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  🇳🇱 {t('languageSelection.dutch')}
+                </button>
+                <button
+                  onClick={() => setOutputLanguage('en')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    outputLanguage === 'en'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  }`}
+                >
+                  🇬🇧 {t('languageSelection.english')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <TemplateSelector
+            profileData={linkedInData}
+            jobVacancy={jobVacancy || undefined}
+            fitAnalysis={fitAnalysis || undefined}
+            language={outputLanguage}
+            onFill={handleTemplateFill}
+            onBack={() => setCurrentStep('style-choice')}
+          />
+        </div>
       )}
 
       {currentStep === 'generating' && (
@@ -808,7 +934,27 @@ export function CVWizard() {
         </div>
       )}
 
-      {currentStep === 'preview' && generatedContent && linkedInData && designTokens && (
+      {/* Template Preview - for filled templates */}
+      {currentStep === 'preview' && templatePdfBlob && linkedInData && (
+        <TemplatePreview
+          pdfBlob={templatePdfBlob}
+          fileName={templateFileName}
+          onDownload={handleTemplateDownload}
+          onBack={() => {
+            setTemplatePdfBlob(null);
+            setSelectedTemplateId(null);
+            setTemplateFileName('');
+            setCurrentStep('template');
+          }}
+          onNewVacancy={handleNewVacancy}
+          isDownloading={isDownloading}
+          credits={credits}
+          isDocxTemplate={true}
+        />
+      )}
+
+      {/* CV Preview - for AI-generated CVs */}
+      {currentStep === 'preview' && generatedContent && linkedInData && designTokens && !templatePdfBlob && (
         <CVPreview
           content={editedContent || generatedContent}
           tokens={designTokens}
@@ -824,6 +970,8 @@ export function CVWizard() {
             github: linkedInData.github,
           }}
           jobVacancy={jobVacancy}
+          linkedInData={linkedInData}
+          fitAnalysis={fitAnalysis}
           cvId={cvId}
           language={outputLanguage}
           onDownload={handleDownload}

@@ -22,6 +22,7 @@ import {
   User,
   FolderOpen,
   CheckCircle,
+  Eye,
 } from 'lucide-react';
 import type { SavedProfileSummary } from '@/types';
 
@@ -37,6 +38,7 @@ interface ProfileCardProps {
   onCreateCV?: (profileId: string) => void;
   onEnrich?: (profileId: string) => void;
   onLinkedInExport?: (profileId: string) => void;
+  onView?: (profileId: string) => void;
   showActions?: boolean;
 }
 
@@ -50,6 +52,7 @@ export function ProfileCard({
   onCreateCV,
   onEnrich,
   onLinkedInExport,
+  onView,
   showActions = true,
 }: ProfileCardProps) {
   // List variant - compact for sidebar/wizard
@@ -127,7 +130,10 @@ export function ProfileCard({
 
   // Card variant - full card for profiles page
   return (
-    <Card className={profile.isDefault ? 'border-primary' : ''}>
+    <Card
+      className={`${profile.isDefault ? 'border-primary' : ''} ${onView ? 'cursor-pointer hover:bg-accent/50 transition-colors' : ''}`}
+      onClick={() => onView?.(profile.id)}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -155,14 +161,20 @@ export function ProfileCard({
             </div>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {onView && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(profile.id); }}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Bekijken
+                </DropdownMenuItem>
+              )}
               {!profile.isDefault && onSetDefault && (
-                <DropdownMenuItem onClick={() => onSetDefault(profile.id)}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetDefault(profile.id); }}>
                   <Star className="h-4 w-4 mr-2" />
                   Als standaard instellen
                 </DropdownMenuItem>
@@ -172,7 +184,7 @@ export function ProfileCard({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive"
-                    onClick={() => onDelete(profile.id)}
+                    onClick={(e) => { e.stopPropagation(); onDelete(profile.id); }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Verwijderen
@@ -205,7 +217,7 @@ export function ProfileCard({
             {onCreateCV && (
               <Button
                 size="sm"
-                onClick={() => onCreateCV(profile.id)}
+                onClick={(e) => { e.stopPropagation(); onCreateCV(profile.id); }}
               >
                 <FileText className="h-4 w-4 mr-1" />
                 CV Maken
@@ -215,7 +227,7 @@ export function ProfileCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onEnrich(profile.id)}
+                onClick={(e) => { e.stopPropagation(); onEnrich(profile.id); }}
                 className="border-primary/50 text-primary"
               >
                 <Sparkles className="h-4 w-4 mr-1" />
@@ -226,7 +238,7 @@ export function ProfileCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onLinkedInExport(profile.id)}
+                onClick={(e) => { e.stopPropagation(); onLinkedInExport(profile.id); }}
                 className="border-blue-500/50 text-blue-600"
               >
                 <Linkedin className="h-4 w-4 mr-1" />
