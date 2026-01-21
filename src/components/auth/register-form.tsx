@@ -29,6 +29,7 @@ export function RegisterForm() {
   const tErrors = useTranslations('errors');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [honeypot, setHoneypot] = useState(''); // Bot prevention honeypot
   const { execute: executeRecaptcha } = useRecaptcha();
 
   const registerSchema = z.object({
@@ -50,6 +51,16 @@ export function RegisterForm() {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
+    // Bot prevention: if honeypot is filled, silently fail
+    if (honeypot) {
+      console.warn('[Auth] Honeypot triggered - bot detected');
+      // Pretend to succeed but do nothing
+      setLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setLoading(false);
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -174,6 +185,18 @@ export function RegisterForm() {
 
         {/* Email/Password Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Honeypot field - hidden from humans, bots will fill it */}
+          <input
+            type="text"
+            name="website"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            style={{ position: 'absolute', left: '-9999px', opacity: 0 }}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+          />
+
           <div className="space-y-2">
             <Label htmlFor="name">{t('name')}</Label>
             <Input

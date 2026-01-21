@@ -13,6 +13,7 @@ import {
   User,
   Users,
   Menu,
+  ShieldCheck,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -43,11 +44,15 @@ const navigationItems = [
   { key: 'settings', href: '/settings', icon: Settings },
 ];
 
+const adminNavigationItems = [
+  { key: 'admin', href: '/admin', icon: ShieldCheck },
+];
+
 // Sidebar content component (shared between desktop and mobile)
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { firebaseUser, userData, credits, freeCredits, purchasedCredits } = useAuth();
+  const { firebaseUser, userData, credits, freeCredits, purchasedCredits, isAdmin } = useAuth();
   const t = useTranslations('navigation');
   const tSidebar = useTranslations('sidebar');
 
@@ -119,6 +124,38 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
           );
         })}
+
+        {/* Admin Navigation - only visible to admins */}
+        {isAdmin && (
+          <>
+            <div className="mt-4 mb-2 px-3">
+              <div className="border-t pt-2">
+                <span className="text-xs font-semibold uppercase text-muted-foreground">
+                  {t('adminSection')}
+                </span>
+              </div>
+            </div>
+            {adminNavigationItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  onClick={handleNavClick}
+                  className={cn(
+                    'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <item.icon className="mr-3 h-4 w-4" />
+                  {t(item.key)}
+                </Link>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       {/* Credit Display */}

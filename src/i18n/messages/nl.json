@@ -47,7 +47,9 @@
     "settings": "Instellingen",
     "newCv": "Nieuwe CV",
     "accountSettings": "Account Instellingen",
-    "signOut": "Uitloggen"
+    "signOut": "Uitloggen",
+    "admin": "Admin",
+    "adminSection": "Beheer"
   },
   "auth": {
     "signIn": "Inloggen",
@@ -888,6 +890,72 @@
     "registrationFailed": "Registratie mislukt. Probeer opnieuw.",
     "googleSignInFailed": "Google inloggen mislukt.",
     "appleSignInFailed": "Apple inloggen mislukt."
+  },
+  "admin": {
+    "title": "Gebruikersbeheer",
+    "description": "Beheer gebruikers, rollen en accountinstellingen",
+    "accessDenied": "Toegang Geweigerd",
+    "adminRequired": "Je hebt beheerdersrechten nodig om deze pagina te bekijken.",
+    "stats": {
+      "totalUsers": "Totaal Gebruikers",
+      "verified": "Geverifieerd",
+      "disabled": "Uitgeschakeld",
+      "admins": "Admins"
+    },
+    "users": {
+      "title": "Gebruikers",
+      "description": "Bekijk en beheer alle geregistreerde gebruikers",
+      "search": "Zoek gebruikers...",
+      "retry": "Opnieuw",
+      "noUsers": "Geen gebruikers gevonden",
+      "table": {
+        "email": "Gebruiker",
+        "role": "Rol",
+        "status": "Status",
+        "credits": "Credits",
+        "created": "Aangemaakt",
+        "lastLogin": "Laatste Login",
+        "verified": "Geverifieerd",
+        "unverified": "Niet geverifieerd",
+        "disabled": "Uitgeschakeld"
+      }
+    },
+    "userDialog": {
+      "description": "Bekijk en beheer gebruikersgegevens",
+      "email": "E-mail",
+      "created": "Aangemaakt",
+      "lastLogin": "Laatste login",
+      "emailVerified": "E-mail geverifieerd",
+      "emailNotVerified": "E-mail niet geverifieerd",
+      "accountDisabled": "Account uitgeschakeld",
+      "disableReason": "Reden",
+      "credits": "Credits",
+      "totalCredits": "Totaal",
+      "freeCredits": "Gratis",
+      "purchasedCredits": "Gekocht",
+      "addCreditsPlaceholder": "Aantal",
+      "addCredits": "Toevoegen",
+      "actions": "Acties",
+      "makeAdmin": "Maak Admin",
+      "makeAdminDesc": "Geef deze gebruiker beheerdersrechten",
+      "removeAdmin": "Verwijder Admin",
+      "removeAdminDesc": "Verwijder beheerdersrechten van deze gebruiker",
+      "enableAccount": "Account Activeren",
+      "enableAccountDesc": "Sta deze gebruiker weer toe om in te loggen",
+      "disableAccount": "Account Deactiveren",
+      "disableAccountDesc": "Voorkom dat deze gebruiker kan inloggen",
+      "reasonPlaceholder": "Reden (optioneel)",
+      "disable": "Deactiveren",
+      "enable": "Activeren",
+      "dangerZone": "Gevarenzone",
+      "deleteUser": "Gebruiker Verwijderen",
+      "deleteUserDesc": "Verwijder deze gebruiker en al hun gegevens permanent",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Gebruiker Verwijderen?",
+      "deleteConfirmDesc": "Weet je zeker dat je {email} permanent wilt verwijderen? Dit verwijdert al hun CVs, profielen en gegevens. Deze actie kan niet ongedaan worden gemaakt.",
+      "cancel": "Annuleren",
+      "confirmDelete": "Ja, Verwijderen"
+    }
   },
   "metadata": {
     "home": {

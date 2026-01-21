@@ -20,6 +20,7 @@ interface AuthContextType {
   freeCredits: number;      // Monthly free credits
   purchasedCredits: number; // Purchased credits
   emailVerified: boolean;   // Whether email is verified
+  isAdmin: boolean;         // Whether user has admin role
   loading: boolean;
   refreshCredits: () => Promise<void>;
   refreshUserData: () => Promise<void>;
@@ -159,6 +160,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Email/password users need to verify their email
   const emailVerified = firebaseUser?.emailVerified ?? false;
 
+  // Compute isAdmin status from userData
+  // Defaults to false if role is not set
+  const isAdmin = userData?.role === 'admin';
+
   return (
     <AuthContext.Provider
       value={{
@@ -168,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         freeCredits,
         purchasedCredits,
         emailVerified,
+        isAdmin,
         loading,
         refreshCredits,
         refreshUserData,

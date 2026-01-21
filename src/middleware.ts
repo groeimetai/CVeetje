@@ -11,6 +11,7 @@ const PROTECTED_ROUTES = [
   '/profiles',
   '/settings',
   '/cv',
+  '/admin',  // Admin routes (role check done in layout)
 ];
 
 // Routes that should redirect authenticated users away (after locale prefix)

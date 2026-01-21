@@ -37,6 +37,7 @@ async function createUserDocument(firebaseUser: FirebaseUser): Promise<void> {
         purchased: 0,   // No purchased credits yet
         lastFreeReset: Timestamp.now(),
       },
+      role: 'user',     // Default role for new users
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };

@@ -47,7 +47,9 @@
     "settings": "Settings",
     "newCv": "New CV",
     "accountSettings": "Account Settings",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "admin": "Admin",
+    "adminSection": "Admin"
   },
   "auth": {
     "signIn": "Sign In",
@@ -888,6 +890,72 @@
     "registrationFailed": "Registration failed. Please try again.",
     "googleSignInFailed": "Google sign-in failed.",
     "appleSignInFailed": "Apple sign-in failed."
+  },
+  "admin": {
+    "title": "User Management",
+    "description": "Manage users, roles, and account settings",
+    "accessDenied": "Access Denied",
+    "adminRequired": "You need administrator privileges to access this page.",
+    "stats": {
+      "totalUsers": "Total Users",
+      "verified": "Verified",
+      "disabled": "Disabled",
+      "admins": "Admins"
+    },
+    "users": {
+      "title": "Users",
+      "description": "View and manage all registered users",
+      "search": "Search users...",
+      "retry": "Retry",
+      "noUsers": "No users found",
+      "table": {
+        "email": "User",
+        "role": "Role",
+        "status": "Status",
+        "credits": "Credits",
+        "created": "Created",
+        "lastLogin": "Last Login",
+        "verified": "Verified",
+        "unverified": "Unverified",
+        "disabled": "Disabled"
+      }
+    },
+    "userDialog": {
+      "description": "View and manage user details",
+      "email": "Email",
+      "created": "Created",
+      "lastLogin": "Last login",
+      "emailVerified": "Email verified",
+      "emailNotVerified": "Email not verified",
+      "accountDisabled": "Account disabled",
+      "disableReason": "Reason",
+      "credits": "Credits",
+      "totalCredits": "Total",
+      "freeCredits": "Free",
+      "purchasedCredits": "Purchased",
+      "addCreditsPlaceholder": "Amount",
+      "addCredits": "Add",
+      "actions": "Actions",
+      "makeAdmin": "Make Admin",
+      "makeAdminDesc": "Grant administrator privileges to this user",
+      "removeAdmin": "Remove Admin",
+      "removeAdminDesc": "Revoke administrator privileges from this user",
+      "enableAccount": "Enable Account",
+      "enableAccountDesc": "Allow this user to log in again",
+      "disableAccount": "Disable Account",
+      "disableAccountDesc": "Prevent this user from logging in",
+      "reasonPlaceholder": "Reason (optional)",
+      "disable": "Disable",
+      "enable": "Enable",
+      "dangerZone": "Danger Zone",
+      "deleteUser": "Delete User",
+      "deleteUserDesc": "Permanently delete this user and all their data",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete User?",
+      "deleteConfirmDesc": "Are you sure you want to permanently delete {email}? This will remove all their CVs, profiles, and data. This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirmDelete": "Yes, Delete"
+    }
   },
   "metadata": {
     "home": {
