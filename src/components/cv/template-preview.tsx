@@ -4,8 +4,28 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { FileText, FileType, Loader2, RefreshCw, ArrowLeft, CheckCircle } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  FileText,
+  FileType,
+  Loader2,
+  RefreshCw,
+  ArrowLeft,
+  CheckCircle,
+  Download,
+  ChevronDown,
+  Coins,
+  Briefcase
+} from 'lucide-react';
+import { TemplateMotivationLetterSection } from './template-motivation-letter-section';
+import type { ParsedLinkedIn, JobVacancy, FitAnalysis, OutputLanguage, TokenUsage } from '@/types';
 
 interface TemplatePreviewProps {
   docxBlob: Blob;
@@ -15,6 +35,13 @@ interface TemplatePreviewProps {
   onNewVacancy?: () => void;
   isDownloading: boolean;
   credits: number;
+  // Data for motivation letter
+  linkedInData?: ParsedLinkedIn | null;
+  jobVacancy?: JobVacancy | null;
+  fitAnalysis?: FitAnalysis | null;
+  language?: OutputLanguage;
+  onCreditsRefresh?: () => void;
+  onTokenUsage?: (usage: TokenUsage) => void;
 }
 
 export function TemplatePreview({
@@ -24,6 +51,13 @@ export function TemplatePreview({
   onBack,
   onNewVacancy,
   isDownloading,
+  credits,
+  linkedInData,
+  jobVacancy,
+  fitAnalysis,
+  language = 'nl',
+  onCreditsRefresh,
+  onTokenUsage,
 }: TemplatePreviewProps) {
   const t = useTranslations('templatePreview');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -141,60 +175,100 @@ export function TemplatePreview({
             />
           </div>
 
-          {/* Download buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button
-              onClick={() => onDownload('docx')}
-              disabled={isDownloading}
-              className="flex-1"
-            >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('downloading')}
-                </>
-              ) : (
-                <>
-                  <FileType className="mr-2 h-4 w-4" />
-                  {t('downloadDocx')}
-                </>
-              )}
-            </Button>
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-4 border-t">
+            {isDownloading ? (
+              <Button
+                disabled
+                className="flex-1"
+                size="lg"
+              >
+                <Download className="mr-2 h-4 w-4 animate-bounce" />
+                {t('downloading')}
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    disabled={credits < 1}
+                    className="flex-1"
+                    size="lg"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('download')}
+                    <Badge variant="secondary" className="ml-2">
+                      <Coins className="h-3 w-3 mr-1" />1 credit
+                    </Badge>
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuItem onClick={() => onDownload('docx')}>
+                    <FileType className="mr-2 h-4 w-4 text-blue-500" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Word (.docx)</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t('downloadDocxDesc')}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDownload('pdf')}>
+                    <FileText className="mr-2 h-4 w-4 text-red-500" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">PDF</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t('downloadPdfDesc')}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <Button
               variant="outline"
-              onClick={() => onDownload('pdf')}
-              disabled={isDownloading}
-              className="flex-1"
+              onClick={onBack}
+              size="lg"
             >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('downloading')}
-                </>
-              ) : (
-                <>
-                  <FileText className="mr-2 h-4 w-4" />
-                  {t('downloadPdf')}
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-            <Button variant="ghost" onClick={onBack} className="flex-1">
               <ArrowLeft className="mr-2 h-4 w-4" />
               {t('changeTemplate')}
             </Button>
 
             {onNewVacancy && (
-              <Button variant="outline" onClick={onNewVacancy} className="flex-1">
-                <RefreshCw className="mr-2 h-4 w-4" />
+              <Button
+                variant="outline"
+                onClick={onNewVacancy}
+                disabled={isDownloading}
+                size="lg"
+              >
+                <Briefcase className="mr-2 h-4 w-4" />
                 {t('newVacancy')}
               </Button>
             )}
           </div>
+
+          {/* Credits warning */}
+          {credits < 1 && (
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800 flex items-center gap-2">
+                <Coins className="h-4 w-4" />
+                {t('insufficientCredits')}
+              </p>
+            </div>
+          )}
+
+          {/* Motivation Letter Section */}
+          {linkedInData && jobVacancy && (
+            <TemplateMotivationLetterSection
+              linkedInData={linkedInData}
+              jobVacancy={jobVacancy}
+              fitAnalysis={fitAnalysis || undefined}
+              credits={credits}
+              language={language}
+              onCreditsUsed={onCreditsRefresh}
+              onTokenUsage={onTokenUsage}
+            />
+          )}
         </CardContent>
       </Card>
 

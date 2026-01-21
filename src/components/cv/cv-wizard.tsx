@@ -955,6 +955,12 @@ export function CVWizard() {
           onNewVacancy={handleNewVacancy}
           isDownloading={isDownloading}
           credits={credits}
+          linkedInData={linkedInData}
+          jobVacancy={jobVacancy}
+          fitAnalysis={fitAnalysis}
+          language={outputLanguage}
+          onCreditsRefresh={refreshCredits}
+          onTokenUsage={(usage) => addTokenUsage('motivation', usage)}
         />
       )}
 

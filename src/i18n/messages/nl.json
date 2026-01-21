@@ -720,11 +720,15 @@
     "fillSuccess": "Template Succesvol Ingevuld!",
     "fillSuccessDesc": "Je CV is gegenereerd op basis van je profiel en de vacature. Bekijk de preview hieronder of download het bestand.",
     "rendering": "Document laden...",
+    "download": "Download",
     "downloadPdf": "Download PDF",
     "downloadDocx": "Download DOCX",
+    "downloadPdfDesc": "Vast document met exacte opmaak",
+    "downloadDocxDesc": "Bewerkbaar Word document",
     "downloading": "Downloaden...",
     "changeTemplate": "Andere Template",
-    "newVacancy": "Nieuwe Vacature"
+    "newVacancy": "Nieuwe Vacature",
+    "insufficientCredits": "Je hebt niet genoeg credits om te downloaden."
   },
   "cvList": {
     "title": "Mijn CVs",

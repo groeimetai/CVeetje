@@ -720,11 +720,15 @@
     "fillSuccess": "Template Successfully Filled!",
     "fillSuccessDesc": "Your CV has been generated based on your profile and the job vacancy. View the preview below or download the file.",
     "rendering": "Loading document...",
+    "download": "Download",
     "downloadPdf": "Download PDF",
     "downloadDocx": "Download DOCX",
+    "downloadPdfDesc": "Fixed document with exact formatting",
+    "downloadDocxDesc": "Editable Word document",
     "downloading": "Downloading...",
     "changeTemplate": "Change Template",
-    "newVacancy": "New Vacancy"
+    "newVacancy": "New Vacancy",
+    "insufficientCredits": "You don't have enough credits to download."
   },
   "cvList": {
     "title": "My CVs",
