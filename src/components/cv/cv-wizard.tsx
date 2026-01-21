@@ -250,13 +250,17 @@ export function CVWizard() {
     setCurrentStep('template');
   };
 
-  // Handle template fill completion - download PDF directly
-  const handleTemplateFill = (pdfBlob: Blob, templateName: string) => {
+  // Handle template fill completion - download file (DOCX or PDF)
+  const handleTemplateFill = (fileBlob: Blob, templateName: string) => {
+    // Determine file extension based on blob type
+    const isDocx = fileBlob.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const extension = isDocx ? 'docx' : 'pdf';
+
     // Create download link
-    const url = window.URL.createObjectURL(pdfBlob);
+    const url = window.URL.createObjectURL(fileBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'template'}-${templateName.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+    a.download = `cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'template'}-${templateName.toLowerCase().replace(/\s+/g, '-')}.${extension}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
