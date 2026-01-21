@@ -125,7 +125,9 @@ const PERSONAL_FIELD_MAPPINGS: Record<string, FieldMapper> = {
  * Analyze a DOCX template to understand its structure
  */
 export async function analyzeTemplate(docxBuffer: ArrayBuffer): Promise<TemplateAnalysis> {
-  const result = await mammoth.extractRawText({ arrayBuffer: docxBuffer });
+  // mammoth expects a Buffer, not an ArrayBuffer
+  const buffer = Buffer.from(docxBuffer);
+  const result = await mammoth.extractRawText({ buffer });
   const text = result.value;
   const textLower = text.toLowerCase();
 
@@ -459,6 +461,8 @@ function escapeRegexPattern(str: string): string {
  * Extract raw text from a DOCX for preview/analysis
  */
 export async function extractDocxText(docxBuffer: ArrayBuffer): Promise<string> {
-  const result = await mammoth.extractRawText({ arrayBuffer: docxBuffer });
+  // mammoth expects a Buffer, not an ArrayBuffer
+  const buffer = Buffer.from(docxBuffer);
+  const result = await mammoth.extractRawText({ buffer });
   return result.value;
 }
