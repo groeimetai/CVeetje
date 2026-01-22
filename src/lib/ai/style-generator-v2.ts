@@ -74,6 +74,9 @@ const designTokensSchema = z.object({
   skillsDisplay: z.enum(['tags', 'list', 'compact'])
     .describe('How skills are displayed: tags (pills), list (bulleted columns), compact (inline with separators)'),
 
+  experienceDescriptionFormat: z.enum(['bullets', 'paragraph'])
+    .describe('Experience format: bullets (opsommingstekens) or paragraph (doorlopende tekst)'),
+
   contactLayout: z.enum(['single-row', 'double-row', 'single-column', 'double-column'])
     .describe('Contact info layout: single-row (all inline with separators), double-row (split across 2 lines), single-column (vertical stack), double-column (2-column grid)'),
 
@@ -469,6 +472,12 @@ function validateAndFixTokens(
     tokens.contactLayout = 'single-row';
   }
 
+  // Validate experienceDescriptionFormat - default to bullets if not set or invalid
+  const validDescriptionFormats = ['bullets', 'paragraph'];
+  if (!tokens.experienceDescriptionFormat || !validDescriptionFormats.includes(tokens.experienceDescriptionFormat)) {
+    tokens.experienceDescriptionFormat = 'bullets';
+  }
+
   // Validate headerGradient - default to none if not set or invalid
   const validGradients = ['none', 'subtle', 'radial'];
   if (!tokens.headerGradient || !validGradients.includes(tokens.headerGradient)) {
@@ -575,6 +584,7 @@ function getFallbackTokens(
       headerVariant: 'banner',
       sectionStyle: 'timeline',
       skillsDisplay: 'tags',
+      experienceDescriptionFormat: 'bullets',
       contactLayout: 'double-column',
       headerGradient: 'radial',
       showPhoto: true,
@@ -612,6 +622,7 @@ function getFallbackTokens(
       headerVariant: 'banner',
       sectionStyle: 'boxed',
       skillsDisplay: 'tags',
+      experienceDescriptionFormat: 'bullets',
       contactLayout: 'double-row',
       headerGradient: 'subtle',
       showPhoto: true,
@@ -639,6 +650,7 @@ function getFallbackTokens(
       headerVariant: defaults.headerVariant,
       sectionStyle: defaults.sectionStyle,
       skillsDisplay: defaults.skillsDisplay,
+      experienceDescriptionFormat: 'bullets',
       contactLayout: 'single-row',
       headerGradient: 'none',
       showPhoto: false,
@@ -664,6 +676,7 @@ function getFallbackTokens(
     headerVariant: defaults.headerVariant,
     sectionStyle: defaults.sectionStyle,
     skillsDisplay: defaults.skillsDisplay,
+    experienceDescriptionFormat: 'bullets',
     contactLayout: 'single-row',
     headerGradient: 'none',
     showPhoto: false,

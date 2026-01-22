@@ -824,6 +824,7 @@ export interface GeneratedCVExperience {
   location: string | null;
   period: string;
   highlights: string[];
+  description?: string;  // Optional paragraph format description (alternative to highlights)
   relevanceScore?: number; // 1-5, how relevant to target job (used for ordering, not displayed)
 }
 
@@ -968,6 +969,7 @@ export type {
   HeaderVariant,
   SectionStyle,
   SkillsDisplay,
+  ExperienceDescriptionFormat,
   DesignTokenColors,
   GenerateDesignTokensRequest,
   GenerateDesignTokensResponse,

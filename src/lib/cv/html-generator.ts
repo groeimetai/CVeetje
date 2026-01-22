@@ -513,7 +513,7 @@ function generateSections(
 ): string {
   const sectionGenerators: Record<string, () => string> = {
     summary: () => generateSummary(content.summary, overrides),
-    experience: () => generateExperience(content.experience, overrides),
+    experience: () => generateExperience(content.experience, tokens, overrides),
     education: () => generateEducation(content.education, overrides),
     skills: () => generateSkills(content.skills, tokens, overrides),
     languages: () => generateLanguages(content.languages, overrides),
@@ -560,6 +560,7 @@ function generateSummary(
 
 function generateExperience(
   experience: GeneratedCVContent['experience'],
+  tokens: CVDesignTokens,
   overrides?: CVElementOverrides | null
 ): string {
   if (!experience || experience.length === 0) return '';
@@ -576,15 +577,23 @@ function generateExperience(
     const companyStyle = getOverrideStyle(getOverride(overrides, `exp-${index}-company`));
     const periodStyle = getOverrideStyle(getOverride(overrides, `exp-${index}-period`));
 
-    // Generate highlights with individual color overrides
-    const highlightsHtml = exp.highlights && exp.highlights.length > 0
-      ? `<ul class="item-highlights">
+    // Generate content based on format (paragraph vs bullets)
+    let contentHtml = '';
+
+    // Check if we should use paragraph format
+    if (tokens.experienceDescriptionFormat === 'paragraph' && exp.description) {
+      // Paragraph format
+      const descStyle = getOverrideStyle(getOverride(overrides, `exp-${index}-description`));
+      contentHtml = `<p class="item-description" style="${descStyle}">${escapeHtml(exp.description)}</p>`;
+    } else if (exp.highlights && exp.highlights.length > 0) {
+      // Bullet format (default)
+      contentHtml = `<ul class="item-highlights">
           ${exp.highlights.map((h, hIndex) => {
             const highlightStyle = getOverrideStyle(getOverride(overrides, `exp-${index}-highlight-${hIndex}`));
             return `<li style="${highlightStyle}">${escapeHtml(h)}</li>`;
           }).join('')}
-        </ul>`
-      : '';
+        </ul>`;
+    }
 
     return `
       <div class="item" data-id="experience-${index}" style="${getOverrideStyle(itemOverride)}">
@@ -598,7 +607,7 @@ function generateExperience(
             ${exp.location ? `<br><span class="location">${escapeHtml(exp.location)}</span>` : ''}
           </div>
         </div>
-        ${highlightsHtml}
+        ${contentHtml}
       </div>`;
   }).filter(Boolean).join('');
 
@@ -897,6 +906,7 @@ export function getDefaultTokens(): CVDesignTokens {
     headerVariant: 'simple',
     sectionStyle: 'underlined',
     skillsDisplay: 'tags',
+    experienceDescriptionFormat: 'bullets',
     contactLayout: 'single-row',
     headerGradient: 'none',
     showPhoto: false,

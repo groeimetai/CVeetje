@@ -600,6 +600,7 @@ export const itemStyles = `
     font-size: var(--size-body);
     color: var(--color-text);
     margin-top: var(--space-element);
+    line-height: 1.5;
   }
 
   .item-highlights {

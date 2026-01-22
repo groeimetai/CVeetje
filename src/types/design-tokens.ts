@@ -51,6 +51,10 @@ export type HeaderGradient = 'none' | 'subtle' | 'radial';
 
 export type DecorationIntensity = 'none' | 'minimal' | 'moderate' | 'abundant';
 
+// ============ Experience Description Format ============
+
+export type ExperienceDescriptionFormat = 'bullets' | 'paragraph';
+
 // Industry-based decoration themes (for creative mode)
 export type DecorationTheme =
   | 'geometric'   // IT/Tech - circuits, nodes, hexagons
@@ -110,6 +114,7 @@ export interface CVDesignTokens {
   headerVariant: HeaderVariant;
   sectionStyle: SectionStyle;
   skillsDisplay: SkillsDisplay;
+  experienceDescriptionFormat: ExperienceDescriptionFormat;  // Bullet points vs paragraph text for experience descriptions
   contactLayout: ContactLayout;  // How contact info is laid out in the header
   headerGradient: HeaderGradient;  // Subtle gradient effect on header background
 

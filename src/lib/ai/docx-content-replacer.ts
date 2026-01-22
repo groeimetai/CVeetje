@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, type LLMProvider } from './providers';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
+import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
 /**
  * Schema for indexed content filling
@@ -219,6 +220,7 @@ export async function fillDocumentWithAI(
   language: OutputLanguage = 'nl',
   fitAnalysis?: FitAnalysis,
   customInstructions?: string,
+  descriptionFormat: ExperienceDescriptionFormat = 'bullets',
 ): Promise<IndexedFillResult> {
   const aiProvider = createAIProvider(provider, apiKey);
 
@@ -237,6 +239,15 @@ export async function fillDocumentWithAI(
 
   const systemPrompt = prompts.system;
 
+  // Build format instruction section
+  const formatInstruction = descriptionFormat === 'paragraph'
+    ? (language === 'en'
+        ? '\n--- EXPERIENCE FORMAT: PARAGRAPH ---\nWrite work experience as flowing paragraphs (2-3 sentences). Do not use bullet points.'
+        : '\n--- WERKERVARING FORMAAT: PARAGRAAF ---\nSchrijf werkervaring als doorlopende paragrafen (2-3 zinnen). Gebruik geen opsommingstekens.')
+    : (language === 'en'
+        ? '\n--- EXPERIENCE FORMAT: BULLETS ---\nUse bullet points for work experience descriptions.'
+        : '\n--- WERKERVARING FORMAAT: BULLETS ---\nGebruik opsommingstekens voor werkervaring beschrijvingen.');
+
   // Build custom instructions section if provided
   const customInstructionsSection = customInstructions
     ? `\n--- ${language === 'en' ? 'USER INSTRUCTIONS (IMPORTANT - follow these adjustments)' : 'GEBRUIKER INSTRUCTIES (BELANGRIJK - volg deze aanpassingen)'} ---\n${customInstructions}\n`
@@ -247,7 +258,7 @@ ${numberedDoc}
 
 ${prompts.profileHeader}:
 ${profileSummary}
-${jobSummary ? `\n${prompts.jobHeader}:\n${jobSummary}` : ''}${fitSummary}${customInstructionsSection}
+${jobSummary ? `\n${prompts.jobHeader}:\n${jobSummary}` : ''}${fitSummary}${formatInstruction}${customInstructionsSection}
 
 ${prompts.instructions}`;
 

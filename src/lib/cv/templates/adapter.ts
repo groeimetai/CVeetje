@@ -168,6 +168,7 @@ export function styleConfigToTokens(config: CVStyleConfig): CVDesignTokens {
     skillsDisplay: config.layout.skillDisplay === 'tags' ? 'tags'
       : config.layout.skillDisplay === 'list' ? 'list'
       : 'compact',
+    experienceDescriptionFormat: 'bullets',
     contactLayout: determineContactLayout(config),
     headerGradient: determineHeaderGradient(themeBase, headerVariant),
     showPhoto: config.layout.showPhoto,

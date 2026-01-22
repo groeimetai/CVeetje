@@ -10,6 +10,7 @@ import type {
   TokenUsage,
   OutputLanguage,
 } from '@/types';
+import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
 // Schema for structured CV output
 // Helper function to get industry-specific content guidance
@@ -88,7 +89,8 @@ const cvContentSchema = z.object({
       company: z.string(),
       location: z.string().nullable(),
       period: z.string().describe('Format: "Month Year - Month Year" or "Month Year - Present"'),
-      highlights: z.array(z.string()).describe('2-5 bullet points. More bullets (4-5) for highly relevant roles, fewer (2-3) for less relevant ones'),
+      highlights: z.array(z.string()).describe('2-5 bullet points. More bullets (4-5) for highly relevant roles, fewer (2-3) for less relevant ones. Used when format is bullets.'),
+      description: z.string().optional().describe('2-3 sentences of flowing prose describing the role. Used when format is paragraph instead of bullets.'),
       relevanceScore: z.number().describe('How relevant is this role to the target job? Use scale 1-5 where 5=highly relevant, 1=minimally relevant'),
     })
   ).describe('Experiences ORDERED BY RELEVANCE to target job (most relevant first), not just chronologically'),
@@ -175,11 +177,32 @@ Examples of Dutch CV language:
   },
 };
 
-function buildPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy | null, styleConfig?: CVStyleConfig, language: OutputLanguage = 'nl'): string {
+function buildPrompt(
+  linkedIn: ParsedLinkedIn,
+  jobVacancy: JobVacancy | null,
+  styleConfig?: CVStyleConfig,
+  language: OutputLanguage = 'nl',
+  descriptionFormat: ExperienceDescriptionFormat = 'bullets'
+): string {
   // Layout-aware instructions (single-column only now for reliable PDF)
   const isCompact = styleConfig?.layout.spacing === 'compact';
   const bulletCount = isCompact ? '2-3' : '3-5';
   const bulletLength = isCompact ? 'Keep bullet points concise (max 15 words each)' : 'Bullet points can be detailed (max 25 words each)';
+
+  // Experience format instructions
+  const experienceFormatInstruction = descriptionFormat === 'paragraph'
+    ? `
+**EXPERIENCE FORMAT: PARAGRAPH**
+- Write 2-3 sentences per experience as flowing prose
+- Use the "description" field for each experience
+- Leave the "highlights" array empty
+- Focus on key achievements and responsibilities in narrative form`
+    : `
+**EXPERIENCE FORMAT: BULLETS**
+- Generate ${bulletCount} bullet points per experience
+- Use the "highlights" array
+- Do not use the "description" field
+- ${bulletLength}`;
 
   const langInstructions = languageInstructions[language];
 
@@ -409,13 +432,15 @@ When exact numbers aren't available, use reasonable estimates with context:
 - Efficiency: "X% improvement" or "X% reduction in errors"
 - If you can't quantify, at least show scope: "enterprise-level", "company-wide", "cross-functional"
 
+${experienceFormatInstruction}
+
 ## Output Requirements:
 - Professional, concise language
 - Active voice and action verbs (NEVER passive voice)
 - EVERY experience bullet MUST have a measurable result or clear impact
 - Keep summary to 2-3 sentences maximum
-- ${bulletCount} bullet points per experience entry
-- ${bulletLength}
+- ${descriptionFormat === 'bullets' ? `${bulletCount} bullet points per experience entry` : '2-3 sentences per experience'}
+- ${descriptionFormat === 'bullets' ? bulletLength : 'Keep descriptions focused and impactful'}
 - Focus on achievements and RESULTS, not just responsibilities
 - Mirror exact terminology from the job posting where it fits naturally`;
 
@@ -434,12 +459,13 @@ export async function generateCV(
   apiKey: string,
   model: string,
   styleConfig?: CVStyleConfig,
-  language: OutputLanguage = 'nl'
+  language: OutputLanguage = 'nl',
+  descriptionFormat: ExperienceDescriptionFormat = 'bullets'
 ): Promise<GenerateCVResult> {
   const aiProvider = createAIProvider(provider, apiKey);
   const modelId = getModelId(provider, model);
 
-  const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language);
+  const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language, descriptionFormat);
 
   const { object, usage } = await generateObject({
     model: aiProvider(modelId),

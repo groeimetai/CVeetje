@@ -31,7 +31,7 @@ import type {
   SVGDecorationConfig,
   StyleCreativityLevel,
 } from '@/types';
-import type { CVDesignTokens, DecorationIntensity } from '@/types/design-tokens';
+import type { CVDesignTokens, DecorationIntensity, ExperienceDescriptionFormat } from '@/types/design-tokens';
 
 interface DynamicStylePickerProps {
   linkedInData: ParsedLinkedIn;
@@ -251,6 +251,10 @@ export function DynamicStylePicker({
 
   const handleDecorationIntensityChange = (intensity: DecorationIntensity) => {
     setTokens(prev => prev ? { ...prev, decorations: intensity } : null);
+  };
+
+  const handleDescriptionFormatChange = (format: ExperienceDescriptionFormat) => {
+    setTokens(prev => prev ? { ...prev, experienceDescriptionFormat: format } : null);
   };
 
   // Layout style display names
@@ -544,6 +548,39 @@ export function DynamicStylePicker({
                     {intensity === 'minimal' && 'Minimaal'}
                     {intensity === 'moderate' && 'Gemiddeld'}
                     {intensity === 'abundant' && 'Veel'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Experience Description Format Selector */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-medium text-sm">Werkervaring Formaat</span>
+                  <p className="text-xs text-muted-foreground">
+                    Kies tussen opsommingstekens of doorlopende tekst
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: 'bullets' as ExperienceDescriptionFormat, label: 'Bullets', desc: 'Opsommingstekens' },
+                  { value: 'paragraph' as ExperienceDescriptionFormat, label: 'Paragraaf', desc: 'Doorlopende tekst' },
+                ] as const).map((format) => (
+                  <button
+                    key={format.value}
+                    type="button"
+                    onClick={() => handleDescriptionFormatChange(format.value)}
+                    className={cn(
+                      "flex flex-col items-center p-3 rounded-lg border-2 transition-all",
+                      tokens?.experienceDescriptionFormat === format.value
+                        ? "border-primary bg-primary/5"
+                        : "border-muted hover:border-primary/50"
+                    )}
+                  >
+                    <span className="text-sm font-medium">{format.label}</span>
+                    <span className="text-xs text-muted-foreground">{format.desc}</span>
                   </button>
                 ))}
               </div>

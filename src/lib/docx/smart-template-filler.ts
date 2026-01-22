@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import mammoth from 'mammoth';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import type { LLMProvider } from '@/lib/ai/providers';
+import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 import { fillDocumentWithAI } from '@/lib/ai/docx-content-replacer';
 
 /**
@@ -15,6 +16,7 @@ export interface FillOptions {
   language?: OutputLanguage;
   fitAnalysis?: FitAnalysis;
   customInstructions?: string;
+  descriptionFormat?: ExperienceDescriptionFormat;
 }
 
 /**
@@ -164,7 +166,8 @@ export async function fillSmartTemplate(
       options.jobVacancy,
       options.language || 'nl',
       options.fitAnalysis,
-      options.customInstructions
+      options.customInstructions,
+      options.descriptionFormat || 'bullets'
     );
 
     // Apply filled segments back to the XML
@@ -207,7 +210,8 @@ export async function fillSmartTemplate(
             options.jobVacancy,
             options.language || 'nl',
             options.fitAnalysis,
-            options.customInstructions
+            options.customInstructions,
+            options.descriptionFormat || 'bullets'
           );
 
           content = applyFilledSegments(content, hfResult.filledSegments);
