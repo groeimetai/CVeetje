@@ -269,7 +269,7 @@ export function TemplatePreview({
                         {l.experience}
                       </h3>
                       <div className="space-y-4">
-                        {linkedInData.experience.slice(0, 5).map((exp, idx) => (
+                        {linkedInData.experience.map((exp, idx) => (
                           <div key={idx} className="border-l-2 border-primary/30 pl-4">
                             <p className="font-medium">{exp.title}</p>
                             <p className="text-sm text-muted-foreground">{exp.company}</p>
@@ -284,11 +284,6 @@ export function TemplatePreview({
                             )}
                           </div>
                         ))}
-                        {linkedInData.experience.length > 5 && (
-                          <p className="text-sm text-muted-foreground italic">
-                            +{linkedInData.experience.length - 5} {language === 'nl' ? 'meer ervaringen' : 'more experiences'}
-                          </p>
-                        )}
                       </div>
                     </div>
                   )}
@@ -301,7 +296,7 @@ export function TemplatePreview({
                         {l.education}
                       </h3>
                       <div className="space-y-3">
-                        {linkedInData.education.slice(0, 3).map((edu, idx) => (
+                        {linkedInData.education.map((edu, idx) => (
                           <div key={idx} className="border-l-2 border-primary/30 pl-4">
                             <p className="font-medium">{edu.school}</p>
                             {(edu.degree || edu.fieldOfStudy) && (
@@ -328,16 +323,11 @@ export function TemplatePreview({
                         {l.skills}
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {linkedInData.skills.slice(0, 15).map((skill, idx) => (
+                        {linkedInData.skills.map((skill, idx) => (
                           <Badge key={idx} variant="secondary" className="text-xs">
                             {skill.name}
                           </Badge>
                         ))}
-                        {linkedInData.skills.length > 15 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{linkedInData.skills.length - 15}
-                          </Badge>
-                        )}
                       </div>
                     </div>
                   )}
