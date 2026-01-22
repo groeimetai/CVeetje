@@ -417,8 +417,22 @@ export async function fillDocumentWithAI(
         ? '\n--- EXPERIENCE FORMAT: PARAGRAPH ---\nWrite work experience as flowing paragraphs (2-3 sentences). Do not use bullet points.'
         : '\n--- WERKERVARING FORMAAT: PARAGRAAF ---\nSchrijf werkervaring als doorlopende paragrafen (2-3 zinnen). Gebruik geen opsommingstekens.')
     : (language === 'en'
-        ? '\n--- EXPERIENCE FORMAT: BULLETS ---\nUse bullet points for work experience descriptions.'
-        : '\n--- WERKERVARING FORMAAT: BULLETS ---\nGebruik opsommingstekens voor werkervaring beschrijvingen.');
+        ? `\n--- EXPERIENCE FORMAT: BULLETS ---
+CRITICAL: Keep each bullet point SHORT (max 50-60 characters)!
+- Use concise, keyword-focused descriptions
+- Avoid long sentences that wrap to next line
+- Split long tasks into multiple short bullets
+- Example GOOD: "- API integration with REST services"
+- Example BAD: "- Developed and implemented comprehensive API integration solutions for REST-based web services"
+Each bullet must fit on ONE line in the template!`
+        : `\n--- WERKERVARING FORMAAT: BULLETS ---
+KRITIEK: Houd elke bullet KORT (max 50-60 tekens)!
+- Gebruik bondige, keyword-gerichte beschrijvingen
+- Vermijd lange zinnen die doorlopen naar volgende regel
+- Splits lange taken op in meerdere korte bullets
+- Voorbeeld GOED: "- API integratie met REST services"
+- Voorbeeld FOUT: "- Ontwikkelen en implementeren van uitgebreide API integratie oplossingen voor REST-gebaseerde webservices"
+Elke bullet moet op ÉÉN regel passen in het template!`);
 
   // Build custom instructions section if provided
   const customInstructionsSection = customInstructions
