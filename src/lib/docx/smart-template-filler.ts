@@ -171,19 +171,72 @@ function extractIndexedSegments(docXml: string): {
 }
 
 /**
+ * Check if content contains bullet points that need hanging indent
+ */
+function contentHasBullets(content: string): boolean {
+  // Check for common bullet patterns
+  return /^[\s]*[-•·‣⁃]\s/m.test(content) || /\n[\s]*[-•·‣⁃]\s/.test(content);
+}
+
+/**
+ * Add hanging indent to paragraph properties for bullet content
+ * This ensures wrapped lines align properly with bullet text
+ */
+function addHangingIndentToParagraph(docXml: string, textTagStart: number): string {
+  // Find the parent <w:p> element that contains this <w:t>
+  // Search backwards from the text tag position
+  const searchArea = docXml.substring(0, textTagStart);
+  const lastPStart = searchArea.lastIndexOf('<w:p');
+
+  if (lastPStart === -1) return docXml;
+
+  // Find the end of the <w:p...> tag
+  const pTagEnd = docXml.indexOf('>', lastPStart);
+  if (pTagEnd === -1) return docXml;
+
+  // Check if there's already a <w:pPr> in this paragraph
+  const pContent = docXml.substring(lastPStart, textTagStart);
+  const existingPPrMatch = pContent.match(/<w:pPr[^>]*>/);
+
+  // Hanging indent: left margin 360 twips (~0.25 inch), hanging 360 twips
+  // This makes continuation lines align with text after the bullet
+  const hangingIndent = '<w:ind w:left="360" w:hanging="360"/>';
+
+  if (existingPPrMatch) {
+    // Find position of existing <w:pPr> and add indent inside it
+    const pPrPos = lastPStart + pContent.indexOf(existingPPrMatch[0]);
+    const pPrEndTag = pPrPos + existingPPrMatch[0].length;
+
+    // Check if there's already an <w:ind> element
+    const pPrContent = docXml.substring(pPrPos, docXml.indexOf('</w:pPr>', pPrPos));
+    if (pPrContent.includes('<w:ind')) {
+      // Already has indent, don't modify
+      return docXml;
+    }
+
+    // Insert hanging indent after the opening <w:pPr> tag
+    return docXml.substring(0, pPrEndTag) + hangingIndent + docXml.substring(pPrEndTag);
+  } else {
+    // No <w:pPr> exists, need to add it after <w:p...>
+    const insertPos = pTagEnd + 1;
+    const pPrElement = `<w:pPr>${hangingIndent}</w:pPr>`;
+    return docXml.substring(0, insertPos) + pPrElement + docXml.substring(insertPos);
+  }
+}
+
+/**
  * Apply filled segments back to the DOCX XML
  * Replaces text content by index while preserving XML structure
+ * Also adds hanging indent for bullet-containing content
  */
 function applyFilledSegments(
   docXml: string,
   filledSegments: Record<string, string>
 ): string {
   let result = docXml;
-  let offset = 0; // Track position offset as we make replacements
 
   const regex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
   let match;
-  let index = 0;
 
   // We need to collect all matches first, then replace in order
   const matches: { fullMatch: string; attrs: string; content: string; start: number }[] = [];
@@ -197,6 +250,9 @@ function applyFilledSegments(
     });
   }
 
+  // Track segments that need hanging indent (process after text replacement)
+  const segmentsNeedingIndent: number[] = [];
+
   // Apply replacements in reverse order to avoid offset issues
   for (let i = matches.length - 1; i >= 0; i--) {
     const m = matches[i];
@@ -206,10 +262,28 @@ function applyFilledSegments(
       const newContent = escapeXml(filledSegments[indexStr]);
       const newTag = `<w:t${m.attrs}>${newContent}</w:t>`;
 
+      // Check if this content has bullets and needs hanging indent
+      if (contentHasBullets(filledSegments[indexStr])) {
+        segmentsNeedingIndent.push(i);
+      }
+
       result =
         result.substring(0, m.start) +
         newTag +
         result.substring(m.start + m.fullMatch.length);
+    }
+  }
+
+  // Apply hanging indents (need to re-find positions as document changed)
+  // Process in order since each modification affects subsequent positions
+  for (const segmentIndex of segmentsNeedingIndent.sort((a, b) => a - b)) {
+    // Re-find the position of this segment in the modified document
+    const segmentContent = escapeXml(filledSegments[segmentIndex.toString()]);
+    const searchPattern = `<w:t${matches[segmentIndex].attrs}>${segmentContent}</w:t>`;
+    const pos = result.indexOf(searchPattern);
+
+    if (pos !== -1) {
+      result = addHangingIndentToParagraph(result, pos);
     }
   }
 
