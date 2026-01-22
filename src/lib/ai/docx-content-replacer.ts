@@ -4,6 +4,82 @@ import { createAIProvider, type LLMProvider } from './providers';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
+// ==================== Section Types ====================
+
+export type SectionType =
+  | 'personal_info'
+  | 'education'
+  | 'work_experience'
+  | 'special_notes'
+  | 'skills'
+  | 'languages'
+  | 'references'
+  | 'hobbies'
+  | 'unknown';
+
+export interface SectionInfo {
+  type: SectionType;
+  startIndex: number;
+  endIndex: number;
+}
+
+// ==================== Section Rules ====================
+
+/**
+ * Rules for what content belongs in each section type
+ * Used to guide AI in placing content correctly
+ */
+const SECTION_RULES: Record<
+  SectionType,
+  { nl: string; en: string; allowedContent: string[] }
+> = {
+  personal_info: {
+    nl: 'Alleen: naam, adres, telefoon, email, geboortedatum, nationaliteit',
+    en: 'Only: name, address, phone, email, date of birth, nationality',
+    allowedContent: ['name', 'address', 'phone', 'email', 'dob', 'nationality'],
+  },
+  work_experience: {
+    nl: 'ALLEEN: bedrijfsnamen, functies, werkzaamheden/taken, periodes van WERK. Dit is de ENIGE sectie voor werkgerelateerde content!',
+    en: 'ONLY: company names, job titles, tasks/responsibilities, work periods. This is the ONLY section for work-related content!',
+    allowedContent: ['company', 'title', 'tasks', 'work_period'],
+  },
+  education: {
+    nl: 'Alleen: scholen, opleidingen, diploma\'s, studierichtingen, studieperiodes',
+    en: 'Only: schools, degrees, diplomas, fields of study, education periods',
+    allowedContent: ['school', 'degree', 'field', 'education_period'],
+  },
+  special_notes: {
+    nl: 'ALLEEN: beschikbaarheid, vervoer, rijbewijs, hobby\'s, extra informatie. VUL NOOIT werkervaring of opleidingen hier in!',
+    en: 'ONLY: availability, transport, driver\'s license, hobbies, additional info. NEVER fill work experience or education here!',
+    allowedContent: ['availability', 'transport', 'license', 'hobbies', 'extra'],
+  },
+  skills: {
+    nl: 'Alleen: technische vaardigheden, soft skills, talen, certificaten',
+    en: 'Only: technical skills, soft skills, languages, certifications',
+    allowedContent: ['skills', 'certifications'],
+  },
+  languages: {
+    nl: 'Alleen: talen en taalniveaus',
+    en: 'Only: languages and proficiency levels',
+    allowedContent: ['languages'],
+  },
+  references: {
+    nl: 'Alleen: referenties en contactpersonen',
+    en: 'Only: references and contact persons',
+    allowedContent: ['references'],
+  },
+  hobbies: {
+    nl: 'Alleen: hobby\'s en interesses',
+    en: 'Only: hobbies and interests',
+    allowedContent: ['hobbies', 'interests'],
+  },
+  unknown: {
+    nl: 'Algemene content - bepaal op basis van context',
+    en: 'General content - determine based on context',
+    allowedContent: [],
+  },
+};
+
 /**
  * Schema for indexed content filling
  * AI receives numbered text segments and returns filled values for each
@@ -203,6 +279,100 @@ function buildFitAnalysisSummary(
 }
 
 /**
+ * Build section-grouped document representation for AI
+ * Groups segments by their detected section for better context
+ */
+function buildSectionGroupedDocument(
+  segments: { index: number; text: string; section?: SectionType }[],
+  sections: SectionInfo[],
+  language: OutputLanguage
+): string {
+  const isEn = language === 'en';
+
+  // If no sections detected, return flat list
+  if (sections.length === 0 || sections.every(s => s.type === 'unknown')) {
+    return segments.map(seg => `[${seg.index}] ${seg.text}`).join('\n');
+  }
+
+  const parts: string[] = [];
+  let currentSectionIndex = 0;
+
+  for (const section of sections) {
+    const rule = SECTION_RULES[section.type];
+    const sectionName = section.type.replace(/_/g, ' ').toUpperCase();
+
+    // Section header with rules
+    parts.push(`\n=== ${sectionName} (${section.startIndex}-${section.endIndex}) ===`);
+    parts.push(`📋 ${isEn ? rule.en : rule.nl}`);
+    parts.push('');
+
+    // Add segments belonging to this section
+    for (const seg of segments) {
+      if (seg.index >= section.startIndex && seg.index <= section.endIndex) {
+        parts.push(`[${seg.index}] ${seg.text}`);
+      }
+    }
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Get section-specific rules text for the system prompt
+ */
+function getSectionRulesText(language: OutputLanguage): string {
+  const isEn = language === 'en';
+
+  if (isEn) {
+    return `
+=== SECTION RULES (CRITICAL!) ===
+
+1. WORK EXPERIENCE SECTION:
+   - Fill ONLY: company names, job titles, tasks/responsibilities, work periods
+   - This is the ONLY section for work-related content
+   - NEVER put work experience in other sections!
+
+2. SPECIAL NOTES / ADDITIONAL INFO SECTION:
+   - Fill ONLY: availability, transport, driver's license, hobbies
+   - NEVER fill work experience here!
+   - NEVER fill education here!
+
+3. EDUCATION SECTION:
+   - Fill ONLY: schools, degrees, fields of study, education periods
+   - NEVER put work experience here!
+
+4. PERSONAL INFO SECTION:
+   - Fill ONLY: name, address, phone, email, date of birth
+
+⚠️ WARNING: Each content type belongs in ONLY ONE specific section!
+`;
+  }
+
+  return `
+=== SECTIE REGELS (KRITIEK!) ===
+
+1. WERKERVARING SECTIE:
+   - Vul ALLEEN: bedrijfsnamen, functies, werkzaamheden/taken, werkperiodes
+   - Dit is de ENIGE sectie voor werkgerelateerde content
+   - ZET NOOIT werkervaring in andere secties!
+
+2. BIJZONDERHEDEN / AANVULLENDE INFO SECTIE:
+   - Vul ALLEEN: beschikbaarheid, vervoer, rijbewijs, hobby's
+   - VUL NOOIT werkervaring hier in!
+   - VUL NOOIT opleidingen hier in!
+
+3. OPLEIDINGEN SECTIE:
+   - Vul ALLEEN: scholen, diploma's, studierichtingen, studieperiodes
+   - ZET NOOIT werkervaring hier!
+
+4. PERSOONLIJKE GEGEVENS SECTIE:
+   - Vul ALLEEN: naam, adres, telefoon, email, geboortedatum
+
+⚠️ WAARSCHUWING: Elk type content hoort in SLECHTS ÉÉN specifieke sectie!
+`;
+}
+
+/**
  * Fill document using indexed segments approach
  *
  * Instead of search/replace, we:
@@ -211,7 +381,7 @@ function buildFitAnalysisSummary(
  * 3. We replace by index (no text matching needed)
  */
 export async function fillDocumentWithAI(
-  indexedSegments: { index: number; text: string }[],
+  indexedSegments: { index: number; text: string; section?: SectionType }[],
   profileData: ParsedLinkedIn,
   provider: LLMProvider,
   apiKey: string,
@@ -221,6 +391,7 @@ export async function fillDocumentWithAI(
   fitAnalysis?: FitAnalysis,
   customInstructions?: string,
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
+  sections: SectionInfo[] = [],
 ): Promise<IndexedFillResult> {
   const aiProvider = createAIProvider(provider, apiKey);
 
@@ -229,15 +400,16 @@ export async function fillDocumentWithAI(
   const jobSummary = jobVacancy ? buildJobSummary(jobVacancy, language) : null;
   const fitSummary = buildFitAnalysisSummary(fitAnalysis, language);
 
-  // Create numbered document representation
-  const numberedDoc = indexedSegments
-    .map(seg => `[${seg.index}] ${seg.text}`)
-    .join('\n');
+  // Create section-grouped document representation
+  const numberedDoc = buildSectionGroupedDocument(indexedSegments, sections, language);
 
   // Language-specific prompts
   const prompts = getPrompts(language);
 
-  const systemPrompt = prompts.system;
+  // Add section rules to system prompt if sections were detected
+  const hasSections = sections.length > 0 && sections.some(s => s.type !== 'unknown');
+  const sectionRules = hasSections ? getSectionRulesText(language) : '';
+  const systemPrompt = prompts.system + sectionRules;
 
   // Build format instruction section
   const formatInstruction = descriptionFormat === 'paragraph'

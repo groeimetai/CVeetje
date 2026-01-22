@@ -3,7 +3,81 @@ import mammoth from 'mammoth';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import type { LLMProvider } from '@/lib/ai/providers';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
-import { fillDocumentWithAI } from '@/lib/ai/docx-content-replacer';
+import { fillDocumentWithAI, type SectionInfo, type SectionType } from '@/lib/ai/docx-content-replacer';
+
+// ==================== Section Detection ====================
+
+/**
+ * Patterns to detect section headers in CV templates
+ * Supports both Dutch and English section names
+ */
+const SECTION_PATTERNS: { [K in Exclude<SectionType, 'unknown'>]: RegExp[] } = {
+  personal_info: [
+    /^curriculum\s*vitae$/i,
+    /^persoonlijke\s*gegevens$/i,
+    /^personal\s*(info|information|details)?$/i,
+    /^persoonsgegevens$/i,
+  ],
+  education: [
+    /^opleidingen?(\s*[&+]\s*cursussen)?$/i,
+    /^education(\s*[&+]\s*courses)?$/i,
+    /^scholing$/i,
+    /^trainingen?$/i,
+  ],
+  work_experience: [
+    /^werk\s*ervaring(\s*[+&]\s*stage)?$/i,
+    /^work\s*experience$/i,
+    /^employment(\s*history)?$/i,
+    /^ervaring$/i,
+    /^arbeidsverleden$/i,
+  ],
+  special_notes: [
+    /^bijzonderheden$/i,
+    /^additional\s*(info|information)?$/i,
+    /^overige?\s*(gegevens|info)?$/i,
+    /^extra\s*(info|information)?$/i,
+    /^aanvullende?\s*(gegevens|informatie)?$/i,
+  ],
+  skills: [
+    /^vaardigheden$/i,
+    /^skills$/i,
+    /^competenties$/i,
+    /^kennis(\s*[&+]\s*vaardigheden)?$/i,
+  ],
+  languages: [
+    /^talen$/i,
+    /^languages$/i,
+    /^talenkennis$/i,
+  ],
+  references: [
+    /^referenties$/i,
+    /^references$/i,
+  ],
+  hobbies: [
+    /^hobby['']?s$/i,
+    /^hobbies$/i,
+    /^interesses$/i,
+    /^interests$/i,
+  ],
+};
+
+/**
+ * Detect which section type a text segment represents
+ */
+function detectSectionType(text: string): SectionType | null {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length > 50) return null; // Section headers are short
+
+  for (const sectionType of Object.keys(SECTION_PATTERNS) as Array<Exclude<SectionType, 'unknown'>>) {
+    const patterns = SECTION_PATTERNS[sectionType];
+    for (const pattern of patterns) {
+      if (pattern.test(trimmed)) {
+        return sectionType;
+      }
+    }
+  }
+  return null;
+}
 
 /**
  * Options for filling a template
@@ -41,28 +115,59 @@ function escapeXml(str: string): string {
 }
 
 /**
- * Extract all text segments from DOCX XML with their indices
- * Returns both the segments and the positions in the XML for replacement
+ * Extract all text segments from DOCX XML with their indices and section info
+ * Returns segments grouped by detected sections for better AI context
  */
 function extractIndexedSegments(docXml: string): {
-  segments: { index: number; text: string; start: number; end: number }[];
+  segments: { index: number; text: string; start: number; end: number; section?: SectionType }[];
+  sections: SectionInfo[];
 } {
-  const segments: { index: number; text: string; start: number; end: number }[] = [];
+  const segments: { index: number; text: string; start: number; end: number; section?: SectionType }[] = [];
+  const sections: SectionInfo[] = [];
   const regex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
   let match;
   let index = 0;
+  let currentSection: SectionType = 'unknown';
+  let currentSectionStartIndex = 0;
 
   while ((match = regex.exec(docXml)) !== null) {
+    const text = match[1];
+
+    // Check if this segment is a section header
+    const detectedSection = detectSectionType(text);
+    if (detectedSection) {
+      // Close previous section if it had segments
+      if (index > currentSectionStartIndex && currentSection !== 'unknown') {
+        sections.push({
+          type: currentSection,
+          startIndex: currentSectionStartIndex,
+          endIndex: index - 1,
+        });
+      }
+      currentSection = detectedSection;
+      currentSectionStartIndex = index;
+    }
+
     segments.push({
       index,
-      text: match[1], // The text content
+      text,
       start: match.index,
       end: match.index + match[0].length,
+      section: currentSection,
     });
     index++;
   }
 
-  return { segments };
+  // Close the last section
+  if (index > currentSectionStartIndex) {
+    sections.push({
+      type: currentSection,
+      startIndex: currentSectionStartIndex,
+      endIndex: index - 1,
+    });
+  }
+
+  return { segments, sections };
 }
 
 /**
@@ -150,13 +255,17 @@ export async function fillSmartTemplate(
   let docXml = await documentXmlFile.async('string');
 
   try {
-    // Extract indexed segments from the document
-    const { segments } = extractIndexedSegments(docXml);
+    // Extract indexed segments from the document with section detection
+    const { segments, sections } = extractIndexedSegments(docXml);
 
-    // Prepare segments for AI (just index and text)
-    const segmentsForAI = segments.map(s => ({ index: s.index, text: s.text }));
+    // Prepare segments for AI (index, text, and section)
+    const segmentsForAI = segments.map(s => ({
+      index: s.index,
+      text: s.text,
+      section: s.section,
+    }));
 
-    // Get AI to fill the segments
+    // Get AI to fill the segments with section context
     const aiResult = await fillDocumentWithAI(
       segmentsForAI,
       profileData,
@@ -167,7 +276,8 @@ export async function fillSmartTemplate(
       options.language || 'nl',
       options.fitAnalysis,
       options.customInstructions,
-      options.descriptionFormat || 'bullets'
+      options.descriptionFormat || 'bullets',
+      sections
     );
 
     // Apply filled segments back to the XML
@@ -196,9 +306,13 @@ export async function fillSmartTemplate(
         let content = await file.async('string');
 
         // Extract and fill segments in headers/footers too
-        const { segments: hfSegments } = extractIndexedSegments(content);
+        const { segments: hfSegments, sections: hfSections } = extractIndexedSegments(content);
         if (hfSegments.length > 0) {
-          const hfSegmentsForAI = hfSegments.map(s => ({ index: s.index, text: s.text }));
+          const hfSegmentsForAI = hfSegments.map(s => ({
+            index: s.index,
+            text: s.text,
+            section: s.section,
+          }));
 
           // Use same AI to fill header/footer segments
           const hfResult = await fillDocumentWithAI(
@@ -211,7 +325,8 @@ export async function fillSmartTemplate(
             options.language || 'nl',
             options.fitAnalysis,
             options.customInstructions,
-            options.descriptionFormat || 'bullets'
+            options.descriptionFormat || 'bullets',
+            hfSections
           );
 
           content = applyFilledSegments(content, hfResult.filledSegments);
