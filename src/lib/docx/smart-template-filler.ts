@@ -228,6 +228,10 @@ function addHangingIndentToParagraph(docXml: string, textTagStart: number): stri
  * Apply filled segments back to the DOCX XML
  * Replaces text content by index while preserving XML structure
  * Also adds hanging indent for bullet-containing content
+ *
+ * CRITICAL: Hanging indent must be applied DURING replacement, not after,
+ * because indexOf-based re-finding is unreliable when multiple segments
+ * have the same content.
  */
 function applyFilledSegments(
   docXml: string,
@@ -238,7 +242,7 @@ function applyFilledSegments(
   const regex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
   let match;
 
-  // We need to collect all matches first, then replace in order
+  // Collect all matches first with their positions
   const matches: { fullMatch: string; attrs: string; content: string; start: number }[] = [];
 
   while ((match = regex.exec(docXml)) !== null) {
@@ -250,40 +254,71 @@ function applyFilledSegments(
     });
   }
 
-  // Track segments that need hanging indent (process after text replacement)
-  const segmentsNeedingIndent: number[] = [];
+  // Track which paragraphs already have hanging indent added (by their <w:p> start position)
+  // This prevents adding indent multiple times to the same paragraph
+  const paragraphsWithIndent = new Set<number>();
 
-  // Apply replacements in reverse order to avoid offset issues
+  // Track cumulative offset from indent insertions
+  // When we add indent XML, all positions AFTER that point shift
+  let cumulativeOffset = 0;
+
+  // Process in FORWARD order for indent tracking, but we need to handle offsets carefully
+  // Actually, process in REVERSE order - this way positions we haven't processed yet remain accurate
+  // and we only need to track indent additions for determining which paragraphs are done
   for (let i = matches.length - 1; i >= 0; i--) {
     const m = matches[i];
     const indexStr = i.toString();
 
-    if (filledSegments[indexStr] !== undefined) {
-      const newContent = escapeXml(filledSegments[indexStr]);
-      const newTag = `<w:t${m.attrs}>${newContent}</w:t>`;
+    if (filledSegments[indexStr] === undefined) continue;
 
-      // Check if this content has bullets and needs hanging indent
-      if (contentHasBullets(filledSegments[indexStr])) {
-        segmentsNeedingIndent.push(i);
+    const newContent = filledSegments[indexStr];
+
+    // STEP 1: If content has bullets, add hanging indent FIRST (position is still accurate)
+    if (contentHasBullets(newContent)) {
+      // Find the parent <w:p> start position
+      const searchArea = result.substring(0, m.start);
+      const pStart = searchArea.lastIndexOf('<w:p');
+
+      // Only add indent if this paragraph doesn't have it yet
+      if (pStart !== -1 && !paragraphsWithIndent.has(pStart)) {
+        paragraphsWithIndent.add(pStart);
+
+        const beforeLength = result.length;
+        result = addHangingIndentToParagraph(result, m.start);
+        const afterLength = result.length;
+
+        // Calculate how much XML was added (for offset tracking if needed)
+        const addedLength = afterLength - beforeLength;
+
+        // The indent insertion happens BEFORE m.start (at the <w:p> level),
+        // so m.start itself shifts. We need to account for this in the text replacement.
+        // Since we're processing in reverse order, this shift only affects the current replacement.
+
+        // Recalculate the position of our <w:t> tag after indent insertion
+        // The indent was inserted somewhere between pStart and m.start
+        const newStart = m.start + addedLength;
+
+        // STEP 2: Replace the text content at the new position
+        const escapedContent = escapeXml(newContent);
+        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+
+        result = result.substring(0, newStart) + newTag +
+                 result.substring(newStart + m.fullMatch.length);
+      } else {
+        // Paragraph already has indent or no paragraph found, just replace text
+        const escapedContent = escapeXml(newContent);
+        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+
+        result = result.substring(0, m.start) + newTag +
+                 result.substring(m.start + m.fullMatch.length);
       }
+    } else {
+      // No bullets, just replace the text content
+      const escapedContent = escapeXml(newContent);
+      const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
 
-      result =
-        result.substring(0, m.start) +
-        newTag +
-        result.substring(m.start + m.fullMatch.length);
-    }
-  }
-
-  // Apply hanging indents (need to re-find positions as document changed)
-  // Process in order since each modification affects subsequent positions
-  for (const segmentIndex of segmentsNeedingIndent.sort((a, b) => a - b)) {
-    // Re-find the position of this segment in the modified document
-    const segmentContent = escapeXml(filledSegments[segmentIndex.toString()]);
-    const searchPattern = `<w:t${matches[segmentIndex].attrs}>${segmentContent}</w:t>`;
-    const pos = result.indexOf(searchPattern);
-
-    if (pos !== -1) {
-      result = addHangingIndentToParagraph(result, pos);
+      result = result.substring(0, m.start) + newTag +
+               result.substring(m.start + m.fullMatch.length);
     }
   }
 
