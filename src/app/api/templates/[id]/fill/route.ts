@@ -72,13 +72,14 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { profileData, customValues, useAI, jobVacancy, language, fitAnalysis } = body as {
+    const { profileData, customValues, useAI, jobVacancy, language, fitAnalysis, customInstructions } = body as {
       profileData: ParsedLinkedIn;
       customValues?: Record<string, string>;
       useAI?: boolean;
       jobVacancy?: JobVacancy;
       language?: OutputLanguage;
       fitAnalysis?: FitAnalysis;
+      customInstructions?: string;
     };
 
     if (!profileData) {
@@ -145,6 +146,7 @@ export async function POST(
           jobVacancy,
           language: language || 'nl',
           fitAnalysis,
+          customInstructions,
         };
       } catch (decryptError) {
         console.error('Failed to decrypt API key:', decryptError);

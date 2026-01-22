@@ -22,9 +22,11 @@ import {
   Download,
   ChevronDown,
   Coins,
-  Briefcase
+  Briefcase,
+  MessageSquare
 } from 'lucide-react';
 import { TemplateMotivationLetterSection } from './template-motivation-letter-section';
+import { TemplateChatPanel } from './template-chat-panel';
 import type { ParsedLinkedIn, JobVacancy, FitAnalysis, OutputLanguage, TokenUsage } from '@/types';
 
 interface TemplatePreviewProps {
@@ -42,6 +44,9 @@ interface TemplatePreviewProps {
   language?: OutputLanguage;
   onCreditsRefresh?: () => void;
   onTokenUsage?: (usage: TokenUsage) => void;
+  // Chat support
+  templateId?: string;
+  onRefillComplete?: (blob: Blob) => void;
 }
 
 export function TemplatePreview({
@@ -58,11 +63,14 @@ export function TemplatePreview({
   language = 'nl',
   onCreditsRefresh,
   onTokenUsage,
+  templateId,
+  onRefillComplete,
 }: TemplatePreviewProps) {
   const t = useTranslations('templatePreview');
   const containerRef = useRef<HTMLDivElement>(null);
   const [isRendering, setIsRendering] = useState(true);
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Render DOCX using docx-preview
   useEffect(() => {
@@ -115,10 +123,24 @@ export function TemplatePreview({
     <div className="space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            {t('title')}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {t('title')}
+            </CardTitle>
+            {/* Chat toggle button - only show if chat is supported */}
+            {templateId && linkedInData && onRefillComplete && (
+              <Button
+                variant={isChatOpen ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className="gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                {language === 'nl' ? 'Assistent' : 'Assistant'}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Success message */}
@@ -292,6 +314,21 @@ export function TemplatePreview({
           -webkit-user-select: none !important;
         }
       `}</style>
+
+      {/* Template Chat Panel */}
+      {templateId && linkedInData && onRefillComplete && (
+        <TemplateChatPanel
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          templateId={templateId}
+          linkedInData={linkedInData}
+          jobVacancy={jobVacancy || null}
+          fitAnalysis={fitAnalysis || null}
+          language={language}
+          onRefillComplete={onRefillComplete}
+          onCreditsRefresh={onCreditsRefresh}
+        />
+      )}
     </div>
   );
 }

@@ -218,6 +218,7 @@ export async function fillDocumentWithAI(
   jobVacancy?: JobVacancy,
   language: OutputLanguage = 'nl',
   fitAnalysis?: FitAnalysis,
+  customInstructions?: string,
 ): Promise<IndexedFillResult> {
   const aiProvider = createAIProvider(provider, apiKey);
 
@@ -236,12 +237,17 @@ export async function fillDocumentWithAI(
 
   const systemPrompt = prompts.system;
 
+  // Build custom instructions section if provided
+  const customInstructionsSection = customInstructions
+    ? `\n--- ${language === 'en' ? 'USER INSTRUCTIONS (IMPORTANT - follow these adjustments)' : 'GEBRUIKER INSTRUCTIES (BELANGRIJK - volg deze aanpassingen)'} ---\n${customInstructions}\n`
+    : '';
+
   const userPrompt = `${prompts.templateHeader}:
 ${numberedDoc}
 
 ${prompts.profileHeader}:
 ${profileSummary}
-${jobSummary ? `\n${prompts.jobHeader}:\n${jobSummary}` : ''}${fitSummary}
+${jobSummary ? `\n${prompts.jobHeader}:\n${jobSummary}` : ''}${fitSummary}${customInstructionsSection}
 
 ${prompts.instructions}`;
 

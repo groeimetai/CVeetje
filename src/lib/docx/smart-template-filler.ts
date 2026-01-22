@@ -14,6 +14,7 @@ export interface FillOptions {
   jobVacancy?: JobVacancy;
   language?: OutputLanguage;
   fitAnalysis?: FitAnalysis;
+  customInstructions?: string;
 }
 
 /**
@@ -162,7 +163,8 @@ export async function fillSmartTemplate(
       options.aiModel,
       options.jobVacancy,
       options.language || 'nl',
-      options.fitAnalysis
+      options.fitAnalysis,
+      options.customInstructions
     );
 
     // Apply filled segments back to the XML
@@ -204,7 +206,8 @@ export async function fillSmartTemplate(
             options.aiModel,
             options.jobVacancy,
             options.language || 'nl',
-            options.fitAnalysis
+            options.fitAnalysis,
+            options.customInstructions
           );
 
           content = applyFilledSegments(content, hfResult.filledSegments);

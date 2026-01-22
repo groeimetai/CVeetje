@@ -961,6 +961,8 @@ export function CVWizard() {
           language={outputLanguage}
           onCreditsRefresh={refreshCredits}
           onTokenUsage={(usage) => addTokenUsage('motivation', usage)}
+          templateId={selectedTemplateId || undefined}
+          onRefillComplete={(blob) => setTemplatePdfBlob(blob)}
         />
       )}
 
