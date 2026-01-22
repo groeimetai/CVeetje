@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,14 +16,23 @@ import {
   FileText,
   FileType,
   Loader2,
-  RefreshCw,
   ArrowLeft,
   CheckCircle,
   Download,
   ChevronDown,
   Coins,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Building2,
+  GraduationCap,
+  Award,
+  Globe,
+  Linkedin,
+  Github,
 } from 'lucide-react';
 import { TemplateMotivationLetterSection } from './template-motivation-letter-section';
 import { TemplateChatPanel } from './template-chat-panel';
@@ -67,57 +76,34 @@ export function TemplatePreview({
   onRefillComplete,
 }: TemplatePreviewProps) {
   const t = useTranslations('templatePreview');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isRendering, setIsRendering] = useState(true);
-  const [renderError, setRenderError] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Render DOCX using docx-preview
-  useEffect(() => {
-    const renderDocx = async () => {
-      if (!containerRef.current || !docxBlob) return;
+  const labels = {
+    nl: {
+      personalInfo: 'Persoonlijke Gegevens',
+      experience: 'Werkervaring',
+      education: 'Opleiding',
+      skills: 'Vaardigheden',
+      languages: 'Talen',
+      summary: 'Samenvatting',
+      present: 'Heden',
+      targetJob: 'Doelfunctie',
+      fitScore: 'Match Score',
+    },
+    en: {
+      personalInfo: 'Personal Information',
+      experience: 'Work Experience',
+      education: 'Education',
+      skills: 'Skills',
+      languages: 'Languages',
+      summary: 'Summary',
+      present: 'Present',
+      targetJob: 'Target Position',
+      fitScore: 'Fit Score',
+    },
+  };
 
-      setIsRendering(true);
-      setRenderError(null);
-
-      try {
-        // Dynamic import to avoid SSR issues
-        const { renderAsync } = await import('docx-preview');
-
-        // Clear previous content
-        containerRef.current.innerHTML = '';
-
-        // Convert blob to ArrayBuffer
-        const arrayBuffer = await docxBlob.arrayBuffer();
-
-        // Render the DOCX
-        await renderAsync(arrayBuffer, containerRef.current, undefined, {
-          className: 'docx-preview-wrapper',
-          inWrapper: true,
-          ignoreWidth: false,
-          ignoreHeight: false,
-          ignoreFonts: false,
-          breakPages: true,
-          ignoreLastRenderedPageBreak: false,
-          experimental: true, // Enable experimental features for better rendering
-          trimXmlDeclaration: true,
-          useBase64URL: true,
-          renderHeaders: true,
-          renderFooters: true,
-          renderFootnotes: true,
-          renderEndnotes: true,
-          debug: false,
-        });
-      } catch (err) {
-        console.error('Failed to render DOCX:', err);
-        setRenderError(err instanceof Error ? err.message : 'Failed to render document');
-      } finally {
-        setIsRendering(false);
-      }
-    };
-
-    renderDocx();
-  }, [docxBlob]);
+  const l = labels[language];
 
   return (
     <div className="space-y-6">
@@ -152,50 +138,244 @@ export function TemplatePreview({
             </AlertDescription>
           </Alert>
 
-          {/* DOCX Preview */}
-          <div className="relative rounded-lg border bg-white overflow-hidden">
+          {/* Textual Preview */}
+          <div
+            className="relative rounded-lg border bg-white dark:bg-gray-900 overflow-hidden"
+            onContextMenu={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
+          >
             {/* Watermark overlay */}
-            <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                {[...Array(3)].map((_, i) => (
-                  <div
+            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+              <div
+                className="absolute inset-0 flex flex-wrap justify-around content-around"
+                style={{ transform: 'rotate(-30deg)', transformOrigin: 'center', width: '200%', height: '200%', left: '-50%', top: '-50%' }}
+              >
+                {Array(12).fill(null).map((_, i) => (
+                  <span
                     key={i}
-                    className="absolute text-6xl font-bold text-gray-300/30 dark:text-gray-600/30 whitespace-nowrap select-none"
-                    style={{
-                      transform: `rotate(-45deg) translate(${(i - 1) * 200}px, ${(i - 1) * 150}px)`,
-                    }}
+                    className="text-gray-300/20 dark:text-gray-600/20 text-2xl font-bold whitespace-nowrap px-12 py-8"
+                    style={{ letterSpacing: '4px' }}
                   >
                     CVeetje PREVIEW
-                  </div>
+                  </span>
                 ))}
               </div>
             </div>
 
-            {/* Loading state */}
-            {isRendering && (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-muted-foreground">{t('rendering')}</span>
-              </div>
-            )}
-
-            {/* Error state */}
-            {renderError && (
-              <div className="flex items-center justify-center py-20 text-destructive">
-                <span>{renderError}</span>
-              </div>
-            )}
-
-            {/* DOCX render container */}
+            {/* Content Preview */}
             <div
-              ref={containerRef}
-              className="docx-preview-container min-h-[600px] max-h-[800px] overflow-auto"
+              className="p-6 space-y-6 max-h-[700px] overflow-auto relative z-0"
               style={{
-                // Prevent text selection in preview
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
               }}
-            />
+            >
+              {linkedInData ? (
+                <>
+                  {/* Personal Info Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
+                      <User className="h-5 w-5" />
+                      {l.personalInfo}
+                    </h3>
+                    <div className="space-y-2">
+                      <p className="text-xl font-bold">{linkedInData.fullName}</p>
+                      {linkedInData.headline && (
+                        <p className="text-muted-foreground">{linkedInData.headline}</p>
+                      )}
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
+                        {linkedInData.email && (
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-4 w-4" />
+                            {linkedInData.email}
+                          </span>
+                        )}
+                        {linkedInData.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-4 w-4" />
+                            {linkedInData.phone}
+                          </span>
+                        )}
+                        {linkedInData.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {linkedInData.location}
+                          </span>
+                        )}
+                        {linkedInData.linkedinUrl && (
+                          <span className="flex items-center gap-1">
+                            <Linkedin className="h-4 w-4" />
+                            LinkedIn
+                          </span>
+                        )}
+                        {linkedInData.github && (
+                          <span className="flex items-center gap-1">
+                            <Github className="h-4 w-4" />
+                            GitHub
+                          </span>
+                        )}
+                        {linkedInData.website && (
+                          <span className="flex items-center gap-1">
+                            <Globe className="h-4 w-4" />
+                            Website
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Target Job & Fit Score */}
+                  {jobVacancy && (
+                    <div className="border-b pb-4">
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
+                        <Briefcase className="h-5 w-5" />
+                        {l.targetJob}
+                      </h3>
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="font-medium">{jobVacancy.title}</p>
+                          {jobVacancy.company && (
+                            <p className="text-sm text-muted-foreground">{jobVacancy.company}</p>
+                          )}
+                        </div>
+                        {fitAnalysis && (
+                          <Badge variant="secondary" className="text-lg px-3 py-1">
+                            {l.fitScore}: {fitAnalysis.overallScore}%
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Summary */}
+                  {linkedInData.about && (
+                    <div className="border-b pb-4">
+                      <h3 className="font-semibold text-lg mb-3 text-primary">{l.summary}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {linkedInData.about.length > 500
+                          ? linkedInData.about.substring(0, 500) + '...'
+                          : linkedInData.about}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Experience */}
+                  {linkedInData.experience && linkedInData.experience.length > 0 && (
+                    <div className="border-b pb-4">
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
+                        <Building2 className="h-5 w-5" />
+                        {l.experience}
+                      </h3>
+                      <div className="space-y-4">
+                        {linkedInData.experience.slice(0, 5).map((exp, idx) => (
+                          <div key={idx} className="border-l-2 border-primary/30 pl-4">
+                            <p className="font-medium">{exp.title}</p>
+                            <p className="text-sm text-muted-foreground">{exp.company}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {exp.startDate} - {exp.endDate || l.present}
+                              {exp.location && ` • ${exp.location}`}
+                            </p>
+                            {exp.description && (
+                              <p className="text-sm mt-1 text-muted-foreground line-clamp-2">
+                                {exp.description}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                        {linkedInData.experience.length > 5 && (
+                          <p className="text-sm text-muted-foreground italic">
+                            +{linkedInData.experience.length - 5} {language === 'nl' ? 'meer ervaringen' : 'more experiences'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Education */}
+                  {linkedInData.education && linkedInData.education.length > 0 && (
+                    <div className="border-b pb-4">
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
+                        <GraduationCap className="h-5 w-5" />
+                        {l.education}
+                      </h3>
+                      <div className="space-y-3">
+                        {linkedInData.education.slice(0, 3).map((edu, idx) => (
+                          <div key={idx} className="border-l-2 border-primary/30 pl-4">
+                            <p className="font-medium">{edu.school}</p>
+                            {(edu.degree || edu.fieldOfStudy) && (
+                              <p className="text-sm text-muted-foreground">
+                                {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(' - ')}
+                              </p>
+                            )}
+                            {(edu.startYear || edu.endYear) && (
+                              <p className="text-xs text-muted-foreground">
+                                {edu.startYear} - {edu.endYear || l.present}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skills */}
+                  {linkedInData.skills && linkedInData.skills.length > 0 && (
+                    <div className="border-b pb-4">
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
+                        <Award className="h-5 w-5" />
+                        {l.skills}
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {linkedInData.skills.slice(0, 15).map((skill, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {skill.name}
+                          </Badge>
+                        ))}
+                        {linkedInData.skills.length > 15 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{linkedInData.skills.length - 15}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Languages */}
+                  {linkedInData.languages && linkedInData.languages.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
+                        <Globe className="h-5 w-5" />
+                        {l.languages}
+                      </h3>
+                      <div className="flex flex-wrap gap-3">
+                        {linkedInData.languages.map((lang, idx) => (
+                          <span key={idx} className="text-sm">
+                            <span className="font-medium">{lang.language}</span>
+                            {lang.proficiency && (
+                              <span className="text-muted-foreground"> ({lang.proficiency})</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>{language === 'nl' ? 'Geen profielgegevens beschikbaar' : 'No profile data available'}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Template file indicator */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <FileType className="h-4 w-4" />
+            <span>{fileName}</span>
+            <Badge variant="outline" className="text-xs">DOCX</Badge>
           </div>
 
           {/* Action buttons */}
@@ -294,26 +474,6 @@ export function TemplatePreview({
           )}
         </CardContent>
       </Card>
-
-      {/* Styles for docx-preview */}
-      <style jsx global>{`
-        .docx-preview-container .docx-wrapper {
-          padding: 20px;
-        }
-        .docx-preview-container .docx-wrapper > section.docx {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          margin-bottom: 20px;
-        }
-        /* Preserve document backgrounds */
-        .docx-preview-container .docx-wrapper section.docx {
-          overflow: visible;
-        }
-        /* Disable text selection */
-        .docx-preview-container * {
-          user-select: none !important;
-          -webkit-user-select: none !important;
-        }
-      `}</style>
 
       {/* Template Chat Panel */}
       {templateId && linkedInData && onRefillComplete && (
