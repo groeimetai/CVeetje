@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,16 +23,6 @@ import {
   Coins,
   Briefcase,
   MessageSquare,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Building2,
-  GraduationCap,
-  Award,
-  Globe,
-  Linkedin,
-  Github,
 } from 'lucide-react';
 import { TemplateMotivationLetterSection } from './template-motivation-letter-section';
 import { TemplateChatPanel } from './template-chat-panel';
@@ -77,33 +67,31 @@ export function TemplatePreview({
 }: TemplatePreviewProps) {
   const t = useTranslations('templatePreview');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState(true);
 
-  const labels = {
-    nl: {
-      personalInfo: 'Persoonlijke Gegevens',
-      experience: 'Werkervaring',
-      education: 'Opleiding',
-      skills: 'Vaardigheden',
-      languages: 'Talen',
-      summary: 'Samenvatting',
-      present: 'Heden',
-      targetJob: 'Doelfunctie',
-      fitScore: 'Match Score',
-    },
-    en: {
-      personalInfo: 'Personal Information',
-      experience: 'Work Experience',
-      education: 'Education',
-      skills: 'Skills',
-      languages: 'Languages',
-      summary: 'Summary',
-      present: 'Present',
-      targetJob: 'Target Position',
-      fitScore: 'Fit Score',
-    },
-  };
+  // Extract text from DOCX blob
+  useEffect(() => {
+    const extractText = async () => {
+      if (!docxBlob) return;
 
-  const l = labels[language];
+      setIsExtracting(true);
+      try {
+        // Dynamic import to avoid SSR issues
+        const mammoth = await import('mammoth');
+        const arrayBuffer = await docxBlob.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        setExtractedText(result.value);
+      } catch (err) {
+        console.error('Failed to extract text from DOCX:', err);
+        setExtractedText(null);
+      } finally {
+        setIsExtracting(false);
+      }
+    };
+
+    extractText();
+  }, [docxBlob]);
 
   return (
     <div className="space-y-6">
@@ -164,198 +152,29 @@ export function TemplatePreview({
               </div>
             </div>
 
-            {/* Content Preview */}
+            {/* Content Preview - Shows actual DOCX content */}
             <div
-              className="p-6 space-y-6 max-h-[700px] overflow-auto relative z-0"
+              className="p-6 max-h-[700px] overflow-auto relative z-0"
               style={{
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
               }}
             >
-              {linkedInData ? (
-                <>
-                  {/* Personal Info Section */}
-                  <div className="border-b pb-4">
-                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
-                      <User className="h-5 w-5" />
-                      {l.personalInfo}
-                    </h3>
-                    <div className="space-y-2">
-                      <p className="text-xl font-bold">{linkedInData.fullName}</p>
-                      {linkedInData.headline && (
-                        <p className="text-muted-foreground">{linkedInData.headline}</p>
-                      )}
-                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
-                        {linkedInData.email && (
-                          <span className="flex items-center gap-1">
-                            <Mail className="h-4 w-4" />
-                            {linkedInData.email}
-                          </span>
-                        )}
-                        {linkedInData.phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="h-4 w-4" />
-                            {linkedInData.phone}
-                          </span>
-                        )}
-                        {linkedInData.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {linkedInData.location}
-                          </span>
-                        )}
-                        {linkedInData.linkedinUrl && (
-                          <span className="flex items-center gap-1">
-                            <Linkedin className="h-4 w-4" />
-                            LinkedIn
-                          </span>
-                        )}
-                        {linkedInData.github && (
-                          <span className="flex items-center gap-1">
-                            <Github className="h-4 w-4" />
-                            GitHub
-                          </span>
-                        )}
-                        {linkedInData.website && (
-                          <span className="flex items-center gap-1">
-                            <Globe className="h-4 w-4" />
-                            Website
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Target Job & Fit Score */}
-                  {jobVacancy && (
-                    <div className="border-b pb-4">
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
-                        <Briefcase className="h-5 w-5" />
-                        {l.targetJob}
-                      </h3>
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="font-medium">{jobVacancy.title}</p>
-                          {jobVacancy.company && (
-                            <p className="text-sm text-muted-foreground">{jobVacancy.company}</p>
-                          )}
-                        </div>
-                        {fitAnalysis && (
-                          <Badge variant="secondary" className="text-lg px-3 py-1">
-                            {l.fitScore}: {fitAnalysis.overallScore}%
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Summary */}
-                  {linkedInData.about && (
-                    <div className="border-b pb-4">
-                      <h3 className="font-semibold text-lg mb-3 text-primary">{l.summary}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {linkedInData.about.length > 500
-                          ? linkedInData.about.substring(0, 500) + '...'
-                          : linkedInData.about}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Experience */}
-                  {linkedInData.experience && linkedInData.experience.length > 0 && (
-                    <div className="border-b pb-4">
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
-                        <Building2 className="h-5 w-5" />
-                        {l.experience}
-                      </h3>
-                      <div className="space-y-4">
-                        {linkedInData.experience.map((exp, idx) => (
-                          <div key={idx} className="border-l-2 border-primary/30 pl-4">
-                            <p className="font-medium">{exp.title}</p>
-                            <p className="text-sm text-muted-foreground">{exp.company}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exp.startDate} - {exp.endDate || l.present}
-                              {exp.location && ` • ${exp.location}`}
-                            </p>
-                            {exp.description && (
-                              <p className="text-sm mt-1 text-muted-foreground line-clamp-2">
-                                {exp.description}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Education */}
-                  {linkedInData.education && linkedInData.education.length > 0 && (
-                    <div className="border-b pb-4">
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
-                        <GraduationCap className="h-5 w-5" />
-                        {l.education}
-                      </h3>
-                      <div className="space-y-3">
-                        {linkedInData.education.map((edu, idx) => (
-                          <div key={idx} className="border-l-2 border-primary/30 pl-4">
-                            <p className="font-medium">{edu.school}</p>
-                            {(edu.degree || edu.fieldOfStudy) && (
-                              <p className="text-sm text-muted-foreground">
-                                {[edu.degree, edu.fieldOfStudy].filter(Boolean).join(' - ')}
-                              </p>
-                            )}
-                            {(edu.startYear || edu.endYear) && (
-                              <p className="text-xs text-muted-foreground">
-                                {edu.startYear} - {edu.endYear || l.present}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Skills */}
-                  {linkedInData.skills && linkedInData.skills.length > 0 && (
-                    <div className="border-b pb-4">
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
-                        <Award className="h-5 w-5" />
-                        {l.skills}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {linkedInData.skills.map((skill, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {skill.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Languages */}
-                  {linkedInData.languages && linkedInData.languages.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-primary">
-                        <Globe className="h-5 w-5" />
-                        {l.languages}
-                      </h3>
-                      <div className="flex flex-wrap gap-3">
-                        {linkedInData.languages.map((lang, idx) => (
-                          <span key={idx} className="text-sm">
-                            <span className="font-medium">{lang.language}</span>
-                            {lang.proficiency && (
-                              <span className="text-muted-foreground"> ({lang.proficiency})</span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
+              {isExtracting ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">
+                    {language === 'nl' ? 'Document laden...' : 'Loading document...'}
+                  </span>
+                </div>
+              ) : extractedText ? (
+                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                  {extractedText}
+                </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{language === 'nl' ? 'Geen profielgegevens beschikbaar' : 'No profile data available'}</p>
+                  <p>{language === 'nl' ? 'Kon document niet laden' : 'Could not load document'}</p>
                 </div>
               )}
             </div>
