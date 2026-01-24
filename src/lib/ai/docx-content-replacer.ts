@@ -49,8 +49,12 @@ const SECTION_RULES: Record<
     allowedContent: ['school', 'degree', 'field', 'education_period'],
   },
   special_notes: {
-    nl: 'ALLEEN: beschikbaarheid, vervoer, rijbewijs, hobby\'s, extra informatie. VUL NOOIT werkervaring of opleidingen hier in!',
-    en: 'ONLY: availability, transport, driver\'s license, hobbies, additional info. NEVER fill work experience or education here!',
+    nl: `ALLEEN: beschikbaarheid, vervoer, rijbewijs, hobby's.
+⚠️ VERBODEN: werkervaring, functies, bedrijfsnamen, periodes (2020-2024), @-tekens!
+Als je werkgerelateerde content hier plaatst, is het CV ONGELDIG.`,
+    en: `ONLY: availability, transport, driver's license, hobbies.
+⚠️ FORBIDDEN: work experience, job titles, company names, periods (2020-2024), @-signs!
+Placing work-related content here makes the CV INVALID.`,
     allowedContent: ['availability', 'transport', 'license', 'hobbies', 'extra'],
   },
   skills: {
@@ -332,10 +336,16 @@ function getSectionRulesText(language: OutputLanguage): string {
    - This is the ONLY section for work-related content
    - NEVER put work experience in other sections!
 
-2. SPECIAL NOTES / ADDITIONAL INFO SECTION:
+2. SPECIAL NOTES / ADDITIONAL INFO ("Bijzonderheden") SECTION:
+   ⚠️ CRITICAL RESTRICTIONS:
    - Fill ONLY: availability, transport, driver's license, hobbies
-   - NEVER fill work experience here!
-   - NEVER fill education here!
+   - FORBIDDEN CONTENT (will be removed):
+     * Job titles (Developer, Manager, Founder, etc.)
+     * Company names
+     * Work periods (2020-2024, 2025-Heden)
+     * Career summaries
+     * @ symbols (like "Developer @ Company")
+   - If you place work-related content here, it will be DELETED!
 
 3. EDUCATION SECTION:
    - Fill ONLY: schools, degrees, fields of study, education periods
@@ -357,9 +367,15 @@ function getSectionRulesText(language: OutputLanguage): string {
    - ZET NOOIT werkervaring in andere secties!
 
 2. BIJZONDERHEDEN / AANVULLENDE INFO SECTIE:
+   ⚠️ KRITIEKE BEPERKINGEN:
    - Vul ALLEEN: beschikbaarheid, vervoer, rijbewijs, hobby's
-   - VUL NOOIT werkervaring hier in!
-   - VUL NOOIT opleidingen hier in!
+   - VERBODEN CONTENT (wordt verwijderd):
+     * Functietitels (Developer, Manager, Founder, etc.)
+     * Bedrijfsnamen
+     * Werkperiodes (2020-2024, 2025-Heden)
+     * Carrière samenvattingen
+     * @ symbolen (zoals "Developer @ Bedrijf")
+   - Als je werkgerelateerde content hier plaatst, wordt het VERWIJDERD!
 
 3. OPLEIDINGEN SECTIE:
    - Vul ALLEEN: scholen, diploma's, studierichtingen, studieperiodes
@@ -370,6 +386,47 @@ function getSectionRulesText(language: OutputLanguage): string {
 
 ⚠️ WAARSCHUWING: Elk type content hoort in SLECHTS ÉÉN specifieke sectie!
 `;
+}
+
+/**
+ * Filter out invalid content from sections based on section rules
+ * This is a post-processing step to catch any AI mistakes
+ */
+function filterInvalidSectionContent(
+  filledSegments: Record<string, string>,
+  segments: { index: number; text: string; section?: SectionType }[]
+): { filtered: Record<string, string>; removedCount: number } {
+  const filtered = { ...filledSegments };
+  let removedCount = 0;
+
+  // Patterns that indicate work experience content (should NOT be in special_notes)
+  const workExperiencePatterns = [
+    /\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent)/,  // Year ranges like 2020-2024, 2025-Heden
+    /@/,                                              // @ symbol (Developer @ Company)
+    /\b(Founder|Co-?[Ff]ounder|CEO|CTO|Manager|Director|Lead|Developer|Engineer|Consultant)\b/i,
+    /\b(Technical|Senior|Junior|Head of|VP|Vice President)\b/i,
+    /\b(BV|B\.V\.|NV|N\.V\.|Inc|LLC|Ltd|GmbH)\b/i,   // Company suffixes
+  ];
+
+  for (const [indexStr, value] of Object.entries(filtered)) {
+    const index = parseInt(indexStr);
+    const segment = segments.find(s => s.index === index);
+
+    // Only validate special_notes section
+    if (segment?.section === 'special_notes' && value) {
+      // Check if the content matches work experience patterns
+      const hasWorkContent = workExperiencePatterns.some(pattern => pattern.test(value));
+
+      if (hasWorkContent) {
+        // Remove the invalid content
+        delete filtered[indexStr];
+        removedCount++;
+        console.warn(`[docx-content-replacer] Removed work experience content from special_notes: "${value.substring(0, 50)}..."`);
+      }
+    }
+  }
+
+  return { filtered, removedCount };
 }
 
 /**
@@ -448,9 +505,21 @@ ${prompts.instructions}`;
       filledSegmentsRecord[segment.index] = segment.value;
     }
 
+    // Post-processing: Filter out invalid content from sections
+    const { filtered, removedCount } = filterInvalidSectionContent(
+      filledSegmentsRecord,
+      indexedSegments
+    );
+
+    // Add warning if content was removed
+    const warnings = result.object.warnings || [];
+    if (removedCount > 0) {
+      warnings.push(`Removed ${removedCount} segment(s) with misplaced work experience content from special_notes section.`);
+    }
+
     return {
-      filledSegments: filledSegmentsRecord,
-      warnings: result.object.warnings || [],
+      filledSegments: filtered,
+      warnings,
     };
   } catch (error) {
     console.error('Error filling document with AI:', error);

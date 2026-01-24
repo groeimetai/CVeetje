@@ -181,6 +181,11 @@ function contentHasBullets(content: string): boolean {
 /**
  * Add hanging indent to paragraph properties for bullet content
  * This ensures wrapped lines align properly with bullet text
+ *
+ * CRITICAL: Must handle existing indent correctly:
+ * - Template may have w:firstLine (pushes first line right - WRONG for bullets)
+ * - We need w:hanging (creates hanging indent - CORRECT for bullets)
+ * - Must preserve original w:left value for proper column alignment
  */
 function addHangingIndentToParagraph(docXml: string, textTagStart: number): string {
   // Find the parent <w:p> element that contains this <w:t>
@@ -198,28 +203,55 @@ function addHangingIndentToParagraph(docXml: string, textTagStart: number): stri
   const pContent = docXml.substring(lastPStart, textTagStart);
   const existingPPrMatch = pContent.match(/<w:pPr[^>]*>/);
 
-  // Hanging indent: left margin 360 twips (~0.25 inch), hanging 360 twips
-  // This makes continuation lines align with text after the bullet
-  const hangingIndent = '<w:ind w:left="360" w:hanging="360"/>';
+  // Default hanging indent for paragraphs without existing indent
+  const defaultHangingIndent = '<w:ind w:left="360" w:hanging="360"/>';
 
   if (existingPPrMatch) {
-    // Find position of existing <w:pPr> and add indent inside it
+    // Find position of existing <w:pPr>
     const pPrPos = lastPStart + pContent.indexOf(existingPPrMatch[0]);
-    const pPrEndTag = pPrPos + existingPPrMatch[0].length;
+    const pPrEndTagPos = docXml.indexOf('</w:pPr>', pPrPos);
+    if (pPrEndTagPos === -1) return docXml;
 
-    // Check if there's already an <w:ind> element
-    const pPrContent = docXml.substring(pPrPos, docXml.indexOf('</w:pPr>', pPrPos));
-    if (pPrContent.includes('<w:ind')) {
-      // Already has indent, don't modify
-      return docXml;
+    const pPrContent = docXml.substring(pPrPos, pPrEndTagPos);
+
+    // Check for existing <w:ind> element
+    const existingIndMatch = pPrContent.match(/<w:ind([^>]*)\/>/);
+
+    if (existingIndMatch) {
+      // Parse existing indent values
+      const indAttrs = existingIndMatch[1];
+      const leftMatch = indAttrs.match(/w:left="(\d+)"/);
+      const firstLineMatch = indAttrs.match(/w:firstLine="(\d+)"/);
+      const hangingMatch = indAttrs.match(/w:hanging="(\d+)"/);
+
+      // Already has hanging indent - skip modification
+      if (hangingMatch) return docXml;
+
+      // Calculate new values
+      const existingLeft = leftMatch ? parseInt(leftMatch[1]) : 0;
+      const firstLine = firstLineMatch ? parseInt(firstLineMatch[1]) : 0;
+
+      // Convert firstLine to hanging + add bullet space (250 twips ≈ 0.17 inch)
+      // If no firstLine, use default 360 twips for bullet character
+      const hanging = firstLine > 0 ? firstLine + 250 : 360;
+
+      // Build new indent element preserving w:left
+      const newIndent = `<w:ind w:left="${existingLeft}" w:hanging="${hanging}"/>`;
+
+      // Find and replace the existing <w:ind.../> element
+      const indStartPos = pPrPos + pPrContent.indexOf(existingIndMatch[0]);
+
+      return docXml.substring(0, indStartPos) + newIndent +
+             docXml.substring(indStartPos + existingIndMatch[0].length);
     }
 
-    // Insert hanging indent after the opening <w:pPr> tag
-    return docXml.substring(0, pPrEndTag) + hangingIndent + docXml.substring(pPrEndTag);
+    // No <w:ind> exists yet, insert after opening <w:pPr> tag
+    const pPrEndTag = pPrPos + existingPPrMatch[0].length;
+    return docXml.substring(0, pPrEndTag) + defaultHangingIndent + docXml.substring(pPrEndTag);
   } else {
     // No <w:pPr> exists, need to add it after <w:p...>
     const insertPos = pTagEnd + 1;
-    const pPrElement = `<w:pPr>${hangingIndent}</w:pPr>`;
+    const pPrElement = `<w:pPr>${defaultHangingIndent}</w:pPr>`;
     return docXml.substring(0, insertPos) + pPrElement + docXml.substring(insertPos);
   }
 }
