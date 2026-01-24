@@ -103,6 +103,203 @@ export interface FillResult {
   mode: 'ai' | 'none';
 }
 
+// ==================== Work Experience Block Detection & Duplication ====================
+
+/**
+ * Represents a work experience block in the template
+ */
+interface WorkExperienceBlock {
+  startPos: number;        // Start position in XML (start of first <w:p>)
+  endPos: number;          // End position in XML (end of last </w:p>)
+  xml: string;             // The XML content of this block
+  segmentIndices: number[]; // Segment indices that belong to this block
+}
+
+/**
+ * Detect work experience blocks in the template based on segment patterns
+ *
+ * A work experience block typically contains:
+ * - Period/date range (e.g., "2020-2024" or "2020-Heden")
+ * - Company name
+ * - Position/function
+ * - Tasks/responsibilities
+ *
+ * We look for consecutive segments in the work_experience section that form a pattern.
+ */
+function detectWorkExperienceBlocks(
+  docXml: string,
+  segments: { index: number; text: string; start: number; end: number; section?: SectionType }[]
+): WorkExperienceBlock[] {
+  const blocks: WorkExperienceBlock[] = [];
+
+  // Get only work_experience segments
+  const workSegments = segments.filter(s => s.section === 'work_experience');
+  if (workSegments.length === 0) {
+    console.log('[DOCX] No work_experience segments found');
+    return blocks;
+  }
+
+  console.log(`[DOCX] Found ${workSegments.length} work_experience segments`);
+
+  // Patterns to detect work experience period markers
+  // Supports: "2020-2024", "2020 - Heden", "Jan 2020 - Dec 2024", "2020-Present :", etc.
+  const periodPatterns = [
+    // Simple year range: "2020-2024", "2020 - Heden"
+    /^\s*\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?\s*:?\s*$/,
+    // Year range with months: "Jan 2020 - Dec 2024"
+    /^\s*[A-Za-z]{3,9}\.?\s*\d{4}\s*[-–—]\s*([A-Za-z]{3,9}\.?\s*\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?\s*:?\s*$/i,
+    // Period label followed by dates
+    /^\s*(periode|period)\s*:?\s*\d{4}/i,
+  ];
+
+  // Find period markers as block boundaries
+  const periodIndices: number[] = [];
+  for (const seg of workSegments) {
+    const isPeriod = periodPatterns.some(pattern => pattern.test(seg.text));
+    if (isPeriod) {
+      periodIndices.push(seg.index);
+      console.log(`[DOCX] Found period marker at segment ${seg.index}: "${seg.text}"`);
+    }
+  }
+
+  if (periodIndices.length === 0) {
+    console.log('[DOCX] No period markers found in work experience section');
+    return blocks;
+  }
+
+  // For each period, find the block boundaries
+  for (let i = 0; i < periodIndices.length; i++) {
+    const periodIdx = periodIndices[i];
+    const nextPeriodIdx = periodIndices[i + 1] ?? Infinity;
+
+    // Find segments that belong to this block (from period to next period)
+    const blockSegments = workSegments.filter(s =>
+      s.index >= periodIdx && s.index < nextPeriodIdx
+    );
+
+    if (blockSegments.length === 0) continue;
+
+    // Find the XML boundaries for this block
+    // We need to find the <w:p> elements that contain these segments
+    const firstSegment = blockSegments[0];
+    const lastSegment = blockSegments[blockSegments.length - 1];
+
+    // Find the start of the first paragraph containing the first segment
+    const searchArea = docXml.substring(0, firstSegment.start);
+    const pStart = searchArea.lastIndexOf('<w:p');
+
+    if (pStart === -1) continue;
+
+    // Find the end of the last paragraph containing the last segment
+    // Search for </w:p> after the last segment
+    const pEndSearch = docXml.indexOf('</w:p>', lastSegment.end);
+    const pEnd = pEndSearch !== -1 ? pEndSearch + '</w:p>'.length : -1;
+
+    if (pEnd === -1) continue;
+
+    const blockXml = docXml.substring(pStart, pEnd);
+
+    blocks.push({
+      startPos: pStart,
+      endPos: pEnd,
+      xml: blockXml,
+      segmentIndices: blockSegments.map(s => s.index),
+    });
+
+    console.log(`[DOCX] Detected work experience block ${i + 1}: segments ${blockSegments[0].index}-${lastSegment.index}, XML length ${blockXml.length}`);
+  }
+
+  return blocks;
+}
+
+/**
+ * Duplicate work experience blocks to accommodate all experiences
+ * Adds experience number markers so AI knows which experience goes where
+ *
+ * @param docXml - The original document XML
+ * @param blocks - Detected work experience blocks
+ * @param requiredCount - Number of experiences to accommodate
+ * @returns Modified XML with duplicated blocks containing experience markers
+ */
+function duplicateWorkExperienceBlocks(
+  docXml: string,
+  blocks: WorkExperienceBlock[],
+  requiredCount: number
+): string {
+  if (blocks.length === 0 || blocks.length >= requiredCount) {
+    console.log(`[DOCX] No duplication needed: ${blocks.length} blocks for ${requiredCount} experiences`);
+    return docXml;
+  }
+
+  const additionalNeeded = requiredCount - blocks.length;
+  console.log(`[DOCX] Need to duplicate: ${additionalNeeded} additional blocks`);
+
+  // Use the last block as template for duplication
+  const templateBlock = blocks[blocks.length - 1];
+
+  // Insert duplicated blocks after the last existing block
+  const insertPosition = templateBlock.endPos;
+
+  // Create duplicated blocks with experience markers
+  let duplicatedXml = '';
+  for (let i = 0; i < additionalNeeded; i++) {
+    const experienceNum = blocks.length + i + 1; // e.g., if 3 blocks exist, this is 4, 5, 6...
+
+    // Add experience marker to the period field so AI knows which experience to use
+    // Replace the first period pattern (e.g., "2020-2024") with "[EXPERIENCE_N]"
+    let markedBlock = templateBlock.xml;
+
+    // Replace period text to mark which experience this block is for
+    // This helps AI understand: "Block for experience 4", "Block for experience 5", etc.
+    // Match various period formats
+    markedBlock = markedBlock.replace(
+      /(<w:t[^>]*>)\s*(?:\d{4}\s*[-–—]\s*(?:\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?|[A-Za-z]{3,9}\.?\s*\d{4}\s*[-–—]\s*(?:[A-Za-z]{3,9}\.?\s*\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?)\s*:?\s*(<\/w:t>)/i,
+      `$1[WERKERVARING ${experienceNum}]$2`
+    );
+
+    duplicatedXml += markedBlock;
+    console.log(`[DOCX] Added duplicate block ${i + 1} marked as WERKERVARING ${experienceNum}`);
+  }
+
+  // Also mark existing blocks so AI knows the mapping
+  let result = docXml;
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    const experienceNum = i + 1;
+
+    // Find and mark the period in this block
+    const blockXml = result.substring(block.startPos, block.endPos);
+    const markedBlockXml = blockXml.replace(
+      /(<w:t[^>]*>)\s*(?:\d{4}\s*[-–—]\s*(?:\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?|[A-Za-z]{3,9}\.?\s*\d{4}\s*[-–—]\s*(?:[A-Za-z]{3,9}\.?\s*\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?)\s*:?\s*(<\/w:t>)/i,
+      `$1[WERKERVARING ${experienceNum}]$2`
+    );
+
+    if (markedBlockXml !== blockXml) {
+      result = result.substring(0, block.startPos) + markedBlockXml + result.substring(block.endPos);
+      console.log(`[DOCX] Marked existing block ${i + 1} as WERKERVARING ${experienceNum}`);
+
+      // Adjust positions of subsequent blocks due to length change
+      const lengthDiff = markedBlockXml.length - blockXml.length;
+      for (let j = i + 1; j < blocks.length; j++) {
+        blocks[j].startPos += lengthDiff;
+        blocks[j].endPos += lengthDiff;
+      }
+    }
+  }
+
+  // Recalculate insert position after marking existing blocks
+  const finalInsertPosition = blocks[blocks.length - 1].endPos;
+
+  // Insert the duplicated blocks into the document
+  const newDocXml = result.substring(0, finalInsertPosition) +
+                    duplicatedXml +
+                    result.substring(finalInsertPosition);
+
+  console.log(`[DOCX] Document XML grew from ${docXml.length} to ${newDocXml.length} chars`);
+
+  return newDocXml;
+}
+
 // ==================== Helper Functions ====================
 
 function escapeXml(str: string): string {
@@ -224,8 +421,13 @@ function addHangingIndentToParagraph(docXml: string, textTagStart: number): stri
       const firstLineMatch = indAttrs.match(/w:firstLine="(\d+)"/);
       const hangingMatch = indAttrs.match(/w:hanging="(\d+)"/);
 
+      console.log(`[DOCX] Found existing indent: left=${leftMatch?.[1]}, firstLine=${firstLineMatch?.[1]}, hanging=${hangingMatch?.[1]}`);
+
       // Already has hanging indent - skip modification
-      if (hangingMatch) return docXml;
+      if (hangingMatch) {
+        console.log('[DOCX] Already has hanging indent, skipping');
+        return docXml;
+      }
 
       // Calculate new values
       const existingLeft = leftMatch ? parseInt(leftMatch[1]) : 0;
@@ -237,6 +439,7 @@ function addHangingIndentToParagraph(docXml: string, textTagStart: number): stri
 
       // Build new indent element preserving w:left
       const newIndent = `<w:ind w:left="${existingLeft}" w:hanging="${hanging}"/>`;
+      console.log(`[DOCX] Converting indent: ${existingIndMatch[0]} -> ${newIndent}`);
 
       // Find and replace the existing <w:ind.../> element
       const indStartPos = pPrPos + pPrContent.indexOf(existingIndMatch[0]);
@@ -270,6 +473,8 @@ function applyFilledSegments(
   filledSegments: Record<string, string>
 ): string {
   let result = docXml;
+
+  console.log('[DOCX] applyFilledSegments called with', Object.keys(filledSegments).length, 'segments');
 
   const regex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
   let match;
@@ -306,7 +511,9 @@ function applyFilledSegments(
     const newContent = filledSegments[indexStr];
 
     // STEP 1: If content has bullets, add hanging indent FIRST (position is still accurate)
-    if (contentHasBullets(newContent)) {
+    const hasBullets = contentHasBullets(newContent);
+    if (hasBullets) {
+      console.log(`[DOCX] Segment ${i} has bullets: "${newContent.substring(0, 50)}..."`);
       // Find the parent <w:p> start position
       const searchArea = result.substring(0, m.start);
       const pStart = searchArea.lastIndexOf('<w:p');
@@ -314,6 +521,7 @@ function applyFilledSegments(
       // Only add indent if this paragraph doesn't have it yet
       if (pStart !== -1 && !paragraphsWithIndent.has(pStart)) {
         paragraphsWithIndent.add(pStart);
+        console.log(`[DOCX] Adding hanging indent for segment ${i} at pStart ${pStart}`);
 
         const beforeLength = result.length;
         result = addHangingIndentToParagraph(result, m.start);
@@ -397,7 +605,27 @@ export async function fillSmartTemplate(
 
   try {
     // Extract indexed segments from the document with section detection
-    const { segments, sections } = extractIndexedSegments(docXml);
+    let { segments, sections } = extractIndexedSegments(docXml);
+
+    // ==== WORK EXPERIENCE BLOCK DUPLICATION ====
+    // Detect how many work experience blocks exist in the template
+    // and duplicate if needed to accommodate all experiences
+    const experienceCount = profileData.experience?.length || 0;
+    if (experienceCount > 0) {
+      const workBlocks = detectWorkExperienceBlocks(docXml, segments);
+      console.log(`[DOCX] Template has ${workBlocks.length} work experience blocks, profile has ${experienceCount} experiences`);
+
+      if (workBlocks.length > 0 && workBlocks.length < experienceCount) {
+        // Duplicate blocks to accommodate all experiences
+        docXml = duplicateWorkExperienceBlocks(docXml, workBlocks, experienceCount);
+
+        // Re-extract segments after modification
+        const reExtracted = extractIndexedSegments(docXml);
+        segments = reExtracted.segments;
+        sections = reExtracted.sections;
+        console.log(`[DOCX] After duplication: ${segments.length} segments, ${sections.length} sections`);
+      }
+    }
 
     // Prepare segments for AI (index, text, and section)
     const segmentsForAI = segments.map(s => ({
