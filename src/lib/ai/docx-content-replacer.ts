@@ -117,16 +117,8 @@ CRITICAL RULES:
 - NEVER invent extra education, experiences or years
 - If data is "Unknown", leave the field empty or use "-"
 - FILL ALL work experience and education, including older ones - skip NOTHING!
+- If there are more experiences than template slots, fill available slots with most recent/relevant
 - Do NOT worry about space or following sections - fill everything that fits
-
-WORK EXPERIENCE MARKERS:
-- If you see "[WERKERVARING 1]" or "[WORK EXPERIENCE 1]", fill that block with work experience 1 from the profile
-- If you see "[WERKERVARING 2]" or "[WORK EXPERIENCE 2]", fill that block with work experience 2 from the profile
-- And so on for each numbered experience marker
-- IMPORTANT: Replace "[WERKERVARING N]" with the ACTUAL years from the profile!
-  For example: if work experience 1 has Start year=2020 and End year=2024,
-  replace "[WERKERVARING 1]" with "2020-2024" (or "2020-Present" if no end year)
-- The segments AFTER a marker belong to that same experience (position, company, tasks)
 
 INSTRUCTIONS:
 1. You receive text segments with numbers: [0] text, [1] text, etc.
@@ -140,14 +132,14 @@ Input:
 [1]
 [2] Position :
 [3]
-[4] [WERKERVARING 1]
+[4] 2024-Present :
 [5] Company
 
-If the person is "John Smith" and work experience 1 is "Developer" at "Google" from 2020-2024:
+If the person is "John Smith" and is a "Developer" at "Google" since 2020:
 Output: [
   { "index": "1", "value": "John Smith" },
   { "index": "3", "value": "Developer" },
-  { "index": "4", "value": "2020-2024" },
+  { "index": "4", "value": "2020-Present :" },
   { "index": "5", "value": "Google" }
 ]
 
@@ -158,22 +150,18 @@ Segments with labels like "Name :" or "Position :" do NOT need to be in the outp
       jobHeader: 'TARGET JOB (adapt content to this)',
       instructions: `Fill all segments with the correct profile data. Return an array of { index, value } objects.
 
-WORK EXPERIENCE MAPPING:
-- [WERKERVARING 1] = Work experience 1 from profile → replace with "StartYear-EndYear" (e.g., "2020-2024")
-- [WERKERVARING 2] = Work experience 2 from profile → replace with "StartYear-EndYear"
-- And so on...
-- Fill position, company, and tasks that follow each marker with the SAME experience
-
-EXAMPLE:
-If [WERKERVARING 1] and work experience 1 has Start year=2020, End year=Present:
-→ Output: { "index": "45", "value": "2020-Present" }
+WORK EXPERIENCE ORDER:
+The first "Position :" and "Tasks :" after a period belong to work experience 1.
+The second set belongs to work experience 2, etc.
 
 IMPORTANT:
 - Fill ALL empty segments where data belongs
-- [WERKERVARING N] markers MUST be replaced with actual years from the profile
+- Adjust periods to real dates
 - Fill availability, transport etc. if known
 - Return ONLY segments that need to be changed
-- FILL ALL work experience - including older jobs! Skip no experience.`,
+- FILL ALL work experience - including older jobs! Skip no experience.
+- If there are multiple work experience slots, fill them ALL with available experiences
+- Space is NOT a problem - fill everything from the profile`,
     };
   }
 
@@ -186,16 +174,8 @@ KRITIEKE REGELS:
 - VERZIN NOOIT extra opleidingen, ervaringen of jaren
 - Als data "Onbekend" is, laat het veld dan leeg of gebruik "-"
 - VUL ALLE werkervaring en opleidingen in, ook oudere - sla NIETS over!
+- Als er meer ervaringen zijn dan template slots, vul dan de beschikbare slots met de meest recente/relevante
 - Maak je GEEN zorgen over ruimte of volgende secties - vul alles in wat past
-
-WERKERVARING MARKERS:
-- Als je "[WERKERVARING 1]" ziet, vul dat blok in met werkervaring 1 uit het profiel
-- Als je "[WERKERVARING 2]" ziet, vul dat blok in met werkervaring 2 uit het profiel
-- Enzovoort voor elke genummerde werkervaring marker
-- BELANGRIJK: Vervang "[WERKERVARING N]" met de ECHTE jaren uit het profiel!
-  Bijvoorbeeld: als werkervaring 1 Startjaar=2020 en Eindjaar=2024 heeft,
-  vervang "[WERKERVARING 1]" met "2020-2024" (of "2020-Heden" als er geen eindjaar is)
-- De segmenten NA een marker horen bij diezelfde werkervaring (functie, bedrijf, taken)
 
 INSTRUCTIES:
 1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
@@ -209,14 +189,14 @@ Input:
 [1]
 [2] Functie :
 [3]
-[4] [WERKERVARING 1]
+[4] 2024-Heden :
 [5] Bedrijf
 
-Als de persoon "Jan Jansen" heet en werkervaring 1 is "Developer" bij "Google" van 2020-2024:
+Als de persoon "Jan Jansen" heet en "Developer" is bij "Google" sinds 2020:
 Output: [
   { "index": "1", "value": "Jan Jansen" },
   { "index": "3", "value": "Developer" },
-  { "index": "4", "value": "2020-2024" },
+  { "index": "4", "value": "2020-Heden :" },
   { "index": "5", "value": "Google" }
 ]
 
@@ -227,22 +207,18 @@ Segmenten met labels zoals "Naam :" of "Functie :" hoeven NIET in de output.`,
     jobHeader: 'DOELVACATURE (pas content hierop aan)',
     instructions: `Vul alle segmenten in met de juiste profieldata. Retourneer een array van { index, value } objecten.
 
-WERKERVARING MAPPING:
-- [WERKERVARING 1] = Werkervaring 1 uit profiel → vervang met "Startjaar-Eindjaar" (bijv. "2020-2024")
-- [WERKERVARING 2] = Werkervaring 2 uit profiel → vervang met "Startjaar-Eindjaar"
-- Enzovoort...
-- Vul functie, bedrijf en taken die volgen op elke marker met DEZELFDE werkervaring
-
-VOORBEELD:
-Als [WERKERVARING 1] en werkervaring 1 heeft Startjaar=2020, Eindjaar=Heden:
-→ Output: { "index": "45", "value": "2020-Heden" }
+WERKERVARING VOLGORDE:
+De eerste "Functie :" en "Werkzaamheden :" na een periode horen bij werkervaring 1.
+De tweede set hoort bij werkervaring 2, etc.
 
 BELANGRIJK:
 - Vul ALLE lege segmenten in waar data hoort
-- [WERKERVARING N] markers MOETEN vervangen worden met de jaren uit het profiel
+- Periodes aanpassen naar echte datums
 - Beschikbaarheid, vervoer etc. ook invullen indien bekend
 - Retourneer ALLEEN segmenten die gewijzigd moeten worden
-- VUL ALLE werkervaring in - ook oudere banen! Sla geen ervaring over.`,
+- VUL ALLE werkervaring in - ook oudere banen! Sla geen ervaring over.
+- Als er meerdere werkervaring slots zijn, vul ze ALLEMAAL in met de beschikbare ervaringen
+- Ruimte is GEEN probleem - vul alles in wat in het profiel staat`,
   };
 }
 
@@ -552,17 +528,6 @@ ${prompts.instructions}`;
 }
 
 /**
- * Extract only the year from a date string
- * Handles formats like "Jan 2020", "January 2020", "2020-01", "2020", etc.
- */
-function extractYear(dateStr: string | null | undefined): string {
-  if (!dateStr) return '';
-  // Match a 4-digit year anywhere in the string
-  const match = dateStr.match(/(\d{4})/);
-  return match ? match[1] : dateStr;
-}
-
-/**
  * Build a summary of the profile data for the AI prompt
  */
 function buildProfileSummary(profile: ParsedLinkedIn, language: OutputLanguage = 'nl'): string {
@@ -603,11 +568,8 @@ function buildProfileSummary(profile: ParsedLinkedIn, language: OutputLanguage =
       parts.push(expLabel);
       parts.push(`   ${isEn ? 'Position' : 'Functie'}: ${exp.title || unknown}`);
       parts.push(`   ${isEn ? 'Company' : 'Bedrijf'}: ${exp.company || unknown}`);
-      // Extract only years from dates (e.g., "Jan 2020" -> "2020")
-      const startYear = extractYear(exp.startDate) || unknown;
-      const endYear = extractYear(exp.endDate) || present;
-      parts.push(`   ${isEn ? 'Start year' : 'Startjaar'}: ${startYear}`);
-      parts.push(`   ${isEn ? 'End year' : 'Eindjaar'}: ${endYear}`);
+      parts.push(`   ${isEn ? 'Start date' : 'Startdatum'}: ${exp.startDate || unknown}`);
+      parts.push(`   ${isEn ? 'End date' : 'Einddatum'}: ${exp.endDate || present}`);
       if (exp.description) {
         parts.push(`   ${isEn ? 'Tasks' : 'Werkzaamheden'}: ${exp.description.substring(0, 800)}`);
       }
