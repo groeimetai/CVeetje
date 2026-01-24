@@ -171,7 +171,7 @@ function extractIndexedSegments(docXml: string): {
 }
 
 /**
- * Check if content contains bullet points that need special formatting
+ * Check if content contains bullet points that need hanging indent
  */
 function contentHasBullets(content: string): boolean {
   // Check for common bullet patterns
@@ -179,227 +179,71 @@ function contentHasBullets(content: string): boolean {
 }
 
 /**
- * Parse bullet content into individual bullet items
- * Returns array of {bullet: string, text: string}
+ * Add hanging indent to paragraph properties for bullet content
+ * This ensures wrapped lines align properly with bullet text
  */
-function parseBulletContent(content: string): { bullet: string; text: string }[] {
-  const lines = content.split('\n');
-  const items: { bullet: string; text: string }[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    // Match bullet patterns: -, •, ·, ‣, ⁃
-    const bulletMatch = trimmed.match(/^([-•·‣⁃])\s+(.*)$/);
-    if (bulletMatch) {
-      items.push({
-        bullet: '•', // Normalize to bullet point
-        text: bulletMatch[2],
-      });
-    } else {
-      // Non-bullet line, add as text without bullet
-      items.push({
-        bullet: '',
-        text: trimmed,
-      });
-    }
-  }
-
-  return items;
-}
-
-/**
- * Create a borderless table XML for bullet content (standalone, not inside a cell)
- * Each bullet item becomes a row with 2 cells:
- * - Cell 1: bullet character (narrow, fixed width)
- * - Cell 2: text content (remaining width)
- */
-function createBulletTableXml(items: { bullet: string; text: string }[], runProps: string = ''): string {
-  // Table properties: no borders, full width
-  const tblPr = `<w:tblPr>
-    <w:tblW w:w="5000" w:type="pct"/>
-    <w:tblBorders>
-      <w:top w:val="nil"/>
-      <w:left w:val="nil"/>
-      <w:bottom w:val="nil"/>
-      <w:right w:val="nil"/>
-      <w:insideH w:val="nil"/>
-      <w:insideV w:val="nil"/>
-    </w:tblBorders>
-    <w:tblCellMar>
-      <w:top w:w="0" w:type="dxa"/>
-      <w:left w:w="0" w:type="dxa"/>
-      <w:bottom w:w="0" w:type="dxa"/>
-      <w:right w:w="0" w:type="dxa"/>
-    </w:tblCellMar>
-  </w:tblPr>`;
-
-  // Grid: first column 300 twips (~0.2 inch for bullet), second column auto
-  const tblGrid = `<w:tblGrid>
-    <w:gridCol w:w="300"/>
-    <w:gridCol w:w="8700"/>
-  </w:tblGrid>`;
-
-  // Build rows for each bullet item
-  const rows = items.map(item => {
-    const bulletCell = item.bullet
-      ? `<w:tc>
-          <w:tcPr><w:tcW w:w="300" w:type="dxa"/></w:tcPr>
-          <w:p><w:r>${runProps}<w:t>${escapeXml(item.bullet)}</w:t></w:r></w:p>
-        </w:tc>`
-      : `<w:tc>
-          <w:tcPr><w:tcW w:w="300" w:type="dxa"/></w:tcPr>
-          <w:p><w:r><w:t></w:t></w:r></w:p>
-        </w:tc>`;
-
-    const textCell = `<w:tc>
-      <w:tcPr><w:tcW w:w="8700" w:type="dxa"/></w:tcPr>
-      <w:p><w:r>${runProps}<w:t>${escapeXml(item.text)}</w:t></w:r></w:p>
-    </w:tc>`;
-
-    return `<w:tr>${bulletCell}${textCell}</w:tr>`;
-  }).join('');
-
-  return `<w:tbl>${tblPr}${tblGrid}${rows}</w:tbl>`;
-}
-
-/**
- * Create multiple paragraphs for bullet content inside an existing table cell
- * Each bullet becomes a separate paragraph with proper formatting
- */
-function createBulletParagraphsXml(items: { bullet: string; text: string }[], runProps: string = ''): string {
-  return items.map(item => {
-    if (item.bullet) {
-      // Paragraph with hanging indent for bullet alignment
-      return `<w:p>
-        <w:pPr>
-          <w:ind w:left="227" w:hanging="227"/>
-        </w:pPr>
-        <w:r>${runProps}<w:t>${escapeXml(item.bullet)} ${escapeXml(item.text)}</w:t></w:r>
-      </w:p>`;
-    } else {
-      // Non-bullet paragraph
-      return `<w:p><w:r>${runProps}<w:t>${escapeXml(item.text)}</w:t></w:r></w:p>`;
-    }
-  }).join('');
-}
-
-/**
- * Check if a position is inside a table cell (<w:tc>)
- * Returns the cell boundaries if inside a cell, null otherwise
- */
-function findTableCellBoundaries(docXml: string, position: number): { start: number; end: number } | null {
-  // Find the most recent <w:tc> before this position
-  const searchArea = docXml.substring(0, position);
-  const tcStart = searchArea.lastIndexOf('<w:tc');
-
-  if (tcStart === -1) return null;
-
-  // Check if there's a </w:tc> between tcStart and position
-  // If so, we're not inside that cell anymore
-  const betweenArea = docXml.substring(tcStart, position);
-  if (betweenArea.includes('</w:tc>')) return null;
-
-  // Find the closing </w:tc> tag after position
-  const tcEndTag = '</w:tc>';
-  const tcEnd = docXml.indexOf(tcEndTag, position);
-  if (tcEnd === -1) return null;
-
-  return { start: tcStart, end: tcEnd + tcEndTag.length };
-}
-
-/**
- * Extract run properties (font, size, etc.) from a paragraph
- * This helps preserve styling when creating the table
- */
-function extractRunProperties(docXml: string, position: number): string {
-  // Find the parent <w:p> element
-  const searchArea = docXml.substring(0, position);
-  const lastPStart = searchArea.lastIndexOf('<w:p');
-  if (lastPStart === -1) return '';
-
-  // Find the end of this paragraph
-  const pEnd = docXml.indexOf('</w:p>', lastPStart);
-  if (pEnd === -1) return '';
-
-  const pContent = docXml.substring(lastPStart, pEnd);
-
-  // Look for <w:rPr> (run properties) within this paragraph
-  const rPrMatch = pContent.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
-  if (rPrMatch) {
-    return `<w:rPr>${rPrMatch[1]}</w:rPr>`;
-  }
-
-  return '';
-}
-
-/**
- * Replace a paragraph with a bullet table
- * Finds the parent <w:p> element and replaces it entirely with a table
- */
-function replaceParagraphWithTable(docXml: string, textTagStart: number, tableXml: string): { xml: string; lengthDiff: number } | null {
+function addHangingIndentToParagraph(docXml: string, textTagStart: number): string {
   // Find the parent <w:p> element that contains this <w:t>
+  // Search backwards from the text tag position
   const searchArea = docXml.substring(0, textTagStart);
   const lastPStart = searchArea.lastIndexOf('<w:p');
 
-  if (lastPStart === -1) return null;
+  if (lastPStart === -1) return docXml;
 
-  // Find the closing </w:p> tag
-  const pEndTag = '</w:p>';
-  const pEnd = docXml.indexOf(pEndTag, lastPStart);
-  if (pEnd === -1) return null;
+  // Find the end of the <w:p...> tag
+  const pTagEnd = docXml.indexOf('>', lastPStart);
+  if (pTagEnd === -1) return docXml;
 
-  const pEndComplete = pEnd + pEndTag.length;
-  const originalLength = pEndComplete - lastPStart;
+  // Check if there's already a <w:pPr> in this paragraph
+  const pContent = docXml.substring(lastPStart, textTagStart);
+  const existingPPrMatch = pContent.match(/<w:pPr[^>]*>/);
 
-  // Replace the entire paragraph with the table
-  const newXml = docXml.substring(0, lastPStart) + tableXml + docXml.substring(pEndComplete);
+  // Hanging indent: left margin 360 twips (~0.25 inch), hanging 360 twips
+  // This makes continuation lines align with text after the bullet
+  const hangingIndent = '<w:ind w:left="360" w:hanging="360"/>';
 
-  return {
-    xml: newXml,
-    lengthDiff: tableXml.length - originalLength,
-  };
-}
+  if (existingPPrMatch) {
+    // Find position of existing <w:pPr> and add indent inside it
+    const pPrPos = lastPStart + pContent.indexOf(existingPPrMatch[0]);
+    const pPrEndTag = pPrPos + existingPPrMatch[0].length;
 
-/**
- * Find the paragraph boundaries for a given position in the XML
- * Returns { start, end } of the <w:p>...</w:p> element
- */
-function findParagraphBoundaries(docXml: string, position: number): { start: number; end: number } | null {
-  // Find the start of the parent <w:p> element
-  const searchArea = docXml.substring(0, position);
-  const pStart = searchArea.lastIndexOf('<w:p');
-  if (pStart === -1) return null;
+    // Check if there's already an <w:ind> element
+    const pPrContent = docXml.substring(pPrPos, docXml.indexOf('</w:pPr>', pPrPos));
+    if (pPrContent.includes('<w:ind')) {
+      // Already has indent, don't modify
+      return docXml;
+    }
 
-  // Find the closing </w:p> tag
-  const pEndTag = '</w:p>';
-  const pEnd = docXml.indexOf(pEndTag, pStart);
-  if (pEnd === -1) return null;
-
-  return { start: pStart, end: pEnd + pEndTag.length };
+    // Insert hanging indent after the opening <w:pPr> tag
+    return docXml.substring(0, pPrEndTag) + hangingIndent + docXml.substring(pPrEndTag);
+  } else {
+    // No <w:pPr> exists, need to add it after <w:p...>
+    const insertPos = pTagEnd + 1;
+    const pPrElement = `<w:pPr>${hangingIndent}</w:pPr>`;
+    return docXml.substring(0, insertPos) + pPrElement + docXml.substring(insertPos);
+  }
 }
 
 /**
  * Apply filled segments back to the DOCX XML
  * Replaces text content by index while preserving XML structure
- * For bullet content:
- * - If inside a table cell: replace paragraph with multiple bullet paragraphs (hanging indent)
- * - If standalone: replace paragraph with a borderless 2-column table
+ * Also adds hanging indent for bullet-containing content
  *
- * Two-phase approach:
- * 1. Identify which paragraphs need special bullet formatting
- * 2. Process replacements, skipping non-primary matches in bullet paragraphs
+ * CRITICAL: Hanging indent must be applied DURING replacement, not after,
+ * because indexOf-based re-finding is unreliable when multiple segments
+ * have the same content.
  */
 function applyFilledSegments(
   docXml: string,
   filledSegments: Record<string, string>
 ): string {
+  let result = docXml;
+
   const regex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
   let match;
 
   // Collect all matches first with their positions
-  const matches: { fullMatch: string; attrs: string; content: string; start: number; index: number }[] = [];
+  const matches: { fullMatch: string; attrs: string; content: string; start: number }[] = [];
 
   while ((match = regex.exec(docXml)) !== null) {
     matches.push({
@@ -407,117 +251,75 @@ function applyFilledSegments(
       attrs: match[1],
       content: match[2],
       start: match.index,
-      index: matches.length,
     });
   }
 
-  // Phase 1: Identify paragraphs that need bullet formatting
-  // Map paragraph start position -> { matchIndex, content, runProps, isInsideCell }
-  const bulletParagraphs = new Map<number, {
-    matchIndex: number;
-    content: string;
-    runProps: string;
-    isInsideCell: boolean;
-  }>();
+  // Track which paragraphs already have hanging indent added (by their <w:p> start position)
+  // This prevents adding indent multiple times to the same paragraph
+  const paragraphsWithIndent = new Set<number>();
 
-  for (const m of matches) {
-    const indexStr = m.index.toString();
+  // Track cumulative offset from indent insertions
+  // When we add indent XML, all positions AFTER that point shift
+  let cumulativeOffset = 0;
+
+  // Process in FORWARD order for indent tracking, but we need to handle offsets carefully
+  // Actually, process in REVERSE order - this way positions we haven't processed yet remain accurate
+  // and we only need to track indent additions for determining which paragraphs are done
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const m = matches[i];
+    const indexStr = i.toString();
+
+    if (filledSegments[indexStr] === undefined) continue;
+
     const newContent = filledSegments[indexStr];
 
-    if (newContent === undefined) continue;
-
+    // STEP 1: If content has bullets, add hanging indent FIRST (position is still accurate)
     if (contentHasBullets(newContent)) {
-      // Find paragraph boundaries in original XML
-      const boundaries = findParagraphBoundaries(docXml, m.start);
-      if (boundaries) {
-        // Store first match with bullet content for this paragraph
-        if (!bulletParagraphs.has(boundaries.start)) {
-          const runProps = extractRunProperties(docXml, m.start);
-          const cellBoundaries = findTableCellBoundaries(docXml, m.start);
-          bulletParagraphs.set(boundaries.start, {
-            matchIndex: m.index,
-            content: newContent,
-            runProps,
-            isInsideCell: cellBoundaries !== null,
-          });
-        }
+      // Find the parent <w:p> start position
+      const searchArea = result.substring(0, m.start);
+      const pStart = searchArea.lastIndexOf('<w:p');
+
+      // Only add indent if this paragraph doesn't have it yet
+      if (pStart !== -1 && !paragraphsWithIndent.has(pStart)) {
+        paragraphsWithIndent.add(pStart);
+
+        const beforeLength = result.length;
+        result = addHangingIndentToParagraph(result, m.start);
+        const afterLength = result.length;
+
+        // Calculate how much XML was added (for offset tracking if needed)
+        const addedLength = afterLength - beforeLength;
+
+        // The indent insertion happens BEFORE m.start (at the <w:p> level),
+        // so m.start itself shifts. We need to account for this in the text replacement.
+        // Since we're processing in reverse order, this shift only affects the current replacement.
+
+        // Recalculate the position of our <w:t> tag after indent insertion
+        // The indent was inserted somewhere between pStart and m.start
+        const newStart = m.start + addedLength;
+
+        // STEP 2: Replace the text content at the new position
+        const escapedContent = escapeXml(newContent);
+        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+
+        result = result.substring(0, newStart) + newTag +
+                 result.substring(newStart + m.fullMatch.length);
+      } else {
+        // Paragraph already has indent or no paragraph found, just replace text
+        const escapedContent = escapeXml(newContent);
+        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+
+        result = result.substring(0, m.start) + newTag +
+                 result.substring(m.start + m.fullMatch.length);
       }
+    } else {
+      // No bullets, just replace the text content
+      const escapedContent = escapeXml(newContent);
+      const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+
+      result = result.substring(0, m.start) + newTag +
+               result.substring(m.start + m.fullMatch.length);
     }
-  }
-
-  // Phase 2: Build list of replacements to apply
-  // We'll collect replacements and apply them in reverse order
-  interface Replacement {
-    start: number;
-    end: number;
-    newContent: string;
-    isParagraphReplacement: boolean;
-  }
-
-  const replacements: Replacement[] = [];
-  const processedParagraphs = new Set<number>();
-
-  for (const m of matches) {
-    const indexStr = m.index.toString();
-    const newContent = filledSegments[indexStr];
-
-    if (newContent === undefined) continue;
-
-    const boundaries = findParagraphBoundaries(docXml, m.start);
-
-    // Check if this match is in a bullet paragraph
-    if (boundaries && bulletParagraphs.has(boundaries.start)) {
-      const bulletInfo = bulletParagraphs.get(boundaries.start)!;
-
-      // Only process if this is the primary match for this paragraph
-      // and we haven't already processed this paragraph
-      if (m.index === bulletInfo.matchIndex && !processedParagraphs.has(boundaries.start)) {
-        processedParagraphs.add(boundaries.start);
-
-        // Parse bullet content
-        const bulletItems = parseBulletContent(bulletInfo.content);
-        if (bulletItems.length > 0) {
-          let bulletXml: string;
-
-          if (bulletInfo.isInsideCell) {
-            // Inside a table cell: use multiple paragraphs with hanging indent
-            // This keeps the content within the existing cell structure
-            bulletXml = createBulletParagraphsXml(bulletItems, bulletInfo.runProps);
-          } else {
-            // Standalone paragraph: replace with a borderless table
-            bulletXml = createBulletTableXml(bulletItems, bulletInfo.runProps);
-          }
-
-          replacements.push({
-            start: boundaries.start,
-            end: boundaries.end,
-            newContent: bulletXml,
-            isParagraphReplacement: true,
-          });
-        }
-      }
-      // Skip other matches in bullet paragraphs (they'll be removed with the paragraph)
-      continue;
-    }
-
-    // Regular text replacement
-    const escapedContent = escapeXml(newContent);
-    const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
-    replacements.push({
-      start: m.start,
-      end: m.start + m.fullMatch.length,
-      newContent: newTag,
-      isParagraphReplacement: false,
-    });
-  }
-
-  // Sort replacements by start position descending (process from end to start)
-  replacements.sort((a, b) => b.start - a.start);
-
-  // Apply replacements
-  let result = docXml;
-  for (const r of replacements) {
-    result = result.substring(0, r.start) + r.newContent + result.substring(r.end);
   }
 
   return result;
