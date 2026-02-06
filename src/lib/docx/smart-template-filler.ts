@@ -763,6 +763,41 @@ function applyFilledSegments(
         const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
         result = result.substring(0, m.start) + newTag + result.substring(m.end);
       }
+
+      // For WE/education paragraphs that use tabs for alignment, add hanging indent
+      // so wrapped text stays in the value column instead of flowing to the left margin.
+      // The pPr is at the start of the paragraph, before any <w:t> elements,
+      // so its position is unaffected by the <w:t> replacements above.
+      const segInfo = _segments.find(s => s.index === group.matchIndices[0]);
+      const isTabAligned = (segInfo?.section === 'work_experience' || segInfo?.section === 'education')
+        && group.paraXml.includes('<w:tab/>');
+
+      if (isTabAligned) {
+        // Use 2880 twips to match the template's continuation line indent (4 default tab stops × 720)
+        const indentPos = 2880;
+        const afterParaOpen = result.substring(group.paraStart);
+        const pprStartOff = afterParaOpen.indexOf('<w:pPr>');
+
+        if (pprStartOff !== -1) {
+          const pprEndOff = afterParaOpen.indexOf('</w:pPr>', pprStartOff) + '</w:pPr>'.length;
+          const pprAbsStart = group.paraStart + pprStartOff;
+          const pprAbsEnd = group.paraStart + pprEndOff;
+          const currentPPr = result.substring(pprAbsStart, pprAbsEnd);
+
+          if (!currentPPr.includes('<w:ind')) {
+            const newPPr = currentPPr.replace('</w:pPr>', `<w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`);
+            result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
+          }
+        } else {
+          // No pPr exists — insert one after the <w:p ...> opening tag
+          const pOpenMatch = afterParaOpen.match(/^<w:p[^>]*>/);
+          if (pOpenMatch) {
+            const insertPos = group.paraStart + pOpenMatch[0].length;
+            const newPPr = `<w:pPr><w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`;
+            result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
+          }
+        }
+      }
     }
   }
 
