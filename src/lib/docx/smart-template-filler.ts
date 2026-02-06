@@ -68,10 +68,18 @@ function detectSectionType(text: string): SectionType | null {
   const trimmed = text.trim();
   if (!trimmed || trimmed.length > 50) return null; // Section headers are short
 
+  // Decode XML entities — template text may have &amp; etc.
+  const decoded = trimmed
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
+
   for (const sectionType of Object.keys(SECTION_PATTERNS) as Array<Exclude<SectionType, 'unknown'>>) {
     const patterns = SECTION_PATTERNS[sectionType];
     for (const pattern of patterns) {
-      if (pattern.test(trimmed)) {
+      if (pattern.test(decoded)) {
         return sectionType;
       }
     }
@@ -224,20 +232,25 @@ function buildTabAlignedRuns(label: string, value: string, rPrXml: string): stri
 
   return `<w:r>${rPr}<w:t xml:space="preserve">${escapedLabel}</w:t></w:r>` +
     `<w:r>${rPr}<w:tab/></w:r>` +
-    `<w:r>${rPr}<w:t>${escapedValue}</w:t></w:r>`;
+    `<w:r>${rPr}<w:t xml:space="preserve">${escapedValue}</w:t></w:r>`;
 }
 
 // ==================== Work Experience Block Duplication ====================
 
 interface WorkExperienceSlot {
-  /** Indices of the 3 segments: period, functie, werkzaamheden */
-  segmentIndices: [number, number, number];
-  /** XML boundaries of the 3 paragraphs */
+  /** Indices of all segments in this WE block */
+  segmentIndices: number[];
+  /** XML boundaries of all unique paragraphs in this WE block */
   paragraphs: { start: number; end: number }[];
 }
 
 /**
- * Detect work experience slots as triplets of (period, functie, werkzaamheden)
+ * Detect work experience slots using paragraph-based grouping.
+ *
+ * A WE slot starts at a period-pattern segment and includes all subsequent
+ * non-period WE segments until the next period or section change.
+ * Tracks unique parent paragraphs per slot (not segment count), so templates
+ * with split <w:t> elements (4+ segments per WE block) work correctly.
  */
 function detectWorkExperienceSlots(
   docXml: string,
@@ -249,38 +262,54 @@ function detectWorkExperienceSlots(
   // Period pattern to detect start of a WE block
   const periodPattern = /^\s*\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?\s*:?\s*$/;
 
-  for (let i = 0; i < weSegments.length; i++) {
-    const seg = weSegments[i];
-    if (!periodPattern.test(seg.text)) continue;
+  let currentSlotSegments: typeof weSegments = [];
 
-    // Found a period marker - next two segments should be Functie and Werkzaamheden
-    const functieSeg = weSegments[i + 1];
-    const werkSeg = weSegments[i + 2];
+  const flushSlot = () => {
+    if (currentSlotSegments.length === 0) return;
 
-    if (!functieSeg || !werkSeg) continue;
-
-    // Find paragraph boundaries for all three
+    // Collect unique paragraphs (by start position)
+    const seenParaStarts = new Set<number>();
     const paragraphs: { start: number; end: number }[] = [];
-    for (const s of [seg, functieSeg, werkSeg]) {
+    const segmentIndices: number[] = [];
+
+    for (const s of currentSlotSegments) {
+      segmentIndices.push(s.index);
       const p = findParentParagraph(docXml, s.start);
-      if (!p) break;
-      paragraphs.push({ start: p.start, end: p.end });
+      if (p && !seenParaStarts.has(p.start)) {
+        seenParaStarts.add(p.start);
+        paragraphs.push({ start: p.start, end: p.end });
+      }
     }
 
-    if (paragraphs.length === 3) {
-      slots.push({
-        segmentIndices: [seg.index, functieSeg.index, werkSeg.index],
-        paragraphs,
-      });
+    if (paragraphs.length > 0) {
+      slots.push({ segmentIndices, paragraphs });
     }
+    currentSlotSegments = [];
+  };
+
+  for (const seg of weSegments) {
+    if (periodPattern.test(seg.text)) {
+      // Period marker found — flush previous slot, start new one
+      flushSlot();
+      currentSlotSegments = [seg];
+    } else if (currentSlotSegments.length > 0) {
+      // Continue current slot
+      currentSlotSegments.push(seg);
+    }
+    // Segments before the first period marker are ignored
   }
+
+  // Flush the last slot
+  flushSlot();
 
   return slots;
 }
 
 /**
- * Duplicate work experience slots by cloning paragraph XML
- * Inserts clones after the last existing WE block
+ * Duplicate work experience slots by cloning paragraph XML.
+ * Clones all paragraphs of the last slot (not just 3), so templates
+ * with varying paragraph counts per WE block are handled correctly.
+ * Inserts clones after the last existing WE block.
  */
 function duplicateWorkExperienceSlots(
   docXml: string,
@@ -291,10 +320,11 @@ function duplicateWorkExperienceSlots(
 
   const additionalNeeded = targetCount - slots.length;
   const lastSlot = slots[slots.length - 1];
+  const paras = lastSlot.paragraphs;
 
-  // Extract the XML of the last 3-paragraph block
-  const blockStart = lastSlot.paragraphs[0].start;
-  const blockEnd = lastSlot.paragraphs[2].end;
+  // Extract the XML of all paragraphs in the last slot
+  const blockStart = paras[0].start;
+  const blockEnd = paras[paras.length - 1].end;
   const blockXml = docXml.substring(blockStart, blockEnd);
 
   // Clone the block for each additional experience
@@ -408,28 +438,39 @@ function extractIndexedSegments(docXml: string): {
   return { segments, sections };
 }
 
-/** Tab stop position in twips (2800 twips ≈ 4.9cm, accommodates "Werkzaamheden") */
+/** Default tab stop position in twips (2800 twips ≈ 4.9cm, accommodates "Werkzaamheden") */
 const TAB_STOP_POS = 2800;
+
+/**
+ * Extract the existing tab stop position from paragraph properties.
+ * Falls back to TAB_STOP_POS if none found.
+ */
+function extractTabStopPos(pPrXml: string | null): number {
+  if (!pPrXml) return TAB_STOP_POS;
+  const tabMatch = pPrXml.match(/<w:tab\s[^>]*w:pos="(\d+)"/);
+  return tabMatch ? parseInt(tabMatch[1]) : TAB_STOP_POS;
+}
 
 /**
  * Apply filled segments back to the DOCX XML
  *
+ * Groups segments by parent paragraph and processes each paragraph atomically.
  * For label:value segments (e.g., "Functie : "), creates proper tab-aligned runs.
  * For multi-line bullet content, expands into separate paragraphs.
- * Processes in reverse order to keep position tracking correct.
+ * Processes paragraph groups in reverse order to keep position tracking correct.
  */
 function applyFilledSegments(
   docXml: string,
   filledSegments: Record<string, string>,
-  segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[]
+  _segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[]
 ): string {
   let result = docXml;
 
   const regex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
   let match;
 
-  // Collect all matches with their positions
-  const matches: { fullMatch: string; attrs: string; content: string; start: number }[] = [];
+  // Collect all <w:t> matches with their positions (from the ORIGINAL XML)
+  const matches: { fullMatch: string; attrs: string; content: string; start: number; end: number }[] = [];
 
   while ((match = regex.exec(docXml)) !== null) {
     matches.push({
@@ -437,36 +478,99 @@ function applyFilledSegments(
       attrs: match[1],
       content: match[2],
       start: match.index,
+      end: match.index + match[0].length,
     });
   }
 
-  // Process in REVERSE order so earlier positions stay valid
-  for (let i = matches.length - 1; i >= 0; i--) {
+  // Identify which match indices have fills
+  const filledIndices = new Set<number>();
+  for (const indexStr of Object.keys(filledSegments)) {
+    filledIndices.add(parseInt(indexStr));
+  }
+
+  // Group filled matches by their parent paragraph (using original XML positions)
+  // Each group: { paraStart, paraEnd, paraXml, matchIndices[] }
+  interface ParaGroup {
+    paraStart: number;
+    paraEnd: number;
+    paraXml: string;
+    matchIndices: number[]; // indices into the matches array
+    hasLabel: boolean; // whether any match in this group is a label:value field
+  }
+
+  const paraGroups: ParaGroup[] = [];
+  const matchToGroup = new Map<number, number>(); // match index → group index
+
+  for (let i = 0; i < matches.length; i++) {
+    if (!filledIndices.has(i)) continue;
+
     const m = matches[i];
-    const indexStr = i.toString();
+    const para = findParentParagraph(docXml, m.start);
+    if (!para) {
+      // No paragraph found — will handle in fallback below
+      continue;
+    }
 
-    if (filledSegments[indexStr] === undefined) continue;
+    // Check if this paragraph already has a group
+    const existingGroupIdx = paraGroups.findIndex(
+      g => g.paraStart === para.start && g.paraEnd === para.end
+    );
 
-    const newContent = filledSegments[indexStr];
-    const labelInfo = splitLabelValue(m.content);
+    const isLabel = splitLabelValue(m.content) !== null;
 
-    if (labelInfo) {
-      // This is a label:value field - use tab alignment
-      const run = findParentRun(result, m.start);
-      const para = findParentParagraph(result, m.start);
-      if (!run || !para) {
-        // Fallback: simple text replacement
-        const escapedContent = escapeXml(newContent);
-        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
-        result = result.substring(0, m.start) + newTag + result.substring(m.start + m.fullMatch.length);
-        continue;
-      }
+    if (existingGroupIdx >= 0) {
+      paraGroups[existingGroupIdx].matchIndices.push(i);
+      if (isLabel) paraGroups[existingGroupIdx].hasLabel = true;
+      matchToGroup.set(i, existingGroupIdx);
+    } else {
+      const groupIdx = paraGroups.length;
+      paraGroups.push({
+        paraStart: para.start,
+        paraEnd: para.end,
+        paraXml: para.xml,
+        matchIndices: [i],
+        hasLabel: isLabel,
+      });
+      matchToGroup.set(i, groupIdx);
+    }
+  }
 
-      const rPrXml = extractRunProperties(run.xml);
-      const pPrXml = extractParagraphProperties(para.xml);
+  // Track which match indices are handled by paragraph groups
+  const handledByGroup = new Set<number>();
+  for (const g of paraGroups) {
+    for (const idx of g.matchIndices) {
+      handledByGroup.add(idx);
+    }
+  }
+
+  // Sort paragraph groups by paraStart in REVERSE order
+  paraGroups.sort((a, b) => b.paraStart - a.paraStart);
+
+  // Process each paragraph group atomically
+  for (const group of paraGroups) {
+    if (group.hasLabel) {
+      // This paragraph contains a label:value field — rebuild the entire paragraph
+      // Find the FIRST label match to determine rPr and alignment
+      const labelMatchIdx = group.matchIndices.find(i => splitLabelValue(matches[i].content) !== null);
+      if (labelMatchIdx === undefined) continue;
+
+      const labelMatch = matches[labelMatchIdx];
+      const labelInfo = splitLabelValue(labelMatch.content)!;
+      const newContent = filledSegments[labelMatchIdx.toString()];
+
+      // Find run/paragraph from the CURRENT result using the group's paragraph boundaries
+      // Since we process in reverse, earlier paragraphs haven't been touched yet
+      const currentPara = findParentParagraph(result, group.paraStart);
+      if (!currentPara) continue;
+
+      const run = findParentRun(result, labelMatch.start);
+      const rPrXml = run ? extractRunProperties(run.xml) : '';
+      const pPrXml = extractParagraphProperties(currentPara.xml);
+
+      // Use template's existing tab stop position if available
+      const tabPos = extractTabStopPos(pPrXml);
 
       // Handle period fields where AI returns "2020-Heden\tCompany"
-      // The tab character separates the new period label from the company value
       let effectiveLabel = labelInfo.label;
       let effectiveValue = newContent;
 
@@ -483,35 +587,57 @@ function applyFilledSegments(
       // Build the tab-aligned runs for label + value
       const tabRuns = buildTabAlignedRuns(effectiveLabel, firstLineValue.trim(), rPrXml);
 
-      // Add tab stop to paragraph properties
-      let newParaXml = para.xml;
-      if (pPrXml) {
-        const newPPr = addTabStopToParagraphXml(pPrXml, TAB_STOP_POS);
-        newParaXml = newParaXml.replace(pPrXml, newPPr);
+      // Start building new paragraph: keep pPr, replace all runs
+      let newPPr = pPrXml;
+      if (newPPr) {
+        newPPr = addTabStopToParagraphXml(newPPr, tabPos);
       } else {
-        // No pPr exists, add one
-        const pOpenEnd = newParaXml.indexOf('>') + 1;
-        const tabPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${TAB_STOP_POS}"/></w:tabs></w:pPr>`;
-        newParaXml = newParaXml.substring(0, pOpenEnd) + tabPPr + newParaXml.substring(pOpenEnd);
+        newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs></w:pPr>`;
       }
 
-      // Replace the run with tab-aligned runs
-      newParaXml = newParaXml.replace(run.xml, tabRuns);
+      // Extract the paragraph open tag (may have attributes like w14:paraId)
+      const pOpenMatch = currentPara.xml.match(/^<w:p[^>]*>/);
+      const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
+
+      const newParaXml = `${pOpen}${newPPr}${tabRuns}</w:p>`;
 
       // Build continuation paragraphs for multi-line content
       let continuationXml = '';
       if (lines.length > 1) {
-        continuationXml = expandBulletParagraphs(effectiveValue, rPrXml, pPrXml, TAB_STOP_POS, effectiveLabel);
+        continuationXml = expandBulletParagraphs(effectiveValue, rPrXml, pPrXml, tabPos, effectiveLabel);
       }
 
-      // Replace the entire paragraph and append continuation paragraphs
-      result = result.substring(0, para.start) + newParaXml + continuationXml + result.substring(para.end);
+      // Replace the entire paragraph atomically
+      result = result.substring(0, currentPara.start) + newParaXml + continuationXml + result.substring(currentPara.end);
     } else {
-      // Not a label field - simple text replacement
-      const escapedContent = escapeXml(newContent);
-      const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
-      result = result.substring(0, m.start) + newTag + result.substring(m.start + m.fullMatch.length);
+      // No label:value fields — do simple text replacements within the paragraph
+      // Process match indices in reverse order (by position)
+      const sortedIndices = [...group.matchIndices].sort((a, b) => matches[b].start - matches[a].start);
+
+      for (const i of sortedIndices) {
+        const m = matches[i];
+        const newContent = filledSegments[i.toString()];
+        if (newContent === undefined) continue;
+
+        const escapedContent = escapeXml(newContent);
+        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+        result = result.substring(0, m.start) + newTag + result.substring(m.end);
+      }
     }
+  }
+
+  // Fallback: handle any filled segments that weren't in a paragraph group
+  // (shouldn't normally happen, but handles edge cases)
+  for (let i = matches.length - 1; i >= 0; i--) {
+    if (!filledIndices.has(i) || handledByGroup.has(i)) continue;
+
+    const m = matches[i];
+    const newContent = filledSegments[i.toString()];
+    if (newContent === undefined) continue;
+
+    const escapedContent = escapeXml(newContent);
+    const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+    result = result.substring(0, m.start) + newTag + result.substring(m.end);
   }
 
   return result;

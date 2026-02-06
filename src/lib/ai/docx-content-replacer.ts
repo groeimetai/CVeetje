@@ -150,6 +150,11 @@ WORK EXPERIENCE ORDER:
 The first "Position :" and "Tasks :" after a period belong to work experience 1.
 The second set belongs to work experience 2, etc.
 
+After block duplication, all work experience slots may have IDENTICAL placeholder text.
+You MUST fill each slot with a DIFFERENT experience from the profile, in chronological order (most recent first).
+Slot 1 = experience 1, Slot 2 = experience 2, Slot 3 = experience 3, etc.
+NEVER fill two slots with the same experience!
+
 IMPORTANT:
 - Fill ALL empty segments where data belongs
 - For "Label : " segments, return ONLY the value (not the label)
@@ -200,6 +205,11 @@ INSTRUCTIES:
 WERKERVARING VOLGORDE:
 De eerste "Functie :" en "Werkzaamheden :" na een periode horen bij werkervaring 1.
 De tweede set hoort bij werkervaring 2, etc.
+
+Na blok-duplicatie kunnen alle werkervaring slots IDENTIEKE placeholder tekst hebben.
+Je MOET elk slot vullen met een ANDERE ervaring uit het profiel, in chronologische volgorde (meest recent eerst).
+Slot 1 = ervaring 1, Slot 2 = ervaring 2, Slot 3 = ervaring 3, etc.
+Vul NOOIT twee slots met dezelfde ervaring!
 
 BELANGRIJK:
 - Vul ALLE lege segmenten in waar data hoort

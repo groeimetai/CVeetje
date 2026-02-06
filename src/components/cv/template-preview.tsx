@@ -67,30 +67,52 @@ export function TemplatePreview({
 }: TemplatePreviewProps) {
   const t = useTranslations('templatePreview');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [extractedText, setExtractedText] = useState<string | null>(null);
+  const [extractedHtml, setExtractedHtml] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(true);
 
-  // Extract text from DOCX blob
+  // Extract HTML from DOCX blob for preview
   useEffect(() => {
-    const extractText = async () => {
+    const extractContent = async () => {
       if (!docxBlob) return;
 
       setIsExtracting(true);
       try {
-        // Dynamic import to avoid SSR issues
         const mammoth = await import('mammoth');
         const arrayBuffer = await docxBlob.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        setExtractedText(result.value);
+        const result = await mammoth.convertToHtml(
+          { arrayBuffer },
+          {
+            styleMap: [
+              "p[style-name='Heading 1'] => h1:fresh",
+              "p[style-name='Heading 2'] => h2:fresh",
+              "p[style-name='Heading 3'] => h3:fresh",
+              "p[style-name='Kop 1'] => h1:fresh",
+              "p[style-name='Kop 2'] => h2:fresh",
+              "p[style-name='Kop 3'] => h3:fresh",
+              "p[style-name='Hoofdtekst'] => p:fresh",
+              "p[style-name='Body Text'] => p:fresh",
+              "p[style-name='Standaard'] => p:fresh",
+              "p[style-name='Normal'] => p:fresh",
+              "p[style-name='List Paragraph'] => li:fresh",
+              "p[style-name='Lijstalinea'] => li:fresh",
+              "r[style-name='Strong'] => strong",
+              "r[style-name='Emphasis'] => em",
+              "r[style-name='Vet'] => strong",
+              "r[style-name='Cursief'] => em",
+            ],
+            ignoreEmptyParagraphs: false,
+          }
+        );
+        setExtractedHtml(result.value);
       } catch (err) {
-        console.error('Failed to extract text from DOCX:', err);
-        setExtractedText(null);
+        console.error('Failed to extract content from DOCX:', err);
+        setExtractedHtml(null);
       } finally {
         setIsExtracting(false);
       }
     };
 
-    extractText();
+    extractContent();
   }, [docxBlob]);
 
   return (
@@ -167,10 +189,11 @@ export function TemplatePreview({
                     {language === 'nl' ? 'Document laden...' : 'Loading document...'}
                   </span>
                 </div>
-              ) : extractedText ? (
-                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-                  {extractedText}
-                </div>
+              ) : extractedHtml ? (
+                <div
+                  className="font-sans text-sm leading-relaxed text-foreground max-w-none [&_p]:mb-1 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mb-1 [&_p:empty]:h-2"
+                  dangerouslySetInnerHTML={{ __html: extractedHtml }}
+                />
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
