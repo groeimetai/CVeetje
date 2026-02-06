@@ -558,14 +558,12 @@ function applyFilledSegments(
       const labelInfo = splitLabelValue(labelMatch.content)!;
       const newContent = filledSegments[labelMatchIdx.toString()];
 
-      // Find run/paragraph from the CURRENT result using the group's paragraph boundaries
-      // Since we process in reverse, earlier paragraphs haven't been touched yet
-      const currentPara = findParentParagraph(result, group.paraStart);
-      if (!currentPara) continue;
-
+      // Use stored group data directly — do NOT re-lookup the paragraph
+      // (group.paraStart is the start of <w:p>, so findParentParagraph would
+      // search backward and find the WRONG paragraph)
       const run = findParentRun(result, labelMatch.start);
       const rPrXml = run ? extractRunProperties(run.xml) : '';
-      const pPrXml = extractParagraphProperties(currentPara.xml);
+      const pPrXml = extractParagraphProperties(group.paraXml);
 
       // Use template's existing tab stop position if available
       const tabPos = extractTabStopPos(pPrXml);
@@ -596,7 +594,7 @@ function applyFilledSegments(
       }
 
       // Extract the paragraph open tag (may have attributes like w14:paraId)
-      const pOpenMatch = currentPara.xml.match(/^<w:p[^>]*>/);
+      const pOpenMatch = group.paraXml.match(/^<w:p[^>]*>/);
       const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
 
       const newParaXml = `${pOpen}${newPPr}${tabRuns}</w:p>`;
@@ -607,8 +605,8 @@ function applyFilledSegments(
         continuationXml = expandBulletParagraphs(effectiveValue, rPrXml, pPrXml, tabPos, effectiveLabel);
       }
 
-      // Replace the entire paragraph atomically
-      result = result.substring(0, currentPara.start) + newParaXml + continuationXml + result.substring(currentPara.end);
+      // Replace the entire paragraph atomically using stored positions
+      result = result.substring(0, group.paraStart) + newParaXml + continuationXml + result.substring(group.paraEnd);
     } else {
       // No label:value fields — do simple text replacements within the paragraph
       // Process match indices in reverse order (by position)
