@@ -620,8 +620,18 @@ function applyFilledSegments(
   // Word revision tracking may split "Label : " across multiple <w:t> elements,
   // e.g., "Naam" + ":" + " " in separate runs. Individual segments don't match
   // splitLabelValue, but the combined paragraph text does.
+  //
+  // IMPORTANT: Only apply to personal_info and special_notes sections.
+  // WE/education fields use the template's own tab structure (multiple <w:tab/>
+  // elements) for alignment — rebuilding those paragraphs would lose the tabs
+  // and produce wrong values (split date segments like "20"+"25" get misinterpreted).
   for (const group of paraGroups) {
     if (group.hasLabel) continue;
+
+    // Only apply combined detection for front-page and special-notes sections
+    const firstFilledIdx = group.matchIndices[0];
+    const sectionInfo = _segments.find(s => s.index === firstFilledIdx);
+    if (sectionInfo?.section !== 'personal_info' && sectionInfo?.section !== 'special_notes') continue;
 
     // Find ALL <w:t> matches in this paragraph (filled or not)
     const allInPara: number[] = [];
@@ -692,8 +702,8 @@ function applyFilledSegments(
       const pOpenMatch = group.paraXml.match(/^<w:p[^>]*>/);
       const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
 
-      if (segmentInfo?.section === 'personal_info') {
-        // Front page: simple "Label: Value" — replace entire paragraph with single run
+      if (segmentInfo?.section === 'personal_info' || segmentInfo?.section === 'special_notes') {
+        // Front page / special notes: simple "Label: Value" — replace entire paragraph with single run
         const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
         const newText = escapeXml(`${label}: ${newContent}`);
         const newParaXml = `${pOpen}${pPrXml || ''}<w:r>${rPr}<w:t xml:space="preserve">${newText}</w:t></w:r></w:p>`;
