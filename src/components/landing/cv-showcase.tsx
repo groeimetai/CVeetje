@@ -38,9 +38,8 @@ export function CVShowcase() {
         {/* CV Preview Content */}
         <div className="bg-white p-4 md:p-8">
           <div
-            className="mx-auto shadow-lg rounded overflow-hidden"
+            className="mx-auto shadow-lg rounded overflow-hidden max-w-[500px] w-full"
             style={{
-              maxWidth: '500px',
               fontSize: '10px',
               lineHeight: '1.4',
             }}

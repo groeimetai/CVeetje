@@ -708,7 +708,7 @@ export function CVWizard() {
     <div className="space-y-6">
       {/* Progress bar with token counter */}
       <div className="space-y-3">
-        <div className="flex justify-between text-sm">
+        <div className="hidden sm:flex justify-between text-sm">
           {steps.map((step, index) => (
             <span
               key={step.id}
@@ -722,6 +722,9 @@ export function CVWizard() {
             </span>
           ))}
         </div>
+        <span className="sm:hidden text-sm font-medium text-primary">
+          {steps[currentStepIndex].label} ({currentStepIndex + 1}/{steps.length})
+        </span>
         <Progress value={progress} className="h-2" />
 
         {/* Token counter integrated below progress bar */}
@@ -791,7 +794,7 @@ export function CVWizard() {
         <div className="space-y-6">
           {/* Language Selection */}
           <div className="rounded-lg border p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="font-medium text-sm">{t('languageSelection.title')}</p>
                 <p className="text-xs text-muted-foreground">
@@ -837,7 +840,7 @@ export function CVWizard() {
         <div className="space-y-6">
           {/* Language Selection */}
           <div className="rounded-lg border p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="font-medium text-sm">{t('languageSelection.title')}</p>
                 <p className="text-xs text-muted-foreground">
@@ -885,7 +888,7 @@ export function CVWizard() {
         <div className="space-y-6">
           {/* Language Selection */}
           <div className="rounded-lg border p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="font-medium text-sm">{t('languageSelection.title')}</p>
                 <p className="text-xs text-muted-foreground">

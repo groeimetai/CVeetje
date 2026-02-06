@@ -61,8 +61,8 @@ export function UsersTable({ users, onUserClick }: UsersTableProps) {
             <TableHead>{t('users.table.role')}</TableHead>
             <TableHead>{t('users.table.status')}</TableHead>
             <TableHead className="text-right">{t('users.table.credits')}</TableHead>
-            <TableHead>{t('users.table.created')}</TableHead>
-            <TableHead>{t('users.table.lastLogin')}</TableHead>
+            <TableHead className="hidden md:table-cell">{t('users.table.created')}</TableHead>
+            <TableHead className="hidden md:table-cell">{t('users.table.lastLogin')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -123,10 +123,10 @@ export function UsersTable({ users, onUserClick }: UsersTableProps) {
                   ({user.credits.free}+{user.credits.purchased})
                 </span>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="hidden md:table-cell text-muted-foreground">
                 {formatDate(user.createdAt)}
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="hidden md:table-cell text-muted-foreground">
                 {formatDate(user.lastSignIn)}
               </TableCell>
             </TableRow>

@@ -489,7 +489,7 @@ export function CVPreview({
                   ref={iframeRef}
                   srcDoc={cvHTML}
                   title="CV Preview"
-                  className="w-full min-h-[800px] border-0"
+                  className="w-full min-h-[500px] sm:min-h-[800px] border-0"
                   sandbox="allow-same-origin allow-scripts"
                 />
               </div>
@@ -676,7 +676,7 @@ export function CVPreview({
             <TabsContent value="html" className="space-y-4">
               {/* HTML source */}
               <div className="relative">
-                <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto max-h-[600px]">
+                <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto max-h-[300px] sm:max-h-[600px]">
                   <code>{cvHTML}</code>
                 </pre>
               </div>
@@ -689,7 +689,6 @@ export function CVPreview({
               <Button
                 disabled
                 className="flex-1"
-                size="lg"
               >
                 <Download className="mr-2 h-4 w-4 animate-bounce" />
                 PDF Genereren...
@@ -700,11 +699,10 @@ export function CVPreview({
                   <Button
                     disabled={credits < 1}
                     className="flex-1"
-                    size="lg"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
-                    <Badge variant="secondary" className="ml-2">
+                    <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
                       <Coins className="h-3 w-3 mr-1" />1 credit
                     </Badge>
                     <ChevronDown className="ml-2 h-4 w-4" />
@@ -735,7 +733,6 @@ export function CVPreview({
               variant="outline"
               onClick={onRegenerate}
               disabled={isRegenerating}
-              size="lg"
             >
               {isRegenerating ? (
                 <>
@@ -755,10 +752,10 @@ export function CVPreview({
                 variant="outline"
                 onClick={onNewVacancy}
                 disabled={isDownloading || isRegenerating}
-                size="lg"
               >
                 <Briefcase className="mr-2 h-4 w-4" />
-                Nieuwe Vacature
+                <span className="hidden sm:inline">Nieuwe Vacature</span>
+                <span className="sm:hidden">Nieuw</span>
               </Button>
             )}
           </div>

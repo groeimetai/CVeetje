@@ -135,7 +135,7 @@ export default function CVDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-4">
           <Link href="/cv">
             <Button variant="ghost" size="icon">
@@ -146,7 +146,7 @@ export default function CVDetailPage() {
             <h1 className="text-2xl font-bold">
               {cv.linkedInData?.fullName || 'Untitled CV'}
             </h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
               <span>{cv.jobVacancy?.title || 'General CV'}</span>
               <span>•</span>
               <span>{tokens.styleName}</span>
@@ -155,7 +155,6 @@ export default function CVDetailPage() {
             </div>
           </div>
         </div>
-
       </div>
 
       {error && (
