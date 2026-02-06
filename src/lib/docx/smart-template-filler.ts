@@ -114,15 +114,252 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
+// ==================== Label:Value Alignment ====================
+
+/**
+ * Detect if a text segment has a "Label : " pattern
+ * Returns the label part if detected, null otherwise
+ */
+function splitLabelValue(text: string): { label: string; isLabelField: boolean } | null {
+  // Match patterns like "Functie : ", "Werkzaamheden : ", "Beschikbaarheid : ", "2024-Heden : "
+  const match = text.match(/^(.+?)\s*:\s*$/);
+  if (match) {
+    return { label: match[1], isLabelField: true };
+  }
+  return null;
+}
+
+/**
+ * Find the parent <w:r>...</w:r> element boundaries for a given position within it
+ */
+function findParentRun(docXml: string, posWithinRun: number): { start: number; end: number; xml: string } | null {
+  const searchArea = docXml.substring(0, posWithinRun);
+  const runStart = searchArea.lastIndexOf('<w:r>');
+  const runStartWithAttrs = searchArea.lastIndexOf('<w:r ');
+  // Pick the closest one
+  const actualStart = Math.max(runStart, runStartWithAttrs);
+  if (actualStart === -1) return null;
+
+  const runEndTag = '</w:r>';
+  const runEndPos = docXml.indexOf(runEndTag, posWithinRun);
+  if (runEndPos === -1) return null;
+
+  const end = runEndPos + runEndTag.length;
+  return {
+    start: actualStart,
+    end,
+    xml: docXml.substring(actualStart, end),
+  };
+}
+
+/**
+ * Extract <w:rPr>...</w:rPr> from a run XML string
+ */
+function extractRunProperties(runXml: string): string {
+  const match = runXml.match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
+  return match ? match[0] : '';
+}
+
+/**
+ * Find the parent <w:p>...</w:p> element boundaries for a position within it
+ */
+function findParentParagraph(docXml: string, posWithinParagraph: number): { start: number; end: number; xml: string } | null {
+  const searchArea = docXml.substring(0, posWithinParagraph);
+  const pStart = searchArea.lastIndexOf('<w:p>');
+  const pStartWithAttrs = searchArea.lastIndexOf('<w:p ');
+  const actualStart = Math.max(pStart, pStartWithAttrs);
+  if (actualStart === -1) return null;
+
+  const pEndTag = '</w:p>';
+  const pEndPos = docXml.indexOf(pEndTag, posWithinParagraph);
+  if (pEndPos === -1) return null;
+
+  const end = pEndPos + pEndTag.length;
+  return {
+    start: actualStart,
+    end,
+    xml: docXml.substring(actualStart, end),
+  };
+}
+
+/**
+ * Extract <w:pPr>...</w:pPr> from a paragraph XML string
+ */
+function extractParagraphProperties(pXml: string): string | null {
+  const match = pXml.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
+  return match ? match[0] : null;
+}
+
+/**
+ * Add a tab stop definition to paragraph properties
+ * tabPos is in twips (1440 twips = 1 inch, 2800 twips ≈ 4.9cm)
+ */
+function addTabStopToParagraphXml(pPrXml: string, tabPos: number): string {
+  const tabStopXml = `<w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs>`;
+
+  // If pPr already has tabs, replace them
+  if (pPrXml.includes('<w:tabs>')) {
+    return pPrXml.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, tabStopXml);
+  }
+
+  // Insert tabs after opening <w:pPr> but before style (after <w:pStyle.../> if present)
+  const styleMatch = pPrXml.match(/<w:pStyle[^/]*\/>/);
+  if (styleMatch) {
+    const insertPos = pPrXml.indexOf(styleMatch[0]) + styleMatch[0].length;
+    return pPrXml.substring(0, insertPos) + tabStopXml + pPrXml.substring(insertPos);
+  }
+
+  // Insert right after <w:pPr>
+  return pPrXml.replace('<w:pPr>', '<w:pPr>' + tabStopXml);
+}
+
+/**
+ * Build a tab-aligned replacement for a label:value paragraph
+ * Creates: <w:r>{rPr}Label</w:r><w:r>{rPr}<w:tab/></w:r><w:r>{rPr}Value</w:r>
+ */
+function buildTabAlignedRuns(label: string, value: string, rPrXml: string): string {
+  const escapedLabel = escapeXml(label);
+  const escapedValue = escapeXml(value);
+  const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
+
+  return `<w:r>${rPr}<w:t xml:space="preserve">${escapedLabel}</w:t></w:r>` +
+    `<w:r>${rPr}<w:tab/></w:r>` +
+    `<w:r>${rPr}<w:t>${escapedValue}</w:t></w:r>`;
+}
+
+// ==================== Work Experience Block Duplication ====================
+
+interface WorkExperienceSlot {
+  /** Indices of the 3 segments: period, functie, werkzaamheden */
+  segmentIndices: [number, number, number];
+  /** XML boundaries of the 3 paragraphs */
+  paragraphs: { start: number; end: number }[];
+}
+
+/**
+ * Detect work experience slots as triplets of (period, functie, werkzaamheden)
+ */
+function detectWorkExperienceSlots(
+  docXml: string,
+  segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[]
+): WorkExperienceSlot[] {
+  const weSegments = segments.filter(s => s.section === 'work_experience' && !s.isHeader);
+  const slots: WorkExperienceSlot[] = [];
+
+  // Period pattern to detect start of a WE block
+  const periodPattern = /^\s*\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?\s*:?\s*$/;
+
+  for (let i = 0; i < weSegments.length; i++) {
+    const seg = weSegments[i];
+    if (!periodPattern.test(seg.text)) continue;
+
+    // Found a period marker - next two segments should be Functie and Werkzaamheden
+    const functieSeg = weSegments[i + 1];
+    const werkSeg = weSegments[i + 2];
+
+    if (!functieSeg || !werkSeg) continue;
+
+    // Find paragraph boundaries for all three
+    const paragraphs: { start: number; end: number }[] = [];
+    for (const s of [seg, functieSeg, werkSeg]) {
+      const p = findParentParagraph(docXml, s.start);
+      if (!p) break;
+      paragraphs.push({ start: p.start, end: p.end });
+    }
+
+    if (paragraphs.length === 3) {
+      slots.push({
+        segmentIndices: [seg.index, functieSeg.index, werkSeg.index],
+        paragraphs,
+      });
+    }
+  }
+
+  return slots;
+}
+
+/**
+ * Duplicate work experience slots by cloning paragraph XML
+ * Inserts clones after the last existing WE block
+ */
+function duplicateWorkExperienceSlots(
+  docXml: string,
+  slots: WorkExperienceSlot[],
+  targetCount: number
+): string {
+  if (slots.length === 0 || slots.length >= targetCount) return docXml;
+
+  const additionalNeeded = targetCount - slots.length;
+  const lastSlot = slots[slots.length - 1];
+
+  // Extract the XML of the last 3-paragraph block
+  const blockStart = lastSlot.paragraphs[0].start;
+  const blockEnd = lastSlot.paragraphs[2].end;
+  const blockXml = docXml.substring(blockStart, blockEnd);
+
+  // Clone the block for each additional experience
+  let insertXml = '';
+  for (let i = 0; i < additionalNeeded; i++) {
+    insertXml += blockXml;
+  }
+
+  // Insert after the last WE block
+  return docXml.substring(0, blockEnd) + insertXml + docXml.substring(blockEnd);
+}
+
+// ==================== Multi-line Bullet Expansion ====================
+
+/**
+ * Expand multi-line bullet content into separate paragraphs
+ * Returns the new XML that replaces the original paragraph
+ */
+function expandBulletParagraphs(
+  value: string,
+  rPrXml: string,
+  pPrXml: string | null,
+  tabPos: number,
+  label: string | null
+): string {
+  const lines = value.split('\n').filter(l => l.trim());
+  if (lines.length <= 1) return ''; // No expansion needed
+
+  const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
+
+  // Build paragraph properties for continuation lines (indent to align under value column)
+  const indentXml = `<w:ind w:left="${tabPos}"/>`;
+
+  // Start with the base pPr (style etc.) but add our indent
+  let basePPr = '<w:pPr>';
+  if (pPrXml) {
+    // Extract style from existing pPr
+    const styleMatch = pPrXml.match(/<w:pStyle[^/]*\/>/);
+    if (styleMatch) {
+      basePPr = `<w:pPr>${styleMatch[0]}`;
+    }
+  }
+  const continuationPPr = `${basePPr}${indentXml}</w:pPr>`;
+
+  // Build continuation paragraphs (lines after the first)
+  const continuationParagraphs: string[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const lineText = escapeXml(lines[i].trim());
+    continuationParagraphs.push(
+      `<w:p>${continuationPPr}<w:r>${rPr}<w:t xml:space="preserve">${lineText}</w:t></w:r></w:p>`
+    );
+  }
+
+  return continuationParagraphs.join('');
+}
+
 /**
  * Extract all text segments from DOCX XML with their indices and section info
  * Returns segments grouped by detected sections for better AI context
  */
 function extractIndexedSegments(docXml: string): {
-  segments: { index: number; text: string; start: number; end: number; section?: SectionType }[];
+  segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[];
   sections: SectionInfo[];
 } {
-  const segments: { index: number; text: string; start: number; end: number; section?: SectionType }[] = [];
+  const segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[] = [];
   const sections: SectionInfo[] = [];
   const regex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
   let match;
@@ -154,6 +391,7 @@ function extractIndexedSegments(docXml: string): {
       start: match.index,
       end: match.index + match[0].length,
       section: currentSection,
+      isHeader: detectedSection !== null,
     });
     index++;
   }
@@ -170,111 +408,27 @@ function extractIndexedSegments(docXml: string): {
   return { segments, sections };
 }
 
-/**
- * Check if content contains bullet points that need hanging indent
- */
-function contentHasBullets(content: string): boolean {
-  // Check for common bullet patterns
-  return /^[\s]*[-•·‣⁃]\s/m.test(content) || /\n[\s]*[-•·‣⁃]\s/.test(content);
-}
-
-/**
- * Add hanging indent to paragraph properties for bullet content
- * This ensures wrapped lines align properly with bullet text
- *
- * CRITICAL: Must handle existing indent correctly:
- * - Template may have w:firstLine (pushes first line right - WRONG for bullets)
- * - We need w:hanging (creates hanging indent - CORRECT for bullets)
- * - Must preserve original w:left value for proper column alignment
- */
-function addHangingIndentToParagraph(docXml: string, textTagStart: number): string {
-  // Find the parent <w:p> element that contains this <w:t>
-  // Search backwards from the text tag position
-  const searchArea = docXml.substring(0, textTagStart);
-  const lastPStart = searchArea.lastIndexOf('<w:p');
-
-  if (lastPStart === -1) return docXml;
-
-  // Find the end of the <w:p...> tag
-  const pTagEnd = docXml.indexOf('>', lastPStart);
-  if (pTagEnd === -1) return docXml;
-
-  // Check if there's already a <w:pPr> in this paragraph
-  const pContent = docXml.substring(lastPStart, textTagStart);
-  const existingPPrMatch = pContent.match(/<w:pPr[^>]*>/);
-
-  // Default hanging indent for paragraphs without existing indent
-  const defaultHangingIndent = '<w:ind w:left="360" w:hanging="360"/>';
-
-  if (existingPPrMatch) {
-    // Find position of existing <w:pPr>
-    const pPrPos = lastPStart + pContent.indexOf(existingPPrMatch[0]);
-    const pPrEndTagPos = docXml.indexOf('</w:pPr>', pPrPos);
-    if (pPrEndTagPos === -1) return docXml;
-
-    const pPrContent = docXml.substring(pPrPos, pPrEndTagPos);
-
-    // Check for existing <w:ind> element
-    const existingIndMatch = pPrContent.match(/<w:ind([^>]*)\/>/);
-
-    if (existingIndMatch) {
-      // Parse existing indent values
-      const indAttrs = existingIndMatch[1];
-      const leftMatch = indAttrs.match(/w:left="(\d+)"/);
-      const firstLineMatch = indAttrs.match(/w:firstLine="(\d+)"/);
-      const hangingMatch = indAttrs.match(/w:hanging="(\d+)"/);
-
-      // Already has hanging indent - skip modification
-      if (hangingMatch) return docXml;
-
-      // Calculate new values
-      const existingLeft = leftMatch ? parseInt(leftMatch[1]) : 0;
-      const firstLine = firstLineMatch ? parseInt(firstLineMatch[1]) : 0;
-
-      // Convert firstLine to hanging + add bullet space (250 twips ≈ 0.17 inch)
-      // If no firstLine, use default 360 twips for bullet character
-      const hanging = firstLine > 0 ? firstLine + 250 : 360;
-
-      // Build new indent element preserving w:left
-      const newIndent = `<w:ind w:left="${existingLeft}" w:hanging="${hanging}"/>`;
-
-      // Find and replace the existing <w:ind.../> element
-      const indStartPos = pPrPos + pPrContent.indexOf(existingIndMatch[0]);
-
-      return docXml.substring(0, indStartPos) + newIndent +
-             docXml.substring(indStartPos + existingIndMatch[0].length);
-    }
-
-    // No <w:ind> exists yet, insert after opening <w:pPr> tag
-    const pPrEndTag = pPrPos + existingPPrMatch[0].length;
-    return docXml.substring(0, pPrEndTag) + defaultHangingIndent + docXml.substring(pPrEndTag);
-  } else {
-    // No <w:pPr> exists, need to add it after <w:p...>
-    const insertPos = pTagEnd + 1;
-    const pPrElement = `<w:pPr>${defaultHangingIndent}</w:pPr>`;
-    return docXml.substring(0, insertPos) + pPrElement + docXml.substring(insertPos);
-  }
-}
+/** Tab stop position in twips (2800 twips ≈ 4.9cm, accommodates "Werkzaamheden") */
+const TAB_STOP_POS = 2800;
 
 /**
  * Apply filled segments back to the DOCX XML
- * Replaces text content by index while preserving XML structure
- * Also adds hanging indent for bullet-containing content
  *
- * CRITICAL: Hanging indent must be applied DURING replacement, not after,
- * because indexOf-based re-finding is unreliable when multiple segments
- * have the same content.
+ * For label:value segments (e.g., "Functie : "), creates proper tab-aligned runs.
+ * For multi-line bullet content, expands into separate paragraphs.
+ * Processes in reverse order to keep position tracking correct.
  */
 function applyFilledSegments(
   docXml: string,
-  filledSegments: Record<string, string>
+  filledSegments: Record<string, string>,
+  segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[]
 ): string {
   let result = docXml;
 
   const regex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
   let match;
 
-  // Collect all matches first with their positions
+  // Collect all matches with their positions
   const matches: { fullMatch: string; attrs: string; content: string; start: number }[] = [];
 
   while ((match = regex.exec(docXml)) !== null) {
@@ -286,17 +440,7 @@ function applyFilledSegments(
     });
   }
 
-  // Track which paragraphs already have hanging indent added (by their <w:p> start position)
-  // This prevents adding indent multiple times to the same paragraph
-  const paragraphsWithIndent = new Set<number>();
-
-  // Track cumulative offset from indent insertions
-  // When we add indent XML, all positions AFTER that point shift
-  let cumulativeOffset = 0;
-
-  // Process in FORWARD order for indent tracking, but we need to handle offsets carefully
-  // Actually, process in REVERSE order - this way positions we haven't processed yet remain accurate
-  // and we only need to track indent additions for determining which paragraphs are done
+  // Process in REVERSE order so earlier positions stay valid
   for (let i = matches.length - 1; i >= 0; i--) {
     const m = matches[i];
     const indexStr = i.toString();
@@ -304,53 +448,69 @@ function applyFilledSegments(
     if (filledSegments[indexStr] === undefined) continue;
 
     const newContent = filledSegments[indexStr];
+    const labelInfo = splitLabelValue(m.content);
 
-    // STEP 1: If content has bullets, add hanging indent FIRST (position is still accurate)
-    if (contentHasBullets(newContent)) {
-      // Find the parent <w:p> start position
-      const searchArea = result.substring(0, m.start);
-      const pStart = searchArea.lastIndexOf('<w:p');
-
-      // Only add indent if this paragraph doesn't have it yet
-      if (pStart !== -1 && !paragraphsWithIndent.has(pStart)) {
-        paragraphsWithIndent.add(pStart);
-
-        const beforeLength = result.length;
-        result = addHangingIndentToParagraph(result, m.start);
-        const afterLength = result.length;
-
-        // Calculate how much XML was added (for offset tracking if needed)
-        const addedLength = afterLength - beforeLength;
-
-        // The indent insertion happens BEFORE m.start (at the <w:p> level),
-        // so m.start itself shifts. We need to account for this in the text replacement.
-        // Since we're processing in reverse order, this shift only affects the current replacement.
-
-        // Recalculate the position of our <w:t> tag after indent insertion
-        // The indent was inserted somewhere between pStart and m.start
-        const newStart = m.start + addedLength;
-
-        // STEP 2: Replace the text content at the new position
+    if (labelInfo) {
+      // This is a label:value field - use tab alignment
+      const run = findParentRun(result, m.start);
+      const para = findParentParagraph(result, m.start);
+      if (!run || !para) {
+        // Fallback: simple text replacement
         const escapedContent = escapeXml(newContent);
         const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
-
-        result = result.substring(0, newStart) + newTag +
-                 result.substring(newStart + m.fullMatch.length);
-      } else {
-        // Paragraph already has indent or no paragraph found, just replace text
-        const escapedContent = escapeXml(newContent);
-        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
-
-        result = result.substring(0, m.start) + newTag +
-                 result.substring(m.start + m.fullMatch.length);
+        result = result.substring(0, m.start) + newTag + result.substring(m.start + m.fullMatch.length);
+        continue;
       }
+
+      const rPrXml = extractRunProperties(run.xml);
+      const pPrXml = extractParagraphProperties(para.xml);
+
+      // Handle period fields where AI returns "2020-Heden\tCompany"
+      // The tab character separates the new period label from the company value
+      let effectiveLabel = labelInfo.label;
+      let effectiveValue = newContent;
+
+      if (newContent.includes('\t')) {
+        const tabParts = newContent.split('\t');
+        effectiveLabel = tabParts[0].trim();
+        effectiveValue = tabParts.slice(1).join('\t').trim();
+      }
+
+      // Split multi-line content: first line is the value, rest are continuation paragraphs
+      const lines = effectiveValue.split('\n').filter(l => l.trim());
+      const firstLineValue = lines[0] || effectiveValue;
+
+      // Build the tab-aligned runs for label + value
+      const tabRuns = buildTabAlignedRuns(effectiveLabel, firstLineValue.trim(), rPrXml);
+
+      // Add tab stop to paragraph properties
+      let newParaXml = para.xml;
+      if (pPrXml) {
+        const newPPr = addTabStopToParagraphXml(pPrXml, TAB_STOP_POS);
+        newParaXml = newParaXml.replace(pPrXml, newPPr);
+      } else {
+        // No pPr exists, add one
+        const pOpenEnd = newParaXml.indexOf('>') + 1;
+        const tabPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${TAB_STOP_POS}"/></w:tabs></w:pPr>`;
+        newParaXml = newParaXml.substring(0, pOpenEnd) + tabPPr + newParaXml.substring(pOpenEnd);
+      }
+
+      // Replace the run with tab-aligned runs
+      newParaXml = newParaXml.replace(run.xml, tabRuns);
+
+      // Build continuation paragraphs for multi-line content
+      let continuationXml = '';
+      if (lines.length > 1) {
+        continuationXml = expandBulletParagraphs(effectiveValue, rPrXml, pPrXml, TAB_STOP_POS, effectiveLabel);
+      }
+
+      // Replace the entire paragraph and append continuation paragraphs
+      result = result.substring(0, para.start) + newParaXml + continuationXml + result.substring(para.end);
     } else {
-      // No bullets, just replace the text content
+      // Not a label field - simple text replacement
       const escapedContent = escapeXml(newContent);
       const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
-
-      result = result.substring(0, m.start) + newTag +
-               result.substring(m.start + m.fullMatch.length);
+      result = result.substring(0, m.start) + newTag + result.substring(m.start + m.fullMatch.length);
     }
   }
 
@@ -396,14 +556,28 @@ export async function fillSmartTemplate(
   let docXml = await documentXmlFile.async('string');
 
   try {
+    // ==== WORK EXPERIENCE BLOCK DUPLICATION ====
+    // Must happen BEFORE extractIndexedSegments so AI sees all slots
+    const experienceCount = profileData.experience?.length || 0;
+    if (experienceCount > 0) {
+      // Do a preliminary segment extraction to detect WE slots
+      const preliminary = extractIndexedSegments(docXml);
+      const weSlots = detectWorkExperienceSlots(docXml, preliminary.segments);
+
+      if (weSlots.length > 0 && weSlots.length < experienceCount) {
+        docXml = duplicateWorkExperienceSlots(docXml, weSlots, experienceCount);
+      }
+    }
+
     // Extract indexed segments from the document with section detection
     const { segments, sections } = extractIndexedSegments(docXml);
 
-    // Prepare segments for AI (index, text, and section)
+    // Prepare segments for AI (index, text, section, and header flag)
     const segmentsForAI = segments.map(s => ({
       index: s.index,
       text: s.text,
       section: s.section,
+      isHeader: s.isHeader,
     }));
 
     // Get AI to fill the segments with section context
@@ -421,8 +595,19 @@ export async function fillSmartTemplate(
       sections
     );
 
+    // ==== HEADER PROTECTION ====
+    // Remove any AI modifications to section header segments
+    const headerIndices = new Set(
+      segments.filter(s => s.isHeader).map(s => s.index.toString())
+    );
+    for (const idx of Object.keys(aiResult.filledSegments)) {
+      if (headerIndices.has(idx)) {
+        delete aiResult.filledSegments[idx];
+      }
+    }
+
     // Apply filled segments back to the XML
-    docXml = applyFilledSegments(docXml, aiResult.filledSegments);
+    docXml = applyFilledSegments(docXml, aiResult.filledSegments, segments);
 
     // Count filled fields
     const filledCount = Object.keys(aiResult.filledSegments).length;
@@ -453,6 +638,7 @@ export async function fillSmartTemplate(
             index: s.index,
             text: s.text,
             section: s.section,
+            isHeader: s.isHeader,
           }));
 
           // Use same AI to fill header/footer segments
@@ -470,7 +656,7 @@ export async function fillSmartTemplate(
             hfSections
           );
 
-          content = applyFilledSegments(content, hfResult.filledSegments);
+          content = applyFilledSegments(content, hfResult.filledSegments, hfSegments);
         }
 
         zip.file(fileName, content);

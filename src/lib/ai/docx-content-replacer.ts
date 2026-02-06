@@ -49,13 +49,17 @@ const SECTION_RULES: Record<
     allowedContent: ['school', 'degree', 'field', 'education_period'],
   },
   special_notes: {
-    nl: `ALLEEN: beschikbaarheid, vervoer, rijbewijs, hobby's.
-⚠️ VERBODEN: werkervaring, functies, bedrijfsnamen, periodes (2020-2024), @-tekens!
+    nl: `ALLEEN: beschikbaarheid, vervoer, rijbewijs.
+⚠️ VERBODEN: werkervaring, functies, bedrijfsnamen, periodes (2020-2024), @-tekens, talen!
+Vul ALLEEN de velden in die in het template staan (bijv. "Beschikbaarheid" en "Vervoer").
+Voeg GEEN extra velden toe die niet in het template staan!
 Als je werkgerelateerde content hier plaatst, is het CV ONGELDIG.`,
-    en: `ONLY: availability, transport, driver's license, hobbies.
-⚠️ FORBIDDEN: work experience, job titles, company names, periods (2020-2024), @-signs!
+    en: `ONLY: availability, transport, driver's license.
+⚠️ FORBIDDEN: work experience, job titles, company names, periods (2020-2024), @-signs, languages!
+Fill ONLY the fields that exist in the template (e.g., "Availability" and "Transport").
+Do NOT add extra fields that are not in the template!
 Placing work-related content here makes the CV INVALID.`,
-    allowedContent: ['availability', 'transport', 'license', 'hobbies', 'extra'],
+    allowedContent: ['availability', 'transport', 'license'],
   },
   skills: {
     nl: 'Alleen: technische vaardigheden, soft skills, talen, certificaten',
@@ -120,31 +124,23 @@ CRITICAL RULES:
 - If there are more experiences than template slots, fill available slots with most recent/relevant
 - Do NOT worry about space or following sections - fill everything that fits
 
+SECTION HEADERS (marked with [SECTION HEADER - DO NOT MODIFY]):
+- NEVER include section header segments in your output
+- These are formatting elements that must remain unchanged
+
+LABEL:VALUE FIELDS:
+- For segments with "Label : " pattern (e.g., "Position : ", "Tasks : "), return ONLY the value
+- Example: [13] "Position : " → return { "index": "13", "value": "ServiceNow Developer" }
+- Do NOT repeat the label in your value! Wrong: "Position : ServiceNow Developer"
+- For period fields like "2024-Present : ", return the REAL period and company separated by a tab
+- Example: [12] "2024-Present : " → return { "index": "12", "value": "2020-Present\tAlliander" }
+
 INSTRUCTIONS:
 1. You receive text segments with numbers: [0] text, [1] text, etc.
 2. Fill each segment with the correct profile data
 3. Return an ARRAY of objects with index and value
 4. Only segments that need to be CHANGED should be in the output
-
-EXAMPLE:
-Input:
-[0] Name :
-[1]
-[2] Position :
-[3]
-[4] 2024-Present :
-[5] Company
-
-If the person is "John Smith" and is a "Developer" at "Google" since 2020:
-Output: [
-  { "index": "1", "value": "John Smith" },
-  { "index": "3", "value": "Developer" },
-  { "index": "4", "value": "2020-Present :" },
-  { "index": "5", "value": "Google" }
-]
-
-Note: Empty segments [1], [3] are where values should go!
-Segments with labels like "Name :" or "Position :" do NOT need to be in the output.`,
+5. NEVER modify segments marked [SECTION HEADER - DO NOT MODIFY]`,
       templateHeader: 'NUMBERED TEMPLATE',
       profileHeader: 'PROFILE DATA',
       jobHeader: 'TARGET JOB (adapt content to this)',
@@ -156,9 +152,11 @@ The second set belongs to work experience 2, etc.
 
 IMPORTANT:
 - Fill ALL empty segments where data belongs
-- Adjust periods to real dates
+- For "Label : " segments, return ONLY the value (not the label)
+- For period segments ("2024-Present : "), return "YEAR-YEAR\tCompanyName"
 - Fill availability, transport etc. if known
 - Return ONLY segments that need to be changed
+- NEVER return section header segments
 - FILL ALL work experience - including older jobs! Skip no experience.
 - If there are multiple work experience slots, fill them ALL with available experiences
 - Space is NOT a problem - fill everything from the profile`,
@@ -177,31 +175,23 @@ KRITIEKE REGELS:
 - Als er meer ervaringen zijn dan template slots, vul dan de beschikbare slots met de meest recente/relevante
 - Maak je GEEN zorgen over ruimte of volgende secties - vul alles in wat past
 
+SECTIE HEADERS (gemarkeerd met [SECTION HEADER - DO NOT MODIFY]):
+- Neem NOOIT sectie header segmenten op in je output
+- Dit zijn opmaak-elementen die ongewijzigd moeten blijven
+
+LABEL:WAARDE VELDEN:
+- Voor segmenten met "Label : " patroon (bijv. "Functie : ", "Werkzaamheden : "), retourneer ALLEEN de waarde
+- Voorbeeld: [13] "Functie : " → retourneer { "index": "13", "value": "ServiceNow Developer" }
+- Herhaal NIET het label in je waarde! Fout: "Functie : ServiceNow Developer"
+- Voor periode velden zoals "2024-Heden : ", retourneer de ECHTE periode en bedrijfsnaam gescheiden door een tab
+- Voorbeeld: [12] "2024-Heden : " → retourneer { "index": "12", "value": "2020-Heden\tAlliander" }
+
 INSTRUCTIES:
 1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
 2. Vul elk segment in met de juiste profieldata
 3. Retourneer een ARRAY van objecten met index en value
 4. Alleen segmenten die GEWIJZIGD moeten worden hoeven in de output
-
-VOORBEELD:
-Input:
-[0] Naam :
-[1]
-[2] Functie :
-[3]
-[4] 2024-Heden :
-[5] Bedrijf
-
-Als de persoon "Jan Jansen" heet en "Developer" is bij "Google" sinds 2020:
-Output: [
-  { "index": "1", "value": "Jan Jansen" },
-  { "index": "3", "value": "Developer" },
-  { "index": "4", "value": "2020-Heden :" },
-  { "index": "5", "value": "Google" }
-]
-
-Let op: Lege segmenten [1], [3] zijn waar de waarden moeten komen!
-Segmenten met labels zoals "Naam :" of "Functie :" hoeven NIET in de output.`,
+5. Wijzig NOOIT segmenten gemarkeerd met [SECTION HEADER - DO NOT MODIFY]`,
     templateHeader: 'GENUMMERD TEMPLATE',
     profileHeader: 'PROFIELDATA',
     jobHeader: 'DOELVACATURE (pas content hierop aan)',
@@ -213,9 +203,11 @@ De tweede set hoort bij werkervaring 2, etc.
 
 BELANGRIJK:
 - Vul ALLE lege segmenten in waar data hoort
-- Periodes aanpassen naar echte datums
+- Voor "Label : " segmenten, retourneer ALLEEN de waarde (niet het label)
+- Voor periode segmenten ("2024-Heden : "), retourneer "JAAR-JAAR\tBedrijfsnaam"
 - Beschikbaarheid, vervoer etc. ook invullen indien bekend
 - Retourneer ALLEEN segmenten die gewijzigd moeten worden
+- Retourneer NOOIT sectie header segmenten
 - VUL ALLE werkervaring in - ook oudere banen! Sla geen ervaring over.
 - Als er meerdere werkervaring slots zijn, vul ze ALLEMAAL in met de beschikbare ervaringen
 - Ruimte is GEEN probleem - vul alles in wat in het profiel staat`,
@@ -285,9 +277,10 @@ function buildFitAnalysisSummary(
 /**
  * Build section-grouped document representation for AI
  * Groups segments by their detected section for better context
+ * Annotates header segments so AI knows not to modify them
  */
 function buildSectionGroupedDocument(
-  segments: { index: number; text: string; section?: SectionType }[],
+  segments: { index: number; text: string; section?: SectionType; isHeader?: boolean }[],
   sections: SectionInfo[],
   language: OutputLanguage
 ): string {
@@ -295,11 +288,15 @@ function buildSectionGroupedDocument(
 
   // If no sections detected, return flat list
   if (sections.length === 0 || sections.every(s => s.type === 'unknown')) {
-    return segments.map(seg => `[${seg.index}] ${seg.text}`).join('\n');
+    return segments.map(seg => {
+      if (seg.isHeader) {
+        return `[${seg.index}] ${seg.text} [SECTION HEADER - DO NOT MODIFY]`;
+      }
+      return `[${seg.index}] ${seg.text}`;
+    }).join('\n');
   }
 
   const parts: string[] = [];
-  let currentSectionIndex = 0;
 
   for (const section of sections) {
     const rule = SECTION_RULES[section.type];
@@ -313,7 +310,11 @@ function buildSectionGroupedDocument(
     // Add segments belonging to this section
     for (const seg of segments) {
       if (seg.index >= section.startIndex && seg.index <= section.endIndex) {
-        parts.push(`[${seg.index}] ${seg.text}`);
+        if (seg.isHeader) {
+          parts.push(`[${seg.index}] ${seg.text} [SECTION HEADER - DO NOT MODIFY]`);
+        } else {
+          parts.push(`[${seg.index}] ${seg.text}`);
+        }
       }
     }
   }
@@ -338,13 +339,15 @@ function getSectionRulesText(language: OutputLanguage): string {
 
 2. SPECIAL NOTES / ADDITIONAL INFO ("Bijzonderheden") SECTION:
    ⚠️ CRITICAL RESTRICTIONS:
-   - Fill ONLY: availability, transport, driver's license, hobbies
+   - Fill ONLY the exact fields that exist in the template (e.g., "Beschikbaarheid", "Vervoer")
+   - Do NOT add content for fields that don't exist (e.g., don't add "Talen" if there's no Talen field)
    - FORBIDDEN CONTENT (will be removed):
      * Job titles (Developer, Manager, Founder, etc.)
      * Company names
      * Work periods (2020-2024, 2025-Heden)
      * Career summaries
      * @ symbols (like "Developer @ Company")
+     * Languages (unless there is a specific "Talen" field)
    - If you place work-related content here, it will be DELETED!
 
 3. EDUCATION SECTION:
@@ -368,13 +371,15 @@ function getSectionRulesText(language: OutputLanguage): string {
 
 2. BIJZONDERHEDEN / AANVULLENDE INFO SECTIE:
    ⚠️ KRITIEKE BEPERKINGEN:
-   - Vul ALLEEN: beschikbaarheid, vervoer, rijbewijs, hobby's
+   - Vul ALLEEN de exacte velden in die in het template staan (bijv. "Beschikbaarheid", "Vervoer")
+   - Voeg GEEN content toe voor velden die niet bestaan (bijv. geen "Talen" als er geen Talen veld is)
    - VERBODEN CONTENT (wordt verwijderd):
      * Functietitels (Developer, Manager, Founder, etc.)
      * Bedrijfsnamen
      * Werkperiodes (2020-2024, 2025-Heden)
      * Carrière samenvattingen
      * @ symbolen (zoals "Developer @ Bedrijf")
+     * Talen (tenzij er specifiek een "Talen" veld is)
    - Als je werkgerelateerde content hier plaatst, wordt het VERWIJDERD!
 
 3. OPLEIDINGEN SECTIE:
@@ -438,7 +443,7 @@ function filterInvalidSectionContent(
  * 3. We replace by index (no text matching needed)
  */
 export async function fillDocumentWithAI(
-  indexedSegments: { index: number; text: string; section?: SectionType }[],
+  indexedSegments: { index: number; text: string; section?: SectionType; isHeader?: boolean }[],
   profileData: ParsedLinkedIn,
   provider: LLMProvider,
   apiKey: string,
@@ -503,6 +508,31 @@ ${prompts.instructions}`;
     const filledSegmentsRecord: Record<string, string> = {};
     for (const segment of result.object.filledSegments) {
       filledSegmentsRecord[segment.index] = segment.value;
+    }
+
+    // Post-processing: Strip accidental label prefixes from AI responses
+    // AI sometimes returns "Functie : Developer" instead of just "Developer"
+    for (const [idx, value] of Object.entries(filledSegmentsRecord)) {
+      const origSegment = indexedSegments.find(s => s.index === parseInt(idx));
+      if (origSegment) {
+        // Check if original had "Label : " pattern
+        const labelMatch = origSegment.text.match(/^(.+?)\s*:\s*$/);
+        if (labelMatch) {
+          const label = labelMatch[1].trim();
+          // Check if AI accidentally repeated the label
+          const labelPrefix = new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:\\s*`, 'i');
+          if (labelPrefix.test(value)) {
+            filledSegmentsRecord[idx] = value.replace(labelPrefix, '').trim();
+          }
+        }
+      }
+    }
+
+    // Post-processing: Remove header segments that AI might have included
+    for (const seg of indexedSegments) {
+      if (seg.isHeader && filledSegmentsRecord[seg.index.toString()] !== undefined) {
+        delete filledSegmentsRecord[seg.index.toString()];
+      }
     }
 
     // Post-processing: Filter out invalid content from sections
