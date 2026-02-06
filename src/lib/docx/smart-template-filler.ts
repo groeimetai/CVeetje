@@ -909,8 +909,8 @@ function applyFilledSegments(
           result = result.substring(0, m.start) + newTag + result.substring(m.end);
         }
 
-        // For WE/education paragraphs with tabs, add hanging indent for wrap alignment
         if (isWEorEdu && hasTabsInPara) {
+          // Tab-separated paragraph where detection didn't match — add hanging indent
           const indentPos = 2880;
           const afterParaOpen = result.substring(group.paraStart);
           const pprStartOff = afterParaOpen.indexOf('<w:pPr>');
@@ -930,6 +930,43 @@ function applyFilledSegments(
             if (pOpenMatch) {
               const insertPos = group.paraStart + pOpenMatch[0].length;
               const newPPr = `<w:pPr><w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`;
+              result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
+            }
+          }
+        } else if (isWEorEdu) {
+          // Non-tab continuation paragraph (bullets after werkzaamheden label).
+          // Normalize indent to just w:left so all bullets align at the value column
+          // and wrapped text stays there. Original templates may use spaces, firstLine,
+          // or hanging indent which causes misalignment with rebuilt tab-separated paragraphs.
+          const indentPos = 2880;
+          const afterParaOpen = result.substring(group.paraStart);
+          const pprStartOff = afterParaOpen.indexOf('<w:pPr>');
+
+          if (pprStartOff !== -1) {
+            const pprEndOff = afterParaOpen.indexOf('</w:pPr>', pprStartOff) + '</w:pPr>'.length;
+            const pprAbsStart = group.paraStart + pprStartOff;
+            const pprAbsEnd = group.paraStart + pprEndOff;
+            const currentPPr = result.substring(pprAbsStart, pprAbsEnd);
+
+            // Preserve existing w:left if present, otherwise use default
+            const existingLeft = currentPPr.match(/<w:ind[^>]*w:left="(\d+)"/);
+            const leftPos = existingLeft ? parseInt(existingLeft[1]) : indentPos;
+
+            if (currentPPr.includes('<w:ind')) {
+              // Replace indent: remove firstLine/hanging, keep only w:left
+              const newPPr = currentPPr.replace(/<w:ind[^/]*\/>/, `<w:ind w:left="${leftPos}"/>`);
+              result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
+            } else {
+              // Add w:left indent
+              const newPPr = currentPPr.replace('</w:pPr>', `<w:ind w:left="${indentPos}"/></w:pPr>`);
+              result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
+            }
+          } else {
+            // No pPr exists — insert one with indent
+            const pOpenMatch = afterParaOpen.match(/^<w:p[^>]*>/);
+            if (pOpenMatch) {
+              const insertPos = group.paraStart + pOpenMatch[0].length;
+              const newPPr = `<w:pPr><w:ind w:left="${indentPos}"/></w:pPr>`;
               result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
             }
           }
