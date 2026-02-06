@@ -247,10 +247,10 @@ interface WorkExperienceSlot {
 /**
  * Detect work experience slots using paragraph-based grouping.
  *
- * A WE slot starts at a period-pattern segment and includes all subsequent
- * non-period WE segments until the next period or section change.
- * Tracks unique parent paragraphs per slot (not segment count), so templates
- * with split <w:t> elements (4+ segments per WE block) work correctly.
+ * Combines all <w:t> text within each paragraph before matching the period pattern,
+ * so templates with split runs (from Word revision tracking) are handled correctly.
+ * E.g., "20" + "24" + "-" + "Heden" + " : " in separate <w:t> elements within one
+ * paragraph combine to "2024-Heden : " which matches the period pattern.
  */
 function detectWorkExperienceSlots(
   docXml: string,
@@ -260,43 +260,67 @@ function detectWorkExperienceSlots(
   const slots: WorkExperienceSlot[] = [];
 
   // Period pattern to detect start of a WE block
-  const periodPattern = /^\s*\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)?\s*:?\s*$/;
+  const periodPattern = /\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)/;
 
-  let currentSlotSegments: typeof weSegments = [];
+  // Group WE segments by parent paragraph
+  interface WePara { paraStart: number; paraEnd: number; combinedText: string; segments: typeof weSegments }
+  const weParas: WePara[] = [];
+  const seenParaStarts = new Set<number>();
+
+  for (const seg of weSegments) {
+    const p = findParentParagraph(docXml, seg.start);
+    if (!p) continue;
+
+    if (seenParaStarts.has(p.start)) {
+      // Add to existing paragraph group
+      const existing = weParas.find(wp => wp.paraStart === p.start)!;
+      existing.combinedText += seg.text;
+      existing.segments.push(seg);
+    } else {
+      seenParaStarts.add(p.start);
+      weParas.push({
+        paraStart: p.start,
+        paraEnd: p.end,
+        combinedText: seg.text,
+        segments: [seg],
+      });
+    }
+  }
+
+  // Sort by position
+  weParas.sort((a, b) => a.paraStart - b.paraStart);
+
+  // Detect slots: a WE slot starts at a paragraph whose combined text matches the period pattern
+  let currentSlotParas: WePara[] = [];
 
   const flushSlot = () => {
-    if (currentSlotSegments.length === 0) return;
+    if (currentSlotParas.length === 0) return;
 
-    // Collect unique paragraphs (by start position)
-    const seenParaStarts = new Set<number>();
-    const paragraphs: { start: number; end: number }[] = [];
     const segmentIndices: number[] = [];
+    const paragraphs: { start: number; end: number }[] = [];
 
-    for (const s of currentSlotSegments) {
-      segmentIndices.push(s.index);
-      const p = findParentParagraph(docXml, s.start);
-      if (p && !seenParaStarts.has(p.start)) {
-        seenParaStarts.add(p.start);
-        paragraphs.push({ start: p.start, end: p.end });
+    for (const wp of currentSlotParas) {
+      for (const s of wp.segments) {
+        segmentIndices.push(s.index);
       }
+      paragraphs.push({ start: wp.paraStart, end: wp.paraEnd });
     }
 
     if (paragraphs.length > 0) {
       slots.push({ segmentIndices, paragraphs });
     }
-    currentSlotSegments = [];
+    currentSlotParas = [];
   };
 
-  for (const seg of weSegments) {
-    if (periodPattern.test(seg.text)) {
-      // Period marker found — flush previous slot, start new one
+  for (const wp of weParas) {
+    if (periodPattern.test(wp.combinedText)) {
+      // Period paragraph found — flush previous slot, start new one
       flushSlot();
-      currentSlotSegments = [seg];
-    } else if (currentSlotSegments.length > 0) {
+      currentSlotParas = [wp];
+    } else if (currentSlotParas.length > 0) {
       // Continue current slot
-      currentSlotSegments.push(seg);
+      currentSlotParas.push(wp);
     }
-    // Segments before the first period marker are ignored
   }
 
   // Flush the last slot
@@ -382,56 +406,99 @@ function expandBulletParagraphs(
 }
 
 /**
- * Extract all text segments from DOCX XML with their indices and section info
- * Returns segments grouped by detected sections for better AI context
+ * Extract all text segments from DOCX XML with their indices and section info.
+ *
+ * Uses paragraph-level text combining for section header detection, so templates
+ * with split <w:t> elements (from Word revision tracking) are handled correctly.
+ * E.g., "Opleidingen" + " &amp; " + "Cursussen" in separate runs are combined
+ * before matching against section patterns.
  */
 function extractIndexedSegments(docXml: string): {
   segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[];
   sections: SectionInfo[];
 } {
   const segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[] = [];
-  const sections: SectionInfo[] = [];
   const regex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
   let match;
   let index = 0;
-  let currentSection: SectionType = 'unknown';
-  let currentSectionStartIndex = 0;
 
+  // Phase 1: Extract all segments with their positions
   while ((match = regex.exec(docXml)) !== null) {
-    const text = match[1];
-
-    // Check if this segment is a section header
-    const detectedSection = detectSectionType(text);
-    if (detectedSection) {
-      // Close previous section if it had segments
-      if (index > currentSectionStartIndex && currentSection !== 'unknown') {
-        sections.push({
-          type: currentSection,
-          startIndex: currentSectionStartIndex,
-          endIndex: index - 1,
-        });
-      }
-      currentSection = detectedSection;
-      currentSectionStartIndex = index;
-    }
-
     segments.push({
       index,
-      text,
+      text: match[1],
       start: match.index,
       end: match.index + match[0].length,
-      section: currentSection,
-      isHeader: detectedSection !== null,
     });
     index++;
   }
 
+  // Phase 2: Group segments by parent paragraph and detect sections using combined text
+  // This handles Word revision tracking that splits text across multiple <w:t> elements
+  interface ParaInfo { segmentIndices: number[]; combinedText: string; paraStart: number }
+  const paraMap = new Map<number, ParaInfo>(); // paraStart → info
+
+  for (const seg of segments) {
+    const p = findParentParagraph(docXml, seg.start);
+    if (!p) continue;
+
+    const existing = paraMap.get(p.start);
+    if (existing) {
+      existing.segmentIndices.push(seg.index);
+      existing.combinedText += seg.text;
+    } else {
+      paraMap.set(p.start, {
+        segmentIndices: [seg.index],
+        combinedText: seg.text,
+        paraStart: p.start,
+      });
+    }
+  }
+
+  // Phase 3: Detect sections from paragraph combined text and assign to segments
+  const sections: SectionInfo[] = [];
+  let currentSection: SectionType = 'unknown';
+  let currentSectionStartIndex = 0;
+
+  // Sort paragraphs by position
+  const sortedParas = [...paraMap.values()].sort((a, b) => a.paraStart - b.paraStart);
+
+  for (const para of sortedParas) {
+    const detectedSection = detectSectionType(para.combinedText);
+
+    if (detectedSection) {
+      // Close previous section
+      const firstIdx = para.segmentIndices[0];
+      if (firstIdx > currentSectionStartIndex && currentSection !== 'unknown') {
+        sections.push({
+          type: currentSection,
+          startIndex: currentSectionStartIndex,
+          endIndex: firstIdx - 1,
+        });
+      }
+      currentSection = detectedSection;
+      currentSectionStartIndex = firstIdx;
+
+      // Mark all segments in this paragraph as header
+      for (const idx of para.segmentIndices) {
+        segments[idx].section = currentSection;
+        segments[idx].isHeader = true;
+      }
+    } else {
+      // Assign current section to all segments in this paragraph
+      for (const idx of para.segmentIndices) {
+        segments[idx].section = currentSection;
+        segments[idx].isHeader = false;
+      }
+    }
+  }
+
   // Close the last section
-  if (index > currentSectionStartIndex) {
+  if (segments.length > currentSectionStartIndex) {
     sections.push({
       type: currentSection,
       startIndex: currentSectionStartIndex,
-      endIndex: index - 1,
+      endIndex: segments.length - 1,
     });
   }
 
