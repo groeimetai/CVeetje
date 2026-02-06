@@ -574,8 +574,9 @@ function applyFilledSegments(
     paraStart: number;
     paraEnd: number;
     paraXml: string;
-    matchIndices: number[]; // indices into the matches array
-    hasLabel: boolean; // whether any match in this group is a label:value field
+    matchIndices: number[]; // filled indices into the matches array
+    hasLabel: boolean; // whether this paragraph is a label:value field
+    combinedLabel?: string; // label from combined paragraph text (for split-run detection)
   }
 
   const paraGroups: ParaGroup[] = [];
@@ -615,6 +616,30 @@ function applyFilledSegments(
     }
   }
 
+  // Combined-text label detection for split-run paragraphs.
+  // Word revision tracking may split "Label : " across multiple <w:t> elements,
+  // e.g., "Naam" + ":" + " " in separate runs. Individual segments don't match
+  // splitLabelValue, but the combined paragraph text does.
+  for (const group of paraGroups) {
+    if (group.hasLabel) continue;
+
+    // Find ALL <w:t> matches in this paragraph (filled or not)
+    const allInPara: number[] = [];
+    for (let i = 0; i < matches.length; i++) {
+      if (matches[i].start > group.paraStart && matches[i].end < group.paraEnd) {
+        allInPara.push(i);
+      }
+    }
+    allInPara.sort((a, b) => matches[a].start - matches[b].start);
+
+    const combinedText = allInPara.map(i => matches[i].content).join('');
+    const labelInfo = splitLabelValue(combinedText);
+    if (labelInfo) {
+      group.hasLabel = true;
+      group.combinedLabel = labelInfo.label;
+    }
+  }
+
   // Track which match indices are handled by paragraph groups
   const handledByGroup = new Set<number>();
   for (const g of paraGroups) {
@@ -629,41 +654,58 @@ function applyFilledSegments(
   // Process each paragraph group atomically
   for (const group of paraGroups) {
     if (group.hasLabel) {
-      // This paragraph contains a label:value field — rebuild the entire paragraph
-      // Find the FIRST label match to determine rPr and alignment
-      const labelMatchIdx = group.matchIndices.find(i => splitLabelValue(matches[i].content) !== null);
-      if (labelMatchIdx === undefined) continue;
+      // This paragraph contains a label:value field — rebuild the entire paragraph.
+      // Label detection works two ways:
+      //   1. Single-run: one <w:t> contains "Label : " → splitLabelValue matches
+      //   2. Split-run: "Label" + ":" + " " across separate <w:t> elements (Word
+      //      revision tracking) → combinedLabel was set by paragraph-level detection
 
-      // Check if this is a personal_info field (front page) — use simple "Label: Value" format
-      const segmentInfo = _segments.find(s => s.index === labelMatchIdx);
-      if (segmentInfo?.section === 'personal_info') {
-        const labelInfo = splitLabelValue(matches[labelMatchIdx].content)!;
-        const newContent = filledSegments[labelMatchIdx.toString()];
-        if (newContent !== undefined) {
-          const newText = escapeXml(`${labelInfo.label}: ${newContent}`);
-          const m = matches[labelMatchIdx];
-          const newTag = `<w:t${m.attrs}>${newText}</w:t>`;
-          result = result.substring(0, m.start) + newTag + result.substring(m.end);
-        }
+      // Determine label and value source
+      const individualLabelIdx = group.matchIndices.find(i => splitLabelValue(matches[i].content) !== null);
+
+      let label: string;
+      let valueSourceIdx: number;
+
+      if (individualLabelIdx !== undefined) {
+        // Single-run: label text is in one <w:t>
+        label = splitLabelValue(matches[individualLabelIdx].content)!.label;
+        valueSourceIdx = individualLabelIdx;
+      } else if (group.combinedLabel) {
+        // Split-run: label from combined paragraph text, value from first filled segment
+        label = group.combinedLabel;
+        valueSourceIdx = group.matchIndices[0];
+      } else {
         continue;
       }
 
-      const labelMatch = matches[labelMatchIdx];
-      const labelInfo = splitLabelValue(labelMatch.content)!;
-      const newContent = filledSegments[labelMatchIdx.toString()];
+      const newContent = filledSegments[valueSourceIdx.toString()];
+      if (newContent === undefined) continue;
 
-      // Use stored group data directly — do NOT re-lookup the paragraph
-      // (group.paraStart is the start of <w:p>, so findParentParagraph would
-      // search backward and find the WRONG paragraph)
-      const run = findParentRun(result, labelMatch.start);
+      // Determine section for this paragraph
+      const segmentInfo = _segments.find(s => s.index === valueSourceIdx);
+
+      // Extract formatting from original paragraph
+      const firstMatch = matches[group.matchIndices[0]];
+      const run = findParentRun(result, firstMatch.start);
       const rPrXml = run ? extractRunProperties(run.xml) : '';
       const pPrXml = extractParagraphProperties(group.paraXml);
+      const pOpenMatch = group.paraXml.match(/^<w:p[^>]*>/);
+      const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
 
-      // Use template's existing tab stop position if available
+      if (segmentInfo?.section === 'personal_info') {
+        // Front page: simple "Label: Value" — replace entire paragraph with single run
+        const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
+        const newText = escapeXml(`${label}: ${newContent}`);
+        const newParaXml = `${pOpen}${pPrXml || ''}<w:r>${rPr}<w:t xml:space="preserve">${newText}</w:t></w:r></w:p>`;
+        result = result.substring(0, group.paraStart) + newParaXml + result.substring(group.paraEnd);
+        continue;
+      }
+
+      // WE/education/other: tab-aligned runs with hanging indent
       const tabPos = extractTabStopPos(pPrXml);
 
       // Handle period fields where AI returns "2020-Heden\tCompany"
-      let effectiveLabel = labelInfo.label;
+      let effectiveLabel = label;
       let effectiveValue = newContent;
 
       if (newContent.includes('\t')) {
@@ -686,10 +728,6 @@ function applyFilledSegments(
       } else {
         newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs><w:ind w:left="${tabPos}" w:hanging="${tabPos}"/></w:pPr>`;
       }
-
-      // Extract the paragraph open tag (may have attributes like w14:paraId)
-      const pOpenMatch = group.paraXml.match(/^<w:p[^>]*>/);
-      const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
 
       const newParaXml = `${pOpen}${newPPr}${tabRuns}</w:p>`;
 
