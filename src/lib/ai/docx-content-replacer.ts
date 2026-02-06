@@ -135,6 +135,13 @@ LABEL:VALUE FIELDS:
 - For period fields like "2024-Present : ", return the REAL period and company separated by a tab
 - Example: [12] "2024-Present : " → return { "index": "12", "value": "2020-Present\tAlliander" }
 
+TAB-SEPARATED FIELDS:
+- Some templates have label and value in separate segments separated by tab characters
+- Segments like ": " or ": CompanyName" after tabs contain the value — return ONLY the value without the ":"
+- Example: [13] ": Alliander" → return { "index": "13", "value": "Snow-Flow" }
+- Example: [10] ": ServiceNow Developer" → return { "index": "10", "value": "Data Engineer" }
+- For period segments (e.g., "2024" or "2025-Heden"), return "YEAR-YEAR\tCompanyName" with tab separator
+
 INSTRUCTIONS:
 1. You receive text segments with numbers: [0] text, [1] text, etc.
 2. Fill each segment with the correct profile data
@@ -190,6 +197,13 @@ LABEL:WAARDE VELDEN:
 - Herhaal NIET het label in je waarde! Fout: "Functie : ServiceNow Developer"
 - Voor periode velden zoals "2024-Heden : ", retourneer de ECHTE periode en bedrijfsnaam gescheiden door een tab
 - Voorbeeld: [12] "2024-Heden : " → retourneer { "index": "12", "value": "2020-Heden\tAlliander" }
+
+TAB-GESCHEIDEN VELDEN:
+- Sommige templates hebben label en waarde in aparte segmenten gescheiden door tab-tekens
+- Segmenten zoals ": " of ": Bedrijfsnaam" na tabs bevatten de waarde — retourneer ALLEEN de waarde zonder de ":"
+- Voorbeeld: [13] ": Alliander" → retourneer { "index": "13", "value": "Snow-Flow" }
+- Voorbeeld: [10] ": ServiceNow Developer" → retourneer { "index": "10", "value": "Data Engineer" }
+- Voor periode segmenten (bijv. "2024" of "2025-Heden"), retourneer "JAAR-JAAR\tBedrijfsnaam" met tab-scheiding
 
 INSTRUCTIES:
 1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
@@ -535,6 +549,15 @@ ${prompts.instructions}`;
             filledSegmentsRecord[idx] = value.replace(labelPrefix, '').trim();
           }
         }
+      }
+    }
+
+    // Post-processing: Strip leading `:` prefix from tab-separated value segments
+    // Safety net for when AI includes the colon despite instructions
+    for (const [idx, value] of Object.entries(filledSegmentsRecord)) {
+      const origSegment = indexedSegments.find(s => s.index === parseInt(idx));
+      if (origSegment && /^:\s/.test(origSegment.text) && /^:\s*/.test(value)) {
+        filledSegmentsRecord[idx] = value.replace(/^:\s*/, '').trim();
       }
     }
 

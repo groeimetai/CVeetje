@@ -138,6 +138,53 @@ function splitLabelValue(text: string): { label: string; isLabelField: boolean }
 }
 
 /**
+ * Detect if a paragraph uses tab-separated layout: [label] [tab(s)] [value]
+ * Returns the label/value text and which match indices are label vs value.
+ * Used for templates like John Doe where fields are "Functie [TAB x4] Developer".
+ *
+ * paraStart is the absolute position of the paragraph in the document XML,
+ * used to compute each match's relative offset within the paragraph.
+ */
+function detectTabSeparatedParagraph(
+  paraXml: string,
+  paraStart: number,
+  matchesInPara: { matchIndex: number; content: string; startInDoc: number }[]
+): { labelText: string; valueText: string; labelMatchIndices: number[]; valueMatchIndices: number[] } | null {
+  // Must have tabs and at least 2 text segments
+  if (!paraXml.includes('<w:tab/>') || matchesInPara.length < 2) return null;
+
+  // Find position of first <w:tab/> within the paragraph XML
+  const firstTabPos = paraXml.indexOf('<w:tab/>');
+  if (firstTabPos === -1) return null;
+
+  const labelMatchIndices: number[] = [];
+  const valueMatchIndices: number[] = [];
+  let labelText = '';
+  let valueText = '';
+
+  for (const m of matchesInPara) {
+    // Position of this match relative to the paragraph start
+    const relPos = m.startInDoc - paraStart;
+
+    if (relPos < firstTabPos) {
+      labelMatchIndices.push(m.matchIndex);
+      labelText += m.content;
+    } else {
+      valueMatchIndices.push(m.matchIndex);
+      valueText += m.content;
+    }
+  }
+
+  // Must have both label and value parts
+  if (labelMatchIndices.length === 0 || valueMatchIndices.length === 0) return null;
+
+  // Strip leading `: ` or `:` from value text (John Doe template has ": value" after tabs)
+  valueText = valueText.replace(/^:\s*/, '').trim();
+
+  return { labelText: labelText.trim(), valueText, labelMatchIndices, valueMatchIndices };
+}
+
+/**
  * Find the parent <w:r>...</w:r> element boundaries for a given position within it
  */
 function findParentRun(docXml: string, posWithinRun: number): { start: number; end: number; xml: string } | null {
@@ -750,51 +797,141 @@ function applyFilledSegments(
       // Replace the entire paragraph atomically using stored positions
       result = result.substring(0, group.paraStart) + newParaXml + continuationXml + result.substring(group.paraEnd);
     } else {
-      // No label:value fields — do simple text replacements within the paragraph
-      // Process match indices in reverse order (by position)
-      const sortedIndices = [...group.matchIndices].sort((a, b) => matches[b].start - matches[a].start);
+      // No label:value fields — check for tab-separated WE/education paragraphs
+      const segInfo = _segments.find(s => s.index === group.matchIndices[0]);
+      const isWEorEdu = segInfo?.section === 'work_experience' || segInfo?.section === 'education';
+      const hasTabsInPara = group.paraXml.includes('<w:tab/>');
 
-      for (const i of sortedIndices) {
-        const m = matches[i];
-        const newContent = filledSegments[i.toString()];
-        if (newContent === undefined) continue;
+      // Build match info for tab detection
+      const matchesInPara = group.matchIndices.map(i => ({
+        matchIndex: i,
+        content: matches[i].content,
+        startInDoc: matches[i].start,
+      }));
 
-        const escapedContent = escapeXml(newContent);
-        const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
-        result = result.substring(0, m.start) + newTag + result.substring(m.end);
+      // Also include non-filled matches in this paragraph for complete label detection
+      const allMatchesInPara: typeof matchesInPara = [];
+      for (let i = 0; i < matches.length; i++) {
+        if (matches[i].start >= group.paraStart && matches[i].end <= group.paraEnd) {
+          allMatchesInPara.push({
+            matchIndex: i,
+            content: matches[i].content,
+            startInDoc: matches[i].start,
+          });
+        }
       }
 
-      // For WE/education paragraphs that use tabs for alignment, add hanging indent
-      // so wrapped text stays in the value column instead of flowing to the left margin.
-      // The pPr is at the start of the paragraph, before any <w:t> elements,
-      // so its position is unaffected by the <w:t> replacements above.
-      const segInfo = _segments.find(s => s.index === group.matchIndices[0]);
-      const isTabAligned = (segInfo?.section === 'work_experience' || segInfo?.section === 'education')
-        && group.paraXml.includes('<w:tab/>');
+      const tabLayout = isWEorEdu && hasTabsInPara
+        ? detectTabSeparatedParagraph(group.paraXml, group.paraStart, allMatchesInPara)
+        : null;
 
-      if (isTabAligned) {
-        // Use 2880 twips to match the template's continuation line indent (4 default tab stops × 720)
-        const indentPos = 2880;
-        const afterParaOpen = result.substring(group.paraStart);
-        const pprStartOff = afterParaOpen.indexOf('<w:pPr>');
+      if (tabLayout && isWEorEdu) {
+        // Tab-separated WE/education paragraph — rebuild with proper alignment
+        // Gather the filled content for label and value parts
+        let filledLabel = '';
+        for (const idx of tabLayout.labelMatchIndices) {
+          const fill = filledSegments[idx.toString()];
+          filledLabel += fill !== undefined ? fill : matches[idx].content;
+        }
+        let filledValue = '';
+        for (const idx of tabLayout.valueMatchIndices) {
+          const fill = filledSegments[idx.toString()];
+          filledValue += fill !== undefined ? fill : matches[idx].content;
+        }
 
-        if (pprStartOff !== -1) {
-          const pprEndOff = afterParaOpen.indexOf('</w:pPr>', pprStartOff) + '</w:pPr>'.length;
-          const pprAbsStart = group.paraStart + pprStartOff;
-          const pprAbsEnd = group.paraStart + pprEndOff;
-          const currentPPr = result.substring(pprAbsStart, pprAbsEnd);
+        // Strip `: ` prefix from value (AI or template may include it)
+        filledValue = filledValue.replace(/^:\s*/, '').trim();
 
-          if (!currentPPr.includes('<w:ind')) {
-            const newPPr = currentPPr.replace('</w:pPr>', `<w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`);
-            result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
+        // Handle period fields where AI returns "2020-Heden\tCompany"
+        if (filledLabel.includes('\t')) {
+          const tabParts = filledLabel.split('\t');
+          filledLabel = tabParts[0].trim();
+          // If there's a company name after the tab, use it as the value
+          if (tabParts[1]?.trim()) {
+            filledValue = tabParts[1].trim();
           }
+        }
+        // Also check value for tab (AI might put "period\tcompany" in any segment)
+        if (filledValue.includes('\t')) {
+          const tabParts = filledValue.split('\t');
+          filledValue = tabParts.join(' ').trim();
+        }
+
+        // Extract formatting from original paragraph
+        const firstMatch = matches[allMatchesInPara[0].matchIndex];
+        const run = findParentRun(result, firstMatch.start);
+        const rPrXml = run ? extractRunProperties(run.xml) : '';
+        const pPrXml = extractParagraphProperties(group.paraXml);
+        const pOpenMatch = group.paraXml.match(/^<w:p[^>]*>/);
+        const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
+
+        // Use existing tab position or default for multi-tab templates (4 tabs × 720 = 2880)
+        const tabPos = extractTabStopPos(pPrXml) !== TAB_STOP_POS
+          ? extractTabStopPos(pPrXml)
+          : 2880;
+
+        // Split multi-line content: first line goes with label, rest are continuation paragraphs
+        const lines = filledValue.split('\n').filter(l => l.trim());
+        const firstLineValue = lines[0] || filledValue;
+
+        // Build the tab-aligned runs for label + value
+        const tabRuns = buildTabAlignedRuns(filledLabel, firstLineValue.trim(), rPrXml);
+
+        // Build new paragraph properties with tab alignment
+        let newPPr = pPrXml;
+        if (newPPr) {
+          newPPr = addTabAlignmentToParagraphXml(newPPr, tabPos);
         } else {
-          // No pPr exists — insert one after the <w:p ...> opening tag
-          const pOpenMatch = afterParaOpen.match(/^<w:p[^>]*>/);
-          if (pOpenMatch) {
-            const insertPos = group.paraStart + pOpenMatch[0].length;
-            const newPPr = `<w:pPr><w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`;
-            result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
+          newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs><w:ind w:left="${tabPos}" w:hanging="${tabPos}"/></w:pPr>`;
+        }
+
+        const newParaXml = `${pOpen}${newPPr}${tabRuns}</w:p>`;
+
+        // Build continuation paragraphs for multi-line content
+        let continuationXml = '';
+        if (lines.length > 1) {
+          continuationXml = expandBulletParagraphs(filledValue, rPrXml, pPrXml, tabPos, filledLabel);
+        }
+
+        // Replace the entire paragraph atomically
+        result = result.substring(0, group.paraStart) + newParaXml + continuationXml + result.substring(group.paraEnd);
+      } else {
+        // Non-tab paragraph (or non-WE/education) — simple text replacement
+        const sortedIndices = [...group.matchIndices].sort((a, b) => matches[b].start - matches[a].start);
+
+        for (const i of sortedIndices) {
+          const m = matches[i];
+          const newContent = filledSegments[i.toString()];
+          if (newContent === undefined) continue;
+
+          const escapedContent = escapeXml(newContent);
+          const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+          result = result.substring(0, m.start) + newTag + result.substring(m.end);
+        }
+
+        // For WE/education paragraphs with tabs, add hanging indent for wrap alignment
+        if (isWEorEdu && hasTabsInPara) {
+          const indentPos = 2880;
+          const afterParaOpen = result.substring(group.paraStart);
+          const pprStartOff = afterParaOpen.indexOf('<w:pPr>');
+
+          if (pprStartOff !== -1) {
+            const pprEndOff = afterParaOpen.indexOf('</w:pPr>', pprStartOff) + '</w:pPr>'.length;
+            const pprAbsStart = group.paraStart + pprStartOff;
+            const pprAbsEnd = group.paraStart + pprEndOff;
+            const currentPPr = result.substring(pprAbsStart, pprAbsEnd);
+
+            if (!currentPPr.includes('<w:ind')) {
+              const newPPr = currentPPr.replace('</w:pPr>', `<w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`);
+              result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
+            }
+          } else {
+            const pOpenMatch = afterParaOpen.match(/^<w:p[^>]*>/);
+            if (pOpenMatch) {
+              const insertPos = group.paraStart + pOpenMatch[0].length;
+              const newPPr = `<w:pPr><w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`;
+              result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
+            }
           }
         }
       }
