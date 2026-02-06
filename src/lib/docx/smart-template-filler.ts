@@ -199,26 +199,39 @@ function extractParagraphProperties(pXml: string): string | null {
 }
 
 /**
- * Add a tab stop definition to paragraph properties
+ * Add tab stop and hanging indent to paragraph properties.
+ * The tab stop positions the value column; the indent ensures wrapped lines
+ * stay aligned at the tab position instead of flowing back to the left margin.
  * tabPos is in twips (1440 twips = 1 inch, 2800 twips ≈ 4.9cm)
  */
-function addTabStopToParagraphXml(pPrXml: string, tabPos: number): string {
+function addTabAlignmentToParagraphXml(pPrXml: string, tabPos: number): string {
   const tabStopXml = `<w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs>`;
+  const indentXml = `<w:ind w:left="${tabPos}"/>`;
 
-  // If pPr already has tabs, replace them
-  if (pPrXml.includes('<w:tabs>')) {
-    return pPrXml.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, tabStopXml);
+  let result = pPrXml;
+
+  // Add/replace tab stops
+  if (result.includes('<w:tabs>')) {
+    result = result.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, tabStopXml);
+  } else {
+    // Insert after <w:pStyle.../> if present, else after <w:pPr>
+    const styleMatch = result.match(/<w:pStyle[^/]*\/>/);
+    if (styleMatch) {
+      const insertPos = result.indexOf(styleMatch[0]) + styleMatch[0].length;
+      result = result.substring(0, insertPos) + tabStopXml + result.substring(insertPos);
+    } else {
+      result = result.replace('<w:pPr>', '<w:pPr>' + tabStopXml);
+    }
   }
 
-  // Insert tabs after opening <w:pPr> but before style (after <w:pStyle.../> if present)
-  const styleMatch = pPrXml.match(/<w:pStyle[^/]*\/>/);
-  if (styleMatch) {
-    const insertPos = pPrXml.indexOf(styleMatch[0]) + styleMatch[0].length;
-    return pPrXml.substring(0, insertPos) + tabStopXml + pPrXml.substring(insertPos);
+  // Add/replace indent
+  if (result.includes('<w:ind')) {
+    result = result.replace(/<w:ind[^/]*\/>/, indentXml);
+  } else {
+    result = result.replace('</w:pPr>', indentXml + '</w:pPr>');
   }
 
-  // Insert right after <w:pPr>
-  return pPrXml.replace('<w:pPr>', '<w:pPr>' + tabStopXml);
+  return result;
 }
 
 /**
@@ -655,9 +668,9 @@ function applyFilledSegments(
       // Start building new paragraph: keep pPr, replace all runs
       let newPPr = pPrXml;
       if (newPPr) {
-        newPPr = addTabStopToParagraphXml(newPPr, tabPos);
+        newPPr = addTabAlignmentToParagraphXml(newPPr, tabPos);
       } else {
-        newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs></w:pPr>`;
+        newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs><w:ind w:left="${tabPos}"/></w:pPr>`;
       }
 
       // Extract the paragraph open tag (may have attributes like w14:paraId)
