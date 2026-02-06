@@ -411,10 +411,11 @@ function duplicateWorkExperienceSlots(
   const blockEnd = paras[paras.length - 1].end;
   const blockXml = docXml.substring(blockStart, blockEnd);
 
-  // Clone the block for each additional experience
+  // Clone the block for each additional experience, with spacer between blocks
+  const spacerXml = '<w:p></w:p>';
   let insertXml = '';
   for (let i = 0; i < additionalNeeded; i++) {
-    insertXml += blockXml;
+    insertXml += spacerXml + blockXml;
   }
 
   // Insert after the last WE block
@@ -885,6 +886,12 @@ function applyFilledSegments(
           newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs><w:ind w:left="${tabPos}" w:hanging="${tabPos}"/></w:pPr>`;
         }
 
+        // Add spacing before period paragraphs (start of a WE block) for visual separation
+        const periodPattern = /\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)/;
+        if (periodPattern.test(filledLabel) || periodPattern.test(tabLayout.labelText)) {
+          newPPr = newPPr.replace('</w:pPr>', '<w:spacing w:before="240"/></w:pPr>');
+        }
+
         const newParaXml = `${pOpen}${newPPr}${tabRuns}</w:p>`;
 
         // Build continuation paragraphs for multi-line content
@@ -895,8 +902,71 @@ function applyFilledSegments(
 
         // Replace the entire paragraph atomically
         result = result.substring(0, group.paraStart) + newParaXml + continuationXml + result.substring(group.paraEnd);
+      } else if (isWEorEdu && !hasTabsInPara) {
+        // Non-tab WE/education continuation paragraph — rebuild cleanly.
+        // Original template may have leading whitespace runs (spaces used for
+        // alignment) and w:firstLine that cause misalignment. Rebuild with
+        // just the content text and w:left indent, dropping whitespace runs.
+
+        // Gather all text segments in this paragraph (filled and unfilled)
+        const allInPara: number[] = [];
+        for (let i = 0; i < matches.length; i++) {
+          if (matches[i].start >= group.paraStart && matches[i].end <= group.paraEnd) {
+            allInPara.push(i);
+          }
+        }
+        allInPara.sort((a, b) => matches[a].start - matches[b].start);
+
+        // Combine text: use filled content where available, skip whitespace-only segments
+        const textParts: string[] = [];
+        for (const idx of allInPara) {
+          const fill = filledSegments[idx.toString()];
+          const text = fill !== undefined ? fill : matches[idx].content;
+          if (text.trim()) textParts.push(text);
+        }
+        const combinedContent = textParts.join('').trim();
+
+        if (combinedContent) {
+          // Extract formatting from first non-whitespace run
+          const formatIdx = allInPara.find(i => {
+            const fill = filledSegments[i.toString()];
+            return (fill !== undefined ? fill : matches[i].content).trim().length > 0;
+          }) ?? allInPara[0];
+
+          const run = findParentRun(result, matches[formatIdx].start);
+          const rPrXml = run ? extractRunProperties(run.xml) : '';
+          const pPrXml = extractParagraphProperties(group.paraXml);
+          const pOpenMatch = group.paraXml.match(/^<w:p[^>]*>/);
+          const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
+
+          // Build clean pPr with style + left indent only
+          const indentPos = 2880;
+          let newPPr = '<w:pPr>';
+          if (pPrXml) {
+            const styleMatch = pPrXml.match(/<w:pStyle[^/]*\/>/);
+            if (styleMatch) newPPr = `<w:pPr>${styleMatch[0]}`;
+          }
+          newPPr += `<w:ind w:left="${indentPos}"/></w:pPr>`;
+
+          const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
+          const escapedContent = escapeXml(combinedContent);
+          const newParaXml = `${pOpen}${newPPr}<w:r>${rPr}<w:t xml:space="preserve">${escapedContent}</w:t></w:r></w:p>`;
+
+          result = result.substring(0, group.paraStart) + newParaXml + result.substring(group.paraEnd);
+        } else {
+          // All whitespace — preserve as-is (spacer paragraph)
+          const sortedIndices = [...group.matchIndices].sort((a, b) => matches[b].start - matches[a].start);
+          for (const i of sortedIndices) {
+            const m = matches[i];
+            const newContent = filledSegments[i.toString()];
+            if (newContent === undefined) continue;
+            const escapedContent = escapeXml(newContent);
+            const newTag = `<w:t${m.attrs}>${escapedContent}</w:t>`;
+            result = result.substring(0, m.start) + newTag + result.substring(m.end);
+          }
+        }
       } else {
-        // Non-tab paragraph (or non-WE/education) — simple text replacement
+        // Other paragraphs (non-WE/education, or edge case with tabs) — simple replacement
         const sortedIndices = [...group.matchIndices].sort((a, b) => matches[b].start - matches[a].start);
 
         for (const i of sortedIndices) {
@@ -930,43 +1000,6 @@ function applyFilledSegments(
             if (pOpenMatch) {
               const insertPos = group.paraStart + pOpenMatch[0].length;
               const newPPr = `<w:pPr><w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`;
-              result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
-            }
-          }
-        } else if (isWEorEdu) {
-          // Non-tab continuation paragraph (bullets after werkzaamheden label).
-          // Normalize indent to just w:left so all bullets align at the value column
-          // and wrapped text stays there. Original templates may use spaces, firstLine,
-          // or hanging indent which causes misalignment with rebuilt tab-separated paragraphs.
-          const indentPos = 2880;
-          const afterParaOpen = result.substring(group.paraStart);
-          const pprStartOff = afterParaOpen.indexOf('<w:pPr>');
-
-          if (pprStartOff !== -1) {
-            const pprEndOff = afterParaOpen.indexOf('</w:pPr>', pprStartOff) + '</w:pPr>'.length;
-            const pprAbsStart = group.paraStart + pprStartOff;
-            const pprAbsEnd = group.paraStart + pprEndOff;
-            const currentPPr = result.substring(pprAbsStart, pprAbsEnd);
-
-            // Preserve existing w:left if present, otherwise use default
-            const existingLeft = currentPPr.match(/<w:ind[^>]*w:left="(\d+)"/);
-            const leftPos = existingLeft ? parseInt(existingLeft[1]) : indentPos;
-
-            if (currentPPr.includes('<w:ind')) {
-              // Replace indent: remove firstLine/hanging, keep only w:left
-              const newPPr = currentPPr.replace(/<w:ind[^/]*\/>/, `<w:ind w:left="${leftPos}"/>`);
-              result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
-            } else {
-              // Add w:left indent
-              const newPPr = currentPPr.replace('</w:pPr>', `<w:ind w:left="${indentPos}"/></w:pPr>`);
-              result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
-            }
-          } else {
-            // No pPr exists — insert one with indent
-            const pOpenMatch = afterParaOpen.match(/^<w:p[^>]*>/);
-            if (pOpenMatch) {
-              const insertPos = group.paraStart + pOpenMatch[0].length;
-              const newPPr = `<w:pPr><w:ind w:left="${indentPos}"/></w:pPr>`;
               result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
             }
           }
