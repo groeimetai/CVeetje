@@ -206,7 +206,7 @@ function extractParagraphProperties(pXml: string): string | null {
  */
 function addTabAlignmentToParagraphXml(pPrXml: string, tabPos: number): string {
   const tabStopXml = `<w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs>`;
-  const indentXml = `<w:ind w:left="${tabPos}"/>`;
+  const indentXml = `<w:ind w:left="${tabPos}" w:hanging="${tabPos}"/>`;
 
   let result = pPrXml;
 
@@ -634,6 +634,20 @@ function applyFilledSegments(
       const labelMatchIdx = group.matchIndices.find(i => splitLabelValue(matches[i].content) !== null);
       if (labelMatchIdx === undefined) continue;
 
+      // Check if this is a personal_info field (front page) — use simple "Label: Value" format
+      const segmentInfo = _segments.find(s => s.index === labelMatchIdx);
+      if (segmentInfo?.section === 'personal_info') {
+        const labelInfo = splitLabelValue(matches[labelMatchIdx].content)!;
+        const newContent = filledSegments[labelMatchIdx.toString()];
+        if (newContent !== undefined) {
+          const newText = escapeXml(`${labelInfo.label}: ${newContent}`);
+          const m = matches[labelMatchIdx];
+          const newTag = `<w:t${m.attrs}>${newText}</w:t>`;
+          result = result.substring(0, m.start) + newTag + result.substring(m.end);
+        }
+        continue;
+      }
+
       const labelMatch = matches[labelMatchIdx];
       const labelInfo = splitLabelValue(labelMatch.content)!;
       const newContent = filledSegments[labelMatchIdx.toString()];
@@ -670,7 +684,7 @@ function applyFilledSegments(
       if (newPPr) {
         newPPr = addTabAlignmentToParagraphXml(newPPr, tabPos);
       } else {
-        newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs><w:ind w:left="${tabPos}"/></w:pPr>`;
+        newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs><w:ind w:left="${tabPos}" w:hanging="${tabPos}"/></w:pPr>`;
       }
 
       // Extract the paragraph open tag (may have attributes like w14:paraId)
