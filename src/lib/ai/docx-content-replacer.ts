@@ -142,6 +142,13 @@ TAB-SEPARATED FIELDS:
 - Example: [10] ": ServiceNow Developer" → return { "index": "10", "value": "Data Engineer" }
 - For period segments (e.g., "2024" or "2025-Heden"), return "YEAR-YEAR\tCompanyName" with tab separator
 
+EDUCATION PERIOD FIELDS:
+- Education periods work the SAME way as work experience periods
+- For period segments in education (e.g., "2022-2024"), return "STARTYEAR-ENDYEAR\tSchoolName - Degree"
+- Example: [5] "2022-2024" → return { "index": "5", "value": "2015-2017\tRijn IJssel - MBO 4 Entrepreneurship" }
+- ALWAYS keep the full year range together (e.g., "2015-2017"), NEVER split it across label and value
+- The year range goes in the LEFT column, school + degree in the RIGHT column
+
 INSTRUCTIONS:
 1. You receive text segments with numbers: [0] text, [1] text, etc.
 2. Fill each segment with the correct profile data
@@ -162,10 +169,16 @@ You MUST fill each slot with a DIFFERENT experience from the profile, in chronol
 Slot 1 = experience 1, Slot 2 = experience 2, Slot 3 = experience 3, etc.
 NEVER fill two slots with the same experience!
 
+EDUCATION ORDER:
+Education entries follow the same pattern as work experience.
+Each education period segment should contain the FULL year range (e.g., "2015-2017"), NOT just the start year.
+The school name and degree go in the value column after a tab separator.
+
 IMPORTANT:
 - Fill ALL empty segments where data belongs
 - For "Label : " segments, return ONLY the value (not the label)
 - For period segments ("2024-Present : "), return "YEAR-YEAR\tCompanyName"
+- For education period segments, return "STARTYEAR-ENDYEAR\tSchool - Degree"
 - Fill availability, transport etc. if known
 - Return ONLY segments that need to be changed
 - NEVER return section header segments
@@ -205,6 +218,13 @@ TAB-GESCHEIDEN VELDEN:
 - Voorbeeld: [10] ": ServiceNow Developer" → retourneer { "index": "10", "value": "Data Engineer" }
 - Voor periode segmenten (bijv. "2024" of "2025-Heden"), retourneer "JAAR-JAAR\tBedrijfsnaam" met tab-scheiding
 
+OPLEIDING PERIODE VELDEN:
+- Opleidingsperiodes werken HETZELFDE als werkervaring periodes
+- Voor periode segmenten in opleidingen (bijv. "2022-2024"), retourneer "STARTJAAR-EINDJAAR\tSchool - Diploma"
+- Voorbeeld: [5] "2022-2024" → retourneer { "index": "5", "value": "2015-2017\tRijn IJssel - MBO 4 Entrepreneurship" }
+- Houd ALTIJD het volledige jaarbereik bij elkaar (bijv. "2015-2017"), splits het NOOIT over label en waarde
+- Het jaarbereik gaat in de LINKER kolom, school + diploma in de RECHTER kolom
+
 INSTRUCTIES:
 1. Je krijgt tekst segmenten met nummers: [0] tekst, [1] tekst, etc.
 2. Vul elk segment in met de juiste profieldata
@@ -225,10 +245,16 @@ Je MOET elk slot vullen met een ANDERE ervaring uit het profiel, in chronologisc
 Slot 1 = ervaring 1, Slot 2 = ervaring 2, Slot 3 = ervaring 3, etc.
 Vul NOOIT twee slots met dezelfde ervaring!
 
+OPLEIDING VOLGORDE:
+Opleidingen volgen hetzelfde patroon als werkervaring.
+Elk opleiding-periode segment moet het VOLLEDIGE jaarbereik bevatten (bijv. "2015-2017"), NIET alleen het startjaar.
+De schoolnaam en het diploma gaan in de waarde-kolom na een tab-scheiding.
+
 BELANGRIJK:
 - Vul ALLE lege segmenten in waar data hoort
 - Voor "Label : " segmenten, retourneer ALLEEN de waarde (niet het label)
 - Voor periode segmenten ("2024-Heden : "), retourneer "JAAR-JAAR\tBedrijfsnaam"
+- Voor opleiding periode segmenten, retourneer "STARTJAAR-EINDJAAR\tSchool - Diploma"
 - Beschikbaarheid, vervoer etc. ook invullen indien bekend
 - Retourneer ALLEEN segmenten die gewijzigd moeten worden
 - Retourneer NOOIT sectie header segmenten
@@ -478,11 +504,12 @@ export async function fillDocumentWithAI(
   customInstructions?: string,
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
   sections: SectionInfo[] = [],
+  customValues?: Record<string, string>,
 ): Promise<IndexedFillResult> {
   const aiProvider = createAIProvider(provider, apiKey);
 
-  // Build profile summary
-  const profileSummary = buildProfileSummary(profileData, language);
+  // Build profile summary (include custom values like birthDate, nationality)
+  const profileSummary = buildProfileSummary(profileData, language, customValues);
   const jobSummary = jobVacancy ? buildJobSummary(jobVacancy, language) : null;
   const fitSummary = buildFitAnalysisSummary(fitAnalysis, language);
 
@@ -593,7 +620,7 @@ ${prompts.instructions}`;
 /**
  * Build a summary of the profile data for the AI prompt
  */
-function buildProfileSummary(profile: ParsedLinkedIn, language: OutputLanguage = 'nl'): string {
+function buildProfileSummary(profile: ParsedLinkedIn, language: OutputLanguage = 'nl', customValues?: Record<string, string>): string {
   const parts: string[] = [];
   const isEn = language === 'en';
 
@@ -613,6 +640,14 @@ function buildProfileSummary(profile: ParsedLinkedIn, language: OutputLanguage =
 
   if (profile.phone) {
     parts.push(`${isEn ? 'Phone' : 'Telefoon'}: ${profile.phone}`);
+  }
+
+  // Include custom values (birthDate, nationality, etc.)
+  if (customValues?.birthDate) {
+    parts.push(`${isEn ? 'Date of birth' : 'Geboortedatum'}: ${customValues.birthDate}`);
+  }
+  if (customValues?.nationality) {
+    parts.push(`${isEn ? 'Nationality' : 'Nationaliteit'}: ${customValues.nationality}`);
   }
 
   const unknown = isEn ? 'Unknown' : 'Onbekend';

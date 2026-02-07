@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,52 +67,49 @@ export function TemplatePreview({
 }: TemplatePreviewProps) {
   const t = useTranslations('templatePreview');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [extractedHtml, setExtractedHtml] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(true);
+  const [renderError, setRenderError] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const styleContainerRef = useRef<HTMLDivElement>(null);
 
-  // Extract HTML from DOCX blob for preview
+  // Render DOCX with docx-preview for full visual fidelity
   useEffect(() => {
-    const extractContent = async () => {
-      if (!docxBlob) return;
+    const renderDocx = async () => {
+      if (!docxBlob || !containerRef.current) return;
 
       setIsExtracting(true);
+      setRenderError(false);
+
+      // Clear previous render
+      containerRef.current.innerHTML = '';
+      if (styleContainerRef.current) {
+        styleContainerRef.current.innerHTML = '';
+      }
+
       try {
-        const mammoth = await import('mammoth');
-        const arrayBuffer = await docxBlob.arrayBuffer();
-        const result = await mammoth.convertToHtml(
-          { arrayBuffer },
-          {
-            styleMap: [
-              "p[style-name='Heading 1'] => h1:fresh",
-              "p[style-name='Heading 2'] => h2:fresh",
-              "p[style-name='Heading 3'] => h3:fresh",
-              "p[style-name='Kop 1'] => h1:fresh",
-              "p[style-name='Kop 2'] => h2:fresh",
-              "p[style-name='Kop 3'] => h3:fresh",
-              "p[style-name='Hoofdtekst'] => p:fresh",
-              "p[style-name='Body Text'] => p:fresh",
-              "p[style-name='Standaard'] => p:fresh",
-              "p[style-name='Normal'] => p:fresh",
-              "p[style-name='List Paragraph'] => li:fresh",
-              "p[style-name='Lijstalinea'] => li:fresh",
-              "r[style-name='Strong'] => strong",
-              "r[style-name='Emphasis'] => em",
-              "r[style-name='Vet'] => strong",
-              "r[style-name='Cursief'] => em",
-            ],
-            ignoreEmptyParagraphs: false,
-          }
-        );
-        setExtractedHtml(result.value);
+        const { renderAsync } = await import('docx-preview');
+        await renderAsync(docxBlob, containerRef.current, styleContainerRef.current ?? undefined, {
+          inWrapper: true,
+          breakPages: true,
+          ignoreWidth: false,
+          ignoreHeight: false,
+          ignoreFonts: false,
+          useBase64URL: true,
+          renderHeaders: true,
+          renderFooters: true,
+          renderFootnotes: true,
+          renderEndnotes: true,
+          className: 'docx-preview-wrapper',
+        });
       } catch (err) {
-        console.error('Failed to extract content from DOCX:', err);
-        setExtractedHtml(null);
+        console.error('Failed to render DOCX preview:', err);
+        setRenderError(true);
       } finally {
         setIsExtracting(false);
       }
     };
 
-    extractContent();
+    renderDocx();
   }, [docxBlob]);
 
   return (
@@ -174,32 +171,33 @@ export function TemplatePreview({
               </div>
             </div>
 
-            {/* Content Preview - Shows actual DOCX content */}
+            {/* Content Preview - Rendered by docx-preview */}
             <div
-              className="p-6 max-h-[700px] overflow-auto relative z-0"
+              className="max-h-[700px] overflow-auto relative z-0"
               style={{
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
               }}
             >
-              {isExtracting ? (
+              {isExtracting && (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-muted-foreground">
                     {language === 'nl' ? 'Document laden...' : 'Loading document...'}
                   </span>
                 </div>
-              ) : extractedHtml ? (
-                <div
-                  className="font-sans text-sm leading-relaxed text-foreground max-w-none [&_p]:mb-1 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mb-1 [&_p:empty]:h-2"
-                  dangerouslySetInnerHTML={{ __html: extractedHtml }}
-                />
-              ) : (
+              )}
+              {renderError && (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>{language === 'nl' ? 'Kon document niet laden' : 'Could not load document'}</p>
                 </div>
               )}
+              <div ref={styleContainerRef} className="hidden" />
+              <div
+                ref={containerRef}
+                className="[&_.docx-preview-wrapper]:p-0 [&_.docx-preview-wrapper]:m-0 [&_.docx-preview-wrapper]:bg-transparent [&_.docx-wrapper]:shadow-none [&_.docx-wrapper]:mx-auto [&_.docx-wrapper]:my-2"
+              />
             </div>
           </div>
 

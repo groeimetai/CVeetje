@@ -35,7 +35,7 @@ interface TemplateSelectorProps {
   jobVacancy?: JobVacancy;
   fitAnalysis?: FitAnalysis;
   language?: OutputLanguage;
-  onFill: (templateId: string, templateName: string) => void;
+  onFill: (templateId: string, templateName: string, customValues?: Record<string, string>) => void;
   onBack: () => void;
 }
 
@@ -211,8 +211,8 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
       return;
     }
 
-    // Pass templateId to parent - parent will handle the API call and preview
-    onFill(selectedTemplate.id, selectedTemplate.name);
+    // Pass templateId and customValues to parent - parent will handle the API call and preview
+    onFill(selectedTemplate.id, selectedTemplate.name, customValues);
   };
 
   // Check which custom fields are needed

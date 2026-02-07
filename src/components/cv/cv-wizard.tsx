@@ -270,12 +270,15 @@ export function CVWizard() {
   };
 
   // Handle template fill - go to generating then preview
-  const handleTemplateFill = async (templateId: string, templateName: string) => {
+  const [templateCustomValues, setTemplateCustomValues] = useState<Record<string, string>>({});
+
+  const handleTemplateFill = async (templateId: string, templateName: string, customValues?: Record<string, string>) => {
     setCurrentStep('generating');
     setIsGenerating(true);
     setError(null);
     setSelectedTemplateId(templateId);
     setTemplateFileName(templateName);
+    if (customValues) setTemplateCustomValues(customValues);
 
     try {
       // Fetch DOCX for preview (credits are deducted here)
@@ -285,7 +288,7 @@ export function CVWizard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profileData: linkedInData,
-          customValues: {},
+          customValues: customValues || {},
           useAI: true,
           jobVacancy,
           language: outputLanguage,
@@ -330,7 +333,7 @@ export function CVWizard() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             profileData: linkedInData,
-            customValues: {},
+            customValues: templateCustomValues,
             useAI: true,
             jobVacancy,
             language: outputLanguage,

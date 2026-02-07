@@ -1100,7 +1100,8 @@ export async function fillSmartTemplate(
       options.fitAnalysis,
       options.customInstructions,
       options.descriptionFormat || 'bullets',
-      sections
+      sections,
+      customValues,
     );
 
     // ==== HEADER PROTECTION ====
@@ -1161,7 +1162,8 @@ export async function fillSmartTemplate(
             options.fitAnalysis,
             options.customInstructions,
             options.descriptionFormat || 'bullets',
-            hfSections
+            hfSections,
+            customValues,
           );
 
           content = applyFilledSegments(content, hfResult.filledSegments, hfSegments);
