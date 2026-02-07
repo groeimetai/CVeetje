@@ -41,6 +41,12 @@ export type CVChatToolName =
   | 'update_spacing'
   | 'update_section_style'
   | 'update_layout'
+  | 'update_contact_layout'
+  | 'update_skills_display'
+  | 'update_accent_style'
+  | 'update_name_style'
+  | 'update_skill_tag_style'
+  | 'update_scale'
   | 'toggle_feature';
 
 // ============ Tool Parameters ============

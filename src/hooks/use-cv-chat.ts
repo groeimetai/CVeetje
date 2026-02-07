@@ -5,7 +5,7 @@ import { DefaultChatTransport } from 'ai';
 import { useCallback, useRef, useState, useMemo } from 'react';
 import type { CVChatContext, CVChatToolName } from '@/types/chat';
 import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation } from '@/types';
-import type { CVDesignTokens, HeaderVariant, FontPairing, SpacingScale, SectionStyle, CVLayout } from '@/types/design-tokens';
+import type { CVDesignTokens, HeaderVariant, FontPairing, SpacingScale, SectionStyle, CVLayout, ContactLayout, SkillsDisplay, AccentStyle, NameStyle, SkillTagStyle, TypeScale } from '@/types/design-tokens';
 
 interface UseCVChatOptions {
   context: CVChatContext;
@@ -44,6 +44,12 @@ interface ToolCallArgs {
   fontPairing?: string;
   spacing?: string;
   sectionStyle?: string;
+  contactLayout?: string;
+  skillsDisplay?: string;
+  accentStyle?: string;
+  nameStyle?: string;
+  skillTagStyle?: string;
+  scale?: string;
   feature?: string;
   enabled?: boolean;
 }
@@ -55,6 +61,12 @@ const STYLE_TOOL_NAMES: CVChatToolName[] = [
   'update_spacing',
   'update_section_style',
   'update_layout',
+  'update_contact_layout',
+  'update_skills_display',
+  'update_accent_style',
+  'update_name_style',
+  'update_skill_tag_style',
+  'update_scale',
   'toggle_feature',
 ];
 
@@ -105,6 +117,42 @@ function applyStyleToolCall(
           updated.sidebarSections = args.sidebarSections;
         }
         return updated;
+      }
+      break;
+    }
+    case 'update_contact_layout': {
+      if (args.contactLayout) {
+        return { ...currentTokens, contactLayout: args.contactLayout as ContactLayout };
+      }
+      break;
+    }
+    case 'update_skills_display': {
+      if (args.skillsDisplay) {
+        return { ...currentTokens, skillsDisplay: args.skillsDisplay as SkillsDisplay };
+      }
+      break;
+    }
+    case 'update_accent_style': {
+      if (args.accentStyle) {
+        return { ...currentTokens, accentStyle: args.accentStyle as AccentStyle };
+      }
+      break;
+    }
+    case 'update_name_style': {
+      if (args.nameStyle) {
+        return { ...currentTokens, nameStyle: args.nameStyle as NameStyle };
+      }
+      break;
+    }
+    case 'update_skill_tag_style': {
+      if (args.skillTagStyle) {
+        return { ...currentTokens, skillTagStyle: args.skillTagStyle as SkillTagStyle };
+      }
+      break;
+    }
+    case 'update_scale': {
+      if (args.scale) {
+        return { ...currentTokens, scale: args.scale as TypeScale };
       }
       break;
     }

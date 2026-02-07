@@ -48,6 +48,12 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
 - **Section stijl:** ${currentTokens.sectionStyle}
 - **Kleuren:** primary ${currentTokens.colors.primary}, secondary ${currentTokens.colors.secondary}, accent ${currentTokens.colors.accent}
 - **Layout:** ${currentTokens.layout || 'single-column'}${currentTokens.sidebarSections ? ` (sidebar: ${currentTokens.sidebarSections.join(', ')})` : ''}
+- **Contact layout:** ${currentTokens.contactLayout || 'single-row'}
+- **Skills weergave:** ${currentTokens.skillsDisplay}
+- **Accent stijl:** ${currentTokens.accentStyle || 'none'}
+- **Naam stijl:** ${currentTokens.nameStyle || 'normal'}
+- **Skill tag stijl:** ${currentTokens.skillTagStyle || 'filled'}
+- **Tekst schaal:** ${currentTokens.scale}
 - **Features:** foto=${currentTokens.showPhoto}, iconen=${currentTokens.useIcons}, ronde hoeken=${currentTokens.roundedCorners}
 `
     : '';
@@ -61,6 +67,12 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
 - update_spacing: Pas de ruimte tussen elementen aan (compact, comfortable, spacious)
 - update_section_style: Wijzig de stijl van secties (clean, underlined, boxed, timeline, accent-left, card)
 - update_layout: Wijzig de pagina layout (single-column, sidebar-left, sidebar-right) en optioneel welke secties in de sidebar staan
+- update_contact_layout: Wijzig hoe contactgegevens worden weergegeven (single-row, double-row, single-column, double-column)
+- update_skills_display: Wijzig hoe skills worden weergegeven (tags, list, compact)
+- update_accent_style: Wijzig de samenvatting styling (none, border-left, background, quote)
+- update_name_style: Wijzig de naam styling (normal, uppercase, extra-bold)
+- update_skill_tag_style: Wijzig skill tag variant (filled, outlined, pill)
+- update_scale: Wijzig de tekst schaal (small, medium, large)
 - toggle_feature: Schakel features aan/uit (showPhoto, useIcons, roundedCorners)`
     : '';
 
@@ -328,6 +340,48 @@ export async function POST(request: NextRequest) {
           inputSchema: z.object({
             layout: z.enum(['single-column', 'sidebar-left', 'sidebar-right']).describe('De gewenste layout'),
             sidebarSections: z.array(z.string()).optional().describe('Welke secties in de sidebar (bijv. ["skills", "languages", "certifications"]). Alleen relevant bij sidebar layouts.'),
+          }),
+        }),
+
+        update_contact_layout: tool({
+          description: 'Wijzig hoe contactgegevens in de header worden weergegeven. single-row = alles op één regel, double-row = twee regels, single-column = onder elkaar, double-column = twee kolommen.',
+          inputSchema: z.object({
+            contactLayout: z.enum(['single-row', 'double-row', 'single-column', 'double-column']).describe('De gewenste contact layout'),
+          }),
+        }),
+
+        update_skills_display: tool({
+          description: 'Wijzig hoe skills worden weergegeven. tags = gekleurde labels, list = opsomming in kolommen, compact = doorlopende tekst met punten.',
+          inputSchema: z.object({
+            skillsDisplay: z.enum(['tags', 'list', 'compact']).describe('De gewenste skills weergave'),
+          }),
+        }),
+
+        update_accent_style: tool({
+          description: 'Wijzig de styling van de samenvatting/profiel sectie. none = geen extra styling, border-left = accent balk links, background = subtiele achtergrond, quote = cursief met accent balk.',
+          inputSchema: z.object({
+            accentStyle: z.enum(['none', 'border-left', 'background', 'quote']).describe('De gewenste accent stijl'),
+          }),
+        }),
+
+        update_name_style: tool({
+          description: 'Wijzig hoe de naam wordt weergegeven. normal = standaard, uppercase = hoofdletters met letterspatiëring, extra-bold = extra vet.',
+          inputSchema: z.object({
+            nameStyle: z.enum(['normal', 'uppercase', 'extra-bold']).describe('De gewenste naam stijl'),
+          }),
+        }),
+
+        update_skill_tag_style: tool({
+          description: 'Wijzig de stijl van skill tags (alleen relevant bij skills weergave "tags"). filled = gevulde achtergrond, outlined = rand zonder vulling, pill = afgeronde pillen.',
+          inputSchema: z.object({
+            skillTagStyle: z.enum(['filled', 'outlined', 'pill']).describe('De gewenste skill tag stijl'),
+          }),
+        }),
+
+        update_scale: tool({
+          description: 'Wijzig de tekst schaal van de CV. small = kleinere tekst (meer inhoud op pagina), medium = standaard, large = grotere tekst.',
+          inputSchema: z.object({
+            scale: z.enum(['small', 'medium', 'large']).describe('De gewenste tekst schaal'),
           }),
         }),
 
