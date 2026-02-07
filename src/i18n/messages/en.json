@@ -49,6 +49,7 @@
     "accountSettings": "Account Settings",
     "signOut": "Sign Out",
     "admin": "Admin",
+    "userManagement": "User Management",
     "adminSection": "Admin"
   },
   "auth": {

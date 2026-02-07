@@ -4,105 +4,129 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CVeetje is an AI-powered CV generator that creates tailored CVs based on LinkedIn/profile data and job vacancy requirements. Users provide their profile information, optionally add a target job, and the AI generates optimized CV content with dynamic styling.
+CVeetje is an AI-powered CV generator that creates tailored CVs from LinkedIn/profile data and job vacancy requirements. Users bring their own AI API keys (encrypted at rest), and all data stays in their Firebase project. Interface is in Dutch with i18n support (nl/en).
 
 ## Commands
 
 ```bash
-npm run dev      # Start development server (localhost:3000)
-npm run build    # Production build
-npm run lint     # Run ESLint
-npm start        # Start production server
+npm run dev      # Dev server with Turbopack (localhost:3000)
+npm run build    # Production build (Turbopack disabled via NEXT_PRIVATE_SKIP_TURBOPACK=1)
+npm run lint     # ESLint
+npm start        # Production server
 ```
+
+No test framework is configured (no Jest/Vitest).
+
+## Tech Stack
+
+- **Next.js 16** (App Router) with React 19, TypeScript 5
+- **Tailwind CSS 4** (via PostCSS plugin, no tailwind.config file)
+- **Firebase** (Auth + Firestore) for client and admin SDK
+- **Vercel AI SDK** (`ai` package) with multi-provider support (OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, etc.)
+- **Puppeteer** + `@sparticuz/chromium` for PDF generation
+- **docxtemplater** + `mammoth` for DOCX template filling
+- **next-intl** for i18n (nl/en), default locale is `nl`
+- **Mollie** for payments
 
 ## Architecture
 
 ### CV Generation Flow
 
-The application follows a wizard-based flow in `src/components/cv/cv-wizard.tsx`:
+The wizard in `src/components/cv/cv-wizard.tsx` orchestrates:
 
-1. **Profile Input** (`profile-input.tsx`) - User provides LinkedIn/profile data (text or file upload)
-2. **Job Input** (`job-input.tsx`) - Optional target job vacancy parsing
-3. **Style Generation** (`dynamic-style-picker.tsx`) - AI generates visual style config based on profile and job
-4. **CV Generation** (`/api/cv/generate`) - AI generates tailored CV content
-5. **Preview** (`cv-preview.tsx`) - Interactive preview with element editing
-6. **PDF Export** (`/api/cv/[id]/pdf`) - Puppeteer-based PDF generation
+1. **Profile Input** → multi-modal (text, image, PDF) → AI parses to `ParsedLinkedIn`
+2. **Job Input** → vacancy text → AI parses to `JobVacancy` with keywords
+3. **Style Generation** → AI generates `CVDesignTokens` (~20 properties vs legacy `CVStyleConfig` with 150+)
+4. **CV Generation** → `/api/cv/generate` → AI generates `GeneratedCVContent` with Zod schema validation
+5. **Preview** → `cv-preview.tsx` with interactive element editing
+6. **Export** → PDF via Puppeteer or DOCX via template filling
 
-### Key Directories
+### WYSIWYG HTML Generation
 
-- `src/app/` - Next.js App Router pages and API routes
-  - `(auth)/` - Authentication pages (login, register)
-  - `(dashboard)/` - Protected dashboard pages
-  - `api/` - API routes for CV generation, payments, settings
-- `src/components/` - React components
-  - `cv/` - CV-specific components (wizard, preview, inputs)
-  - `ui/` - Radix UI-based shadcn components
-  - `auth/` - Authentication context and forms
-- `src/lib/` - Core business logic
-  - `ai/` - AI provider integration and generators
-  - `cv/` - HTML generator (shared between preview and PDF)
-  - `firebase/` - Firebase client and admin configuration
-  - `pdf/` - Puppeteer PDF generation
-- `src/types/` - TypeScript types (centralized in `index.ts`)
+`src/lib/cv/html-generator.ts` (`generateCVHTML()`) produces **identical HTML** for both browser preview and PDF rendering. This is the single source of truth for CV appearance. Changes here affect both preview and PDF output.
+
+### Design Token System
+
+Two styling systems coexist:
+- **Legacy `CVStyleConfig`** — 150+ properties, used by `style-generator.ts`
+- **Modern `CVDesignTokens`** — ~20 token properties, used by `style-generator-v2.ts`
+
+Design tokens include theme bases (professional, modern, creative, minimal, bold), font pairings, header variants, section styles, and skill display modes. Types in `src/types/design-tokens.ts`.
 
 ### AI Integration (`src/lib/ai/`)
 
-- `providers.ts` - Multi-provider factory (OpenAI, Anthropic, Google, Groq, etc.)
-- `cv-generator.ts` - CV content generation with Zod schema validation
-- `style-generator.ts` - Dynamic style configuration generation
-- `models-registry.ts` - Available models and capabilities
+All AI calls use Vercel AI SDK's `generateObject()` with Zod schemas for structured output. Key generators:
+- `cv-generator.ts` — CV content (summary, experience, education, skills)
+- `style-generator-v2.ts` — Design tokens from profile + job context
+- `job-parser.ts` — Vacancy text → structured `JobVacancy`
+- `fit-analyzer.ts` — Profile-to-job fit scoring
+- `motivation-generator.ts` — Cover letters
+- `docx-content-replacer.ts` — AI-powered DOCX placeholder filling
 
-Uses Vercel AI SDK (`ai` package) with `generateObject()` for structured output.
+`providers.ts` is a factory that creates provider instances from user-supplied API keys. `models-registry.ts` fetches available models dynamically.
 
-### HTML Generation (`src/lib/cv/html-generator.ts`)
+### DOCX Template System (`src/lib/docx/`)
 
-The `generateCVHTML()` function produces identical HTML for both browser preview and PDF rendering (WYSIWYG). Supports:
-- Dynamic typography (Google Fonts)
-- Multiple header styles, item styles, skill display modes
-- SVG decorations
-- Element overrides for interactive editing
-- Print-optimized CSS
+- `template-filler.ts` — Detects placeholders (`{{name}}`, `[NAME]`, `Label: _____`)
+- `smart-template-filler.ts` — AI analyzes template structure, fills sections intelligently
+- `docx-to-pdf.ts` — Converts DOCX to PDF via Puppeteer
 
-### Data Flow
+### Authentication & Middleware
 
-```
-User Input → AI Parsing → CVStyleConfig + GeneratedCVContent
-                                ↓
-                         generateCVHTML()
-                          ↓           ↓
-                    Preview       PDF (Puppeteer)
-```
+- Firebase Auth (email/password, Google OAuth) with token in `firebase-token` cookie
+- `src/middleware.ts` — Protects dashboard routes, redirects auth routes, handles locale routing
+- API routes verify tokens via Firebase Admin SDK from cookie or Authorization header
+- User API keys encrypted with AES-256 (`src/lib/encryption.ts`)
+
+### Credits System
+
+`src/lib/credits/manager.ts` manages free monthly credits + purchased credits (via Mollie). 1 credit per PDF download.
 
 ## Key Types (`src/types/index.ts`)
 
-- `ParsedLinkedIn` - Structured profile data
-- `JobVacancy` - Parsed job posting with keywords
-- `CVStyleConfig` - Complete visual styling (colors, typography, layout, decorations)
-- `GeneratedCVContent` - AI-generated CV content (summary, experience, education, skills)
-- `CV` - Full CV document stored in Firestore
+All types are centralized in one ~1100-line file:
+- `ParsedLinkedIn` — Profile data (experience, education, skills, languages)
+- `JobVacancy` — Parsed job with keywords, requirements, salary estimate
+- `CVStyleConfig` / `CVDesignTokens` — Visual styling configs
+- `GeneratedCVContent` — AI output (summary, experience entries, education, skills)
+- `CV` — Full Firestore document combining content + style + metadata
+- `FitAnalysis` — Job fit score with strengths/warnings
 
 ## Firebase Collections
 
-- `users` - User profiles with encrypted API keys
-- `cvs` - Generated CV documents
-- `transactions` - Credit transactions
+- `users` — Profiles with encrypted API keys, credit balances
+- `cvs` — Generated CV documents
+- `transactions` — Credit purchase/usage records
+
+## Routing
+
+All pages are under `src/app/[locale]/` for i18n. Route groups:
+- `(auth)/` — Login, register, verify-email (redirects to dashboard if authenticated)
+- `(dashboard)/` — Dashboard, CV creation, profiles, settings, admin (protected)
+
+API routes are at `src/app/api/` (not locale-prefixed). Key endpoints:
+- `/api/cv/generate`, `/api/cv/style`, `/api/cv/[id]/pdf`
+- `/api/templates/[id]/analyze`, `/api/templates/[id]/fill`
+- `/api/profile/parse`, `/api/cv/job/parse`
+- `/api/settings/api-key` — Encrypted key management
 
 ## Environment Variables
 
 Copy `.env.example` to `.env.local`. Required:
-- `NEXT_PUBLIC_FIREBASE_*` - Firebase client config
-- `FIREBASE_ADMIN_*` - Firebase Admin SDK credentials
-- `ENCRYPTION_KEY` - For encrypting user API keys
-- `MOLLIE_API_KEY` - Payment processing
-- `NEXT_PUBLIC_APP_URL` - Application URL
+- `NEXT_PUBLIC_FIREBASE_*` — Firebase client config
+- `FIREBASE_ADMIN_*` — Admin SDK credentials
+- `ENCRYPTION_KEY` — AES-256 key for API key encryption
+- `MOLLIE_API_KEY` — Payment processing
+- `NEXT_PUBLIC_APP_URL` — Application URL
 
 ## Path Aliases
 
-`@/*` maps to `./src/*` (configured in `tsconfig.json`)
+`@/*` maps to `./src/*`
 
-## Notes
+## Important Patterns
 
-- Interface has Dutch labels (e.g., "Profiel", "Vacature", "Stijl")
-- Users bring their own AI API keys (stored encrypted)
-- PDF generation uses `@sparticuz/chromium` for Vercel serverless compatibility
-- Credits system: 1 credit per PDF download
+- AI content generation uses strict honesty rules — prompts forbid fabricating experience or skills
+- PDF generation renders the same HTML as preview for WYSIWYG fidelity
+- Print CSS in `html-generator.ts` avoids transforms, clip-path, and hover effects for PDF compatibility
+- Google Fonts are loaded via `<link>` tags in generated HTML
+- `standalone` output mode in next.config.ts for Docker/Cloud Run deployment

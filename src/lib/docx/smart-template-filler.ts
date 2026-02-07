@@ -475,10 +475,10 @@ function expandBulletParagraphs(
  * before matching against section patterns.
  */
 function extractIndexedSegments(docXml: string): {
-  segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[];
+  segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean; isWhitespace?: boolean; isBulletPlaceholder?: boolean }[];
   sections: SectionInfo[];
 } {
-  const segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[] = [];
+  const segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean; isWhitespace?: boolean; isBulletPlaceholder?: boolean }[] = [];
   const regex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
   let match;
   let index = 0;
@@ -490,6 +490,7 @@ function extractIndexedSegments(docXml: string): {
       text: match[1],
       start: match.index,
       end: match.index + match[0].length,
+      isWhitespace: !match[1].trim(),
     });
     index++;
   }
@@ -546,10 +547,16 @@ function extractIndexedSegments(docXml: string): {
         segments[idx].isHeader = true;
       }
     } else {
+      // Check if this paragraph is a bullet placeholder (e.g., "    - ")
+      const isBulletPlaceholder = /^\s*[-•]\s*$/.test(para.combinedText);
+
       // Assign current section to all segments in this paragraph
       for (const idx of para.segmentIndices) {
         segments[idx].section = currentSection;
         segments[idx].isHeader = false;
+        if (isBulletPlaceholder) {
+          segments[idx].isBulletPlaceholder = true;
+        }
       }
     }
   }
@@ -590,7 +597,7 @@ function extractTabStopPos(pPrXml: string | null): number {
 function applyFilledSegments(
   docXml: string,
   filledSegments: Record<string, string>,
-  _segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[]
+  _segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean; isWhitespace?: boolean; isBulletPlaceholder?: boolean }[]
 ): string {
   let result = docXml;
 
@@ -711,6 +718,17 @@ function applyFilledSegments(
 
   // Process each paragraph group atomically
   for (const group of paraGroups) {
+    // Remove unfilled bullet placeholder paragraphs (template artifacts like "    - ")
+    const allBulletPlaceholder = group.matchIndices.every(i => {
+      const seg = _segments.find(s => s.index === i);
+      return seg?.isBulletPlaceholder || seg?.isWhitespace;
+    });
+    const hasAnyFill = group.matchIndices.some(i => filledSegments[i.toString()] !== undefined);
+    if (allBulletPlaceholder && !hasAnyFill) {
+      result = result.substring(0, group.paraStart) + result.substring(group.paraEnd);
+      continue;
+    }
+
     if (group.hasLabel) {
       // This paragraph contains a label:value field — rebuild the entire paragraph.
       // Label detection works two ways:
@@ -992,14 +1010,14 @@ function applyFilledSegments(
             const currentPPr = result.substring(pprAbsStart, pprAbsEnd);
 
             if (!currentPPr.includes('<w:ind')) {
-              const newPPr = currentPPr.replace('</w:pPr>', `<w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`);
+              const newPPr = currentPPr.replace('</w:pPr>', `<w:ind w:left="${indentPos}"/></w:pPr>`);
               result = result.substring(0, pprAbsStart) + newPPr + result.substring(pprAbsEnd);
             }
           } else {
             const pOpenMatch = afterParaOpen.match(/^<w:p[^>]*>/);
             if (pOpenMatch) {
               const insertPos = group.paraStart + pOpenMatch[0].length;
-              const newPPr = `<w:pPr><w:ind w:left="${indentPos}" w:hanging="${indentPos}"/></w:pPr>`;
+              const newPPr = `<w:pPr><w:ind w:left="${indentPos}"/></w:pPr>`;
               result = result.substring(0, insertPos) + newPPr + result.substring(insertPos);
             }
           }
@@ -1081,12 +1099,16 @@ export async function fillSmartTemplate(
     const { segments, sections } = extractIndexedSegments(docXml);
 
     // Prepare segments for AI (index, text, section, and header flag)
-    const segmentsForAI = segments.map(s => ({
-      index: s.index,
-      text: s.text,
-      section: s.section,
-      isHeader: s.isHeader,
-    }));
+    // Filter out whitespace-only and bullet placeholder segments — they are template
+    // artifacts (spacers, "    - " lines) that should not be filled by AI.
+    const segmentsForAI = segments
+      .filter(s => !s.isWhitespace && !s.isBulletPlaceholder)
+      .map(s => ({
+        index: s.index,
+        text: s.text,
+        section: s.section,
+        isHeader: s.isHeader,
+      }));
 
     // Get AI to fill the segments with section context
     const aiResult = await fillDocumentWithAI(

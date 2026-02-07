@@ -49,6 +49,7 @@
     "accountSettings": "Account Instellingen",
     "signOut": "Uitloggen",
     "admin": "Admin",
+    "userManagement": "Gebruikersbeheer",
     "adminSection": "Beheer"
   },
   "auth": {
