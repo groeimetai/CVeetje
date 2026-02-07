@@ -173,7 +173,7 @@ export function TemplatePreview({
 
             {/* Content Preview - Rendered by docx-preview */}
             <div
-              className="max-h-[700px] overflow-auto relative z-0"
+              className="max-h-[80vh] overflow-auto relative z-0"
               style={{
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
