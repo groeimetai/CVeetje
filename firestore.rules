@@ -33,7 +33,7 @@ service cloud.firestore {
       // Users can create their own document (on signup)
       // But cannot set credits or apiKey directly - these are set by Admin SDK
       allow create: if isOwner(userId)
-        && !request.resource.data.keys().hasAny(['credits', 'apiKey']);
+        && !request.resource.data.keys().hasAny(['credits', 'apiKey', 'role']);
 
       // Users can update ONLY non-sensitive fields
       // credits and apiKey can ONLY be modified via Admin SDK (server-side)
@@ -50,7 +50,7 @@ service cloud.firestore {
 
         // These fields can NEVER be modified from client-side
         // They are only modified via Admin SDK (server-side API routes)
-        let forbiddenFields = ['credits', 'apiKey'];
+        let forbiddenFields = ['credits', 'apiKey', 'role'];
 
         // Allowed fields that can be updated from client
         let allowedFields = ['displayName', 'photoURL', 'updatedAt'];

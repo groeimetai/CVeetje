@@ -13,7 +13,6 @@ import {
   User,
   Users,
   Menu,
-  ShieldCheck,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -45,7 +44,7 @@ const navigationItems = [
 ];
 
 const adminNavigationItems = [
-  { key: 'admin', href: '/admin', icon: ShieldCheck },
+  { key: 'userManagement', href: '/admin', icon: Users },
 ];
 
 // Sidebar content component (shared between desktop and mobile)
