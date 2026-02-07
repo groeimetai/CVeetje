@@ -13,6 +13,7 @@ import type {
   FontPairingConfig,
   TypeScaleConfig,
   SpacingScaleConfig,
+  BorderRadiusScale,
 } from '@/types/design-tokens';
 
 // ============ Font Pairing Configurations ============
@@ -106,6 +107,54 @@ export const fontPairings: Record<FontPairing, FontPairingConfig> = {
     heading: {
       family: "'Merriweather', serif",
       googleUrl: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
+      weights: [400, 700],
+    },
+    body: {
+      family: "'Source Sans 3', sans-serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap',
+      weights: [400, 600],
+    },
+  },
+  'oswald-source-sans': {
+    heading: {
+      family: "'Oswald', sans-serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap',
+      weights: [400, 500, 600, 700],
+    },
+    body: {
+      family: "'Source Sans 3', sans-serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap',
+      weights: [400, 600],
+    },
+  },
+  'dm-serif-dm-sans': {
+    heading: {
+      family: "'DM Serif Display', serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap',
+      weights: [400],
+    },
+    body: {
+      family: "'DM Sans', sans-serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap',
+      weights: [400, 500, 700],
+    },
+  },
+  'space-grotesk-work-sans': {
+    heading: {
+      family: "'Space Grotesk', sans-serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+      weights: [400, 500, 600, 700],
+    },
+    body: {
+      family: "'Work Sans', sans-serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600&display=swap',
+      weights: [400, 500, 600],
+    },
+  },
+  'libre-baskerville-source-sans': {
+    heading: {
+      family: "'Libre Baskerville', serif",
+      googleUrl: 'https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap',
       weights: [400, 700],
     },
     body: {
@@ -374,10 +423,24 @@ function adjustColorBrightness(hex: string, percent: number): string {
   return `#${toHex(adjust(r))}${toHex(adjust(g))}${toHex(adjust(b))}`;
 }
 
+// ============ Border Radius Scale Configurations ============
+
+export const borderRadiusScales: Record<BorderRadiusScale, { radius: string; radiusLarge: string }> = {
+  none: { radius: '0', radiusLarge: '0' },
+  small: { radius: '4px', radiusLarge: '8px' },
+  medium: { radius: '8px', radiusLarge: '12px' },
+  large: { radius: '12px', radiusLarge: '16px' },
+  pill: { radius: '999px', radiusLarge: '999px' },
+};
+
 /**
- * Generate border radius CSS based on roundedCorners flag
+ * Generate border radius CSS based on roundedCorners flag or BorderRadiusScale
  */
-export function getBorderRadiusCSS(rounded: boolean): string {
+export function getBorderRadiusCSS(rounded: boolean, scale?: BorderRadiusScale): string {
+  if (scale) {
+    const config = borderRadiusScales[scale];
+    return `--radius: ${config.radius}; --radius-large: ${config.radiusLarge};`;
+  }
   return rounded
     ? `--radius: 4px; --radius-large: 8px;`
     : `--radius: 0; --radius-large: 0;`;
@@ -400,43 +463,65 @@ export const creativityConstraints = {
     defaultDecorations: 'none' as const,
     allowBanner: false,
     allowTimeline: false,
+    allowedLayouts: ['single-column'] as const,
+    allowedBorderRadius: ['none', 'small'] as const,
+    allowedAccentStyles: ['none'] as const,
+    allowedNameStyles: ['normal'] as const,
+    allowedSkillTagStyles: ['filled'] as const,
   },
   balanced: {
     allowedThemes: ['professional', 'modern', 'minimal'] as ThemeBase[],
     allowedFontPairings: ['inter-inter', 'montserrat-open-sans', 'roboto-roboto', 'lato-lato', 'raleway-lato'] as FontPairing[],
     allowedHeaderVariants: ['simple', 'accented', 'split'] as const,
-    allowedSectionStyles: ['clean', 'underlined', 'boxed'] as const,
+    allowedSectionStyles: ['clean', 'underlined', 'boxed', 'accent-left'] as const,
     allowedDecorations: ['none', 'minimal'] as const,
     defaultDecorations: 'minimal' as const,
     allowBanner: false,
     allowTimeline: true,
+    allowedLayouts: ['single-column'] as const,
+    allowedBorderRadius: ['none', 'small', 'medium'] as const,
+    allowedAccentStyles: ['none', 'border-left'] as const,
+    allowedNameStyles: ['normal', 'uppercase'] as const,
+    allowedSkillTagStyles: ['filled', 'outlined'] as const,
   },
   creative: {
     allowedThemes: ['professional', 'modern', 'creative', 'minimal'] as ThemeBase[],
     allowedFontPairings: [
       'inter-inter', 'playfair-inter', 'montserrat-open-sans',
       'raleway-lato', 'poppins-nunito', 'roboto-roboto', 'lato-lato',
+      'oswald-source-sans', 'dm-serif-dm-sans', 'space-grotesk-work-sans', 'libre-baskerville-source-sans',
     ] as FontPairing[],
     allowedHeaderVariants: ['simple', 'accented', 'banner', 'split'] as const,
-    allowedSectionStyles: ['clean', 'underlined', 'boxed', 'timeline'] as const,
+    allowedSectionStyles: ['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card'] as const,
     allowedDecorations: ['none', 'minimal', 'moderate'] as const,
     defaultDecorations: 'moderate' as const,
     allowBanner: true,
     allowTimeline: true,
+    allowedLayouts: ['single-column'] as const,
+    allowedBorderRadius: ['none', 'small', 'medium', 'large', 'pill'] as const,
+    allowedAccentStyles: ['none', 'border-left', 'background', 'quote'] as const,
+    allowedNameStyles: ['normal', 'uppercase', 'extra-bold'] as const,
+    allowedSkillTagStyles: ['filled', 'outlined', 'pill'] as const,
   },
   experimental: {
     allowedThemes: ['professional', 'modern', 'creative', 'minimal', 'bold'] as ThemeBase[],
     allowedFontPairings: [
       'inter-inter', 'playfair-inter', 'montserrat-open-sans',
       'raleway-lato', 'poppins-nunito', 'roboto-roboto', 'lato-lato',
-      'merriweather-source-sans',
+      'merriweather-source-sans', 'oswald-source-sans', 'dm-serif-dm-sans',
+      'space-grotesk-work-sans', 'libre-baskerville-source-sans',
     ] as FontPairing[],
     allowedHeaderVariants: ['simple', 'accented', 'banner', 'split'] as const,
-    allowedSectionStyles: ['clean', 'underlined', 'boxed', 'timeline'] as const,
+    allowedSectionStyles: ['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card'] as const,
     allowedDecorations: ['none', 'minimal', 'moderate', 'abundant'] as const,
     defaultDecorations: 'abundant' as const,
     allowBanner: true,
     allowTimeline: true,
+    allowedLayouts: ['single-column', 'sidebar-left', 'sidebar-right'] as const,
+    allowedBorderRadius: ['none', 'small', 'medium', 'large', 'pill'] as const,
+    allowedAccentStyles: ['none', 'border-left', 'background', 'quote'] as const,
+    allowedNameStyles: ['normal', 'uppercase', 'extra-bold'] as const,
+    allowedSkillTagStyles: ['filled', 'outlined', 'pill'] as const,
   },
 };
 

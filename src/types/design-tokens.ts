@@ -26,7 +26,11 @@ export type FontPairing =
   | 'poppins-nunito'        // Modern geometric, soft rounded
   | 'roboto-roboto'         // Google's workhorse, versatile
   | 'lato-lato'             // Humanist, warm and professional
-  | 'merriweather-source-sans'; // Traditional serif with modern sans
+  | 'merriweather-source-sans' // Traditional serif with modern sans
+  | 'oswald-source-sans'    // Condensed impact headings, clean body
+  | 'dm-serif-dm-sans'      // Warm serif headings, geometric sans body
+  | 'space-grotesk-work-sans' // Techy monospaced feel, friendly body
+  | 'libre-baskerville-source-sans'; // Classic book serif, modern sans body
 
 // ============ Scale & Spacing Options ============
 
@@ -36,8 +40,19 @@ export type SpacingScale = 'compact' | 'comfortable' | 'spacious';
 // ============ Component Variants ============
 
 export type HeaderVariant = 'simple' | 'accented' | 'banner' | 'split';
-export type SectionStyle = 'clean' | 'underlined' | 'boxed' | 'timeline';
+export type SectionStyle = 'clean' | 'underlined' | 'boxed' | 'timeline' | 'accent-left' | 'card';
 export type SkillsDisplay = 'tags' | 'list' | 'compact';
+
+// ============ Layout Options ============
+
+export type CVLayout = 'single-column' | 'sidebar-left' | 'sidebar-right';
+
+// ============ Accent & Detail Styles ============
+
+export type AccentStyle = 'none' | 'border-left' | 'background' | 'quote';
+export type BorderRadiusScale = 'none' | 'small' | 'medium' | 'large' | 'pill';
+export type NameStyle = 'normal' | 'uppercase' | 'extra-bold';
+export type SkillTagStyle = 'filled' | 'outlined' | 'pill';
 
 // ============ Contact Layout Options ============
 
@@ -131,6 +146,15 @@ export interface CVDesignTokens {
 
   // === Section Order ===
   sectionOrder: string[];   // e.g., ['summary', 'experience', 'education', 'skills', 'languages', 'certifications']
+
+  // === Extended Styling (optional, new tokens for more variety) ===
+  layout?: CVLayout;                // Page layout: single-column (default), sidebar-left, sidebar-right
+  sidebarSections?: string[];       // Which sections go in sidebar (default: skills, languages, certifications)
+  accentStyle?: AccentStyle;        // Summary styling: none, border-left, background, quote
+  borderRadius?: BorderRadiusScale; // Overrides roundedCorners when present: none, small, medium, large, pill
+  pageBackground?: string;          // Page background color (hex), must be very light
+  nameStyle?: NameStyle;            // Name styling: normal, uppercase, extra-bold
+  skillTagStyle?: SkillTagStyle;    // Skill tag variant: filled, outlined, pill
 }
 
 // ============ Style Generation Request ============

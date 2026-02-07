@@ -55,6 +55,10 @@ const designTokensSchema = z.object({
     'roboto-roboto',
     'lato-lato',
     'merriweather-source-sans',
+    'oswald-source-sans',
+    'dm-serif-dm-sans',
+    'space-grotesk-work-sans',
+    'libre-baskerville-source-sans',
   ]).describe('Font combination: heading font + body font'),
 
   scale: z.enum(['small', 'medium', 'large'])
@@ -68,8 +72,8 @@ const designTokensSchema = z.object({
   headerVariant: z.enum(['simple', 'accented', 'banner', 'split'])
     .describe('Header layout: simple (clean), accented (left border), banner (full-width color), split (name left, contact right)'),
 
-  sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline'])
-    .describe('Section styling: clean (minimal), underlined (accent under title), boxed (background), timeline (vertical line)'),
+  sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card'])
+    .describe('Section styling: clean (minimal), underlined (accent under title), boxed (background), timeline (vertical line), accent-left (colored left border per section), card (cards with subtle shadow)'),
 
   skillsDisplay: z.enum(['tags', 'list', 'compact'])
     .describe('How skills are displayed: tags (pills), list (bulleted columns), compact (inline with separators)'),
@@ -96,6 +100,18 @@ const designTokensSchema = z.object({
   // Section order
   sectionOrder: z.array(z.string())
     .describe('Order of CV sections. Use: summary, experience, education, skills, languages, certifications'),
+
+  // Extended styling tokens (optional)
+  accentStyle: z.enum(['none', 'border-left', 'background', 'quote']).optional()
+    .describe('Summary section styling: none (plain), border-left (accent border), background (subtle bg), quote (italic with border)'),
+  borderRadius: z.enum(['none', 'small', 'medium', 'large', 'pill']).optional()
+    .describe('Corner rounding scale: none (sharp), small (4px), medium (8px), large (12px), pill (fully rounded)'),
+  pageBackground: z.string().optional()
+    .describe('Page background color (hex). Must be very light (near white). Leave empty for white.'),
+  nameStyle: z.enum(['normal', 'uppercase', 'extra-bold']).optional()
+    .describe('Name styling: normal, uppercase (with letter-spacing), extra-bold (weight 900)'),
+  skillTagStyle: z.enum(['filled', 'outlined', 'pill']).optional()
+    .describe('Skill tag variant: filled (default bg), outlined (border only), pill (fully rounded)'),
 });
 
 // Extended schema for creative mode - includes decorationTheme
@@ -110,9 +126,13 @@ const creativeTokensSchema = designTokensSchema.extend({
     - abstract: General/Versatile - balanced mix of geometric patterns`),
 });
 
-// Extended schema for experimental mode - includes custom decorations
+// Extended schema for experimental mode - includes layout and custom decorations
 // Note: Anthropic API only supports minItems of 0 or 1, so we validate min count in code
 const experimentalTokensSchema = creativeTokensSchema.extend({
+  layout: z.enum(['single-column', 'sidebar-left', 'sidebar-right']).optional()
+    .describe('Page layout: single-column (classic), sidebar-left (sidebar on left with skills/languages/certs), sidebar-right (sidebar on right)'),
+  sidebarSections: z.array(z.string()).optional()
+    .describe('Which sections go in the sidebar (default: skills, languages, certifications). Only used with sidebar layouts.'),
   customDecorations: z.array(z.object({
     name: z.string().describe('Unique name for this decoration, e.g., "code-bracket", "data-node", "growth-arrow"'),
     description: z.string().describe('Visual description: what shape/symbol this represents (e.g., "curly brace like { }", "connected dots forming a network node", "upward arrow with bar chart")'),
@@ -186,72 +206,109 @@ ${creativityLevel === 'balanced' ? `
 - headerGradient: 'none' or 'subtle' for a touch of elegance
 ` : ''}
 ${creativityLevel === 'creative' ? `
-- Go creative! Use bold colors and interesting font combos
-- Headers: banner or split for visual impact
-- sectionStyle: timeline or boxed
+*** CREATIVE MODE — VARIETY IS KEY ***
+
+Your goal is to create VISUALLY DISTINCT CVs. Every CV should look meaningfully different.
+
+AVAILABLE OPTIONS (choose freely, mix and match):
+- Themes: ${constraints.allowedThemes.join(', ')}
+- Fonts: all 12 pairings available, including newer ones like 'oswald-source-sans' (condensed impact), 'dm-serif-dm-sans' (warm serif+geometric sans), 'space-grotesk-work-sans' (techy feel), 'libre-baskerville-source-sans' (classic book serif)
+- Headers: simple, accented, banner, or split — choose what fits best, don't default to banner every time
+- Section styles: clean, underlined, boxed, timeline, accent-left (colored left border), card (subtle shadow cards)
 - Colors: vibrant colors inspired by the company's brand - make them pop!
 - showPhoto: ${hasPhoto ? 'true' : 'false'}
-- useIcons: true
-- roundedCorners: true
-- decorations: MUST be 'moderate' (adds noticeable background shapes for visual appeal - this is creative mode!)
-- contactLayout: 'double-row' or 'double-column' for visual balance
-- headerGradient: 'subtle' (elegant gradient adds sophistication)
+- useIcons: consider true for modern feel
+- decorations: 'moderate' recommended (noticeable background shapes)
+- contactLayout: any option — single-row, double-row, single-column, double-column
+
+EXTENDED STYLING (use these for variety!):
+- accentStyle: 'none', 'border-left' (accent line on summary), 'background' (subtle bg on summary), 'quote' (italic with border)
+- borderRadius: 'none' through 'pill' — experiment with rounded corners
+- nameStyle: 'normal', 'uppercase' (with letter-spacing), 'extra-bold' (weight 900)
+- skillTagStyle: 'filled' (default), 'outlined' (border only, no fill), 'pill' (fully rounded)
+- pageBackground: optional very light tinted background (e.g. #faf8f5 for warm, #f0f4f8 for cool)
+
+ENCOURAGE UNEXPECTED COMBINATIONS:
+- Serif heading + card sections + outlined skill tags
+- Split header + accent-left sections + uppercase name
+- Banner header + pill skill tags + quote accent style
+- Accented header + timeline sections + extra-bold name
 
 DECORATION THEME (Required for creative mode):
 Choose a decorationTheme that matches the target industry/job:
-- 'geometric': Best for IT, Tech, Engineering - circuits, hexagons, grid patterns
-- 'organic': Best for Healthcare, Pharma, Nature - soft curves, leaves, waves
-- 'minimal': Best for Finance, Consulting, Legal - subtle lines, clean accents
-- 'tech': Best for Software, Data, AI - code brackets, nodes, digital patterns
-- 'creative': Best for Design, Marketing, Art - bold shapes, splashes
-- 'abstract': General use - balanced geometric patterns
+- 'geometric': IT, Tech, Engineering — circuits, hexagons, grid patterns
+- 'organic': Healthcare, Pharma, Nature — soft curves, leaves, waves
+- 'minimal': Finance, Consulting, Legal — subtle lines, clean accents
+- 'tech': Software, Data, AI — code brackets, nodes, digital patterns
+- 'creative': Design, Marketing, Art — bold shapes, splashes
+- 'abstract': General use — balanced geometric patterns
 ` : ''}
 ${creativityLevel === 'experimental' ? `
-*** EXPERIMENTAL MODE - MAXIMUM VISUAL IMPACT ***
+*** EXPERIMENTAL MODE — MAXIMUM VARIETY & VISUAL IMPACT ***
 
-REQUIRED settings for experimental:
-- themeBase: MUST be 'bold' or 'creative'
-- headerVariant: MUST be 'banner' (full-width colored header)
-- primary: MUST be a DARK, striking color for the banner background
-  * Use company brand colors ONLY if you're 100% certain about them
-  * If you don't know the company's exact brand colors, DO NOT GUESS
-  * For unknown brands, create a bold professional palette fitting the industry
-- accent: MUST be vibrant and contrast with primary, complementing the brand
-- secondary: Light tinted version of primary
-- sectionStyle: MUST be 'timeline' for visual storytelling
-- fontPairing: MUST be 'playfair-inter' or 'poppins-nunito' for personality
-- showPhoto: ${hasPhoto ? 'MUST be true' : 'false'}
-- useIcons: MUST be true
-- roundedCorners: true
-- spacing: 'comfortable' or 'spacious'
-- decorations: MUST be 'abundant' (bold background shapes for maximum visual impact)
-- contactLayout: 'double-column' for modern grid layout, or 'double-row' for elegant spacing
-- headerGradient: 'radial' for luxurious glow effect, or 'subtle' for elegant depth
+Your PRIMARY goal: every CV must look UNIQUE. No two experimental CVs should feel the same.
+
+YOU HAVE FULL CREATIVE FREEDOM. Choose freely from ALL available options:
+
+THEMES: any of ${constraints.allowedThemes.join(', ')}
+FONTS: all 12 pairings — especially consider:
+  - 'oswald-source-sans': condensed, high-impact headings
+  - 'dm-serif-dm-sans': warm, editorial feel
+  - 'space-grotesk-work-sans': techy, modern startup vibe
+  - 'libre-baskerville-source-sans': classic, sophisticated
+  - 'playfair-inter': elegant serif contrast
+  - plus all standard pairings
+
+HEADERS: simple, accented, banner, or split — don't always default to banner!
+  - 'split' creates an interesting asymmetric layout
+  - 'accented' with bold colors can be just as impactful as banner
+  - 'simple' with uppercase name + bold colors = clean power
+
+SECTION STYLES: clean, underlined, boxed, timeline, accent-left, card
+  - 'card': sections as cards with subtle shadows — modern SaaS feel
+  - 'accent-left': colored left border per section — editorial feel
+  - 'timeline': vertical storytelling line
+  - Mix different approaches for visual interest
+
+LAYOUT: 'single-column', 'sidebar-left', 'sidebar-right'
+  - Sidebar layouts place skills/languages/certifications in a sidebar column
+  - Consider 'sidebar-right' for a modern magazine layout
+  - Consider 'sidebar-left' for a dashboard-style layout
+  - Set sidebarSections to control which sections go in the sidebar (default: skills, languages, certifications)
+
+EXTENDED STYLING (use these to create variety!):
+- accentStyle: 'border-left', 'background', 'quote' — adds character to the summary section
+- borderRadius: 'none' to 'pill' — sharp corners feel different from pill-shaped tags
+- nameStyle: 'uppercase' (letter-spacing), 'extra-bold' (weight 900), 'normal'
+- skillTagStyle: 'outlined' (border-only tags), 'pill' (fully rounded), 'filled'
+- pageBackground: subtle tinted background (e.g. #faf8f5 warm, #f5f0eb cream, #f0f4f8 cool blue)
+
+EXAMPLE COMBINATIONS (for inspiration, don't copy exactly):
+1. Sidebar-right + accented header + card sections + pill skill tags + dm-serif-dm-sans
+2. Single-column + split header + accent-left sections + outlined skills + oswald-source-sans + uppercase name
+3. Sidebar-left + banner header + clean sections + extra-bold name + space-grotesk-work-sans
+4. Single-column + simple header + timeline sections + quote accent + libre-baskerville-source-sans + warm page background
+5. Sidebar-right + banner + boxed sections + pill border-radius + poppins-nunito
+
+COLORS: Be adventurous!
+- Don't default to generic blue/gray — use VIBRANT, unexpected colors
+- Deep teal, warm terracotta, rich forest green, striking burgundy, electric indigo
+- Only use brand colors if 100% CERTAIN about them
+- If uncertain, create a bold palette that fits the industry
+
+DECORATIONS: 'abundant' recommended (bold background shapes)
+- showPhoto: ${hasPhoto ? 'true recommended' : 'false'}
+- useIcons: consider true for modern feel
 
 DECORATION THEME (Required):
-Choose a decorationTheme matching the industry (same as creative mode).
+Choose a decorationTheme matching the industry:
+- 'geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract'
 
 CUSTOM DECORATIONS (Required for experimental mode):
 Generate 2-5 unique customDecorations tailored to the JOB and INDUSTRY.
-These should be ABSTRACT shapes that SUBTLY represent the field - NOT literal icons!
+These should be ABSTRACT shapes that SUBTLY represent the field.
 
-Examples by profession:
-- Software Developer: code-bracket (curly brace shape), terminal-cursor (blinking line), git-branch (forking lines)
-- Data Scientist: scatter-dots (clustered points), neural-node (connected circles), data-flow (flowing lines)
-- Marketing Manager: trend-arrow (upward curve), speech-bubble (rounded shape), target-ring (concentric circles)
-- Finance Analyst: growth-chart (rising bars), pie-segment (curved wedge), currency-wave (wavy line)
-- Healthcare Professional: pulse-line (heartbeat wave), molecule (hexagon with dots), care-plus (soft cross)
-- Designer: grid-dots (dot matrix), shape-morph (abstract blob), palette-swatches (overlapping rectangles)
-
-IMPORTANT: Make them SUBTLE and ABSTRACT, not literal clipart! They should enhance, not distract.
-
-COLOR SELECTION APPROACH:
-1. Only use brand colors if you're 100% CERTAIN (don't guess!)
-2. If uncertain about brand, create a bold palette that fits the industry
-3. The CV should look like professional company marketing material
-
-This CV should be BOLD, COLORFUL, and STAND OUT!
-DO NOT use gray or black as primary - use VIBRANT colors!
+This CV should be BOLD, UNIQUE, and MEMORABLE!
 ` : ''}
 
 SECTION ORDER GUIDELINES:
@@ -472,6 +529,55 @@ function validateAndFixTokens(
     tokens.contactLayout = 'single-row';
   }
 
+  // Validate new optional tokens against creativity constraints
+  const allowedLayouts = constraints.allowedLayouts as readonly string[];
+  if (tokens.layout && !allowedLayouts.includes(tokens.layout)) {
+    tokens.layout = undefined; // Falls back to single-column in HTML generator
+  }
+
+  const allowedBorderRadius = constraints.allowedBorderRadius as readonly string[];
+  if (tokens.borderRadius && !allowedBorderRadius.includes(tokens.borderRadius)) {
+    tokens.borderRadius = undefined;
+  }
+
+  const allowedAccentStyles = constraints.allowedAccentStyles as readonly string[];
+  if (tokens.accentStyle && !allowedAccentStyles.includes(tokens.accentStyle)) {
+    tokens.accentStyle = undefined;
+  }
+
+  const allowedNameStyles = constraints.allowedNameStyles as readonly string[];
+  if (tokens.nameStyle && !allowedNameStyles.includes(tokens.nameStyle)) {
+    tokens.nameStyle = undefined;
+  }
+
+  const allowedSkillTagStyles = constraints.allowedSkillTagStyles as readonly string[];
+  if (tokens.skillTagStyle && !allowedSkillTagStyles.includes(tokens.skillTagStyle)) {
+    tokens.skillTagStyle = undefined;
+  }
+
+  // Validate pageBackground: must be very light (luminance > 0.85)
+  if (tokens.pageBackground) {
+    const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+    if (!hexRegex.test(tokens.pageBackground)) {
+      tokens.pageBackground = undefined;
+    } else {
+      const luminance = getRelativeLuminance(tokens.pageBackground);
+      if (luminance < 0.85) {
+        console.log(`[Style Gen] pageBackground ${tokens.pageBackground} too dark (luminance ${luminance.toFixed(2)}), resetting to white`);
+        tokens.pageBackground = undefined;
+      }
+    }
+  }
+
+  // Validate sidebarSections
+  if (tokens.sidebarSections) {
+    const validSections = ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'];
+    tokens.sidebarSections = tokens.sidebarSections.filter(s => validSections.includes(s));
+    if (tokens.sidebarSections.length === 0) {
+      tokens.sidebarSections = undefined;
+    }
+  }
+
   // Validate experienceDescriptionFormat - default to bullets if not set or invalid
   const validDescriptionFormats = ['bullets', 'paragraph'];
   if (!tokens.experienceDescriptionFormat || !validDescriptionFormats.includes(tokens.experienceDescriptionFormat)) {
@@ -500,6 +606,16 @@ function validateAndFixTokens(
   tokens.sectionOrder = validateSectionOrder(tokens.sectionOrder);
 
   return tokens;
+}
+
+function getRelativeLuminance(hex: string): number {
+  const cleanHex = hex.replace('#', '');
+  const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+  const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+  const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+
+  const toLinear = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 }
 
 function validateColors(colors: CVDesignTokens['colors']): CVDesignTokens['colors'] {
@@ -582,7 +698,7 @@ function getFallbackTokens(
       scale: 'medium',
       spacing: 'comfortable',
       headerVariant: 'banner',
-      sectionStyle: 'timeline',
+      sectionStyle: 'accent-left',
       skillsDisplay: 'tags',
       experienceDescriptionFormat: 'bullets',
       contactLayout: 'double-column',
@@ -594,6 +710,11 @@ function getFallbackTokens(
       decorations: 'abundant',
       decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
+      layout: 'sidebar-right',
+      borderRadius: 'pill',
+      accentStyle: 'border-left',
+      nameStyle: 'uppercase',
+      skillTagStyle: 'pill',
     };
   }
 
@@ -620,7 +741,7 @@ function getFallbackTokens(
       scale: 'medium',
       spacing: 'comfortable',
       headerVariant: 'banner',
-      sectionStyle: 'boxed',
+      sectionStyle: 'card',
       skillsDisplay: 'tags',
       experienceDescriptionFormat: 'bullets',
       contactLayout: 'double-row',
@@ -632,6 +753,9 @@ function getFallbackTokens(
       decorations: 'moderate',
       decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
+      borderRadius: 'medium',
+      accentStyle: 'background',
+      skillTagStyle: 'outlined',
     };
   }
 

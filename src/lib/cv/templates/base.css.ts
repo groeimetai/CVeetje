@@ -466,6 +466,41 @@ export const sectionStyles = {
       border-radius: 50%;
     }
   `,
+
+  'accent-left': `
+    .section {
+      margin-bottom: var(--space-section);
+      border-left: 3px solid var(--color-accent);
+      padding-left: var(--space-item);
+    }
+
+    .section-title {
+      font-size: var(--size-heading);
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: var(--space-item);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  `,
+
+  card: `
+    .section {
+      margin-bottom: var(--space-section);
+      background: var(--color-white);
+      padding: var(--space-item);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-title {
+      font-size: var(--size-heading);
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: var(--space-item);
+    }
+  `,
 };
 
 // ============ Skills Display Styles ============
@@ -785,4 +820,128 @@ export function getSectionStyleCSS(style: keyof typeof sectionStyles): string {
 
 export function getSkillsDisplayCSS(display: keyof typeof skillsDisplayStyles): string {
   return skillsDisplayStyles[display] || skillsDisplayStyles.tags;
+}
+
+// ============ Accent Styles (Summary Section) ============
+
+export const accentStyles = {
+  none: '',
+  'border-left': `
+    .summary {
+      border-left: 3px solid var(--color-accent);
+      padding-left: var(--space-item);
+    }
+  `,
+  background: `
+    .summary {
+      background: var(--color-secondary);
+      padding: var(--space-item);
+      border-radius: var(--radius);
+    }
+  `,
+  quote: `
+    .summary {
+      border-left: 3px solid var(--color-accent);
+      padding-left: var(--space-item);
+      font-style: italic;
+      color: var(--color-muted);
+    }
+  `,
+};
+
+export function getAccentStyleCSS(style: keyof typeof accentStyles): string {
+  return accentStyles[style] || '';
+}
+
+// ============ Name Styles ============
+
+export const nameStyles = {
+  normal: '',
+  uppercase: `
+    .cv-header h1.name {
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+  `,
+  'extra-bold': `
+    .cv-header h1.name {
+      font-weight: 900;
+    }
+  `,
+};
+
+export function getNameStyleCSS(style: keyof typeof nameStyles): string {
+  return nameStyles[style] || '';
+}
+
+// ============ Skill Tag Style Variants ============
+
+export const skillTagVariants = {
+  filled: '', // Default style from skillsDisplayStyles.tags
+  outlined: `
+    .skill-tag {
+      background: transparent;
+      border: 1px solid var(--color-accent);
+      color: var(--color-accent);
+    }
+  `,
+  pill: `
+    .skill-tag {
+      border-radius: 999px;
+      padding: 4px 14px;
+    }
+  `,
+};
+
+export function getSkillTagStyleCSS(style: keyof typeof skillTagVariants): string {
+  return skillTagVariants[style] || '';
+}
+
+// ============ Sidebar Layout ============
+
+export const sidebarLayoutCSS = `
+  .cv-body {
+    display: grid;
+    gap: var(--space-section);
+  }
+
+  .cv-body.sidebar-left {
+    grid-template-columns: 240px 1fr;
+  }
+
+  .cv-body.sidebar-right {
+    grid-template-columns: 1fr 240px;
+  }
+
+  .cv-sidebar {
+    background: var(--color-secondary);
+    padding: var(--space-item);
+    border-radius: var(--radius);
+  }
+
+  .cv-sidebar .section {
+    margin-bottom: var(--space-item);
+  }
+
+  .cv-sidebar .section:last-child {
+    margin-bottom: 0;
+  }
+
+  .cv-sidebar .section-title {
+    font-size: var(--size-small);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-element);
+  }
+
+  @media print {
+    .cv-body.sidebar-left,
+    .cv-body.sidebar-right {
+      display: grid;
+    }
+  }
+`;
+
+export function getSidebarLayoutCSS(): string {
+  return sidebarLayoutCSS;
 }

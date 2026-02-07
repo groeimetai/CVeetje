@@ -17,6 +17,10 @@ import {
   getHeaderVariantCSS,
   getSectionStyleCSS,
   getSkillsDisplayCSS,
+  getAccentStyleCSS,
+  getNameStyleCSS,
+  getSkillTagStyleCSS,
+  getSidebarLayoutCSS,
 } from './templates/base.css';
 import {
   getFontUrls,
@@ -307,6 +311,30 @@ export function generateCVHTML(
     </div>
   ` : '';
 
+  // Determine layout mode
+  const isSidebar = tokens.layout && tokens.layout !== 'single-column';
+  const sidebarClass = tokens.layout === 'sidebar-left' ? 'sidebar-left' : tokens.layout === 'sidebar-right' ? 'sidebar-right' : '';
+  const defaultSidebarSections = ['skills', 'languages', 'certifications'];
+  const sidebarSections = tokens.sidebarSections ?? defaultSidebarSections;
+
+  // Generate content based on layout
+  let bodyContent: string;
+  if (isSidebar) {
+    const mainSections = tokens.sectionOrder.filter(s => !sidebarSections.includes(s));
+    const sidebarSectionNames = tokens.sectionOrder.filter(s => sidebarSections.includes(s));
+
+    const mainHTML = generateSectionsFromList(mainSections, content, tokens, overrides);
+    const sidebarHTML = generateSectionsFromList(sidebarSectionNames, content, tokens, overrides);
+
+    bodyContent = `
+    <div class="cv-body ${sidebarClass}">
+      <main class="cv-main">${mainHTML}</main>
+      <aside class="cv-sidebar">${sidebarHTML}</aside>
+    </div>`;
+  } else {
+    bodyContent = generateSections(content, tokens, overrides);
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -324,7 +352,7 @@ export function generateCVHTML(
   <div class="cv-container${tokens.headerFullBleed ? ' full-bleed-mode' : ''}"${tokens.headerFullBleed ? ' style="padding: 0;"' : ''}>
     ${decorationsHTML}
     ${generateHeader(fullName, headline, avatarUrl, tokens, overrides, contactInfo)}
-    ${generateSections(content, tokens, overrides)}
+    ${bodyContent}
   </div>
   ${protectionScript}
 </body>
@@ -334,6 +362,9 @@ export function generateCVHTML(
 // ============ CSS Generator ============
 
 function generateCSS(tokens: CVDesignTokens): string {
+  // Resolve border radius: borderRadius scale overrides roundedCorners boolean
+  const resolvedBorderRadius = tokens.borderRadius ?? (tokens.roundedCorners ? 'small' : 'none');
+
   // Build CSS variables from tokens
   const cssVariables = `
     :root {
@@ -341,7 +372,7 @@ function generateCSS(tokens: CVDesignTokens): string {
       ${getFontPairingCSS(tokens.fontPairing)}
       ${getTypeScaleCSS(tokens.scale)}
       ${getSpacingScaleCSS(tokens.spacing)}
-      ${getBorderRadiusCSS(tokens.roundedCorners)}
+      ${getBorderRadiusCSS(tokens.roundedCorners, resolvedBorderRadius)}
     }
   `;
 
@@ -400,6 +431,38 @@ function generateCSS(tokens: CVDesignTokens): string {
   // Add icons CSS if enabled
   if (tokens.useIcons) {
     cssParts.push(contactIconsCSS);
+  }
+
+  // Add accent style CSS (summary styling)
+  if (tokens.accentStyle && tokens.accentStyle !== 'none') {
+    cssParts.push(getAccentStyleCSS(tokens.accentStyle));
+  }
+
+  // Add name style CSS
+  if (tokens.nameStyle && tokens.nameStyle !== 'normal') {
+    cssParts.push(getNameStyleCSS(tokens.nameStyle));
+  }
+
+  // Add skill tag style CSS
+  if (tokens.skillTagStyle && tokens.skillTagStyle !== 'filled') {
+    cssParts.push(getSkillTagStyleCSS(tokens.skillTagStyle));
+  }
+
+  // Add sidebar layout CSS
+  if (tokens.layout && tokens.layout !== 'single-column') {
+    cssParts.push(getSidebarLayoutCSS());
+  }
+
+  // Add page background
+  if (tokens.pageBackground && tokens.pageBackground !== '#ffffff') {
+    cssParts.push(`
+      html, body {
+        background: ${tokens.pageBackground};
+      }
+      .cv-container {
+        background: ${tokens.pageBackground};
+      }
+    `);
   }
 
   return cssParts.join('\n');
@@ -523,6 +586,33 @@ function generateSections(
   return tokens.sectionOrder
     .map(sectionName => {
       const generator = sectionGenerators[sectionName];
+      return generator ? generator() : '';
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+/**
+ * Generate sections from an explicit list of section names (for sidebar layout split)
+ */
+function generateSectionsFromList(
+  sectionNames: string[],
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  overrides?: CVElementOverrides | null
+): string {
+  const sectionGenerators: Record<string, () => string> = {
+    summary: () => generateSummary(content.summary, overrides),
+    experience: () => generateExperience(content.experience, tokens, overrides),
+    education: () => generateEducation(content.education, overrides),
+    skills: () => generateSkills(content.skills, tokens, overrides),
+    languages: () => generateLanguages(content.languages, overrides),
+    certifications: () => generateCertifications(content.certifications, overrides),
+  };
+
+  return sectionNames
+    .map(name => {
+      const generator = sectionGenerators[name];
       return generator ? generator() : '';
     })
     .filter(Boolean)

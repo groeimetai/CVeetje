@@ -20,6 +20,11 @@ const fontPairingToLegacy: Record<FontPairing, { heading: FontFamily; body: Font
   'roboto-roboto': { heading: 'roboto', body: 'roboto' },
   'lato-lato': { heading: 'lato', body: 'lato' },
   'merriweather-source-sans': { heading: 'merriweather', body: 'source-sans' },
+  // New font pairings mapped to closest legacy equivalents
+  'oswald-source-sans': { heading: 'montserrat', body: 'source-sans' },
+  'dm-serif-dm-sans': { heading: 'playfair', body: 'inter' },
+  'space-grotesk-work-sans': { heading: 'inter', body: 'inter' },
+  'libre-baskerville-source-sans': { heading: 'merriweather', body: 'source-sans' },
 };
 
 // ============ Header Variant Mapping ============
@@ -38,6 +43,8 @@ const sectionStyleToLegacy: Record<string, CVStyleConfig['layout']['sectionDivid
   'underlined': 'accent-bar',
   'boxed': 'none',
   'timeline': 'line',
+  'accent-left': 'accent-bar',
+  'card': 'none',
 };
 
 // ============ Skills Display Mapping ============
@@ -61,6 +68,14 @@ const spacingToLegacy: Record<string, CVStyleConfig['layout']['spacing']> = {
 export function tokensToStyleConfig(tokens: CVDesignTokens): CVStyleConfig {
   const fonts = fontPairingToLegacy[tokens.fontPairing];
   const typeScale = typeScales[tokens.scale];
+
+  // Map borderRadius to legacy cornerStyle
+  const resolvedCornerStyle = tokens.borderRadius
+    ? (tokens.borderRadius === 'none' ? 'sharp' : tokens.borderRadius === 'pill' ? 'pill' : 'rounded')
+    : (tokens.roundedCorners ? 'rounded' : 'sharp');
+
+  // Map sectionStyle including new variants to legacy
+  const sectionDivider = sectionStyleToLegacy[tokens.sectionStyle] || 'line';
 
   return {
     styleName: tokens.styleName,
@@ -91,7 +106,7 @@ export function tokensToStyleConfig(tokens: CVDesignTokens): CVStyleConfig {
       style: 'single-column',
       headerStyle: headerVariantToLegacy[tokens.headerVariant] || 'left-aligned',
       sectionOrder: tokens.sectionOrder,
-      sectionDivider: sectionStyleToLegacy[tokens.sectionStyle] || 'line',
+      sectionDivider,
       skillDisplay: skillsDisplayToLegacy[tokens.skillsDisplay] || 'tags',
       spacing: spacingToLegacy[tokens.spacing] || 'normal',
       showPhoto: tokens.showPhoto,
@@ -99,17 +114,17 @@ export function tokensToStyleConfig(tokens: CVDesignTokens): CVStyleConfig {
 
     decorations: {
       intensity: tokens.themeBase === 'bold' ? 'bold' : 'moderate',
-      useBorders: tokens.sectionStyle === 'boxed',
+      useBorders: tokens.sectionStyle === 'boxed' || tokens.sectionStyle === 'card',
       useBackgrounds: tokens.sectionStyle === 'boxed',
       iconStyle: tokens.useIcons ? 'minimal' : 'none',
-      cornerStyle: tokens.roundedCorners ? 'rounded' : 'sharp',
+      cornerStyle: resolvedCornerStyle,
       itemStyle: tokens.sectionStyle === 'timeline' ? 'timeline' : 'card-subtle',
       headerAccent: tokens.headerVariant === 'accented' ? 'side-bar' : 'none',
     },
 
     header: {
       headerAlignment: tokens.headerVariant === 'split' ? 'left' : 'left',
-      nameWeight: 'bold',
+      nameWeight: tokens.nameStyle === 'extra-bold' ? 'extrabold' : 'bold',
       showHeadline: true,
       headlineStyle: 'muted',
       contactInHeader: true,
@@ -118,7 +133,7 @@ export function tokensToStyleConfig(tokens: CVDesignTokens): CVStyleConfig {
 
     skills: {
       skillDisplay: skillsDisplayToLegacy[tokens.skillsDisplay] || 'tags',
-      skillTagVariant: 'filled',
+      skillTagVariant: tokens.skillTagStyle === 'pill' ? 'filled' : (tokens.skillTagStyle || 'filled'),
       skillColumns: 'auto',
     },
   };
