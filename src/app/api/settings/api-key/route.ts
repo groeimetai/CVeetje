@@ -101,6 +101,71 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    // Get auth token
+    const cookieStore = await cookies();
+    const token = cookieStore.get('firebase-token')?.value ||
+      request.headers.get('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Verify token
+    let userId: string;
+    try {
+      const decodedToken = await getAdminAuth().verifyIdToken(token);
+      userId = decodedToken.uid;
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    const { model } = await request.json() as {
+      model: string;
+    };
+
+    if (!model) {
+      return NextResponse.json(
+        { error: 'Model is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify user has an existing API key
+    const db = getAdminDb();
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists || !userDoc.data()?.apiKey?.encryptedKey) {
+      return NextResponse.json(
+        { error: 'No API key configured. Please save an API key first.' },
+        { status: 400 }
+      );
+    }
+
+    // Update only model, keep existing provider and encrypted key
+    await userRef.update({
+      'apiKey.model': model,
+      updatedAt: new Date(),
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Model update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update model' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     // Get auth token

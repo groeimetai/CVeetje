@@ -365,7 +365,9 @@
       "provider": "Provider",
       "model": "Model",
       "removeApiKey": "API Key Verwijderen",
-      "removing": "Verwijderen..."
+      "removing": "Verwijderen...",
+      "changeModel": "Model Opslaan",
+      "savingModel": "Opslaan..."
     },
     "configureApiKey": {
       "title": "API Key Configureren",
@@ -412,6 +414,7 @@
     },
     "messages": {
       "apiKeySaved": "API key succesvol opgeslagen",
+      "modelChanged": "Model succesvol gewijzigd",
       "apiKeyRemoved": "API key succesvol verwijderd",
       "confirmRemove": "Weet je zeker dat je je API key wilt verwijderen?"
     }

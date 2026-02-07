@@ -365,7 +365,9 @@
       "provider": "Provider",
       "model": "Model",
       "removeApiKey": "Remove API Key",
-      "removing": "Removing..."
+      "removing": "Removing...",
+      "changeModel": "Save Model",
+      "savingModel": "Saving..."
     },
     "configureApiKey": {
       "title": "Configure API Key",
@@ -412,6 +414,7 @@
     },
     "messages": {
       "apiKeySaved": "API key saved successfully",
+      "modelChanged": "Model changed successfully",
       "apiKeyRemoved": "API key removed successfully",
       "confirmRemove": "Are you sure you want to remove your API key?"
     }

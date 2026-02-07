@@ -58,6 +58,7 @@ export default function SettingsPage() {
   const t = useTranslations('settings');
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingModel, setSavingModel] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -194,6 +195,52 @@ export default function SettingsPage() {
     }
   };
 
+  // State for the model switcher in current config (provider is fixed to the API key's provider)
+  const [configModel, setConfigModel] = useState(userData?.apiKey?.model || '');
+  const configProviderModels = providers.find(p => p.id === userData?.apiKey?.provider)?.models || [];
+  const configModelInfo = configProviderModels.find(m => m.id === configModel);
+
+  // Sync configModel when userData changes
+  useEffect(() => {
+    if (userData?.apiKey) {
+      setConfigModel(userData.apiKey.model);
+    }
+  }, [userData?.apiKey?.model]);
+
+  const handleSaveModel = async () => {
+    if (!userData?.apiKey) return;
+    setSavingModel(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/settings/api-key', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: configModel }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update model');
+      }
+
+      await refreshUserData();
+      setMessage({ type: 'success', text: t('messages.modelChanged') });
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to update model',
+      });
+    } finally {
+      setSavingModel(false);
+    }
+  };
+
+  const modelHasChanged = userData?.apiKey
+    ? configModel !== userData.apiKey.model
+    : false;
+
   const getProviderKeyUrl = (providerId: string) => {
     return providerKeyUrls[providerId] || null;
   };
@@ -266,6 +313,12 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {message && message.type === 'success' && (
+                  <Alert className="mb-2">
+                    {message.text}
+                  </Alert>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium">{t('currentConfig.provider')}</p>
@@ -278,12 +331,72 @@ export default function SettingsPage() {
                   </Badge>
                 </div>
                 <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{t('currentConfig.model')}</p>
-                    <p className="text-muted-foreground">{userData.apiKey.model}</p>
-                  </div>
+
+                <div className="space-y-2">
+                  <Label>{t('currentConfig.model')}</Label>
+                  <Select
+                    value={configModel}
+                    onValueChange={setConfigModel}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {configProviderModels.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <div className="flex flex-col">
+                            <span>{model.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatPrice(model.pricing.input)}/1M in · {formatPrice(model.pricing.output)}/1M out
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {configModelInfo && (
+                    <div className="mt-2 p-3 bg-muted rounded-lg space-y-3">
+                      <div className="flex items-center gap-4 text-sm flex-wrap">
+                        {configModelInfo.limits.context > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Cpu className="h-4 w-4 text-muted-foreground" />
+                            <span>{(configModelInfo.limits.context / 1000).toFixed(0)}k {t('configureApiKey.context')}</span>
+                          </div>
+                        )}
+                        {configModelInfo.pricing.input > 0 && (
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <span>{formatPrice(configModelInfo.pricing.input)} / 1M in</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant={configModelInfo.capabilities.structuredOutput ? "default" : "outline"} className="text-xs">
+                          {configModelInfo.capabilities.structuredOutput ? "✓" : "✗"} {t('configureApiKey.structuredOutput')}
+                        </Badge>
+                        <Badge variant={configModelInfo.capabilities.toolCall ? "default" : "outline"} className="text-xs">
+                          {configModelInfo.capabilities.toolCall ? "✓" : "✗"} {t('configureApiKey.toolCall')}
+                        </Badge>
+                        <Badge variant={configModelInfo.capabilities.reasoning ? "default" : "outline"} className="text-xs">
+                          {configModelInfo.capabilities.reasoning ? "✓" : "✗"} {t('configureApiKey.reasoning')}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {modelHasChanged && (
+                  <Button
+                    onClick={handleSaveModel}
+                    disabled={savingModel}
+                    size="sm"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {savingModel ? t('currentConfig.savingModel') : t('currentConfig.changeModel')}
+                  </Button>
+                )}
+
                 <Separator />
                 <Button
                   variant="destructive"
