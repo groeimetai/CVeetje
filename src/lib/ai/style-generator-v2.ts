@@ -322,7 +322,8 @@ SECTION ORDER GUIDELINES:
 function buildUserPrompt(
   linkedInSummary: string,
   jobVacancy: JobVacancy | null,
-  userPreferences?: string
+  userPreferences?: string,
+  creativityLevel: StyleCreativityLevel = 'balanced'
 ): string {
   let prompt = `Generate CV design tokens for this candidate:
 
@@ -338,7 +339,11 @@ ${jobVacancy.company ? `- Company: ${jobVacancy.company}` : ''}
 ${jobVacancy.industry ? `- Industry: ${jobVacancy.industry}` : ''}
 - Key requirements: ${jobVacancy.keywords.slice(0, 10).join(', ')}
 ${jobVacancy.description ? `- Job description excerpt: ${jobVacancy.description.slice(0, 500)}...` : ''}
+`;
 
+    // Company analysis varies by creativity level
+    if (creativityLevel === 'conservative' || creativityLevel === 'balanced') {
+      prompt += `
 COMPANY ANALYSIS TASK:
 Based on the company name "${jobVacancy.company || 'Unknown'}" and industry "${jobVacancy.industry || 'Unknown'}":
 1. Consider what type of company this is (startup, corporate, consulting, tech, finance, creative, government, etc.)
@@ -356,6 +361,24 @@ Style guidance by company type:
 - Government/Public sector: Conservative, accessible, clear
 - Manufacturing/Industrial: Professional, structured, reliable
 `;
+    } else if (creativityLevel === 'creative') {
+      prompt += `
+DESIGN INSPIRATION:
+The industry is "${jobVacancy.industry || 'Unknown'}" and the company is "${jobVacancy.company || 'Unknown'}".
+Use this as INSPIRATION, not as a constraint. Be creative with the visual style while keeping it relevant.
+If you're 100% CERTAIN about the company's brand colors, incorporate them boldly.
+Otherwise, create a striking palette that fits the industry vibe.
+`;
+    } else {
+      // experimental
+      prompt += `
+DESIGN CONTEXT (for inspiration only — your creative choices take priority):
+Industry: "${jobVacancy.industry || 'Unknown'}", Company: "${jobVacancy.company || 'Unknown'}".
+Use the industry/company only as loose inspiration for color direction and decoration themes.
+Your primary goal is to create something VISUALLY STRIKING and UNIQUE.
+Don't play it safe — make bold choices with layout, typography, and color.
+`;
+    }
   }
 
   if (userPreferences) {
@@ -365,7 +388,30 @@ ${userPreferences}
 `;
   }
 
-  prompt += `
+  // Closing instructions vary by creativity level
+  if (creativityLevel === 'experimental') {
+    prompt += `
+Generate design tokens that:
+1. Look VISUALLY UNIQUE — this CV should stand out from every other CV
+2. Make BOLD choices: try sidebar layouts, unusual font pairings, striking colors
+3. Use the extended styling tokens (accentStyle, borderRadius, nameStyle, skillTagStyle, pageBackground) — don't leave them at defaults
+4. Will render well in both screen preview and PDF print
+5. Use colors that are VIBRANT and unexpected — avoid generic blue/gray
+
+IMPORTANT: Prioritize visual impact and uniqueness over convention.
+This is experimental mode — the user WANTS something that looks different!`;
+  } else if (creativityLevel === 'creative') {
+    prompt += `
+Generate design tokens that:
+1. Are visually DISTINCTIVE — this CV should look noticeably different from a standard template
+2. Use creative combinations of header styles, section styles, and typography
+3. Consider using extended styling tokens (accentStyle, borderRadius, nameStyle, skillTagStyle) for extra personality
+4. Will render well in both screen preview and PDF print
+5. Use colors that pop and create visual interest
+
+IMPORTANT: Be creative! The user chose creative mode because they want something with personality.`;
+  } else {
+    prompt += `
 Generate design tokens that:
 1. Match what this specific company and industry would appreciate
 2. Reflect the company's likely culture and values
@@ -376,6 +422,7 @@ Generate design tokens that:
 
 IMPORTANT: Adapt the style specifically for "${jobVacancy?.company || 'the target company'}"!
 Think about what kind of candidate they want to see - and design accordingly.`;
+  }
 
   return prompt;
 }
@@ -403,7 +450,7 @@ export async function generateDesignTokens(
   const modelId = getModelId(provider, model);
 
   const systemPrompt = buildSystemPrompt(creativityLevel, hasPhoto);
-  const userPrompt = buildUserPrompt(linkedInSummary, jobVacancy, userPreferences);
+  const userPrompt = buildUserPrompt(linkedInSummary, jobVacancy, userPreferences, creativityLevel);
 
   try {
     console.log(`[Style Gen] Starting LLM call: creativity=${creativityLevel}, hasPhoto=${hasPhoto}, temp=${temperature}`);
@@ -488,12 +535,16 @@ function validateAndFixTokens(
     console.log(`[Style Gen] Decorations set to ${tokens.decorations} for ${creativityLevel} mode`);
   }
 
-  // For creative mode, force decorations (don't allow 'none')
-  // For experimental mode, allow the AI to choose freely — 'none' can be a valid choice
-  // (e.g., clean sidebar layouts with card sections don't need background shapes)
+  // For creative and experimental modes, ensure at least some decorations
+  // Creative: force to 'moderate' (its default)
+  // Experimental: allow any level except 'none' — at least 'minimal' for visual richness
   if (creativityLevel === 'creative' && tokens.decorations === 'none') {
     tokens.decorations = constraints.defaultDecorations;
     console.log(`[Style Gen] Forcing decorations to ${tokens.decorations} for creative mode (was 'none')`);
+  }
+  if (creativityLevel === 'experimental' && tokens.decorations === 'none') {
+    tokens.decorations = 'minimal';
+    console.log(`[Style Gen] Bumping decorations to 'minimal' for experimental mode (was 'none')`);
   }
 
   // Validate decorationTheme for creative and experimental modes
