@@ -5,7 +5,7 @@ import { DefaultChatTransport } from 'ai';
 import { useCallback, useRef, useState, useMemo } from 'react';
 import type { CVChatContext, CVChatToolName } from '@/types/chat';
 import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation } from '@/types';
-import type { CVDesignTokens, HeaderVariant, FontPairing, SpacingScale, SectionStyle } from '@/types/design-tokens';
+import type { CVDesignTokens, HeaderVariant, FontPairing, SpacingScale, SectionStyle, CVLayout } from '@/types/design-tokens';
 
 interface UseCVChatOptions {
   context: CVChatContext;
@@ -33,6 +33,8 @@ interface ToolCallArgs {
   category?: 'technical' | 'soft';
   newOrder?: string[];
   // Style tool args
+  layout?: string;
+  sidebarSections?: string[];
   variant?: string;
   primary?: string;
   secondary?: string;
@@ -52,6 +54,7 @@ const STYLE_TOOL_NAMES: CVChatToolName[] = [
   'update_font_pairing',
   'update_spacing',
   'update_section_style',
+  'update_layout',
   'toggle_feature',
 ];
 
@@ -92,6 +95,16 @@ function applyStyleToolCall(
     case 'update_section_style': {
       if (args.sectionStyle) {
         return { ...currentTokens, sectionStyle: args.sectionStyle as SectionStyle };
+      }
+      break;
+    }
+    case 'update_layout': {
+      if (args.layout) {
+        const updated: CVDesignTokens = { ...currentTokens, layout: args.layout as CVLayout };
+        if (args.sidebarSections) {
+          updated.sidebarSections = args.sidebarSections;
+        }
+        return updated;
       }
       break;
     }

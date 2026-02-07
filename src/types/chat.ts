@@ -40,6 +40,7 @@ export type CVChatToolName =
   | 'update_font_pairing'
   | 'update_spacing'
   | 'update_section_style'
+  | 'update_layout'
   | 'toggle_feature';
 
 // ============ Tool Parameters ============

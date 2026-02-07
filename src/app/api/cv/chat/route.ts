@@ -47,6 +47,7 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
 - **Spacing:** ${currentTokens.spacing}
 - **Section stijl:** ${currentTokens.sectionStyle}
 - **Kleuren:** primary ${currentTokens.colors.primary}, secondary ${currentTokens.colors.secondary}, accent ${currentTokens.colors.accent}
+- **Layout:** ${currentTokens.layout || 'single-column'}${currentTokens.sidebarSections ? ` (sidebar: ${currentTokens.sidebarSections.join(', ')})` : ''}
 - **Features:** foto=${currentTokens.showPhoto}, iconen=${currentTokens.useIcons}, ronde hoeken=${currentTokens.roundedCorners}
 `
     : '';
@@ -59,6 +60,7 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
 - update_font_pairing: Wijzig het lettertype
 - update_spacing: Pas de ruimte tussen elementen aan (compact, comfortable, spacious)
 - update_section_style: Wijzig de stijl van secties (clean, underlined, boxed, timeline, accent-left, card)
+- update_layout: Wijzig de pagina layout (single-column, sidebar-left, sidebar-right) en optioneel welke secties in de sidebar staan
 - toggle_feature: Schakel features aan/uit (showPhoto, useIcons, roundedCorners)`
     : '';
 
@@ -318,6 +320,14 @@ export async function POST(request: NextRequest) {
           description: 'Wijzig de stijl van de secties (bijv. werkervaring, opleiding). Kies uit: clean (simpel), underlined (onderstreept), boxed (in box), timeline (tijdlijn), accent-left (accent links), card (kaart).',
           inputSchema: z.object({
             sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card']).describe('De gewenste sectie stijl'),
+          }),
+        }),
+
+        update_layout: tool({
+          description: 'Wijzig de pagina layout van de CV. single-column = standaard, sidebar-left = smalle kolom links met skills/talen, sidebar-right = smalle kolom rechts. Je kunt ook aangeven welke secties in de sidebar komen.',
+          inputSchema: z.object({
+            layout: z.enum(['single-column', 'sidebar-left', 'sidebar-right']).describe('De gewenste layout'),
+            sidebarSections: z.array(z.string()).optional().describe('Welke secties in de sidebar (bijv. ["skills", "languages", "certifications"]). Alleen relevant bij sidebar layouts.'),
           }),
         }),
 

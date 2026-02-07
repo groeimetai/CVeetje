@@ -619,6 +619,7 @@ export const itemStyles = `
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 8px;
     margin-bottom: 4px;
   }
 
@@ -639,6 +640,7 @@ export const itemStyles = `
     color: var(--color-muted);
     text-align: right;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .item-description {
@@ -923,6 +925,11 @@ export const sidebarLayoutCSS = `
     grid-template-columns: 1fr 240px;
   }
 
+  /* sidebar-left: sidebar visually moves to the first (240px) column */
+  .cv-body.sidebar-left .cv-sidebar {
+    order: -1;
+  }
+
   .cv-sidebar {
     background: var(--color-secondary);
     padding: var(--space-item);
@@ -942,6 +949,27 @@ export const sidebarLayoutCSS = `
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: var(--space-element);
+  }
+
+  /* Sidebar-specific: stack title and date vertically in narrow column */
+  .cv-sidebar .item-header {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cv-sidebar .item-meta {
+    text-align: left;
+  }
+
+  /* Prevent skill tags from overflowing narrow sidebar */
+  .cv-sidebar .skill-tag {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cv-sidebar .skills-container {
+    columns: 1;
   }
 
   @media print {
