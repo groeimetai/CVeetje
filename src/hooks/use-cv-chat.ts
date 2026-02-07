@@ -205,6 +205,10 @@ export function useCVChat({ context, onContentChange }: UseCVChatOptions) {
   contextRef.current = context;
   onContentChangeRef.current = onContentChange;
 
+  // Ref for addToolOutput — needed inside onToolCall which is defined before useChat returns
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const addToolOutputRef = useRef<(args: any) => Promise<void>>(undefined);
+
   // Create transport with context in body
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/cv/chat',
@@ -218,6 +222,7 @@ export function useCVChat({ context, onContentChange }: UseCVChatOptions) {
     status,
     sendMessage,
     stop,
+    addToolOutput,
   } = useChat({
     transport,
     onToolCall: ({ toolCall }) => {
@@ -233,9 +238,21 @@ export function useCVChat({ context, onContentChange }: UseCVChatOptions) {
       if (updatedContent) {
         onContentChangeRef.current(updatedContent);
       }
-      // Don't return anything - callback should be void
+
+      // Mark the tool call as completed with output so the AI SDK includes
+      // a tool-result in subsequent messages (prevents MissingToolResultsError)
+      addToolOutputRef.current?.({
+        tool: toolCall.toolName,
+        toolCallId: (toolCall as { toolCallId: string }).toolCallId,
+        output: updatedContent
+          ? `Applied ${toolCall.toolName} successfully`
+          : `No changes needed for ${toolCall.toolName}`,
+      });
     },
   });
+
+  // Store addToolOutput in ref (available before onToolCall fires during streaming)
+  addToolOutputRef.current = addToolOutput;
 
   // Handle input change
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
