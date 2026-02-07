@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { registerWithEmail, signInWithGoogle, signInWithApple } from '@/lib/firebase/auth';
+import { registerWithEmail, signInWithGoogle, signInWithApple, getFirebaseErrorKey } from '@/lib/firebase/auth';
 import { useRecaptcha } from '@/lib/recaptcha/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,8 +72,8 @@ export function RegisterForm() {
       // Redirect to verify email page instead of dashboard
       router.push('/verify-email');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : tErrors('registrationFailed');
-      setError(errorMessage);
+      const errorKey = getFirebaseErrorKey(err);
+      setError(errorKey ? tErrors(errorKey) : tErrors('registrationFailed'));
     } finally {
       setLoading(false);
     }
@@ -90,8 +90,8 @@ export function RegisterForm() {
       document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
       router.push('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : tErrors('googleSignInFailed');
-      setError(errorMessage);
+      const errorKey = getFirebaseErrorKey(err);
+      setError(errorKey ? tErrors(errorKey) : tErrors('googleSignInFailed'));
     } finally {
       setLoading(false);
     }
@@ -108,8 +108,8 @@ export function RegisterForm() {
       document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
       router.push('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : tErrors('appleSignInFailed');
-      setError(errorMessage);
+      const errorKey = getFirebaseErrorKey(err);
+      setError(errorKey ? tErrors(errorKey) : tErrors('appleSignInFailed'));
     } finally {
       setLoading(false);
     }

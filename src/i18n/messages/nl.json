@@ -895,7 +895,16 @@
     "loginFailed": "Inloggen mislukt. Controleer je gegevens.",
     "registrationFailed": "Registratie mislukt. Probeer opnieuw.",
     "googleSignInFailed": "Google inloggen mislukt.",
-    "appleSignInFailed": "Apple inloggen mislukt."
+    "appleSignInFailed": "Apple inloggen mislukt.",
+    "firebaseInvalidCredential": "Onjuist e-mailadres of wachtwoord. Heb je je geregistreerd met Google of Apple? Probeer dan in te loggen via die knop.",
+    "firebaseUserNotFound": "Er is geen account met dit e-mailadres. Maak eerst een account aan.",
+    "firebaseWrongPassword": "Onjuist wachtwoord. Probeer het opnieuw.",
+    "firebaseEmailInUse": "Dit e-mailadres is al in gebruik. Probeer in te loggen of gebruik een ander e-mailadres.",
+    "firebaseTooManyRequests": "Te veel pogingen. Probeer het later opnieuw.",
+    "firebaseUserDisabled": "Dit account is uitgeschakeld. Neem contact op met support.",
+    "firebaseNetworkError": "Netwerkfout. Controleer je internetverbinding en probeer opnieuw.",
+    "firebasePopupClosed": "Het inlogscherm is gesloten. Probeer het opnieuw.",
+    "firebaseWeakPassword": "Het wachtwoord is te zwak. Gebruik minimaal 6 tekens."
   },
   "admin": {
     "title": "Gebruikersbeheer",

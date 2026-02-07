@@ -153,3 +153,38 @@ export function onAuthStateChange(callback: (user: FirebaseUser | null) => void)
 export function getCurrentUser(): FirebaseUser | null {
   return auth.currentUser;
 }
+
+// Map Firebase error codes to i18n translation keys
+const firebaseErrorMap: Record<string, string> = {
+  'auth/invalid-credential': 'firebaseInvalidCredential',
+  'auth/user-not-found': 'firebaseUserNotFound',
+  'auth/wrong-password': 'firebaseWrongPassword',
+  'auth/email-already-in-use': 'firebaseEmailInUse',
+  'auth/too-many-requests': 'firebaseTooManyRequests',
+  'auth/user-disabled': 'firebaseUserDisabled',
+  'auth/network-request-failed': 'firebaseNetworkError',
+  'auth/popup-closed-by-user': 'firebasePopupClosed',
+  'auth/cancelled-popup-request': 'firebasePopupClosed',
+  'auth/weak-password': 'firebaseWeakPassword',
+  'auth/invalid-email': 'firebaseInvalidCredential',
+};
+
+/**
+ * Extract a translation key from a Firebase error.
+ * Returns the key (e.g. "firebaseInvalidCredential") or null if unknown.
+ */
+export function getFirebaseErrorKey(error: unknown): string | null {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = (error as { code: string }).code;
+    return firebaseErrorMap[code] ?? null;
+  }
+  // Firebase errors sometimes only expose the code inside the message
+  if (error instanceof Error) {
+    const match = error.message.match(/\(auth\/[\w-]+\)/);
+    if (match) {
+      const code = match[0].slice(1, -1); // strip parens
+      return firebaseErrorMap[code] ?? null;
+    }
+  }
+  return null;
+}

@@ -895,7 +895,16 @@
     "loginFailed": "Login failed. Please check your credentials.",
     "registrationFailed": "Registration failed. Please try again.",
     "googleSignInFailed": "Google sign-in failed.",
-    "appleSignInFailed": "Apple sign-in failed."
+    "appleSignInFailed": "Apple sign-in failed.",
+    "firebaseInvalidCredential": "Incorrect email or password. Did you sign up with Google or Apple? Try signing in with that button instead.",
+    "firebaseUserNotFound": "No account found with this email address. Please create an account first.",
+    "firebaseWrongPassword": "Incorrect password. Please try again.",
+    "firebaseEmailInUse": "This email address is already in use. Try signing in or use a different email.",
+    "firebaseTooManyRequests": "Too many attempts. Please try again later.",
+    "firebaseUserDisabled": "This account has been disabled. Please contact support.",
+    "firebaseNetworkError": "Network error. Check your internet connection and try again.",
+    "firebasePopupClosed": "The sign-in window was closed. Please try again.",
+    "firebaseWeakPassword": "The password is too weak. Use at least 6 characters."
   },
   "admin": {
     "title": "User Management",
