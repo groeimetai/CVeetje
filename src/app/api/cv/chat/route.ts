@@ -125,7 +125,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert UIMessage[] to ModelMessage[] for streamText
-    const modelMessages = await convertToModelMessages(messages);
+    const modelMessages = (await convertToModelMessages(messages))
+      // Filter out messages with empty content arrays — can happen when multi-step
+      // tool responses produce empty intermediate blocks (e.g. step-start splitting)
+      .filter(msg => !Array.isArray(msg.content) || msg.content.length > 0);
 
     // Get user data with API key
     const db = getAdminDb();
