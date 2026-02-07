@@ -110,7 +110,7 @@ export function LoginForm() {
       <CardContent className="space-y-4">
         {error && (
           <Alert variant="destructive">
-            {error}
+            <p className="col-start-2">{error}</p>
           </Alert>
         )}
 
