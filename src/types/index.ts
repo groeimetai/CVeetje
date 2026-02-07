@@ -646,38 +646,6 @@ export interface CVStyleLayout {
   gridColumns?: GridColumns;
 }
 
-// SVG Decoration Types
-export type SVGDecorationTheme =
-  | 'none'
-  | 'geometric'
-  | 'organic'
-  | 'abstract'
-  | 'minimal'
-  | 'tech'
-  | 'creative';
-
-export type SVGDecorationPlacement =
-  | 'corners'
-  | 'header'
-  | 'background';
-
-export interface SVGDecorationConfig {
-  enabled: boolean;
-  theme: SVGDecorationTheme;
-  placement: SVGDecorationPlacement;
-  opacity: number;         // 0.05 - 0.3
-  scale: 'small' | 'medium' | 'large';
-  colorSource: 'primary' | 'accent' | 'secondary' | 'mixed';
-}
-
-export interface SVGDecorationResult {
-  topLeft?: string;
-  topRight?: string;
-  bottomLeft?: string;
-  bottomRight?: string;
-  background?: string;
-}
-
 // === Detail Styling Types ===
 export type SummaryFormat = 'paragraph' | 'bullets' | 'highlights';
 export type SummaryAlignment = 'left' | 'justify';
@@ -705,8 +673,6 @@ export interface CVStyleDecorations {
   // New creative options for better visual appeal
   itemStyle?: ItemStyle;         // How experience/education items are styled
   headerAccent?: HeaderAccent;   // Decorative accent for the header
-  // SVG decorations for creative styles
-  svgDecorations?: SVGDecorationConfig;
   // Additional variation options
   skillTagVariant?: SkillTagVariant;  // Visual style for skill tags
   itemBorderWidth?: ItemBorderWidth;  // Border width for accent-left items
