@@ -343,7 +343,7 @@ export const headerVariants = {
     .cv-header .header-right {
       text-align: right;
       flex-shrink: 0;
-      max-width: 45%;
+      max-width: 40%;
     }
 
     .cv-header h1.name {
@@ -351,7 +351,13 @@ export const headerVariants = {
       font-weight: 700;
       color: var(--color-primary);
       margin-bottom: var(--space-element);
-      word-break: break-word;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    /* Shrink name when photo + split layout leave little room */
+    .cv-header.with-photo h1.name {
+      font-size: 22pt;
     }
 
     .cv-header .headline {
