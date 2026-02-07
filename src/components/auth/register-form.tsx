@@ -203,10 +203,13 @@ export function RegisterForm() {
               id="name"
               type="text"
               placeholder="John Doe"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'name-error' : undefined}
+              className={errors.name ? 'border-destructive' : ''}
               {...register('name')}
             />
             {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
+              <p id="name-error" className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
 
@@ -216,10 +219,13 @@ export function RegisterForm() {
               id="email"
               type="email"
               placeholder="name@example.com"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'email-error' : undefined}
+              className={errors.email ? 'border-destructive' : ''}
               {...register('email')}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p id="email-error" className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
@@ -228,10 +234,13 @@ export function RegisterForm() {
             <Input
               id="password"
               type="password"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? 'password-error' : undefined}
+              className={errors.password ? 'border-destructive' : ''}
               {...register('password')}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+              <p id="password-error" className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
 
@@ -240,10 +249,13 @@ export function RegisterForm() {
             <Input
               id="confirmPassword"
               type="password"
+              aria-invalid={!!errors.confirmPassword}
+              aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
+              className={errors.confirmPassword ? 'border-destructive' : ''}
               {...register('confirmPassword')}
             />
             {errors.confirmPassword && (
-              <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+              <p id="confirm-password-error" className="text-sm text-destructive">{errors.confirmPassword.message}</p>
             )}
           </div>
 

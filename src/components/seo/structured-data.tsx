@@ -103,6 +103,39 @@ export function FAQStructuredData() {
   );
 }
 
+export function OrganizationStructuredData() {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cveetje.nl';
+
+  const organizationData = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'CVeetje',
+    legalName: 'GroeimetAI',
+    url: baseUrl,
+    logo: `${baseUrl}/opengraph-image`,
+    description: 'AI-powered CV builder that creates professional, tailored CVs from your LinkedIn profile in minutes.',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Fabriekstraat 20',
+      addressLocality: 'Apeldoorn',
+      postalCode: '7311GP',
+      addressCountry: 'NL',
+    },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'info@groeimetai.io',
+      contactType: 'customer service',
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+    />
+  );
+}
+
 export function BreadcrumbStructuredData({ items }: { items: { name: string; url: string }[] }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cveetje.nl';
 

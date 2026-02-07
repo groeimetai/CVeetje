@@ -30,11 +30,15 @@ export const metadata: Metadata = {
     description: 'Create professional, tailored CVs from your LinkedIn profile in minutes.',
     type: 'website',
     siteName: 'CVeetje',
+    locale: 'nl_NL',
+    alternateLocale: 'en_US',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'CVeetje - AI-Powered CV Builder' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'CVeetje - AI-Powered CV Builder',
     description: 'Create professional, tailored CVs from your LinkedIn profile in minutes.',
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,

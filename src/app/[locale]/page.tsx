@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/ui/logo';
-import { WebsiteStructuredData, FAQStructuredData } from '@/components/seo/structured-data';
+import { WebsiteStructuredData, FAQStructuredData, OrganizationStructuredData } from '@/components/seo/structured-data';
 import { CVShowcase, ProfileSelectionMockup, JobAnalysisMockup, StyleGeneratorMockup, LinkedInExportMockup } from '@/components/landing/cv-showcase';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
@@ -82,14 +82,22 @@ export default async function LandingPage({ params }: Props) {
     <>
       <WebsiteStructuredData />
       <FAQStructuredData />
+      <OrganizationStructuredData />
       <div className="min-h-screen flex flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+        >
+          {locale === 'nl' ? 'Ga naar hoofdinhoud' : 'Skip to main content'}
+        </a>
+
         {/* Header */}
-        <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+        <header role="banner" className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-full overflow-x-hidden">
             <Link href="/" className="flex-shrink-0">
               <Logo size="sm" />
             </Link>
-            <nav className="flex items-center gap-1 sm:gap-2">
+            <nav aria-label={locale === 'nl' ? 'Hoofdnavigatie' : 'Main navigation'} className="flex items-center gap-1 sm:gap-2">
               <ThemeSwitcher />
               <LanguageSwitcher />
               <Link href="/login">
@@ -105,15 +113,15 @@ export default async function LandingPage({ params }: Props) {
           </div>
         </header>
 
-        <main className="flex-1">
+        <main id="main-content" className="flex-1">
           {/* Hero Section */}
-          <section className="py-20 md:py-32 bg-gradient-to-b from-primary/5 to-background">
+          <section aria-labelledby="hero-heading" className="py-20 md:py-32 bg-gradient-to-b from-primary/5 to-background">
             <div className="container mx-auto px-4 text-center">
               <Badge className="mb-4" variant="secondary">
                 <Target className="mr-1 h-3 w-3" />
                 {t('heroBadge')}
               </Badge>
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+              <h1 id="hero-heading" className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
                 {t('heroTitle')}
                 <br />
                 <span className="text-primary">{t('heroTitleHighlight')}</span>
@@ -176,10 +184,10 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* How It Works */}
-          <section id="hoe-het-werkt" className="py-20">
+          <section id="hoe-het-werkt" aria-labelledby="how-it-works-heading" className="py-20">
             <div className="container mx-auto px-4">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold mb-4">{t('howItWorks.title')}</h2>
+                <h2 id="how-it-works-heading" className="text-3xl font-bold mb-4">{t('howItWorks.title')}</h2>
                 <p className="text-muted-foreground max-w-xl mx-auto">
                   {t('howItWorks.subtitle')}
                 </p>
@@ -223,14 +231,14 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* CV Preview Showcase */}
-          <section className="py-20 bg-accent/30 overflow-hidden">
+          <section aria-labelledby="preview-heading" className="py-20 bg-accent/30 overflow-hidden">
             <div className="container mx-auto px-4">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
                   <Badge className="mb-4" variant="secondary">
                     {t('preview.badge')}
                   </Badge>
-                  <h2 className="text-3xl font-bold mb-4">
+                  <h2 id="preview-heading" className="text-3xl font-bold mb-4">
                     {t('preview.title')}
                     <br />
                     <span className="text-primary">{t('preview.titleHighlight')}</span>
@@ -265,7 +273,7 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* Profile Selection Feature */}
-          <section className="py-20">
+          <section aria-labelledby="profiles-heading" className="py-20">
             <div className="container mx-auto px-4">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div className="order-2 lg:order-1 lg:pr-8">
@@ -275,7 +283,7 @@ export default async function LandingPage({ params }: Props) {
                   <Badge className="mb-4" variant="secondary">
                     {t('profiles.badge')}
                   </Badge>
-                  <h2 className="text-3xl font-bold mb-4">
+                  <h2 id="profiles-heading" className="text-3xl font-bold mb-4">
                     {t('profiles.title')}
                     <br />
                     <span className="text-primary">{t('profiles.titleHighlight')}</span>
@@ -307,14 +315,14 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* Job Analysis Feature */}
-          <section className="py-20 bg-muted/30">
+          <section aria-labelledby="job-analysis-heading" className="py-20 bg-muted/30">
             <div className="container mx-auto px-4">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
                   <Badge className="mb-4" variant="secondary">
                     {t('jobAnalysis.badge')}
                   </Badge>
-                  <h2 className="text-3xl font-bold mb-4">
+                  <h2 id="job-analysis-heading" className="text-3xl font-bold mb-4">
                     {t('jobAnalysis.title')}
                     <br />
                     <span className="text-primary">{t('jobAnalysis.titleHighlight')}</span>
@@ -349,7 +357,7 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* Style Generator Feature */}
-          <section className="py-20">
+          <section aria-labelledby="style-generator-heading" className="py-20">
             <div className="container mx-auto px-4">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div className="order-2 lg:order-1 lg:pr-8">
@@ -359,7 +367,7 @@ export default async function LandingPage({ params }: Props) {
                   <Badge className="mb-4" variant="secondary">
                     {t('styleGenerator.badge')}
                   </Badge>
-                  <h2 className="text-3xl font-bold mb-4">
+                  <h2 id="style-generator-heading" className="text-3xl font-bold mb-4">
                     {t('styleGenerator.title')}
                     <br />
                     <span className="text-primary">{t('styleGenerator.titleHighlight')}</span>
@@ -391,7 +399,7 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* LinkedIn Export Feature */}
-          <section className="py-20 bg-muted/30">
+          <section aria-labelledby="linkedin-export-heading" className="py-20 bg-muted/30">
             <div className="container mx-auto px-4">
               <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div>
@@ -399,7 +407,7 @@ export default async function LandingPage({ params }: Props) {
                     <Linkedin className="mr-1 h-3 w-3" />
                     {t('linkedInExport.badge')}
                   </Badge>
-                  <h2 className="text-3xl font-bold mb-4">
+                  <h2 id="linkedin-export-heading" className="text-3xl font-bold mb-4">
                     {t('linkedInExport.title')}
                     <br />
                     <span className="text-primary">{t('linkedInExport.titleHighlight')}</span>
@@ -434,10 +442,10 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* Key Features */}
-          <section className="py-20 bg-accent/30">
+          <section aria-labelledby="features-heading" className="py-20 bg-accent/30">
             <div className="container mx-auto px-4">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold mb-4">{t('features.title')}</h2>
+                <h2 id="features-heading" className="text-3xl font-bold mb-4">{t('features.title')}</h2>
                 <p className="text-muted-foreground max-w-xl mx-auto">
                   {t('features.subtitle')}
                 </p>
@@ -650,10 +658,10 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* Pricing */}
-          <section className="py-20">
+          <section aria-labelledby="pricing-heading" className="py-20">
             <div className="container mx-auto px-4">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold mb-4">{t('pricing.title')}</h2>
+                <h2 id="pricing-heading" className="text-3xl font-bold mb-4">{t('pricing.title')}</h2>
                 <p className="text-muted-foreground max-w-xl mx-auto">
                   {t('pricing.subtitle')}
                 </p>
@@ -774,9 +782,9 @@ export default async function LandingPage({ params }: Props) {
           </section>
 
           {/* CTA */}
-          <section className="py-20 bg-accent/30">
+          <section aria-labelledby="cta-heading" className="py-20 bg-accent/30">
             <div className="container mx-auto px-4 text-center">
-              <h2 className="text-3xl font-bold mb-4">
+              <h2 id="cta-heading" className="text-3xl font-bold mb-4">
                 {t('cta.title')}
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto mb-8">
@@ -793,7 +801,7 @@ export default async function LandingPage({ params }: Props) {
         </main>
 
         {/* Footer */}
-        <footer className="border-t py-8">
+        <footer role="contentinfo" className="border-t py-8">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <Logo size="sm" />

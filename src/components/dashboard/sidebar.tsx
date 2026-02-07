@@ -97,7 +97,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav aria-label="Dashboard navigation" className="flex-1 space-y-1 px-3 py-4">
         <Link href="/cv/new" onClick={handleNavClick}>
           <Button className="w-full mb-4" size="sm">
             <Plus className="mr-2 h-4 w-4" />
@@ -112,6 +112,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               key={item.key}
               href={item.href}
               onClick={handleNavClick}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -142,6 +143,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   key={item.key}
                   href={item.href}
                   onClick={handleNavClick}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
                     'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
                     isActive
@@ -219,7 +221,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 // Desktop sidebar (hidden on mobile)
 export function Sidebar() {
   return (
-    <div className="hidden md:flex h-full w-64 flex-col border-r bg-card">
+    <div className="hidden md:flex h-screen sticky top-0 w-64 flex-col border-r bg-card">
       {/* Logo & Theme/Language */}
       <div className="flex h-16 items-center justify-between border-b px-4">
         <Link href="/dashboard">

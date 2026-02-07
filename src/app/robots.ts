@@ -10,10 +10,13 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/api/',
-          '/cv/*',  // User CVs are private
-          '/dashboard',
-          '/settings',
-          '/credits',
+          '/dashboard/',
+          '/settings/',
+          '/credits/',
+          '/admin/',
+          '/cv/',
+          '/profiles/',
+          '/verify-email/',
         ],
       },
     ],

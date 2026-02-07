@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BreadcrumbStructuredData } from '@/components/seo/structured-data';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -74,6 +75,11 @@ export default async function PrivacyPage({ params }: Props) {
   ] as const;
 
   return (
+    <>
+    <BreadcrumbStructuredData items={[
+      { name: 'Home', url: `/${locale}` },
+      { name: t('title'), url: `/${locale}/privacy` },
+    ]} />
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
@@ -207,5 +213,6 @@ export default async function PrivacyPage({ params }: Props) {
         </div>
       </footer>
     </div>
+    </>
   );
 }

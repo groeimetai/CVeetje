@@ -175,10 +175,13 @@ export function LoginForm() {
               id="email"
               type="email"
               placeholder="name@example.com"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'email-error' : undefined}
+              className={errors.email ? 'border-destructive' : ''}
               {...register('email')}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p id="email-error" className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
@@ -187,10 +190,13 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? 'password-error' : undefined}
+              className={errors.password ? 'border-destructive' : ''}
               {...register('password')}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+              <p id="password-error" className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
 

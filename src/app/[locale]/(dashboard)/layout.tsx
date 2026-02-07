@@ -37,16 +37,25 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-h-screen md:min-h-0">
-        <MobileHeader />
-        <main className="flex-1 overflow-auto flex flex-col">
-          <div className="container mx-auto p-4 md:p-6 flex-1">{children}</div>
-          <Footer minimal />
-        </main>
+    <>
+      <meta name="robots" content="noindex, nofollow" />
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
+      >
+        Skip to main content
+      </a>
+      <div className="min-h-screen flex flex-col md:flex-row">
+        <Sidebar />
+        <div className="flex-1 flex flex-col min-h-screen md:min-h-0">
+          <MobileHeader />
+          <main id="main-content" className="flex-1 overflow-auto flex flex-col">
+            <div className="container mx-auto p-4 md:p-6 flex-1">{children}</div>
+            <Footer minimal />
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
