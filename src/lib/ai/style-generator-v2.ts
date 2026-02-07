@@ -488,10 +488,12 @@ function validateAndFixTokens(
     console.log(`[Style Gen] Decorations set to ${tokens.decorations} for ${creativityLevel} mode`);
   }
 
-  // For creative and experimental modes, force decorations (don't allow 'none')
-  if ((creativityLevel === 'creative' || creativityLevel === 'experimental') && tokens.decorations === 'none') {
+  // For creative mode, force decorations (don't allow 'none')
+  // For experimental mode, allow the AI to choose freely — 'none' can be a valid choice
+  // (e.g., clean sidebar layouts with card sections don't need background shapes)
+  if (creativityLevel === 'creative' && tokens.decorations === 'none') {
     tokens.decorations = constraints.defaultDecorations;
-    console.log(`[Style Gen] Forcing decorations to ${tokens.decorations} for ${creativityLevel} mode (was 'none')`);
+    console.log(`[Style Gen] Forcing decorations to ${tokens.decorations} for creative mode (was 'none')`);
   }
 
   // Validate decorationTheme for creative and experimental modes
