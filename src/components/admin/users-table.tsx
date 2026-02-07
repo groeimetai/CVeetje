@@ -34,13 +34,15 @@ export function UsersTable({ users, onUserClick }: UsersTableProps) {
     return user.email?.[0]?.toUpperCase() || 'U';
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return '-';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
     return new Intl.DateTimeFormat('nl-NL', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-    }).format(date);
+    }).format(d);
   };
 
   if (users.length === 0) {

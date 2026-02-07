@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
 interface LogoProps {
@@ -21,6 +22,7 @@ const textSizeMap = {
 };
 
 export function Logo({ className, size = 'md', showText = true }: LogoProps) {
+  const gradId = useId();
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <svg
@@ -29,13 +31,13 @@ export function Logo({ className, size = 'md', showText = true }: LogoProps) {
         aria-hidden="true"
       >
         <defs>
-          <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#6366f1" />
             <stop offset="100%" stopColor="#8b5cf6" />
           </linearGradient>
         </defs>
         {/* Rounded square background */}
-        <rect width="512" height="512" rx="96" ry="96" fill="url(#logo-grad)" />
+        <rect width="512" height="512" rx="96" ry="96" fill={`url(#${gradId})`} />
         {/* Document icon */}
         <path
           d="M160 96h128l80 80v240c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V128c0-17.7 14.3-32 32-32z"
@@ -55,7 +57,7 @@ export function Logo({ className, size = 'md', showText = true }: LogoProps) {
           fontFamily="system-ui, -apple-system, sans-serif"
           fontSize="140"
           fontWeight="700"
-          fill="url(#logo-grad)"
+          fill={`url(#${gradId})`}
         >
           CV
         </text>

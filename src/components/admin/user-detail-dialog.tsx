@@ -75,15 +75,17 @@ export function UserDetailDialog({
     return user.email?.[0]?.toUpperCase() || 'U';
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return '-';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
     return new Intl.DateTimeFormat('nl-NL', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
+    }).format(d);
   };
 
   const handleToggleRole = async () => {
