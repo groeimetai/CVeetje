@@ -488,6 +488,11 @@ export function CVWizard() {
     setElementColors(newElementColors);
   };
 
+  // Handle design tokens changes from chat style tools
+  const handleTokensChange = useCallback((tokens: CVDesignTokens) => {
+    setDesignTokens(tokens);
+  }, []);
+
   const handleDownload = async (pageMode: PDFPageMode = 'multi-page') => {
     if (!cvId || credits < 1) return;
 
@@ -1005,6 +1010,7 @@ export function CVWizard() {
           onHeaderChange={handleHeaderChange}
           onColorsChange={handleColorsChange}
           onElementColorsChange={handleElementColorsChange}
+          onTokensChange={handleTokensChange}
         />
       )}
     </div>

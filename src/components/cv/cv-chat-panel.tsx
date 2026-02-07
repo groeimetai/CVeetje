@@ -7,6 +7,7 @@ import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle } from 
 import { useCVChat } from '@/hooks/use-cv-chat';
 import type { CVChatContext } from '@/types/chat';
 import type { GeneratedCVContent, ParsedLinkedIn, JobVacancy, FitAnalysis, OutputLanguage } from '@/types';
+import type { CVDesignTokens } from '@/types/design-tokens';
 
 interface CVChatPanelProps {
   isOpen: boolean;
@@ -15,8 +16,10 @@ interface CVChatPanelProps {
   jobVacancy: JobVacancy | null;
   fitAnalysis: FitAnalysis | null;
   currentContent: GeneratedCVContent;
+  currentTokens?: CVDesignTokens;
   language: OutputLanguage;
   onContentChange: (content: GeneratedCVContent) => void;
+  onTokensChange?: (tokens: CVDesignTokens) => void;
 }
 
 // Quick action suggestions
@@ -42,8 +45,10 @@ export function CVChatPanel({
   jobVacancy,
   fitAnalysis,
   currentContent,
+  currentTokens,
   language,
   onContentChange,
+  onTokensChange,
 }: CVChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -55,6 +60,7 @@ export function CVChatPanel({
     jobVacancy,
     fitAnalysis,
     currentContent,
+    currentTokens,
     language,
   };
 
@@ -67,7 +73,7 @@ export function CVChatPanel({
     error,
     append,
     clearChat,
-  } = useCVChat({ context, onContentChange });
+  } = useCVChat({ context, onContentChange, onTokensChange });
 
   // Scroll to bottom when messages change
   useEffect(() => {

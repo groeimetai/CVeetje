@@ -6,6 +6,7 @@ import type {
   GeneratedCVExperience,
   GeneratedCVSkills,
 } from './index';
+import type { CVDesignTokens } from './design-tokens';
 
 // ============ CV Chat Context ============
 
@@ -17,6 +18,7 @@ export interface CVChatContext {
   jobVacancy: JobVacancy | null;
   fitAnalysis: FitAnalysis | null;
   currentContent: GeneratedCVContent;
+  currentTokens?: CVDesignTokens;
   language: 'nl' | 'en';
 }
 
@@ -32,7 +34,13 @@ export type CVChatToolName =
   | 'update_education'
   | 'add_skill'
   | 'remove_skill'
-  | 'reorder_skills';
+  | 'reorder_skills'
+  | 'update_header_variant'
+  | 'update_colors'
+  | 'update_font_pairing'
+  | 'update_spacing'
+  | 'update_section_style'
+  | 'toggle_feature';
 
 // ============ Tool Parameters ============
 

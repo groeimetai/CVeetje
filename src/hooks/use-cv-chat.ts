@@ -5,10 +5,12 @@ import { DefaultChatTransport } from 'ai';
 import { useCallback, useRef, useState, useMemo } from 'react';
 import type { CVChatContext, CVChatToolName } from '@/types/chat';
 import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation } from '@/types';
+import type { CVDesignTokens, HeaderVariant, FontPairing, SpacingScale, SectionStyle } from '@/types/design-tokens';
 
 interface UseCVChatOptions {
   context: CVChatContext;
   onContentChange: (content: GeneratedCVContent) => void;
+  onTokensChange?: (tokens: CVDesignTokens) => void;
 }
 
 interface ToolCallArgs {
@@ -30,6 +32,78 @@ interface ToolCallArgs {
   skill?: string;
   category?: 'technical' | 'soft';
   newOrder?: string[];
+  // Style tool args
+  variant?: string;
+  primary?: string;
+  secondary?: string;
+  accent?: string;
+  text?: string;
+  muted?: string;
+  fontPairing?: string;
+  spacing?: string;
+  sectionStyle?: string;
+  feature?: string;
+  enabled?: boolean;
+}
+
+const STYLE_TOOL_NAMES: CVChatToolName[] = [
+  'update_header_variant',
+  'update_colors',
+  'update_font_pairing',
+  'update_spacing',
+  'update_section_style',
+  'toggle_feature',
+];
+
+// Apply style tool call to tokens - pure function
+function applyStyleToolCall(
+  toolName: CVChatToolName,
+  args: ToolCallArgs,
+  currentTokens: CVDesignTokens
+): CVDesignTokens | null {
+  switch (toolName) {
+    case 'update_header_variant': {
+      if (args.variant) {
+        return { ...currentTokens, headerVariant: args.variant as HeaderVariant };
+      }
+      break;
+    }
+    case 'update_colors': {
+      const newColors = { ...currentTokens.colors };
+      if (args.primary) newColors.primary = args.primary;
+      if (args.secondary) newColors.secondary = args.secondary;
+      if (args.accent) newColors.accent = args.accent;
+      if (args.text) newColors.text = args.text;
+      if (args.muted) newColors.muted = args.muted;
+      return { ...currentTokens, colors: newColors };
+    }
+    case 'update_font_pairing': {
+      if (args.fontPairing) {
+        return { ...currentTokens, fontPairing: args.fontPairing as FontPairing };
+      }
+      break;
+    }
+    case 'update_spacing': {
+      if (args.spacing) {
+        return { ...currentTokens, spacing: args.spacing as SpacingScale };
+      }
+      break;
+    }
+    case 'update_section_style': {
+      if (args.sectionStyle) {
+        return { ...currentTokens, sectionStyle: args.sectionStyle as SectionStyle };
+      }
+      break;
+    }
+    case 'toggle_feature': {
+      if (args.feature && typeof args.enabled === 'boolean') {
+        const key = args.feature as 'showPhoto' | 'useIcons' | 'roundedCorners';
+        return { ...currentTokens, [key]: args.enabled };
+      }
+      break;
+    }
+  }
+  return null;
 }
 
 // Apply tool call to content - pure function
@@ -196,14 +270,16 @@ function applyToolCallToContent(
  * Custom hook for CV chat functionality.
  * Wraps useChat and handles tool calls to update CV content.
  */
-export function useCVChat({ context, onContentChange }: UseCVChatOptions) {
+export function useCVChat({ context, onContentChange, onTokensChange }: UseCVChatOptions) {
   const [input, setInput] = useState('');
 
   // Use refs to avoid stale closures in callbacks
   const contextRef = useRef(context);
   const onContentChangeRef = useRef(onContentChange);
+  const onTokensChangeRef = useRef(onTokensChange);
   contextRef.current = context;
   onContentChangeRef.current = onContentChange;
+  onTokensChangeRef.current = onTokensChange;
 
   // Ref for addToolOutput — needed inside onToolCall which is defined before useChat returns
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -228,15 +304,32 @@ export function useCVChat({ context, onContentChange }: UseCVChatOptions) {
     onToolCall: ({ toolCall }) => {
       // Extract args from the tool call input
       const args = (toolCall as { input?: ToolCallArgs }).input || {};
+      const toolName = toolCall.toolName as CVChatToolName;
 
-      const updatedContent = applyToolCallToContent(
-        toolCall.toolName as CVChatToolName,
-        args,
-        contextRef.current.currentContent
-      );
+      let applied = false;
 
-      if (updatedContent) {
-        onContentChangeRef.current(updatedContent);
+      // Check if this is a style tool
+      if (STYLE_TOOL_NAMES.includes(toolName) && contextRef.current.currentTokens) {
+        const updatedTokens = applyStyleToolCall(
+          toolName,
+          args,
+          contextRef.current.currentTokens
+        );
+        if (updatedTokens) {
+          onTokensChangeRef.current?.(updatedTokens);
+          applied = true;
+        }
+      } else {
+        // Content tool
+        const updatedContent = applyToolCallToContent(
+          toolName,
+          args,
+          contextRef.current.currentContent
+        );
+        if (updatedContent) {
+          onContentChangeRef.current(updatedContent);
+          applied = true;
+        }
       }
 
       // Mark the tool call as completed with output so the AI SDK includes
@@ -244,7 +337,7 @@ export function useCVChat({ context, onContentChange }: UseCVChatOptions) {
       addToolOutputRef.current?.({
         tool: toolCall.toolName,
         toolCallId: (toolCall as { toolCallId: string }).toolCallId,
-        output: updatedContent
+        output: applied
           ? `Applied ${toolCall.toolName} successfully`
           : `No changes needed for ${toolCall.toolName}`,
       });

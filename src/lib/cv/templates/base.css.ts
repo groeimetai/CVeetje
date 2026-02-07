@@ -325,6 +325,7 @@ export const headerVariants = {
 
     .cv-header .header-left {
       flex: 1;
+      min-width: 0;
     }
 
     /* With photo: use flex for avatar + info layout */
@@ -341,6 +342,8 @@ export const headerVariants = {
 
     .cv-header .header-right {
       text-align: right;
+      flex-shrink: 0;
+      max-width: 45%;
     }
 
     .cv-header h1.name {
@@ -348,6 +351,7 @@ export const headerVariants = {
       font-weight: 700;
       color: var(--color-primary);
       margin-bottom: var(--space-element);
+      word-break: break-word;
     }
 
     .cv-header .headline {

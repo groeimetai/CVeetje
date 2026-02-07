@@ -11,7 +11,7 @@ import type { UIMessage } from 'ai';
 
 // Build the system prompt with full context
 function buildSystemPrompt(context: CVChatContext): string {
-  const { linkedInData, jobVacancy, fitAnalysis, currentContent, language } = context;
+  const { linkedInData, jobVacancy, fitAnalysis, currentContent, currentTokens, language } = context;
 
   const langInstructions = language === 'nl'
     ? 'Je bent een Nederlandse CV-assistent. Beantwoord in het Nederlands tenzij de gebruiker Engels spreekt.'
@@ -38,10 +38,34 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
 `
     : '';
 
+  const styleSection = currentTokens
+    ? `
+## Huidige CV Styling
+- **Theme:** ${currentTokens.themeBase}
+- **Header variant:** ${currentTokens.headerVariant}
+- **Font pairing:** ${currentTokens.fontPairing}
+- **Spacing:** ${currentTokens.spacing}
+- **Section stijl:** ${currentTokens.sectionStyle}
+- **Kleuren:** primary ${currentTokens.colors.primary}, secondary ${currentTokens.colors.secondary}, accent ${currentTokens.colors.accent}
+- **Features:** foto=${currentTokens.showPhoto}, iconen=${currentTokens.useIcons}, ronde hoeken=${currentTokens.roundedCorners}
+`
+    : '';
+
+  const styleToolsSection = currentTokens
+    ? `
+## Style Tools
+- update_header_variant: Wijzig de header layout (simple, accented, banner, split)
+- update_colors: Pas kleuren aan (primary, secondary, accent, text, muted)
+- update_font_pairing: Wijzig het lettertype
+- update_spacing: Pas de ruimte tussen elementen aan (compact, comfortable, spacious)
+- update_section_style: Wijzig de stijl van secties (clean, underlined, boxed, timeline, accent-left, card)
+- toggle_feature: Schakel features aan/uit (showPhoto, useIcons, roundedCorners)`
+    : '';
+
   return `${langInstructions}
 
 Je helpt gebruikers hun CV te verfijnen door conversationeel te praten over wijzigingen.
-Je hebt toegang tot tools om directe wijzigingen in de CV aan te brengen.
+Je hebt toegang tot tools om directe wijzigingen in de CV aan te brengen.${currentTokens ? ' Je kunt ook de visuele stijl en layout aanpassen via style tools.' : ''}
 
 ## BELANGRIJKE REGELS
 1. **Wees eerlijk** - Verzin NOOIT ervaring, skills of kwalificaties die de kandidaat niet heeft
@@ -58,6 +82,7 @@ ${linkedInData.headline ? `- **Huidige Titel:** ${linkedInData.headline}` : ''}
 - **Skills:** ${linkedInData.skills.slice(0, 10).map(s => s.name).join(', ')}
 ${jobSection}
 ${fitSection}
+${styleSection}
 
 ## Huidige CV Content
 - **Headline:** ${currentContent.headline}
@@ -66,7 +91,7 @@ ${fitSection}
 - **Technische Skills:** ${currentContent.skills.technical.slice(0, 10).join(', ')}
 - **Soft Skills:** ${currentContent.skills.soft.join(', ')}
 
-## Beschikbare Tools
+## Beschikbare Content Tools
 - update_summary: Pas de profiel samenvatting aan
 - update_headline: Wijzig de professionele headline
 - update_experience: Pas ervaring metadata aan (titel, bedrijf, periode)
@@ -77,6 +102,7 @@ ${fitSection}
 - add_skill: Voeg een skill toe
 - remove_skill: Verwijder een skill
 - reorder_skills: Herorden skills op relevantie
+${styleToolsSection}
 
 Wanneer je wijzigingen maakt:
 1. Gebruik de juiste tool
@@ -248,6 +274,61 @@ export async function POST(request: NextRequest) {
           newOrder: z.array(z.string()).describe('Volledige lijst van skills in nieuwe volgorde'),
         }),
       }),
+
+      // Style tools - only available when design tokens are present
+      ...(context.currentTokens ? {
+        update_header_variant: tool({
+          description: 'Wijzig de header layout van de CV. Kies uit: simple (simpel met lijn), accented (accent balk links), banner (volle achtergrondkleur), split (naam links, contact rechts).',
+          inputSchema: z.object({
+            variant: z.enum(['simple', 'accented', 'banner', 'split']).describe('De gewenste header variant'),
+          }),
+        }),
+
+        update_colors: tool({
+          description: 'Pas een of meer kleuren van de CV aan. Geef hex kleurwaarden op voor de kleuren die je wilt wijzigen.',
+          inputSchema: z.object({
+            primary: z.string().optional().describe('Primaire kleur voor naam en kopjes (hex, bijv. "#1a1a1a")'),
+            secondary: z.string().optional().describe('Subtiele achtergrondkleur (hex, bijv. "#f5f5f5")'),
+            accent: z.string().optional().describe('Accentkleur voor links en highlights (hex, bijv. "#0066cc")'),
+            text: z.string().optional().describe('Tekst kleur (hex, bijv. "#333333")'),
+            muted: z.string().optional().describe('Kleur voor secundaire tekst zoals datums (hex, bijv. "#666666")'),
+          }),
+        }),
+
+        update_font_pairing: tool({
+          description: 'Wijzig het lettertype van de CV.',
+          inputSchema: z.object({
+            fontPairing: z.enum([
+              'inter-inter', 'playfair-inter', 'montserrat-open-sans',
+              'raleway-lato', 'poppins-nunito', 'roboto-roboto',
+              'lato-lato', 'merriweather-source-sans', 'oswald-source-sans',
+              'dm-serif-dm-sans', 'space-grotesk-work-sans', 'libre-baskerville-source-sans',
+            ]).describe('Het gewenste lettertype paar'),
+          }),
+        }),
+
+        update_spacing: tool({
+          description: 'Pas de ruimte tussen elementen aan. Compact = meer inhoud op de pagina, spacious = meer witruimte.',
+          inputSchema: z.object({
+            spacing: z.enum(['compact', 'comfortable', 'spacious']).describe('De gewenste ruimte'),
+          }),
+        }),
+
+        update_section_style: tool({
+          description: 'Wijzig de stijl van de secties (bijv. werkervaring, opleiding). Kies uit: clean (simpel), underlined (onderstreept), boxed (in box), timeline (tijdlijn), accent-left (accent links), card (kaart).',
+          inputSchema: z.object({
+            sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card']).describe('De gewenste sectie stijl'),
+          }),
+        }),
+
+        toggle_feature: tool({
+          description: 'Schakel een visuele feature aan of uit.',
+          inputSchema: z.object({
+            feature: z.enum(['showPhoto', 'useIcons', 'roundedCorners']).describe('De feature: showPhoto (profielfoto), useIcons (iconen bij contactgegevens), roundedCorners (ronde hoeken)'),
+            enabled: z.boolean().describe('Aan (true) of uit (false)'),
+          }),
+        }),
+      } : {}),
     };
 
     // Stream the response with tools

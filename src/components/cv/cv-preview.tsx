@@ -61,6 +61,7 @@ interface CVPreviewProps {
   onHeaderChange?: (header: HeaderInfo) => void;
   onColorsChange?: (colors: CVDesignTokens['colors']) => void;
   onElementColorsChange?: (elementColors: ElementColorOverrides) => void;
+  onTokensChange?: (tokens: CVDesignTokens) => void;
 }
 
 /**
@@ -97,6 +98,7 @@ export function CVPreview({
   onHeaderChange,
   onColorsChange,
   onElementColorsChange,
+  onTokensChange,
 }: CVPreviewProps) {
   const [activeTab, setActiveTab] = useState('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -792,8 +794,10 @@ export function CVPreview({
           jobVacancy={jobVacancy || null}
           fitAnalysis={fitAnalysis || null}
           currentContent={editedContent}
+          currentTokens={effectiveTokens}
           language={language}
           onContentChange={handleContentChange}
+          onTokensChange={onTokensChange}
         />
       )}
     </div>
