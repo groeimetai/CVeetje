@@ -435,7 +435,11 @@ function expandBulletParagraphs(
   tabPos: number,
   label: string | null
 ): string {
-  const lines = value.split('\n').filter(l => l.trim());
+  const lines = value.split('\n').filter(l => {
+    const t = l.trim();
+    // Filter out empty lines and bare bullet placeholders (e.g., "-", "- ", "•")
+    return t && !/^\s*[-•]\s*$/.test(t);
+  });
   if (lines.length <= 1) return ''; // No expansion needed
 
   const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
@@ -791,7 +795,11 @@ function applyFilledSegments(
       }
 
       // Split multi-line content: first line is the value, rest are continuation paragraphs
-      const lines = effectiveValue.split('\n').filter(l => l.trim());
+      // Filter out bare dash/bullet lines that are template artifacts
+      const lines = effectiveValue.split('\n').filter(l => {
+        const t = l.trim();
+        return t && !/^\s*[-•]\s*$/.test(t);
+      });
       const firstLineValue = lines[0] || effectiveValue;
 
       // Build the tab-aligned runs for label + value
@@ -854,6 +862,11 @@ function applyFilledSegments(
         }
         let filledValue = '';
         for (const idx of tabLayout.valueMatchIndices) {
+          // Skip bullet placeholder segments — they're template artifacts (e.g., "  - ")
+          // that should not be appended to the AI-filled value
+          const seg = _segments.find(s => s.index === idx);
+          if (seg?.isBulletPlaceholder || seg?.isWhitespace) continue;
+
           const fill = filledSegments[idx.toString()];
           filledValue += fill !== undefined ? fill : matches[idx].content;
         }
@@ -890,7 +903,11 @@ function applyFilledSegments(
           : 2880;
 
         // Split multi-line content: first line goes with label, rest are continuation paragraphs
-        const lines = filledValue.split('\n').filter(l => l.trim());
+        // Filter out bare dash/bullet lines that are template artifacts
+        const lines = filledValue.split('\n').filter(l => {
+          const t = l.trim();
+          return t && !/^\s*[-•]\s*$/.test(t);
+        });
         const firstLineValue = lines[0] || filledValue;
 
         // Build the tab-aligned runs for label + value
@@ -1043,6 +1060,27 @@ function applyFilledSegments(
   return result;
 }
 
+/**
+ * Remove paragraphs whose only text content is a bullet placeholder (e.g., "    - ").
+ * These are template artifacts that remain after AI filling because they were filtered
+ * from AI input and thus never received content.
+ * Also catches colon-prefixed placeholders like ":   - " and en/em-dash variants.
+ */
+function removeEmptyBulletParagraphs(docXml: string): string {
+  return docXml.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, (paraMatch) => {
+    const textMatches = [...paraMatch.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)];
+    if (textMatches.length === 0) return paraMatch; // Keep truly empty paragraphs (spacers)
+
+    const combinedText = textMatches.map(m => m[1]).join('');
+    // Remove if combined text is just whitespace, dashes/bullets, or colon + dash
+    // Matches: "    - ", "-", "  • ", ":   - ", ": -", "–", "—"
+    if (/^\s*:?\s*[-–—•]\s*$/.test(combinedText)) {
+      return '';
+    }
+    return paraMatch;
+  });
+}
+
 // ==================== Smart Template Filling ====================
 
 /**
@@ -1139,6 +1177,9 @@ export async function fillSmartTemplate(
 
     // Apply filled segments back to the XML
     docXml = applyFilledSegments(docXml, aiResult.filledSegments, segments);
+
+    // Remove leftover bullet placeholder paragraphs (template artifacts like "    - ")
+    docXml = removeEmptyBulletParagraphs(docXml);
 
     // Count filled fields
     const filledCount = Object.keys(aiResult.filledSegments).length;
