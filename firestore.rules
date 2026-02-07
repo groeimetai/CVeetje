@@ -128,6 +128,17 @@ service cloud.firestore {
       }
     }
 
+    // ============ Global Templates Collection ============
+    // /globalTemplates/{templateId}
+    //
+    // Read: any authenticated user (they need to list assigned templates)
+    // Write: admin only (via Admin SDK, so blocked here for safety)
+
+    match /globalTemplates/{templateId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only via Admin SDK
+    }
+
     // ============ Default Deny ============
     // Deny all other access by default
 

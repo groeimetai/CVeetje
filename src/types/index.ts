@@ -79,6 +79,7 @@ export interface User {
   disabled?: boolean;                // Account disabled by admin
   disabledAt?: Timestamp;            // When the account was disabled
   disabledReason?: string;           // Reason for disabling
+  assignedTemplates?: string[];      // IDs from globalTemplates collection
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -998,6 +999,19 @@ export interface MotivationLetterResponse {
   error?: string;
 }
 
+// ============ Global Template Types ============
+
+export interface GlobalTemplate {
+  id: string;
+  name: string;
+  fileName: string;
+  storagePath: string;
+  storageUrl?: string;
+  uploadedBy: string;
+  uploadedAt: Date | Timestamp;
+  fileSize: number;
+}
+
 // ============ PDF/DOCX Template Types ============
 
 // Supported template file types
@@ -1065,6 +1079,8 @@ export interface PDFTemplateSummary {
   fieldCount: number;
   placeholderCount?: number;           // For DOCX templates
   autoAnalyzed?: boolean;
+  isGlobal?: boolean;                  // True if this is a global template assigned by admin
+  globalTemplateId?: string;           // ID in globalTemplates collection
   updatedAt: Date;
 }
 

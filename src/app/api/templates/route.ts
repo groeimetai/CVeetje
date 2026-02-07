@@ -61,6 +61,39 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Fetch assigned global templates
+    const userDoc = await db.collection('users').doc(userId).get();
+    const assignedTemplateIds: string[] = userDoc.data()?.assignedTemplates || [];
+
+    if (assignedTemplateIds.length > 0) {
+      // Fetch global templates in batches of 10 (Firestore 'in' limit)
+      for (let i = 0; i < assignedTemplateIds.length; i += 10) {
+        const batch = assignedTemplateIds.slice(i, i + 10);
+        const globalSnapshot = await db.collection('globalTemplates')
+          .where('__name__', 'in', batch)
+          .get();
+
+        globalSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const fileName = data.fileName || '';
+          const fileType = fileName.toLowerCase().endsWith('.pdf') ? 'pdf' as const : 'docx' as const;
+          templates.push({
+            id: doc.id,
+            name: data.name,
+            fileName,
+            fileType,
+            pageCount: 1,
+            fieldCount: 0,
+            placeholderCount: 0,
+            autoAnalyzed: true,
+            isGlobal: true,
+            globalTemplateId: doc.id,
+            updatedAt: data.uploadedAt instanceof Date ? data.uploadedAt : data.uploadedAt?.toDate?.() || new Date(),
+          });
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       templates,

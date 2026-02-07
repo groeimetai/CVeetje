@@ -31,19 +31,59 @@ export async function GET(
 
     const db = getAdminDb();
 
-    // Get the template
-    const templateDoc = await db
+    // Get the template - first try personal collection
+    let templateDoc = await db
       .collection('users')
       .doc(userId)
       .collection('templates')
       .doc(id)
       .get();
 
+    let isGlobal = false;
+
+    // If not found in personal, check globalTemplates (if user has it assigned)
     if (!templateDoc.exists) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      const userDoc = await db.collection('users').doc(userId).get();
+      const assignedTemplates: string[] = userDoc.data()?.assignedTemplates || [];
+
+      if (assignedTemplates.includes(id)) {
+        templateDoc = await db.collection('globalTemplates').doc(id).get();
+        isGlobal = true;
+      }
+
+      if (!templateDoc.exists) {
+        return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      }
     }
 
     const data = templateDoc.data();
+
+    if (isGlobal) {
+      // Return global template with adapted shape
+      const fileName = data?.fileName || '';
+      const fileType = fileName.toLowerCase().endsWith('.pdf') ? 'pdf' : 'docx';
+      const template: PDFTemplate = {
+        id: templateDoc.id,
+        name: data?.name,
+        fileName,
+        fileType: fileType as 'pdf' | 'docx',
+        storageUrl: data?.storageUrl,
+        pageCount: 1,
+        fields: [],
+        placeholders: [],
+        autoAnalyzed: true,
+        createdAt: data?.uploadedAt instanceof Date ? data.uploadedAt : data?.uploadedAt?.toDate?.() || new Date(),
+        updatedAt: data?.uploadedAt instanceof Date ? data.uploadedAt : data?.uploadedAt?.toDate?.() || new Date(),
+        userId: data?.uploadedBy,
+      };
+
+      return NextResponse.json({
+        success: true,
+        template,
+        isGlobal: true,
+      });
+    }
+
     const template: PDFTemplate = {
       id: templateDoc.id,
       name: data?.name,
@@ -101,6 +141,12 @@ export async function PATCH(
     const db = getAdminDb();
     const body = await request.json();
     const { name, fields } = body as { name?: string; fields?: PDFTemplateField[] };
+
+    // Check if this is a global template (block modification)
+    const globalDoc = await db.collection('globalTemplates').doc(id).get();
+    if (globalDoc.exists) {
+      return NextResponse.json({ error: 'Cannot modify a global template' }, { status: 403 });
+    }
 
     // Get the template to verify ownership
     const templateRef = db
@@ -184,6 +230,12 @@ export async function DELETE(
     }
 
     const db = getAdminDb();
+
+    // Check if this is a global template (block deletion via user API)
+    const globalDoc = await db.collection('globalTemplates').doc(id).get();
+    if (globalDoc.exists) {
+      return NextResponse.json({ error: 'Cannot delete a global template' }, { status: 403 });
+    }
 
     // Get the template to verify ownership and get storage URL
     const templateRef = db

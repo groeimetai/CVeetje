@@ -46,6 +46,7 @@
     "credits": "Credits",
     "settings": "Settings",
     "newCv": "New CV",
+    "templates": "Templates",
     "accountSettings": "Account Settings",
     "signOut": "Sign Out",
     "admin": "Admin",
@@ -593,6 +594,29 @@
       }
     }
   },
+  "templatesPage": {
+    "title": "Templates",
+    "description": "Manage your templates for filling CVs",
+    "myTemplates": "My Templates",
+    "myTemplatesDescription": "Templates you uploaded yourself",
+    "assignedTemplates": "Assigned Templates",
+    "assignedTemplatesDescription": "Templates assigned to you by an administrator",
+    "upload": "Upload Template",
+    "uploading": "Uploading...",
+    "rename": "Rename",
+    "renaming": "Renaming...",
+    "delete": "Delete",
+    "preview": "Preview",
+    "newName": "New name",
+    "emptyPersonal": "You don't have any templates yet. Upload a DOCX template to get started.",
+    "emptyAssigned": "No templates have been assigned to you.",
+    "confirmDelete": "Are you sure you want to delete this template?",
+    "maxReached": "You have reached the maximum number of templates ({max})",
+    "uploadSuccess": "Template uploaded successfully",
+    "renameSuccess": "Template renamed",
+    "deleteSuccess": "Template deleted",
+    "assignedBadge": "Assigned"
+  },
   "cvWizard": {
     "steps": {
       "profile": "Profile",
@@ -973,7 +997,30 @@
       "deleteConfirmTitle": "Delete User?",
       "deleteConfirmDesc": "Are you sure you want to permanently delete {email}? This will remove all their CVs, profiles, and data. This action cannot be undone.",
       "cancel": "Cancel",
-      "confirmDelete": "Yes, Delete"
+      "confirmDelete": "Yes, Delete",
+      "templates": "Templates",
+      "assignTemplates": "Assign templates",
+      "noGlobalTemplates": "No global templates available. Upload templates in the admin panel first.",
+      "templatesSave": "Save",
+      "templatesSaved": "Templates saved",
+      "templatesSaving": "Saving..."
+    },
+    "globalTemplates": {
+      "title": "Global Templates",
+      "description": "Manage templates that can be assigned to users",
+      "upload": "Upload Template",
+      "uploading": "Uploading...",
+      "rename": "Rename",
+      "delete": "Delete",
+      "confirmDelete": "Are you sure you want to delete this global template? Users who have been assigned this template will no longer have access to it.",
+      "assignedTo": "Assigned to {count} user(s)",
+      "noTemplates": "No global templates yet. Upload a template to get started.",
+      "uploadSuccess": "Global template uploaded successfully",
+      "renameSuccess": "Template renamed",
+      "deleteSuccess": "Template deleted",
+      "fileName": "File name",
+      "fileSize": "File size",
+      "uploadedAt": "Uploaded at"
     }
   },
   "metadata": {

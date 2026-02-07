@@ -108,8 +108,8 @@ export async function POST(
     const { provider, encryptedKey, model } = userData.apiKey;
     const apiKey = decrypt(encryptedKey);
 
-    // Get the template
-    const templateDoc = await db
+    // Get the template - try personal first, then global
+    let templateDoc = await db
       .collection('users')
       .doc(userId)
       .collection('templates')
@@ -117,7 +117,17 @@ export async function POST(
       .get();
 
     if (!templateDoc.exists) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      // Check if this is an assigned global template
+      const userDoc2 = await db.collection('users').doc(userId).get();
+      const assignedTemplates: string[] = userDoc2.data()?.assignedTemplates || [];
+
+      if (assignedTemplates.includes(id)) {
+        templateDoc = await db.collection('globalTemplates').doc(id).get();
+      }
+
+      if (!templateDoc.exists) {
+        return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      }
     }
 
     const templateData = templateDoc.data();

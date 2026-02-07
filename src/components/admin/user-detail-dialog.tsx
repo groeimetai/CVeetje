@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Dialog,
@@ -38,8 +38,10 @@ import {
   Mail,
   Calendar,
   CreditCard,
+  FileText,
 } from 'lucide-react';
 import type { AdminUser } from '@/lib/firebase/admin-utils';
+import type { GlobalTemplate } from '@/types';
 
 interface UserDetailDialogProps {
   user: AdminUser | null;
@@ -60,6 +62,41 @@ export function UserDetailDialog({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [disableReason, setDisableReason] = useState('');
   const [addCredits, setAddCredits] = useState('');
+  const [globalTemplates, setGlobalTemplates] = useState<GlobalTemplate[]>([]);
+  const [assignedTemplateIds, setAssignedTemplateIds] = useState<string[]>([]);
+  const [templatesSaving, setTemplatesSaving] = useState(false);
+  const [templatesLoaded, setTemplatesLoaded] = useState(false);
+
+  // Fetch global templates and user assignments when dialog opens
+  useEffect(() => {
+    if (!user || !open) return;
+    setTemplatesLoaded(false);
+
+    const fetchTemplateData = async () => {
+      try {
+        const [globalRes, assignedRes] = await Promise.all([
+          fetch('/api/admin/templates'),
+          fetch(`/api/admin/users/${user.uid}/templates`),
+        ]);
+
+        if (globalRes.ok) {
+          const globalData = await globalRes.json();
+          setGlobalTemplates(globalData.templates || []);
+        }
+
+        if (assignedRes.ok) {
+          const assignedData = await assignedRes.json();
+          setAssignedTemplateIds(assignedData.assignedTemplates || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch template data:', error);
+      } finally {
+        setTemplatesLoaded(true);
+      }
+    };
+
+    fetchTemplateData();
+  }, [user, open]);
 
   if (!user) return null;
 
@@ -151,6 +188,32 @@ export function UserDetailDialog({
       console.error('Failed to update credits:', error);
     } finally {
       setCreditsLoading(false);
+    }
+  };
+
+  const handleToggleTemplate = (templateId: string) => {
+    setAssignedTemplateIds(prev =>
+      prev.includes(templateId)
+        ? prev.filter(id => id !== templateId)
+        : [...prev, templateId]
+    );
+  };
+
+  const handleSaveTemplates = async () => {
+    setTemplatesSaving(true);
+    try {
+      const response = await fetch(`/api/admin/users/${user.uid}/templates`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignedTemplates: assignedTemplateIds }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save templates');
+      onUserUpdated();
+    } catch (error) {
+      console.error('Failed to save templates:', error);
+    } finally {
+      setTemplatesSaving(false);
     }
   };
 
@@ -289,6 +352,58 @@ export function UserDetailDialog({
                 )}
               </Button>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Templates Section */}
+          <div className="space-y-4">
+            <h3 className="font-semibold flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              {t('userDialog.templates')}
+            </h3>
+            {!templatesLoaded ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : globalTemplates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('userDialog.noGlobalTemplates')}</p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">{t('userDialog.assignTemplates')}</p>
+                <div className="space-y-2">
+                  {globalTemplates.map((template) => (
+                    <label
+                      key={template.id}
+                      className="flex items-center gap-3 p-2 rounded-md hover:bg-accent cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={assignedTemplateIds.includes(template.id)}
+                        onChange={() => handleToggleTemplate(template.id)}
+                        className="h-4 w-4 rounded border-input"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{template.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{template.fileName}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <Button
+                  onClick={handleSaveTemplates}
+                  disabled={templatesSaving}
+                  size="sm"
+                >
+                  {templatesSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-1" />
+                  )}
+                  {templatesSaving ? t('userDialog.templatesSaving') : t('userDialog.templatesSave')}
+                </Button>
+              </>
+            )}
           </div>
 
           <Separator />

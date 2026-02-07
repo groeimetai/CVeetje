@@ -36,33 +36,67 @@ export async function POST(
 
     const db = getAdminDb();
 
-    // Get the template
-    const templateDoc = await db
+    // Get the template - try personal first, then global
+    let templateDoc = await db
       .collection('users')
       .doc(userId)
       .collection('templates')
       .doc(id)
       .get();
 
+    let isGlobalTemplate = false;
+
     if (!templateDoc.exists) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      // Check if this is an assigned global template
+      const userDoc2 = await db.collection('users').doc(userId).get();
+      const assignedTemplates: string[] = userDoc2.data()?.assignedTemplates || [];
+
+      if (assignedTemplates.includes(id)) {
+        templateDoc = await db.collection('globalTemplates').doc(id).get();
+        isGlobalTemplate = true;
+      }
+
+      if (!templateDoc.exists) {
+        return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      }
     }
 
     const templateData = templateDoc.data();
-    const template: PDFTemplate = {
-      id: templateDoc.id,
-      name: templateData?.name,
-      fileName: templateData?.fileName,
-      fileType: templateData?.fileType || 'pdf', // Default to pdf for backwards compatibility
-      storageUrl: templateData?.storageUrl,
-      pageCount: templateData?.pageCount,
-      fields: templateData?.fields || [],
-      placeholders: templateData?.placeholders || [],
-      autoAnalyzed: templateData?.autoAnalyzed || false,
-      createdAt: templateData?.createdAt,
-      updatedAt: templateData?.updatedAt,
-      userId: templateData?.userId,
-    };
+
+    let template: PDFTemplate;
+    if (isGlobalTemplate) {
+      const fileName = templateData?.fileName || '';
+      const fileType = fileName.toLowerCase().endsWith('.pdf') ? 'pdf' as const : 'docx' as const;
+      template = {
+        id: templateDoc.id,
+        name: templateData?.name,
+        fileName,
+        fileType,
+        storageUrl: templateData?.storageUrl,
+        pageCount: 1,
+        fields: [],
+        placeholders: [],
+        autoAnalyzed: true,
+        createdAt: templateData?.uploadedAt,
+        updatedAt: templateData?.uploadedAt,
+        userId: templateData?.uploadedBy,
+      };
+    } else {
+      template = {
+        id: templateDoc.id,
+        name: templateData?.name,
+        fileName: templateData?.fileName,
+        fileType: templateData?.fileType || 'pdf',
+        storageUrl: templateData?.storageUrl,
+        pageCount: templateData?.pageCount,
+        fields: templateData?.fields || [],
+        placeholders: templateData?.placeholders || [],
+        autoAnalyzed: templateData?.autoAnalyzed || false,
+        createdAt: templateData?.createdAt,
+        updatedAt: templateData?.updatedAt,
+        userId: templateData?.userId,
+      };
+    }
 
     // Parse query parameters
     const url = new URL(request.url);

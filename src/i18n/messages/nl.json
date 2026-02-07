@@ -46,6 +46,7 @@
     "credits": "Credits",
     "settings": "Instellingen",
     "newCv": "Nieuwe CV",
+    "templates": "Templates",
     "accountSettings": "Account Instellingen",
     "signOut": "Uitloggen",
     "admin": "Admin",
@@ -593,6 +594,29 @@
       }
     }
   },
+  "templatesPage": {
+    "title": "Templates",
+    "description": "Beheer je templates voor het invullen van CVs",
+    "myTemplates": "Mijn Templates",
+    "myTemplatesDescription": "Templates die je zelf hebt geüpload",
+    "assignedTemplates": "Toegewezen Templates",
+    "assignedTemplatesDescription": "Templates die door de beheerder aan jou zijn toegewezen",
+    "upload": "Template Uploaden",
+    "uploading": "Uploaden...",
+    "rename": "Hernoemen",
+    "renaming": "Hernoemen...",
+    "delete": "Verwijderen",
+    "preview": "Preview",
+    "newName": "Nieuwe naam",
+    "emptyPersonal": "Je hebt nog geen eigen templates. Upload een DOCX template om te beginnen.",
+    "emptyAssigned": "Er zijn geen templates aan je toegewezen.",
+    "confirmDelete": "Weet je zeker dat je deze template wilt verwijderen?",
+    "maxReached": "Je hebt het maximum aantal templates bereikt ({max})",
+    "uploadSuccess": "Template succesvol geüpload",
+    "renameSuccess": "Template hernoemd",
+    "deleteSuccess": "Template verwijderd",
+    "assignedBadge": "Toegewezen"
+  },
   "cvWizard": {
     "steps": {
       "profile": "Profiel",
@@ -973,7 +997,30 @@
       "deleteConfirmTitle": "Gebruiker Verwijderen?",
       "deleteConfirmDesc": "Weet je zeker dat je {email} permanent wilt verwijderen? Dit verwijdert al hun CVs, profielen en gegevens. Deze actie kan niet ongedaan worden gemaakt.",
       "cancel": "Annuleren",
-      "confirmDelete": "Ja, Verwijderen"
+      "confirmDelete": "Ja, Verwijderen",
+      "templates": "Templates",
+      "assignTemplates": "Templates toewijzen",
+      "noGlobalTemplates": "Geen globale templates beschikbaar. Upload eerst templates in het admin paneel.",
+      "templatesSave": "Opslaan",
+      "templatesSaved": "Templates opgeslagen",
+      "templatesSaving": "Opslaan..."
+    },
+    "globalTemplates": {
+      "title": "Globale Templates",
+      "description": "Beheer templates die aan gebruikers kunnen worden toegewezen",
+      "upload": "Template Uploaden",
+      "uploading": "Uploaden...",
+      "rename": "Hernoemen",
+      "delete": "Verwijderen",
+      "confirmDelete": "Weet je zeker dat je deze globale template wilt verwijderen? Gebruikers die deze template toegewezen hebben gekregen zullen er geen toegang meer toe hebben.",
+      "assignedTo": "Toegewezen aan {count} gebruiker(s)",
+      "noTemplates": "Nog geen globale templates. Upload een template om te beginnen.",
+      "uploadSuccess": "Globale template succesvol geüpload",
+      "renameSuccess": "Template hernoemd",
+      "deleteSuccess": "Template verwijderd",
+      "fileName": "Bestandsnaam",
+      "fileSize": "Bestandsgrootte",
+      "uploadedAt": "Geüpload op"
     }
   },
   "metadata": {

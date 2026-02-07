@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { UsersTable } from '@/components/admin/users-table';
 import { UserDetailDialog } from '@/components/admin/user-detail-dialog';
+import { GlobalTemplatesSection } from '@/components/admin/global-templates-section';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -190,6 +191,9 @@ export default function AdminPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Global Templates Section */}
+      <GlobalTemplatesSection />
 
       {/* User Detail Dialog */}
       <UserDetailDialog
