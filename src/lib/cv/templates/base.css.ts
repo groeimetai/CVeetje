@@ -354,9 +354,13 @@ export const headerVariants = {
     }
 
     .cv-header .header-right {
-      text-align: right;
       flex-shrink: 0;
       max-width: 40%;
+    }
+
+    /* Contact items stay left-aligned; the block itself is pushed right by space-between */
+    .cv-header .header-right .contact-info {
+      text-align: left;
     }
 
     .cv-header h1.name {
@@ -987,11 +991,11 @@ export const sidebarLayoutCSS = `
     text-align: left;
   }
 
-  /* Prevent skill tags from overflowing narrow sidebar */
+  /* Skill tags in sidebar: allow full text, wrap long words */
   .cv-sidebar .skill-tag {
     max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    white-space: normal;
   }
 
   /* Force single column for list display in narrow sidebar */
