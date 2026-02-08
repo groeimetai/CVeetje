@@ -356,11 +356,18 @@ export const headerVariants = {
     .cv-header .header-right {
       flex-shrink: 0;
       max-width: 40%;
+      min-width: 0;
     }
 
     /* Contact items stay left-aligned; the block itself is pushed right by space-between */
     .cv-header .header-right .contact-info {
       text-align: left;
+    }
+
+    /* Break long URLs so they don't overflow the header-right boundary */
+    .cv-header .header-right .contact-item {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .cv-header h1.name {
