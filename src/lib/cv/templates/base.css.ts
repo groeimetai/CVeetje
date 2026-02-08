@@ -148,6 +148,8 @@ export const headerVariants = {
       font-weight: 700;
       color: var(--color-primary);
       margin-bottom: var(--space-element);
+      word-break: normal;
+      overflow-wrap: break-word;
     }
 
     .cv-header .headline {
@@ -197,6 +199,8 @@ export const headerVariants = {
       font-weight: 700;
       color: var(--color-primary);
       margin-bottom: var(--space-element);
+      word-break: normal;
+      overflow-wrap: break-word;
     }
 
     .cv-header .headline {
@@ -251,6 +255,8 @@ export const headerVariants = {
       font-weight: 700;
       color: #ffffff;
       margin-bottom: var(--space-element);
+      word-break: normal;
+      overflow-wrap: break-word;
     }
 
     .cv-header .headline {
@@ -289,6 +295,13 @@ export const headerVariants = {
 
     .cv-container.full-bleed-mode .section:last-child {
       margin-bottom: 15mm;
+    }
+
+    /* Guard: reset full-bleed section margins when sidebar layout is active */
+    .cv-container.full-bleed-mode .cv-body.sidebar-left .section,
+    .cv-container.full-bleed-mode .cv-body.sidebar-right .section {
+      margin-left: 0;
+      margin-right: 0;
     }
 
     /* Page margins for full-bleed PDF */
@@ -925,19 +938,32 @@ export const sidebarLayoutCSS = `
     grid-template-columns: 1fr 240px;
   }
 
-  /* sidebar-left: sidebar visually moves to the first (240px) column */
+  /* Tighter gap between main and sidebar columns */
+  .cv-body.sidebar-left,
+  .cv-body.sidebar-right {
+    gap: 16px;
+  }
+
+  /* sidebar-left: sidebar visually moves to the first (280px) column */
   .cv-body.sidebar-left .cv-sidebar {
     order: -1;
   }
 
   .cv-sidebar {
     background: var(--color-secondary);
-    padding: var(--space-item);
+    padding: var(--space-element) var(--space-item);
     border-radius: var(--radius);
   }
 
+  /* Reset section card/box/accent styling inside sidebar — sidebar provides its own container */
   .cv-sidebar .section {
-    margin-bottom: var(--space-item);
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    border-left: none;
+    border-radius: 0;
+    margin-bottom: var(--space-element);
   }
 
   .cv-sidebar .section:last-child {
@@ -948,7 +974,7 @@ export const sidebarLayoutCSS = `
     font-size: var(--size-small);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: var(--space-element);
+    margin-bottom: 4px;
   }
 
   /* Sidebar-specific: stack title and date vertically in narrow column */
@@ -968,8 +994,15 @@ export const sidebarLayoutCSS = `
     text-overflow: ellipsis;
   }
 
+  /* Force single column for list display in narrow sidebar */
   .cv-sidebar .skills-container {
-    columns: 1;
+    columns: 1 !important;
+    column-gap: 0;
+  }
+
+  /* Compact skills: ensure inline flow works in sidebar */
+  .cv-sidebar .skill-item {
+    word-break: break-word;
   }
 
   @media print {

@@ -243,5 +243,30 @@ export function validateAndFixColorContrast(
     fixes.push(`Lightened secondary background color`);
   }
 
+  // Text-on-secondary contrast checks (for boxed sections and sidebar backgrounds)
+  const textOnSecondary = getContrastRatio(result.text, result.secondary);
+  if (textOnSecondary < 4.5) {
+    // Lighten secondary to restore contrast rather than darkening text
+    result.secondary = lightenColor(result.secondary, 30);
+    if (getContrastRatio(result.text, result.secondary) < 4.5) {
+      result.secondary = lightenColor(result.secondary, 50);
+    }
+    fixes.push(`Lightened secondary for text readability (was ${textOnSecondary.toFixed(1)}:1)`);
+  }
+
+  // Primary headings on secondary background (min 3:1 for large text)
+  const primaryOnSecondary = getContrastRatio(result.primary, result.secondary);
+  if (primaryOnSecondary < 3) {
+    result.secondary = lightenColor(result.secondary, 30);
+    fixes.push(`Lightened secondary for heading contrast (was ${primaryOnSecondary.toFixed(1)}:1)`);
+  }
+
+  // Muted text on secondary background (min 3:1)
+  const mutedOnSecondary = getContrastRatio(result.muted, result.secondary);
+  if (mutedOnSecondary < 3) {
+    result.muted = ensureContrast(result.muted, result.secondary, 3);
+    fixes.push(`Adjusted muted color for secondary background contrast`);
+  }
+
   return { colors: result, fixes };
 }

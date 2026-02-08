@@ -15,6 +15,7 @@ import type {
   LLMProvider,
   OutputLanguage,
 } from '@/types';
+import type { CVDesignTokens } from '@/types/design-tokens';
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,12 +68,14 @@ export async function POST(request: NextRequest) {
       linkedInData,
       jobVacancy,
       styleConfig,
+      designTokens,
       avatarUrl,
       language = 'nl',
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
       styleConfig: CVStyleConfig;
+      designTokens?: CVDesignTokens;
       avatarUrl?: string | null;
       language?: OutputLanguage;
     };
@@ -124,7 +127,8 @@ export async function POST(request: NextRequest) {
       apiKey,
       model,
       styleConfig,
-      language
+      language,
+      designTokens?.experienceDescriptionFormat || 'bullets'
     );
 
     // Create CV document in Firestore

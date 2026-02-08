@@ -14,6 +14,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { withRetry } from './retry';
 import type {
   JobVacancy,
   LLMProvider,
@@ -114,7 +115,7 @@ const designTokensSchema = z.object({
     .describe('Skill tag variant: filled (default bg), outlined (border only), pill (fully rounded)'),
 });
 
-// Extended schema for creative mode - includes decorationTheme
+// Extended schema for creative mode - includes decorationTheme, layout, sidebarSections
 const creativeTokensSchema = designTokensSchema.extend({
   decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract'])
     .describe(`Industry-based decoration theme:
@@ -124,6 +125,10 @@ const creativeTokensSchema = designTokensSchema.extend({
     - tech: Software/Data/AI - code brackets, nodes, digital patterns
     - creative: Design/Marketing/Art - bold abstract shapes, splashes, dynamic forms
     - abstract: General/Versatile - balanced mix of geometric patterns`),
+  layout: z.enum(['single-column', 'sidebar-left', 'sidebar-right']).optional()
+    .describe('Page layout: single-column (classic), sidebar-left (sidebar on left with skills/languages/certs), sidebar-right (sidebar on right). Optional — use sidebar for extra visual impact.'),
+  sidebarSections: z.array(z.string()).optional()
+    .describe('Which sections go in the sidebar (default: skills, languages, certifications). Only used with sidebar layouts.'),
 });
 
 // Extended schema for experimental mode - includes layout and custom decorations
@@ -152,10 +157,10 @@ Make them SUBTLE and PROFESSIONAL, not literal clipart!`),
 // ============ Temperature by Creativity Level ============
 
 const temperatureMap: Record<StyleCreativityLevel, number> = {
-  conservative: 0.3,
+  conservative: 0.2,
   balanced: 0.5,
-  creative: 0.7,
-  experimental: 0.9,
+  creative: 0.8,
+  experimental: 1.0,
 };
 
 // ============ System Prompt ============
@@ -221,12 +226,23 @@ AVAILABLE OPTIONS (choose freely, mix and match):
 - decorations: 'moderate' recommended (noticeable background shapes)
 - contactLayout: any option — single-row, double-row, single-column, double-column
 
+LAYOUT OPTIONS:
+- 'single-column': classic single column layout
+- 'sidebar-left': sidebar on the left with skills/languages/certs — creates a dashboard feel
+- 'sidebar-right': sidebar on the right — modern magazine layout
+- If using a sidebar, set sidebarSections to ['skills', 'languages', 'certifications'] (NEVER put experience, summary, or education in sidebar)
+
 EXTENDED STYLING (use these for variety!):
 - accentStyle: 'none', 'border-left' (accent line on summary), 'background' (subtle bg on summary), 'quote' (italic with border)
 - borderRadius: 'none' through 'pill' — experiment with rounded corners
 - nameStyle: 'normal', 'uppercase' (with letter-spacing), 'extra-bold' (weight 900)
 - skillTagStyle: 'filled' (default), 'outlined' (border only, no fill), 'pill' (fully rounded)
 - pageBackground: optional very light tinted background (e.g. #faf8f5 for warm, #f0f4f8 for cool)
+
+ANTI-BORING RULES:
+- FORBIDDEN: the combination of clean sections + simple header + inter-inter font. This is too plain for creative mode!
+- REQUIRED: at least 1 of accentStyle/nameStyle/skillTagStyle must NOT be its default value
+- MUST USE at least 1 of: banner/split header, card/accent-left/timeline sections, or a serif/display font pairing
 
 ENCOURAGE UNEXPECTED COMBINATIONS:
 - Serif heading + card sections + outlined skill tags
@@ -251,7 +267,7 @@ Your PRIMARY goal: every CV must look UNIQUE. No two experimental CVs should fee
 YOU HAVE FULL CREATIVE FREEDOM. Choose freely from ALL available options:
 
 THEMES: any of ${constraints.allowedThemes.join(', ')}
-FONTS: all 12 pairings — especially consider:
+FONTS: all 12 pairings — PREFER display/serif fonts for maximum impact:
   - 'oswald-source-sans': condensed, high-impact headings
   - 'dm-serif-dm-sans': warm, editorial feel
   - 'space-grotesk-work-sans': techy, modern startup vibe
@@ -272,16 +288,22 @@ SECTION STYLES: clean, underlined, boxed, timeline, accent-left, card
 
 LAYOUT: 'single-column', 'sidebar-left', 'sidebar-right'
   - Sidebar layouts place skills/languages/certifications in a sidebar column
-  - Consider 'sidebar-right' for a modern magazine layout
-  - Consider 'sidebar-left' for a dashboard-style layout
-  - Set sidebarSections to control which sections go in the sidebar (default: skills, languages, certifications)
+  - RECOMMENDED: use sidebar-left or sidebar-right for distinctive layout (unless you have a strong reason not to)
+  - Set sidebarSections to ['skills', 'languages', 'certifications'] (NEVER put experience, summary, or education in sidebar)
 
-EXTENDED STYLING (use these to create variety!):
-- accentStyle: 'border-left', 'background', 'quote' — adds character to the summary section
-- borderRadius: 'none' to 'pill' — sharp corners feel different from pill-shaped tags
-- nameStyle: 'uppercase' (letter-spacing), 'extra-bold' (weight 900), 'normal'
-- skillTagStyle: 'outlined' (border-only tags), 'pill' (fully rounded), 'filled'
-- pageBackground: subtle tinted background (e.g. #faf8f5 warm, #f5f0eb cream, #f0f4f8 cool blue)
+MANDATORY RULES FOR EXPERIMENTAL MODE:
+- REQUIRED: accentStyle, nameStyle, AND skillTagStyle must ALL be set to non-default values (not 'none'/'normal'/'filled')
+- REQUIRED: pageBackground must be a tinted color (not plain white) — e.g. #faf8f5 warm, #f5f0eb cream, #f0f4f8 cool blue
+- REQUIRED: borderRadius must be 'medium', 'large', or 'pill' (not 'none' or 'small')
+- FORBIDDEN: inter-inter font + simple header + clean sections — this is far too plain for experimental!
+- RECOMMENDED: sidebar layout unless there's a compelling reason for single-column
+
+EXTENDED STYLING (ALL required for experimental!):
+- accentStyle: 'border-left', 'background', or 'quote' (NOT 'none')
+- borderRadius: 'medium', 'large', or 'pill' (NOT 'none' or 'small')
+- nameStyle: 'uppercase' or 'extra-bold' (NOT 'normal')
+- skillTagStyle: 'outlined' or 'pill' (NOT 'filled')
+- pageBackground: subtle tinted background (REQUIRED — e.g. #faf8f5 warm, #f5f0eb cream, #f0f4f8 cool blue)
 
 EXAMPLE COMBINATIONS (for inspiration, don't copy exactly):
 1. Sidebar-right + accented header + card sections + pill skill tags + dm-serif-dm-sans
@@ -456,6 +478,7 @@ export async function generateDesignTokens(
     console.log(`[Style Gen] Starting LLM call: creativity=${creativityLevel}, hasPhoto=${hasPhoto}, temp=${temperature}`);
 
     // Select schema based on creativity level
+    // Creative and experimental both get layout/sidebar support
     const schema = creativityLevel === 'experimental'
       ? experimentalTokensSchema
       : creativityLevel === 'creative'
@@ -464,13 +487,15 @@ export async function generateDesignTokens(
 
     console.log(`[Style Gen] Using schema: ${creativityLevel === 'experimental' ? 'experimental' : creativityLevel === 'creative' ? 'creative' : 'base'}`);
 
-    const result = await generateObject({
-      model: aiProvider(modelId),
-      schema,
-      system: systemPrompt,
-      prompt: userPrompt,
-      temperature,
-    });
+    const result = await withRetry(() =>
+      generateObject({
+        model: aiProvider(modelId),
+        schema,
+        system: systemPrompt,
+        prompt: userPrompt,
+        temperature,
+      })
+    );
 
     console.log(`[Style Gen] LLM returned:`, JSON.stringify(result.object, null, 2));
 
@@ -608,6 +633,40 @@ function validateAndFixTokens(
     tokens.skillTagStyle = undefined;
   }
 
+  // === 1A: Block dangerous token combinations ===
+
+  // Sidebar + spacious + large = too narrow for main content
+  const hasSidebar = tokens.layout === 'sidebar-left' || tokens.layout === 'sidebar-right';
+  if (hasSidebar) {
+    if (tokens.spacing === 'spacious' && tokens.scale === 'large') {
+      tokens.spacing = 'comfortable';
+      tokens.scale = 'medium';
+      console.log('[Style Gen] Downgraded spacious+large to comfortable+medium for sidebar layout');
+    } else if (tokens.spacing === 'spacious') {
+      tokens.spacing = 'comfortable';
+      console.log('[Style Gen] Downgraded spacious to comfortable for sidebar layout');
+    } else if (tokens.scale === 'large') {
+      tokens.scale = 'medium';
+      console.log('[Style Gen] Downgraded large to medium for sidebar layout');
+    }
+  }
+
+  // Banner full-bleed + sidebar = conflicting margins
+  if (tokens.headerFullBleed && hasSidebar) {
+    tokens.headerFullBleed = false;
+    console.log('[Style Gen] Disabled headerFullBleed — conflicts with sidebar layout');
+  }
+
+  // Long-form content should never go in the narrow sidebar
+  if (tokens.sidebarSections && tokens.sidebarSections.length > 0) {
+    const heavySections = ['experience', 'summary', 'education'];
+    const filtered = tokens.sidebarSections.filter(s => !heavySections.includes(s));
+    if (filtered.length !== tokens.sidebarSections.length) {
+      console.log(`[Style Gen] Removed heavy sections from sidebar: ${tokens.sidebarSections.filter(s => heavySections.includes(s)).join(', ')}`);
+      tokens.sidebarSections = filtered.length > 0 ? filtered : ['skills', 'languages', 'certifications'];
+    }
+  }
+
   // Validate pageBackground: must be very light (luminance > 0.85)
   if (tokens.pageBackground) {
     const hexRegex = /^#[0-9A-Fa-f]{6}$/;
@@ -658,6 +717,17 @@ function validateAndFixTokens(
   // Ensure section order includes all standard sections
   tokens.sectionOrder = validateSectionOrder(tokens.sectionOrder);
 
+  // === 2C: Anti-saai validation — ensure enough variety for creative/experimental ===
+  if (creativityLevel === 'creative' || creativityLevel === 'experimental') {
+    const interestingCount = countInterestingChoices(tokens);
+    const minimum = creativityLevel === 'experimental' ? 5 : 3;
+
+    if (interestingCount < minimum) {
+      console.log(`[Style Gen] Only ${interestingCount} interesting choices for ${creativityLevel} (need ${minimum}), applying variety boosts`);
+      applyVarietyBoosts(tokens, minimum - interestingCount, creativityLevel);
+    }
+  }
+
   return tokens;
 }
 
@@ -705,6 +775,100 @@ function validateSectionOrder(order: string[]): string[] {
   }
 
   return validOrder;
+}
+
+// ============ Variety Helpers ============
+
+/**
+ * Count how many "interesting" (non-default) choices are in the tokens.
+ * Used to ensure creative/experimental modes look sufficiently different.
+ */
+function countInterestingChoices(tokens: CVDesignTokens): number {
+  let count = 0;
+
+  // Non-boring font pairing
+  if (!['inter-inter', 'roboto-roboto', 'lato-lato'].includes(tokens.fontPairing)) count++;
+  // Non-simple header
+  if (tokens.headerVariant !== 'simple') count++;
+  // Non-default section style
+  if (!['clean', 'underlined'].includes(tokens.sectionStyle)) count++;
+  // Accent style set
+  if (tokens.accentStyle && tokens.accentStyle !== 'none') count++;
+  // Name style set
+  if (tokens.nameStyle && tokens.nameStyle !== 'normal') count++;
+  // Skill tag style set
+  if (tokens.skillTagStyle && tokens.skillTagStyle !== 'filled') count++;
+  // Non-basic border radius
+  if (tokens.borderRadius && !['none', 'small'].includes(tokens.borderRadius)) count++;
+  // Page background set
+  if (tokens.pageBackground) count++;
+  // Sidebar layout
+  if (tokens.layout === 'sidebar-left' || tokens.layout === 'sidebar-right') count++;
+  // Icons enabled
+  if (tokens.useIcons) count++;
+  // Header gradient
+  if (tokens.headerGradient && tokens.headerGradient !== 'none') count++;
+  // Non-default contact layout
+  if (tokens.contactLayout && tokens.contactLayout !== 'single-row') count++;
+
+  return count;
+}
+
+/**
+ * Apply variety boosts to make tokens more visually interesting.
+ * Upgrades the most impactful tokens to non-default values.
+ */
+function applyVarietyBoosts(tokens: CVDesignTokens, needed: number, level: StyleCreativityLevel): void {
+  let applied = 0;
+
+  // Priority order: most visual impact first
+  if (applied < needed && tokens.sectionStyle === 'clean') {
+    tokens.sectionStyle = level === 'experimental' ? 'card' : 'accent-left';
+    applied++;
+    console.log(`[Style Gen] Variety boost: sectionStyle → ${tokens.sectionStyle}`);
+  }
+
+  if (applied < needed && tokens.headerVariant === 'simple') {
+    tokens.headerVariant = level === 'experimental' ? 'banner' : 'split';
+    applied++;
+    console.log(`[Style Gen] Variety boost: headerVariant → ${tokens.headerVariant}`);
+  }
+
+  if (applied < needed && (!tokens.accentStyle || tokens.accentStyle === 'none')) {
+    tokens.accentStyle = 'border-left';
+    applied++;
+    console.log('[Style Gen] Variety boost: accentStyle → border-left');
+  }
+
+  if (applied < needed && (!tokens.nameStyle || tokens.nameStyle === 'normal')) {
+    tokens.nameStyle = 'uppercase';
+    applied++;
+    console.log('[Style Gen] Variety boost: nameStyle → uppercase');
+  }
+
+  if (applied < needed && (!tokens.skillTagStyle || tokens.skillTagStyle === 'filled')) {
+    tokens.skillTagStyle = level === 'experimental' ? 'pill' : 'outlined';
+    applied++;
+    console.log(`[Style Gen] Variety boost: skillTagStyle → ${tokens.skillTagStyle}`);
+  }
+
+  if (applied < needed && (!tokens.borderRadius || ['none', 'small'].includes(tokens.borderRadius))) {
+    tokens.borderRadius = level === 'experimental' ? 'large' : 'medium';
+    applied++;
+    console.log(`[Style Gen] Variety boost: borderRadius → ${tokens.borderRadius}`);
+  }
+
+  if (applied < needed && !tokens.useIcons) {
+    tokens.useIcons = true;
+    applied++;
+    console.log('[Style Gen] Variety boost: useIcons → true');
+  }
+
+  if (applied < needed && (!tokens.headerGradient || tokens.headerGradient === 'none')) {
+    tokens.headerGradient = 'subtle';
+    applied++;
+    console.log('[Style Gen] Variety boost: headerGradient → subtle');
+  }
 }
 
 // ============ Fallback Tokens ============

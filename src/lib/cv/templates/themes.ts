@@ -497,7 +497,7 @@ export const creativityConstraints = {
     defaultDecorations: 'moderate' as const,
     allowBanner: true,
     allowTimeline: true,
-    allowedLayouts: ['single-column'] as const,
+    allowedLayouts: ['single-column', 'sidebar-left', 'sidebar-right'] as const,
     allowedBorderRadius: ['none', 'small', 'medium', 'large', 'pill'] as const,
     allowedAccentStyles: ['none', 'border-left', 'background', 'quote'] as const,
     allowedNameStyles: ['normal', 'uppercase', 'extra-bold'] as const,

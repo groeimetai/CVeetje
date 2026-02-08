@@ -62,6 +62,10 @@ const SAMPLE_CONTENT: GeneratedCVContent = {
   certifications: [],
 };
 
+// A4 dimensions in px (96 dpi: 210mm ≈ 794px, 297mm ≈ 1123px)
+const A4_WIDTH_PX = 794;
+const A4_HEIGHT_PX = 1123;
+
 // Scaled iframe that renders the real CV HTML with sample content
 function StylePreviewFrame({
   tokens,
@@ -72,26 +76,45 @@ function StylePreviewFrame({
   fullName: string;
   avatarUrl?: string | null;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.5);
+
   const html = useMemo(
     () => generateCVHTML(SAMPLE_CONTENT, tokens, fullName, avatarUrl),
     [tokens, fullName, avatarUrl]
   );
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        setScale(w / A4_WIDTH_PX);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const scaledHeight = A4_HEIGHT_PX * scale;
+
   return (
     <div className="rounded-lg border p-4 space-y-2">
       <p className="text-xs text-muted-foreground mb-2">Preview</p>
       <div
+        ref={containerRef}
         className="relative w-full overflow-hidden rounded-md border bg-white"
-        style={{ height: '400px' }}
+        style={{ height: `${scaledHeight}px` }}
       >
         <iframe
           srcDoc={html}
           title="Style preview"
           className="pointer-events-none absolute left-0 top-0"
           style={{
-            width: '210mm',
-            height: '297mm',
-            transform: 'scale(0.33)',
+            width: `${A4_WIDTH_PX}px`,
+            height: `${A4_HEIGHT_PX}px`,
+            transform: `scale(${scale})`,
             transformOrigin: 'top left',
             border: 'none',
           }}

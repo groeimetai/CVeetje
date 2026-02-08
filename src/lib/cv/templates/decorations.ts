@@ -245,9 +245,9 @@ export function generateDecorations(
 
   // Number of decorations based on intensity
   const countMap: Record<Exclude<DecorationIntensity, 'none'>, { min: number; max: number }> = {
-    minimal: { min: 4, max: 8 },
-    moderate: { min: 8, max: 15 },
-    abundant: { min: 15, max: 25 },
+    minimal: { min: 3, max: 6 },
+    moderate: { min: 5, max: 10 },
+    abundant: { min: 8, max: 15 },
   };
   const { min, max } = countMap[intensity];
   const count = Math.floor(random() * (max - min + 1)) + min;
@@ -265,21 +265,16 @@ export function generateDecorations(
 
   // Define zones for more even distribution
   const zones = [
-    // Corners
-    { xMin: 0, xMax: 20, yMin: 0, yMax: 15 },      // Top-left
-    { xMin: 80, xMax: 100, yMin: 0, yMax: 15 },    // Top-right
-    { xMin: 0, xMax: 20, yMin: 85, yMax: 100 },    // Bottom-left
-    { xMin: 80, xMax: 100, yMin: 85, yMax: 100 },  // Bottom-right
-    // Edges
-    { xMin: 20, xMax: 80, yMin: 0, yMax: 10 },     // Top edge
-    { xMin: 20, xMax: 80, yMin: 90, yMax: 100 },   // Bottom edge
-    { xMin: 0, xMax: 12, yMin: 15, yMax: 85 },     // Left edge
-    { xMin: 88, xMax: 100, yMin: 15, yMax: 85 },   // Right edge
-    // Scattered (away from center content)
-    { xMin: 0, xMax: 25, yMin: 25, yMax: 75 },     // Left side scattered
-    { xMin: 75, xMax: 100, yMin: 25, yMax: 75 },   // Right side scattered
-    { xMin: 25, xMax: 75, yMin: 0, yMax: 20 },     // Top area scattered
-    { xMin: 25, xMax: 75, yMin: 80, yMax: 100 },   // Bottom area scattered
+    // Corners — safe from content
+    { xMin: 0, xMax: 15, yMin: 0, yMax: 12 },      // Top-left
+    { xMin: 85, xMax: 100, yMin: 0, yMax: 12 },    // Top-right
+    { xMin: 0, xMax: 15, yMin: 88, yMax: 100 },    // Bottom-left
+    { xMin: 85, xMax: 100, yMin: 88, yMax: 100 },  // Bottom-right
+    // Edges — narrow strips along margins
+    { xMin: 20, xMax: 80, yMin: 0, yMax: 6 },      // Top edge
+    { xMin: 20, xMax: 80, yMin: 94, yMax: 100 },   // Bottom edge
+    { xMin: 0, xMax: 8, yMin: 15, yMax: 85 },      // Left edge
+    { xMin: 92, xMax: 100, yMin: 15, yMax: 85 },   // Right edge
   ];
 
   for (let i = 0; i < count; i++) {
@@ -291,11 +286,11 @@ export function generateDecorations(
     const sizeVariation = random();
     let size: number;
     if (intensity === 'abundant') {
-      size = 15 + Math.floor(sizeVariation * 35); // 15-50px
+      size = 12 + Math.floor(sizeVariation * 25); // 12-37px
     } else if (intensity === 'moderate') {
-      size = 20 + Math.floor(sizeVariation * 45); // 20-65px
+      size = 15 + Math.floor(sizeVariation * 30); // 15-45px
     } else {
-      size = 30 + Math.floor(sizeVariation * 50); // 30-80px
+      size = 20 + Math.floor(sizeVariation * 30); // 20-50px
     }
 
     // Pick a random zone for positioning
@@ -319,8 +314,10 @@ export function generateDecorations(
     const colorIndex = Math.floor(random() * colors.length);
     const color = colors[colorIndex];
 
-    // Varied opacity (8-20% range)
-    const opacity = 0.08 + random() * 0.12;
+    // Varied opacity — lower for abundant to reduce visual noise
+    const opacity = intensity === 'abundant'
+      ? 0.05 + random() * 0.07  // 5-12%
+      : 0.08 + random() * 0.10; // 8-18%
 
     decorations.push({
       shape,
@@ -368,7 +365,7 @@ export function customDecorationToSVG(
   rotation: number
 ): string {
   // Map size to pixel values
-  const sizeMap = { small: 30, medium: 50, large: 70 };
+  const sizeMap = { small: 30, medium: 50, large: 55 };
   const size = sizeMap[decoration.size];
 
   // Try to find a matching custom generator, fallback to basic shape
@@ -429,10 +426,14 @@ function generateCustomDecorationsHTML(
     ],
   };
 
+  let totalPlaced = 0;
+  const maxCustomInstances = 12;
+
   for (const decoration of customDecorations) {
+    if (totalPlaced >= maxCustomInstances) break;
     const zones = placementZones[decoration.placement];
 
-    for (let i = 0; i < decoration.quantity; i++) {
+    for (let i = 0; i < decoration.quantity && totalPlaced < maxCustomInstances; i++) {
       // Pick a random zone
       const zone = zones[Math.floor(random() * zones.length)];
 
@@ -442,6 +443,7 @@ function generateCustomDecorationsHTML(
       const rotation = Math.floor(random() * 360);
 
       results.push(customDecorationToSVG(decoration, primaryColor, accentColor, x, y, rotation));
+      totalPlaced++;
     }
   }
 
@@ -494,7 +496,7 @@ export const decorationsCSS = `
     left: 0;
     right: 0;
     bottom: 0;
-    overflow: visible;
+    overflow: hidden;
     pointer-events: none;
     z-index: 0;
   }
