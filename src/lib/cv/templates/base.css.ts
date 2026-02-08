@@ -998,17 +998,27 @@ export const sidebarLayoutCSS = `
     text-align: left;
   }
 
-  /* Skill tags in sidebar: allow full text, wrap long words */
+  /* Skill tags in sidebar: prevent flex shrink, show full text */
   .cv-sidebar .skill-tag {
+    flex: 0 0 auto;
     max-width: 100%;
+    overflow: visible;
     overflow-wrap: break-word;
     white-space: normal;
+    text-overflow: clip;
   }
 
   /* Force single column for list display in narrow sidebar */
   .cv-sidebar .skills-container {
     columns: 1 !important;
     column-gap: 0;
+  }
+
+  /* Tags display in sidebar: ensure flex-wrap works properly */
+  .cv-sidebar .skills-container.skills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
   }
 
   /* Compact skills: ensure inline flow works in sidebar */
