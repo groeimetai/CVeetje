@@ -717,6 +717,16 @@ function validateAndFixTokens(
   // Ensure section order includes all standard sections
   tokens.sectionOrder = validateSectionOrder(tokens.sectionOrder);
 
+  // === Force visually distinct section styles for creative/experimental ===
+  if (creativityLevel === 'creative' && tokens.sectionStyle === 'clean') {
+    tokens.sectionStyle = 'accent-left';
+    console.log('[Style Gen] Upgraded clean → accent-left for creative mode');
+  } else if (creativityLevel === 'experimental' && ['clean', 'underlined'].includes(tokens.sectionStyle)) {
+    const impactful = ['card', 'accent-left', 'timeline'] as const;
+    tokens.sectionStyle = impactful[Math.floor(Math.random() * impactful.length)];
+    console.log(`[Style Gen] Upgraded section style → ${tokens.sectionStyle} for experimental mode`);
+  }
+
   // === 2C: Anti-saai validation — ensure enough variety for creative/experimental ===
   if (creativityLevel === 'creative' || creativityLevel === 'experimental') {
     const interestingCount = countInterestingChoices(tokens);
