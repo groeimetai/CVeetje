@@ -1113,35 +1113,6 @@
         "created": "Aangemaakt"
       }
     },
-    "emails": {
-      "title": "E-mails",
-      "description": "Overzicht van alle verzonden e-mails",
-      "search": "Zoek op ontvanger of onderwerp...",
-      "allStatuses": "Alle statussen",
-      "retry": "Opnieuw",
-      "noEmails": "Geen e-mails gevonden",
-      "noSubject": "Geen onderwerp",
-      "noContent": "Geen e-mailinhoud beschikbaar.",
-      "dialogDescription": "Bekijk de details van deze e-mail",
-      "error": "Fout",
-      "attempts": "Pogingen",
-      "startTime": "Starttijd",
-      "endTime": "Eindtijd",
-      "statusSuccess": "Verstuurd",
-      "statusError": "Mislukt",
-      "statusPending": "In wachtrij",
-      "statusProcessing": "Wordt verwerkt",
-      "statsTotal": "{count} totaal",
-      "statsSuccess": "{count} verstuurd",
-      "statsError": "{count} mislukt",
-      "statsPending": "{count} in wachtrij",
-      "table": {
-        "recipient": "Ontvanger",
-        "subject": "Onderwerp",
-        "status": "Status",
-        "date": "Datum"
-      }
-    },
     "globalTemplates": {
       "title": "Globale Templates",
       "description": "Beheer templates die aan gebruikers kunnen worden toegewezen",

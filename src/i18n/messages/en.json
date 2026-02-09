@@ -1113,35 +1113,6 @@
         "created": "Created"
       }
     },
-    "emails": {
-      "title": "Emails",
-      "description": "Overview of all sent emails",
-      "search": "Search by recipient or subject...",
-      "allStatuses": "All statuses",
-      "retry": "Retry",
-      "noEmails": "No emails found",
-      "noSubject": "No subject",
-      "noContent": "No email content available.",
-      "dialogDescription": "View the details of this email",
-      "error": "Error",
-      "attempts": "Attempts",
-      "startTime": "Start time",
-      "endTime": "End time",
-      "statusSuccess": "Sent",
-      "statusError": "Failed",
-      "statusPending": "Queued",
-      "statusProcessing": "Processing",
-      "statsTotal": "{count} total",
-      "statsSuccess": "{count} sent",
-      "statsError": "{count} failed",
-      "statsPending": "{count} queued",
-      "table": {
-        "recipient": "Recipient",
-        "subject": "Subject",
-        "status": "Status",
-        "date": "Date"
-      }
-    },
     "globalTemplates": {
       "title": "Global Templates",
       "description": "Manage templates that can be assigned to users",
