@@ -44,6 +44,7 @@ const SAMPLE_CONTENT: GeneratedCVContent = {
     location: 'Amsterdam',
     period: '2021 - Heden',
     highlights: ['Leidde team van 5 medewerkers', 'Verbeterde processen met 30%'],
+    description: 'Verantwoordelijk voor het aansturen van een team van 5 medewerkers en het optimaliseren van bedrijfsprocessen, wat resulteerde in een efficiëntieverbetering van 30%.',
   }],
   education: [{
     degree: 'Master of Science',
