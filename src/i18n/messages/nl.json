@@ -75,7 +75,7 @@
     "signInDescription": "Log in op je CVeetje account om je CVs te beheren",
     "signUpTitle": "Account Aanmaken",
     "signUpDescription": "Registreer om professionele CVs te maken met AI",
-    "termsAgreement": "Door te registreren ga je akkoord met onze Algemene Voorwaarden en Privacybeleid. Je krijgt 10 gratis credits per maand.",
+    "termsAgreement": "Door te registreren ga je akkoord met onze <terms>Algemene Voorwaarden</terms>, <privacy>Privacybeleid</privacy> en <aiTransparency>AI Transparantie</aiTransparency>. Je krijgt 10 gratis credits per maand.",
     "verifyEmail": {
       "title": "Verifieer je email",
       "description": "We hebben een verificatie email gestuurd naar {email}. Klik op de link in de email om je account te activeren.",
@@ -327,7 +327,8 @@
     "footer": {
       "copyright": "© {year} CVeetje. Alle rechten voorbehouden.",
       "privacy": "Privacy",
-      "terms": "Voorwaarden"
+      "terms": "Voorwaarden",
+      "aiTransparency": "AI Transparantie"
     }
   },
   "dashboard": {
@@ -466,7 +467,7 @@
       "ownKeyDescription": "Gebruik je eigen API key van een AI provider. AI-acties kosten geen credits, alleen PDF export (1 credit).",
       "platform": "Platform AI",
       "platformModel": "Claude Opus 4.6",
-      "platformDescription": "Gebruik onze AI zonder eigen API key. Elke AI-actie kost credits.",
+      "platformDescription": "Gebruik onze AI (Claude van Anthropic) zonder eigen API key. Je gegevens worden verwerkt door Anthropic (VS). Elke AI-actie kost credits.",
       "platformCostLabel": "Creditkosten per actie",
       "platformCostTable": {
         "profileParse": "Profiel parsen (bestand)",
@@ -713,7 +714,8 @@
     "generating": {
       "title": "Je CV wordt gegenereerd...",
       "analyzing": "Je profiel en vacature worden geanalyseerd...",
-      "creating": "Je gepersonaliseerde CV wordt gemaakt..."
+      "creating": "Je gepersonaliseerde CV wordt gemaakt...",
+      "aiDisclosure": "Je CV wordt gegenereerd met behulp van AI. Controleer de inhoud voordat je downloadt."
     },
     "error": {
       "title": "Er ging iets mis",
@@ -753,7 +755,8 @@
     "strengths": "Sterke Punten",
     "advice": "Advies",
     "confirmProceedWarning": "Dit profiel heeft significante mismatches met de vacature. Je kunt nog steeds een CV genereren, maar de kans op succes is mogelijk lager. Wil je toch doorgaan?",
-    "criticalWarningsNote": "Let op: er zijn kritieke aandachtspunten gevonden"
+    "criticalWarningsNote": "Let op: er zijn kritieke aandachtspunten gevonden",
+    "aiDisclaimer": "Deze analyse is een AI-inschatting en geen garantie van je kansen."
   },
   "templateStyle": {
     "title": "Stijl van Template",

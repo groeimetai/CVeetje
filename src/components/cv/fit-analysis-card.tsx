@@ -317,6 +317,9 @@ export function FitAnalysisCard({
             <p className="text-sm text-muted-foreground">
               {analysis.verdictExplanation}
             </p>
+            <p className="text-xs text-muted-foreground mt-2 italic">
+              {t('aiDisclaimer')}
+            </p>
           </div>
 
           {/* Skills Match Summary */}

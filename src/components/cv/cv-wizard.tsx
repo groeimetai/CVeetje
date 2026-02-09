@@ -966,6 +966,9 @@ export function CVWizard() {
             <p className="text-muted-foreground">
               {t('generating.creating')}
             </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {t('generating.aiDisclosure')}
+            </p>
           </div>
         </div>
       )}

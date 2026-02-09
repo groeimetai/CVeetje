@@ -75,7 +75,7 @@
     "signInDescription": "Sign in to your CVeetje account to manage your CVs",
     "signUpTitle": "Create Account",
     "signUpDescription": "Sign up to start creating professional CVs with AI",
-    "termsAgreement": "By signing up, you agree to our Terms of Service and Privacy Policy. You get 10 free credits per month.",
+    "termsAgreement": "By signing up, you agree to our <terms>Terms of Service</terms>, <privacy>Privacy Policy</privacy> and <aiTransparency>AI Transparency</aiTransparency>. You get 10 free credits per month.",
     "verifyEmail": {
       "title": "Verify your email",
       "description": "We sent a verification email to {email}. Click the link in the email to activate your account.",
@@ -327,7 +327,8 @@
     "footer": {
       "copyright": "© {year} CVeetje. All rights reserved.",
       "privacy": "Privacy",
-      "terms": "Terms"
+      "terms": "Terms",
+      "aiTransparency": "AI Transparency"
     }
   },
   "dashboard": {
@@ -466,7 +467,7 @@
       "ownKeyDescription": "Use your own API key from an AI provider. AI actions cost no credits, only PDF export (1 credit).",
       "platform": "Platform AI",
       "platformModel": "Claude Opus 4.6",
-      "platformDescription": "Use our AI without your own API key. Each AI action costs credits.",
+      "platformDescription": "Use our AI (Claude by Anthropic) without your own API key. Your data is processed by Anthropic (US). Each AI action costs credits.",
       "platformCostLabel": "Credit costs per action",
       "platformCostTable": {
         "profileParse": "Parse profile (file)",
@@ -713,7 +714,8 @@
     "generating": {
       "title": "Your CV is being generated...",
       "analyzing": "Analyzing your profile and job posting...",
-      "creating": "Creating your personalized CV..."
+      "creating": "Creating your personalized CV...",
+      "aiDisclosure": "Your CV is being generated using AI. Please review the content before downloading."
     },
     "error": {
       "title": "Something went wrong",
@@ -753,7 +755,8 @@
     "strengths": "Strengths",
     "advice": "Advice",
     "confirmProceedWarning": "This profile has significant mismatches with the job posting. You can still generate a CV, but the chance of success may be lower. Do you want to continue anyway?",
-    "criticalWarningsNote": "Note: critical issues were found"
+    "criticalWarningsNote": "Note: critical issues were found",
+    "aiDisclaimer": "This analysis is an AI estimate and not a guarantee of your chances."
   },
   "templateStyle": {
     "title": "Style from Template",

@@ -935,6 +935,9 @@ export default async function LandingPage({ params }: Props) {
                 <Link href="/terms" className="hover:text-foreground">
                   {t('footer.terms')}
                 </Link>
+                <Link href="/ai-transparency" className="hover:text-foreground">
+                  {t('footer.aiTransparency')}
+                </Link>
               </div>
             </div>
           </div>

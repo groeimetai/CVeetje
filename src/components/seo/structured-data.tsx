@@ -89,7 +89,7 @@ export function FAQStructuredData() {
         name: 'Hoe veilig is mijn data?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Je gegevens worden veilig opgeslagen en versleuteld. We delen je data nooit met derden.',
+          text: 'Je gegevens worden veilig opgeslagen en versleuteld. Bij gebruik van Platform AI wordt je CV-data verwerkt door Anthropic (Claude). Zie ons privacybeleid voor details.',
         },
       },
     ],

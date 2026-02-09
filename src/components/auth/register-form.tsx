@@ -265,7 +265,11 @@ export function RegisterForm() {
         </form>
 
         <p className="text-xs text-center text-muted-foreground">
-          {t('termsAgreement')}
+          {t.rich('termsAgreement', {
+            terms: (chunks) => <Link href="/terms" className="underline hover:text-foreground">{chunks}</Link>,
+            privacy: (chunks) => <Link href="/privacy" className="underline hover:text-foreground">{chunks}</Link>,
+            aiTransparency: (chunks) => <Link href="/ai-transparency" className="underline hover:text-foreground">{chunks}</Link>,
+          })}
         </p>
       </CardContent>
       <CardFooter className="flex justify-center">

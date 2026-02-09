@@ -337,6 +337,7 @@ export function generateCVHTML(
   }
 
   return `<!DOCTYPE html>
+<!-- Generated with AI assistance by CVeetje (cveetje.nl) -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
