@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { MONTHLY_FREE_CREDITS } from '@/lib/ai/platform-config';
+import { queueEmail } from '@/lib/email/send';
+import { renderCreditsResetEmail } from '@/lib/email/templates/credits-reset';
 
 const RESET_DAY_OF_MONTH = 1;
 
@@ -111,10 +113,20 @@ export async function POST(request: NextRequest) {
     // Only reset if it's a new month and we're past the reset day
     if (isNewMonth && now.getDate() >= RESET_DAY_OF_MONTH) {
       await performReset(userRef, credits.free ?? 0);
-      return NextResponse.json({ 
-        success: true, 
-        reset: true, 
-        message: 'Monthly credits reset' 
+
+      // Send reset notification email (fire-and-forget)
+      if (userData.email) {
+        const { subject, html } = renderCreditsResetEmail({
+          displayName: userData.displayName || 'daar',
+          creditAmount: MONTHLY_FREE_CREDITS,
+        });
+        queueEmail(userData.email, subject, html);
+      }
+
+      return NextResponse.json({
+        success: true,
+        reset: true,
+        message: 'Monthly credits reset'
       });
     }
 

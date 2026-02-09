@@ -420,51 +420,23 @@ export function useCVChat({ context, onContentChange, onTokensChange }: UseCVCha
     setInput(e.target.value);
   }, []);
 
-  // Handle form submission — compute required credits before sending
+  // Handle form submission
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim() || status === 'streaming') return;
 
     const message = input.trim();
 
-    // Count existing message chars + new input
-    const existingChars = messages.reduce((sum, msg) => {
-      const text = (msg.parts ?? [])
-        .filter((p) => p.type === 'text')
-        .map((p) => ('text' in p ? (p as { text: string }).text : ''))
-        .join('');
-      return sum + text.length;
-    }, 0);
-    const totalChars = existingChars + message.length;
-    const requiredCredits = Math.max(1, Math.ceil(totalChars / CHAT_CHAR_LIMIT));
-
-    // Update ref synchronously so the transport body getter reads the latest value
-    chargedCreditsRef.current = requiredCredits;
-    setChargedCredits(requiredCredits);
-
     setInput('');
     await sendMessage({ text: message });
-  }, [input, sendMessage, status, messages]);
+  }, [input, sendMessage, status]);
 
   // Append a message programmatically (e.g. quick actions)
   const append = useCallback(async (message: { role: 'user' | 'assistant'; content: string }) => {
     if (message.role === 'user') {
-      // Compute credits like handleSubmit
-      const existingChars = messages.reduce((sum, msg) => {
-        const text = (msg.parts ?? [])
-          .filter((p) => p.type === 'text')
-          .map((p) => ('text' in p ? (p as { text: string }).text : ''))
-          .join('');
-        return sum + text.length;
-      }, 0);
-      const total = existingChars + message.content.length;
-      const requiredCredits = Math.max(1, Math.ceil(total / CHAT_CHAR_LIMIT));
-      chargedCreditsRef.current = requiredCredits;
-      setChargedCredits(requiredCredits);
-
       await sendMessage({ text: message.content });
     }
-  }, [sendMessage, messages]);
+  }, [sendMessage]);
 
   // Clear chat history and reset credits
   const clearChat = useCallback(() => {

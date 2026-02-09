@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
 import { getAdminDb } from '@/lib/firebase/admin';
-import { isPaymentPaid, getPaymentMetadata } from '@/lib/mollie/client';
+import { isPaymentPaid, getPaymentMetadata, CREDIT_PACKAGES } from '@/lib/mollie/client';
 import { FieldValue } from 'firebase-admin/firestore';
 import {
   checkRateLimit,
   RATE_LIMITS,
   getClientIP,
 } from '@/lib/security/rate-limiter';
+import { queueEmail } from '@/lib/email/send';
+import { renderPaymentConfirmationEmail } from '@/lib/email/templates/payment-confirmation';
 
 /**
  * Verify Mollie webhook signature
@@ -143,6 +145,21 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(`Added ${credits} credits to user ${userId} from payment ${paymentId}`);
+
+    // Send payment confirmation email (fire-and-forget)
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.data();
+    if (userData?.email) {
+      const pkg = CREDIT_PACKAGES.find(
+        (p) => p.id === metadata.packageId,
+      );
+      const { subject, html } = renderPaymentConfirmationEmail({
+        displayName: userData.displayName || 'daar',
+        credits,
+        packageName: pkg?.name || `${credits} Credits`,
+      });
+      queueEmail(userData.email, subject, html);
+    }
 
     return NextResponse.json({ received: true });
   } catch (error) {

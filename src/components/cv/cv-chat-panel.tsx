@@ -290,7 +290,7 @@ export function CVChatPanel({
         </form>
         <p className="text-xs text-muted-foreground mt-2 text-center">
           Shift+Enter voor nieuwe regel
-          {llmMode === 'platform' && (
+          {llmMode !== 'platform' && (
             <span className="inline-flex items-center ml-2">
               · <Coins className="h-3 w-3 mx-1" />{(totalChars / 1000).toFixed(1)}k / 40k tekens
             </span>

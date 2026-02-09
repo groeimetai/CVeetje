@@ -20,6 +20,8 @@ import {
   type PlatformOperation,
 } from '@/lib/ai/platform-config';
 import type { LLMMode } from '@/types';
+import { queueEmail } from '@/lib/email/send';
+import { renderCreditsLowEmail } from '@/lib/email/templates/credits-low';
 
 export class ProviderError extends Error {
   constructor(
@@ -189,6 +191,20 @@ async function deductPlatformCredits(
     cvId: null,
     createdAt: new Date(),
   });
+
+  // Send low credits warning when balance drops to 2 or below
+  const remaining = totalCredits - cost;
+  if (remaining <= 2 && remaining >= 0) {
+    const userDoc = await db.collection('users').doc(userId).get();
+    const email = userDoc.data()?.email;
+    if (email) {
+      const { subject, html } = renderCreditsLowEmail({
+        displayName: userDoc.data()?.displayName || 'daar',
+        remaining,
+      });
+      queueEmail(email, subject, html);
+    }
+  }
 }
 
 /**

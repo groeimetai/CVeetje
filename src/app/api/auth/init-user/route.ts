@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { queueEmail } from '@/lib/email/send';
+import { renderWelcomeEmail } from '@/lib/email/templates/welcome';
 
 /**
  * POST /api/auth/init-user
@@ -64,6 +66,14 @@ export async function POST(request: NextRequest) {
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    // Send welcome email (fire-and-forget)
+    if (authUser.email) {
+      const { subject, html } = renderWelcomeEmail({
+        displayName: authUser.displayName || 'daar',
+      });
+      queueEmail(authUser.email, subject, html);
+    }
 
     return NextResponse.json({
       success: true,
