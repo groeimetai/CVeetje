@@ -2,11 +2,10 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { streamText, tool, convertToModelMessages } from 'ai';
 import { z } from 'zod';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
-import { createAIProvider, getModelId } from '@/lib/ai/providers';
+import { getAdminAuth } from '@/lib/firebase/admin';
+import { getModelId } from '@/lib/ai/providers';
+import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import type { CVChatContext } from '@/types/chat';
-import type { LLMProvider } from '@/types';
 import type { UIMessage } from 'ai';
 
 // Build the system prompt with full context
@@ -170,32 +169,23 @@ export async function POST(request: NextRequest) {
       // tool responses produce empty intermediate blocks (e.g. step-start splitting)
       .filter(msg => !Array.isArray(msg.content) || msg.content.length > 0);
 
-    // Get user data with API key
-    const db = getAdminDb();
-    const userDoc = await db.collection('users').doc(userId).get();
-
-    if (!userDoc.exists) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    // Resolve AI provider (handles own-key vs platform mode + credit deduction)
+    // Streaming: credit upfront, no refund on failure
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'cv-chat' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: err.statusCode,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      throw err;
     }
 
-    const userData = userDoc.data();
-    if (!userData?.apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'API key niet geconfigureerd. Voeg je API key toe in Instellingen.' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Decrypt API key and create provider
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const provider = userData.apiKey.provider as LLMProvider;
-    const model = userData.apiKey.model;
-
-    const aiProvider = createAIProvider(provider, apiKey);
-    const modelId = getModelId(provider, model);
+    const aiProvider = resolved.provider;
+    const modelId = getModelId(resolved.providerName, resolved.model);
 
     // Build system prompt with context
     const systemPrompt = buildSystemPrompt(context);

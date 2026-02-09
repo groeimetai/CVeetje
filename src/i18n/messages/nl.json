@@ -417,7 +417,31 @@
       "apiKeySaved": "API key succesvol opgeslagen",
       "modelChanged": "Model succesvol gewijzigd",
       "apiKeyRemoved": "API key succesvol verwijderd",
-      "confirmRemove": "Weet je zeker dat je je API key wilt verwijderen?"
+      "confirmRemove": "Weet je zeker dat je je API key wilt verwijderen?",
+      "llmModeSaved": "AI modus succesvol gewijzigd"
+    },
+    "aiMode": {
+      "title": "AI Modus",
+      "description": "Kies hoe je AI-functies wilt gebruiken",
+      "ownKey": "Eigen API Key",
+      "ownKeyDescription": "Gebruik je eigen API key van een AI provider. AI-acties kosten geen credits, alleen PDF export (1 credit).",
+      "platform": "Platform AI",
+      "platformModel": "Claude Opus 4.6",
+      "platformDescription": "Gebruik onze AI zonder eigen API key. Elke AI-actie kost credits.",
+      "platformCostLabel": "Creditkosten per actie",
+      "platformCostTable": {
+        "profileParse": "Profiel parsen (bestand)",
+        "jobParse": "Vacature analyseren",
+        "fitAnalysis": "Fit analyse",
+        "styleGenerate": "Stijl genereren",
+        "cvGenerate": "CV genereren",
+        "cvChat": "CV chat (per bericht)",
+        "creditsCost": "1 credit"
+      },
+      "currentCredits": "Huidig saldo: {credits} credit(s)",
+      "tipOwnKey": "Tip: voeg je eigen API key toe om credits te besparen. Met een eigen key kosten AI-acties niets.",
+      "tipOwnKeyShort": "Bespaar credits door je eigen API key toe te voegen",
+      "saving": "Opslaan..."
     }
   },
   "profiles": {
@@ -636,9 +660,16 @@
       "english": "Engels"
     },
     "noApiKey": {
-      "title": "API Key Vereist",
-      "description": "Je moet eerst een AI API key configureren voordat je CVs kunt genereren.",
+      "title": "AI Toegang Vereist",
+      "description": "Configureer een eigen API key of schakel Platform AI in via Instellingen.",
       "button": "Naar Instellingen"
+    },
+    "platformCredits": {
+      "cost": "Deze stap kost {cost} credit(s)",
+      "balance": "{credits} credit(s) beschikbaar",
+      "insufficient": "Onvoldoende credits voor deze actie",
+      "buyMore": "Koop meer credits",
+      "saveTip": "Bespaar credits door je eigen API key toe te voegen"
     },
     "generating": {
       "title": "Je CV wordt gegenereerd...",

@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
 import { generateDesignTokens, createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
 import { tokensToStyleConfig } from '@/lib/cv/templates/adapter';
+import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import type {
   ParsedLinkedIn,
   JobVacancy,
-  LLMProvider,
   StyleCreativityLevel,
   CVDesignTokens,
 } from '@/types';
@@ -71,29 +70,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user data with API key
+    // Resolve AI provider (handles own-key vs platform mode + credit deduction)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'style-generate' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
+    }
+
     const db = getAdminDb();
-    const userDoc = await db.collection('users').doc(userId).get();
-
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const userData = userDoc.data();
-    if (!userData?.apiKey) {
-      return NextResponse.json(
-        { error: 'API key not configured. Please add your API key in Settings.' },
-        { status: 400 }
-      );
-    }
-
-    // Decrypt API key
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const provider = userData.apiKey.provider as LLMProvider;
-    const model = userData.apiKey.model;
 
     // Fetch recent style history for variety rotation (creative/experimental)
     let styleHistory: CVDesignTokens[] = [];
@@ -139,9 +127,9 @@ export async function POST(request: NextRequest) {
             const { tokens, usage } = await generateDesignTokens(
               linkedInSummary,
               jobVacancy,
-              provider,
-              apiKey,
-              model,
+              resolved.providerName,
+              resolved.apiKey,
+              resolved.model,
               userPreferences,
               creativityLevel,
               hasPhoto,
@@ -164,6 +152,9 @@ export async function POST(request: NextRequest) {
             controller.close();
           } catch (error) {
             console.error('[Style Gen v2] Error:', error);
+            if (resolved.mode === 'platform') {
+              await refundPlatformCredits(userId, 'style-generate');
+            }
             const errorMessage = error instanceof Error ? error.message : 'Failed to generate style';
             const errorResult = JSON.stringify({
               type: 'error',
@@ -186,17 +177,28 @@ export async function POST(request: NextRequest) {
 
     // Non-streaming response
     console.log(`[Style Gen v2] Generating tokens: creativity=${creativityLevel}, hasPhoto=${hasPhoto}`);
-    const { tokens, usage } = await generateDesignTokens(
-      linkedInSummary,
-      jobVacancy,
-      provider,
-      apiKey,
-      model,
-      userPreferences,
-      creativityLevel,
-      hasPhoto,
-      styleHistory
-    );
+    let tokens;
+    let usage;
+    try {
+      const result = await generateDesignTokens(
+        linkedInSummary,
+        jobVacancy,
+        resolved.providerName,
+        resolved.apiKey,
+        resolved.model,
+        userPreferences,
+        creativityLevel,
+        hasPhoto,
+        styleHistory
+      );
+      tokens = result.tokens;
+      usage = result.usage;
+    } catch (err) {
+      if (resolved.mode === 'platform') {
+        await refundPlatformCredits(userId, 'style-generate');
+      }
+      throw err;
+    }
     console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
 
     // Convert to legacy CVStyleConfig for backward compatibility

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
+import { getAdminAuth } from '@/lib/firebase/admin';
 import { parseJobVacancy } from '@/lib/ai/job-parser';
-import type { LLMProvider } from '@/types';
+import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,37 +42,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user data with API key
-    const db = getAdminDb();
-    const userDoc = await db.collection('users').doc(userId).get();
-
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+    // Resolve AI provider (handles own-key vs platform mode + credit deduction)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'job-parse' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
-
-    const userData = userDoc.data();
-    if (!userData?.apiKey) {
-      return NextResponse.json(
-        { error: 'API key niet geconfigureerd. Voeg je API key toe in Instellingen.' },
-        { status: 400 }
-      );
-    }
-
-    // Decrypt API key
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const provider = userData.apiKey.provider as LLMProvider;
-    const model = userData.apiKey.model;
 
     // Parse job vacancy using AI
-    const { vacancy, usage } = await parseJobVacancy(
-      rawText,
-      provider,
-      apiKey,
-      model
-    );
+    let vacancy;
+    let usage;
+    try {
+      const result = await parseJobVacancy(
+        rawText,
+        resolved.providerName,
+        resolved.apiKey,
+        resolved.model
+      );
+      vacancy = result.vacancy;
+      usage = result.usage;
+    } catch (err) {
+      if (resolved.mode === 'platform') {
+        await refundPlatformCredits(userId, 'job-parse');
+      }
+      throw err;
+    }
 
     return NextResponse.json({
       success: true,

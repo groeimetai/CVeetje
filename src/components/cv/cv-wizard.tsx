@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, AlertTriangle, Key, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, Key, RefreshCw, Trash2, Coins } from 'lucide-react';
 import { ProfileInput } from './profile-input';
 import { JobInput } from './job-input';
 import { FitAnalysisCard } from './fit-analysis-card';
@@ -40,7 +40,7 @@ export function CVWizard() {
   const locale = useLocale();
   const t = useTranslations('cvWizard');
   const tCommon = useTranslations('common');
-  const { userData, credits, refreshCredits } = useAuth();
+  const { userData, credits, refreshCredits, hasAIAccess, llmMode } = useAuth();
 
   // Draft persistence
   const { hasDraft, draft, saveDraft, clearDraft, isLoading: isDraftLoading } = useWizardPersistence();
@@ -227,8 +227,8 @@ export function CVWizard() {
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
-  // Check if user has API key configured
-  const hasApiKey = !!userData?.apiKey;
+  // Check if user has AI access (own key or platform mode)
+  const hasApiKey = hasAIAccess;
 
   const handleLinkedInParsed = (data: ParsedLinkedIn) => {
     setLinkedInData(data);
@@ -418,6 +418,8 @@ export function CVWizard() {
       setCurrentStep('preview');
       // Clear draft since CV was successfully generated
       clearDraft();
+      // Refresh credits in case platform AI was used
+      if (llmMode === 'platform') refreshCredits();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setCurrentStep('style');
@@ -459,6 +461,8 @@ export function CVWizard() {
 
       setGeneratedContent(result.content);
       setCvId(result.cvId);
+      // Refresh credits in case platform AI was used
+      if (llmMode === 'platform') refreshCredits();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -614,7 +618,7 @@ export function CVWizard() {
     setCurrentStep('job');
   };
 
-  // Show API key warning if not configured
+  // Show AI access warning if not configured
   if (!hasApiKey && currentStep === 'linkedin' && !showResumeDialog) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -750,6 +754,19 @@ export function CVWizard() {
           </div>
           <TokenUsageDisplay history={tokenHistory} modelName={modelInfo?.name} />
         </div>
+
+        {/* Platform AI credit indicator */}
+        {llmMode === 'platform' && currentStep !== 'preview' && currentStep !== 'generating' && (
+          <div className="flex items-center justify-between rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-sm">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <Coins className="h-4 w-4 shrink-0" />
+              <span>{t('platformCredits.balance', { credits: credits ?? 0 })}</span>
+            </div>
+            <Link href="/settings" className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0 ml-2">
+              {t('platformCredits.saveTip')}
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Error display */}

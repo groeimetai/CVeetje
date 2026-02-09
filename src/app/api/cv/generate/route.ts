@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
 import { generateCV } from '@/lib/ai/cv-generator';
 import {
   checkRateLimit,
   RATE_LIMITS,
   getRequestIdentifier,
 } from '@/lib/security/rate-limiter';
+import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import type {
   ParsedLinkedIn,
   JobVacancy,
   CVStyleConfig,
-  LLMProvider,
   OutputLanguage,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
@@ -95,43 +94,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user data with API key
-    const db = getAdminDb();
-    const userDoc = await db.collection('users').doc(userId).get();
-
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+    // Resolve AI provider (handles own-key vs platform mode + credit deduction)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'cv-generate' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
-
-    const userData = userDoc.data();
-    if (!userData?.apiKey) {
-      return NextResponse.json(
-        { error: 'API key not configured. Please add your API key in Settings.' },
-        { status: 400 }
-      );
-    }
-
-    // Decrypt API key
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const provider = userData.apiKey.provider as LLMProvider;
-    const model = userData.apiKey.model;
 
     // Generate CV content using AI
-    const { content, usage } = await generateCV(
-      linkedInData,
-      jobVacancy,
-      provider,
-      apiKey,
-      model,
-      styleConfig,
-      language,
-      designTokens?.experienceDescriptionFormat || 'bullets'
-    );
+    let content;
+    let usage;
+    try {
+      const result = await generateCV(
+        linkedInData,
+        jobVacancy,
+        resolved.providerName,
+        resolved.apiKey,
+        resolved.model,
+        styleConfig,
+        language,
+        designTokens?.experienceDescriptionFormat || 'bullets'
+      );
+      content = result.content;
+      usage = result.usage;
+    } catch (err) {
+      if (resolved.mode === 'platform') {
+        await refundPlatformCredits(userId, 'cv-generate');
+      }
+      throw err;
+    }
 
     // Create CV document in Firestore
+    const db = getAdminDb();
     const cvRef = await db.collection('users').doc(userId).collection('cvs').add({
       linkedInData,
       jobVacancy,
@@ -148,8 +146,8 @@ export async function POST(request: NextRequest) {
       generatedContent: content,
       pdfUrl: null,
       status: 'generated',
-      llmProvider: provider,
-      llmModel: model,
+      llmProvider: resolved.providerName,
+      llmModel: resolved.model,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

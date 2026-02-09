@@ -170,10 +170,10 @@ export async function resetMonthlyCredits(userId: string): Promise<void> {
   const userSnap = await getDoc(userRef);
   const userData = userSnap.data();
 
-  const FREE_CREDITS_AMOUNT = 5;
+  const FREE_CREDITS_AMOUNT = 10;
   const currentFree = userData?.credits?.free ?? 0;
 
-  // Reset free credits to 5 (this is a separate bucket from purchased)
+  // Reset free credits to 10 (this is a separate bucket from purchased)
   // Purchased credits are never touched
   await updateDoc(userRef, {
     'credits.free': FREE_CREDITS_AMOUNT,

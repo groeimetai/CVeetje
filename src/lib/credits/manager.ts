@@ -1,7 +1,5 @@
-import { Timestamp } from 'firebase/firestore';
 import { getUserData, resetMonthlyCredits } from '@/lib/firebase/firestore';
 
-const MONTHLY_FREE_CREDITS = 5;
 const RESET_DAY_OF_MONTH = 1; // First day of each month
 
 /**

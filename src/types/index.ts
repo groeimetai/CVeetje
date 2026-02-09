@@ -51,6 +51,9 @@ export interface ModelCapabilities {
 // Now supports any provider from models.dev
 export type LLMProvider = string;
 
+// LLM mode: own API key or platform-provided AI
+export type LLMMode = 'own-key' | 'platform';
+
 // User roles for access control
 export type UserRole = 'user' | 'admin';
 
@@ -61,7 +64,7 @@ export interface UserApiKey {
 }
 
 export interface UserCredits {
-  free: number;           // Monthly free credits (resets to 5 each month)
+  free: number;           // Monthly free credits (resets to 10 each month)
   purchased: number;      // Purchased credits (never expires, accumulates)
   lastFreeReset: Timestamp;
 
@@ -74,6 +77,7 @@ export interface User {
   displayName: string | null;
   photoURL: string | null;
   apiKey: UserApiKey | null;
+  llmMode?: LLMMode;                // 'own-key' (default) or 'platform'
   credits: UserCredits;
   role: UserRole;                    // User role (defaults to 'user')
   disabled?: boolean;                // Account disabled by admin
@@ -825,7 +829,13 @@ export interface GeneratedCVContent {
 
 // ============ Transaction Types ============
 
-export type TransactionType = 'monthly_free' | 'purchase' | 'cv_generation' | 'refund';
+export type TransactionType =
+  | 'monthly_free'
+  | 'purchase'
+  | 'cv_generation'
+  | 'refund'
+  | 'platform_ai'
+  | 'platform_ai_refund';
 
 export interface CreditTransaction {
   id?: string;

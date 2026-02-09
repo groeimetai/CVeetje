@@ -417,7 +417,31 @@
       "apiKeySaved": "API key saved successfully",
       "modelChanged": "Model changed successfully",
       "apiKeyRemoved": "API key removed successfully",
-      "confirmRemove": "Are you sure you want to remove your API key?"
+      "confirmRemove": "Are you sure you want to remove your API key?",
+      "llmModeSaved": "AI mode changed successfully"
+    },
+    "aiMode": {
+      "title": "AI Mode",
+      "description": "Choose how you want to use AI features",
+      "ownKey": "Own API Key",
+      "ownKeyDescription": "Use your own API key from an AI provider. AI actions cost no credits, only PDF export (1 credit).",
+      "platform": "Platform AI",
+      "platformModel": "Claude Opus 4.6",
+      "platformDescription": "Use our AI without your own API key. Each AI action costs credits.",
+      "platformCostLabel": "Credit costs per action",
+      "platformCostTable": {
+        "profileParse": "Parse profile (file)",
+        "jobParse": "Analyze vacancy",
+        "fitAnalysis": "Fit analysis",
+        "styleGenerate": "Generate style",
+        "cvGenerate": "Generate CV",
+        "cvChat": "CV chat (per message)",
+        "creditsCost": "1 credit"
+      },
+      "currentCredits": "Current balance: {credits} credit(s)",
+      "tipOwnKey": "Tip: add your own API key to save credits. With your own key, AI actions cost nothing.",
+      "tipOwnKeyShort": "Save credits by adding your own API key",
+      "saving": "Saving..."
     }
   },
   "profiles": {
@@ -636,9 +660,16 @@
       "english": "English"
     },
     "noApiKey": {
-      "title": "API Key Required",
-      "description": "You need to configure an AI API key before you can generate CVs.",
+      "title": "AI Access Required",
+      "description": "Configure your own API key or enable Platform AI in Settings.",
       "button": "Go to Settings"
+    },
+    "platformCredits": {
+      "cost": "This step costs {cost} credit(s)",
+      "balance": "{credits} credit(s) available",
+      "insufficient": "Insufficient credits for this action",
+      "buyMore": "Buy more credits",
+      "saveTip": "Save credits by adding your own API key"
     },
     "generating": {
       "title": "Your CV is being generated...",

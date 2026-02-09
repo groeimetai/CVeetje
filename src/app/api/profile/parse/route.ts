@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
+import { getAdminAuth } from '@/lib/firebase/admin';
 import { createAIProvider } from '@/lib/ai/providers';
 import { parseLinkedInProfile } from '@/lib/linkedin/parser';
+import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import type { ProfileInputSource, ParsedLinkedIn } from '@/types';
 
 // Schema for structured profile extraction via LLM
@@ -125,24 +125,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's API key
-    const db = getAdminDb();
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    if (!userData?.apiKey) {
-      return NextResponse.json(
-        { error: 'API key not configured. Please add your API key in Settings.' },
-        { status: 400 }
-      );
+    // Resolve AI provider (handles own-key vs platform mode + credit deduction)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'profile-parse' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
 
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const userProvider = provider || userData.apiKey.provider;
-    const userModel = model || userData.apiKey.model;
+    const userProvider = provider || resolved.providerName;
+    const userModel = model || resolved.model;
 
-    // Create AI provider
-    const aiProvider = createAIProvider(userProvider, apiKey);
+    // Create AI provider (use resolved key, but allow provider/model override from request)
+    const aiProvider = userProvider === resolved.providerName
+      ? resolved.provider
+      : createAIProvider(userProvider, resolved.apiKey);
 
     // Build the prompt for multi-source extraction
     const sourceDescriptions: string[] = [];
@@ -289,6 +289,11 @@ Instructions:
       });
     } catch (aiError) {
       console.error('AI extraction error:', aiError);
+
+      // Refund platform credits on failure
+      if (resolved.mode === 'platform') {
+        await refundPlatformCredits(userId, 'profile-parse');
+      }
 
       const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
 

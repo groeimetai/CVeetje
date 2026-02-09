@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { Key, Trash2, Save, Eye, EyeOff, User, Shield, Loader2, ExternalLink, Cpu, DollarSign, AlertTriangle } from 'lucide-react';
+import { Key, Trash2, Save, Eye, EyeOff, User, Shield, Loader2, ExternalLink, Cpu, DollarSign, AlertTriangle, Sparkles, Coins } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/components/auth/auth-context';
-import type { ProviderInfo, ModelInfo } from '@/lib/ai/models-registry';
+import type { ProviderInfo } from '@/lib/ai/models-registry';
+import type { LLMMode } from '@/types';
 
 const apiKeySchema = z.object({
   provider: z.string().min(1, 'Please select a provider'),
@@ -54,7 +55,7 @@ function formatPrice(price: number): string {
 }
 
 export default function SettingsPage() {
-  const { userData, firebaseUser, refreshUserData, logout } = useAuth();
+  const { userData, firebaseUser, credits, refreshUserData, logout, llmMode } = useAuth();
   const t = useTranslations('settings');
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,6 +64,44 @@ export default function SettingsPage() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [savingMode, setSavingMode] = useState(false);
+  const [selectedLlmMode, setSelectedLlmMode] = useState<LLMMode>(llmMode);
+
+  // Sync selectedLlmMode when llmMode from context changes
+  useEffect(() => {
+    setSelectedLlmMode(llmMode);
+  }, [llmMode]);
+
+  const handleLlmModeChange = async (mode: LLMMode) => {
+    setSelectedLlmMode(mode);
+    setSavingMode(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/settings/llm-mode', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update AI mode');
+      }
+
+      await refreshUserData();
+      setMessage({ type: 'success', text: t('messages.llmModeSaved') });
+    } catch (err) {
+      // Revert on error
+      setSelectedLlmMode(llmMode);
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to update AI mode',
+      });
+    } finally {
+      setSavingMode(false);
+    }
+  };
 
   // Dynamic providers state
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -300,8 +339,110 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="api-key" className="space-y-6">
-          {/* Current Configuration */}
-          {userData?.apiKey && (
+          {/* AI Mode Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                {t('aiMode.title')}
+              </CardTitle>
+              <CardDescription>
+                {t('aiMode.description')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {savingMode && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t('aiMode.saving')}
+                </div>
+              )}
+
+              {/* Own Key option */}
+              <button
+                type="button"
+                onClick={() => handleLlmModeChange('own-key')}
+                disabled={savingMode}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                  selectedLlmMode === 'own-key'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-muted-foreground/30'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <Key className="h-5 w-5 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium">{t('aiMode.ownKey')}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t('aiMode.ownKeyDescription')}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Platform AI option */}
+              <button
+                type="button"
+                onClick={() => handleLlmModeChange('platform')}
+                disabled={savingMode}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
+                  selectedLlmMode === 'platform'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-muted-foreground/30'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{t('aiMode.platform')}</p>
+                      <Badge variant="secondary" className="text-xs">{t('aiMode.platformModel')}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t('aiMode.platformDescription')}
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Platform AI details */}
+              {selectedLlmMode === 'platform' && (
+                <div className="ml-8 space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Coins className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      {t('aiMode.currentCredits', { credits })}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">{t('aiMode.platformCostLabel')}</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <span>{t('aiMode.platformCostTable.profileParse')}</span>
+                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      <span>{t('aiMode.platformCostTable.jobParse')}</span>
+                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      <span>{t('aiMode.platformCostTable.fitAnalysis')}</span>
+                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      <span>{t('aiMode.platformCostTable.styleGenerate')}</span>
+                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      <span>{t('aiMode.platformCostTable.cvGenerate')}</span>
+                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      <span>{t('aiMode.platformCostTable.cvChat')}</span>
+                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    {t('aiMode.tipOwnKey')}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Current Configuration — only show when in own-key mode */}
+          {selectedLlmMode === 'own-key' && userData?.apiKey && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -411,8 +552,8 @@ export default function SettingsPage() {
             </Card>
           )}
 
-          {/* Configure API Key */}
-          <Card>
+          {/* Configure API Key — only show when in own-key mode */}
+          {selectedLlmMode === 'own-key' && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
@@ -599,7 +740,7 @@ export default function SettingsPage() {
                 </form>
               )}
             </CardContent>
-          </Card>
+          </Card>}
         </TabsContent>
 
         <TabsContent value="account" className="space-y-6">

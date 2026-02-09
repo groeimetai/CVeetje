@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
+import { MONTHLY_FREE_CREDITS } from '@/lib/ai/platform-config';
 
-const MONTHLY_FREE_CREDITS = 5;
 const RESET_DAY_OF_MONTH = 1;
 
 /**
@@ -104,7 +104,7 @@ async function performReset(
   userRef: FirebaseFirestore.DocumentReference,
   currentFree: number
 ) {
-  // Reset free credits to 5 (separate bucket from purchased)
+  // Reset free credits (separate bucket from purchased)
   await userRef.update({
     'credits.free': MONTHLY_FREE_CREDITS,
     'credits.lastFreeReset': new Date(),

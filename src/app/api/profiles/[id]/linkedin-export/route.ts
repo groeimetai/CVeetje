@@ -3,9 +3,8 @@ import { cookies } from 'next/headers';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
-import { createAIProvider } from '@/lib/ai/providers';
 import { FieldValue } from 'firebase-admin/firestore';
+import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import type { ParsedLinkedIn, TokenUsage, OutputLanguage } from '@/types';
 
 // Schema for LinkedIn-optimized content
@@ -93,12 +92,15 @@ export async function POST(
       );
     }
 
-    // Check API key
-    if (!userData.apiKey) {
-      return NextResponse.json(
-        { error: 'Geen API key geconfigureerd. Voeg je API key toe in Instellingen.' },
-        { status: 400 }
-      );
+    // Resolve AI provider (skipCreditDeduction — this route handles its own credits)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, skipCreditDeduction: true });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
 
     // Get the profile
@@ -117,13 +119,8 @@ export async function POST(
     const profileData = profileDoc.data() as any;
     const profile = profileData.parsedData as ParsedLinkedIn;
 
-    // Decrypt API key
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const userProvider = userData.apiKey.provider;
-    const userModel = userData.apiKey.model;
-
-    // Create AI provider
-    const aiProvider = createAIProvider(userProvider, apiKey);
+    const aiProvider = resolved.provider;
+    const userModel = resolved.model;
 
     // Build the prompt
     const isNL = language === 'nl';

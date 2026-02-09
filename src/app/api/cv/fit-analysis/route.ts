@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
+import { getAdminAuth } from '@/lib/firebase/admin';
 import { analyzeFit } from '@/lib/ai/fit-analyzer';
-import type { LLMProvider, ParsedLinkedIn, JobVacancy, FitAnalysisResponse } from '@/types';
+import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import type { ParsedLinkedIn, JobVacancy, FitAnalysisResponse } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,38 +53,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user data with API key
-    const db = getAdminDb();
-    const userDoc = await db.collection('users').doc(userId).get();
-
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+    // Resolve AI provider (handles own-key vs platform mode + credit deduction)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'fit-analysis' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
-
-    const userData = userDoc.data();
-    if (!userData?.apiKey) {
-      return NextResponse.json(
-        { error: 'API key niet geconfigureerd. Voeg je API key toe in Instellingen.' },
-        { status: 400 }
-      );
-    }
-
-    // Decrypt API key
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const provider = userData.apiKey.provider as LLMProvider;
-    const model = userData.apiKey.model;
 
     // Analyze fit using AI
-    const { analysis, usage } = await analyzeFit(
-      linkedInData,
-      jobVacancy,
-      provider,
-      apiKey,
-      model
-    );
+    let analysis;
+    let usage;
+    try {
+      const result = await analyzeFit(
+        linkedInData,
+        jobVacancy,
+        resolved.providerName,
+        resolved.apiKey,
+        resolved.model
+      );
+      analysis = result.analysis;
+      usage = result.usage;
+    } catch (err) {
+      if (resolved.mode === 'platform') {
+        await refundPlatformCredits(userId, 'fit-analysis');
+      }
+      throw err;
+    }
 
     const response: FitAnalysisResponse = {
       success: true,

@@ -5,7 +5,7 @@ import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/t
 import { fillSmartTemplate } from '@/lib/docx/smart-template-filler';
 import { convertDocxToPdf } from '@/lib/docx/docx-to-pdf';
 import { addWatermarkToPdf } from '@/lib/pdf/add-watermark';
-import { decrypt } from '@/lib/encryption';
+import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 
 // POST - Fill a template with profile data
@@ -161,34 +161,26 @@ export async function POST(
       // Returns DOCX directly to preserve all styling
       const docxBuffer = templateBuffer;
 
-      // Get user's AI settings (required for DOCX)
-      const userApiKeyData = userData?.apiKey;
-      if (!userApiKeyData?.encryptedKey) {
-        return NextResponse.json(
-          { error: 'AI API key is required for DOCX template filling. Please configure your API key in settings.' },
-          { status: 400 }
-        );
+      // Resolve AI provider for DOCX template filling (skipCreditDeduction — this route handles its own credits)
+      let docxResolved;
+      try {
+        docxResolved = await resolveProvider({ userId, skipCreditDeduction: true });
+      } catch (err) {
+        if (err instanceof ProviderError) {
+          return NextResponse.json({ error: err.message }, { status: err.statusCode });
+        }
+        throw err;
       }
 
-      let aiOptions;
-      try {
-        const decryptedKey = decrypt(userApiKeyData.encryptedKey);
-        aiOptions = {
-          aiProvider: userApiKeyData.provider,
-          aiApiKey: decryptedKey,
-          aiModel: userApiKeyData.model,
-          jobVacancy,
-          language: language || 'nl',
-          fitAnalysis,
-          customInstructions,
-        };
-      } catch (decryptError) {
-        console.error('Failed to decrypt API key:', decryptError);
-        return NextResponse.json(
-          { error: 'Failed to decrypt API key. Please re-enter your API key in settings.' },
-          { status: 400 }
-        );
-      }
+      const aiOptions = {
+        aiProvider: docxResolved.providerName,
+        aiApiKey: docxResolved.apiKey,
+        aiModel: docxResolved.model,
+        jobVacancy,
+        language: language || 'nl',
+        fitAnalysis,
+        customInstructions,
+      };
 
       // Fill the DOCX template using AI
       const fillResult = await fillSmartTemplate(

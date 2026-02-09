@@ -11,7 +11,7 @@ import {
 import { User as FirebaseUser } from 'firebase/auth';
 import { onAuthStateChange, signOut as firebaseSignOut } from '@/lib/firebase/auth';
 import { getUserData, getUserCredits, getUserCreditsBreakdown, type CreditBreakdown } from '@/lib/firebase/firestore';
-import type { User } from '@/types';
+import type { User, LLMMode } from '@/types';
 
 interface AuthContextType {
   firebaseUser: FirebaseUser | null;
@@ -21,6 +21,8 @@ interface AuthContextType {
   purchasedCredits: number; // Purchased credits
   emailVerified: boolean;   // Whether email is verified
   isAdmin: boolean;         // Whether user has admin role
+  llmMode: LLMMode;         // 'own-key' or 'platform'
+  hasAIAccess: boolean;     // true if platform mode OR own API key configured
   loading: boolean;
   refreshCredits: () => Promise<void>;
   refreshUserData: () => Promise<void>;
@@ -164,6 +166,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Defaults to false if role is not set
   const isAdmin = userData?.role === 'admin';
 
+  // LLM mode: 'own-key' (default) or 'platform'
+  const llmMode: LLMMode = userData?.llmMode || 'own-key';
+
+  // User has AI access if they're in platform mode OR have their own API key
+  const hasAIAccess = llmMode === 'platform' || !!userData?.apiKey;
+
   return (
     <AuthContext.Provider
       value={{
@@ -174,6 +182,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         purchasedCredits,
         emailVerified,
         isAdmin,
+        llmMode,
+        hasAIAccess,
         loading,
         refreshCredits,
         refreshUserData,

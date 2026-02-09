@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generateMotivationLetter } from '@/lib/ai/motivation-generator';
 import { FieldValue } from 'firebase-admin/firestore';
-import { decrypt } from '@/lib/encryption';
+import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import type {
   CV,
   GeneratedCVContent,
@@ -66,12 +66,15 @@ export async function POST(
       );
     }
 
-    // Check API key
-    if (!userData.apiKey) {
-      return NextResponse.json(
-        { error: 'No API key configured. Please add your API key in Settings.' },
-        { status: 400 }
-      );
+    // Resolve AI provider (skipCreditDeduction — this route handles its own credits)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, skipCreditDeduction: true });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
 
     // Get CV document
@@ -98,17 +101,14 @@ export async function POST(
       );
     }
 
-    // Decrypt API key
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-
     // Generate motivation letter
     const { letter, usage } = await generateMotivationLetter(
       cvData.linkedInData as ParsedLinkedIn,
       cvData.jobVacancy as JobVacancy,
       cvData.generatedContent as GeneratedCVContent,
-      userData.apiKey.provider,
-      apiKey,
-      userData.apiKey.model,
+      resolved.providerName,
+      resolved.apiKey,
+      resolved.model,
       language,
       personalMotivation
     );
