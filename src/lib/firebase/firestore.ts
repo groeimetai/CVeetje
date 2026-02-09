@@ -3,6 +3,7 @@
 import {
   doc,
   getDoc,
+  getDocFromServer,
   setDoc,
   updateDoc,
   collection,
@@ -83,6 +84,23 @@ export interface CreditBreakdown {
 
 export async function getUserCreditsBreakdown(userId: string): Promise<CreditBreakdown> {
   const userData = await getUserData(userId);
+  const free = userData?.credits?.free ?? 0;
+  const purchased = userData?.credits?.purchased ?? 0;
+  return {
+    free,
+    purchased,
+    total: free + purchased,
+  };
+}
+
+/**
+ * Force-read credits from the Firestore server, bypassing any local cache.
+ * Used by refreshCredits() to get the latest balance after server-side deductions.
+ */
+export async function getCreditsFromServer(userId: string): Promise<CreditBreakdown> {
+  const userRef = doc(db, 'users', userId);
+  const userSnap = await getDocFromServer(userRef);
+  const userData = userSnap.exists() ? (userSnap.data() as User) : null;
   const free = userData?.credits?.free ?? 0;
   const purchased = userData?.credits?.purchased ?? 0;
   return {

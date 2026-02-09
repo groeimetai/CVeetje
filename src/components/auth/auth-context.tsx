@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { onAuthStateChange, signOut as firebaseSignOut } from '@/lib/firebase/auth';
-import { getUserData, getUserCredits, getUserCreditsBreakdown, type CreditBreakdown } from '@/lib/firebase/firestore';
+import { getUserData, getUserCredits, getUserCreditsBreakdown, getCreditsFromServer, type CreditBreakdown } from '@/lib/firebase/firestore';
 import type { User, LLMMode } from '@/types';
 
 interface AuthContextType {
@@ -74,7 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshCredits = async () => {
     if (firebaseUser) {
-      const breakdown = await getUserCreditsBreakdown(firebaseUser.uid);
+      // Use getCreditsFromServer to bypass Firestore client cache —
+      // credits are deducted server-side (admin SDK) so the local cache is stale.
+      const breakdown = await getCreditsFromServer(firebaseUser.uid);
       setCredits(breakdown.total);
       setFreeCredits(breakdown.free);
       setPurchasedCredits(breakdown.purchased);
