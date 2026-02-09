@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  ArrowDownUp,
   Eye,
   FileText,
   Loader2,
@@ -62,6 +63,8 @@ export function CVsSection() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [userFilter, setUserFilter] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selectedCV, setSelectedCV] = useState<AdminCV | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -97,22 +100,40 @@ export function CVsSection() {
     fetchCvs();
   }, [fetchCvs]);
 
-  // Filter CVs based on search query
+  // Unique users for filter dropdown
+  const uniqueUsers = Array.from(
+    new Map(cvs.map(cv => [cv.userId, { userId: cv.userId, label: cv.userDisplayName || cv.userEmail }])).values()
+  ).sort((a, b) => a.label.localeCompare(b.label));
+
+  // Filter and sort CVs
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredCvs(cvs);
-      return;
+    let result = [...cvs];
+
+    // User filter
+    if (userFilter && userFilter !== 'all') {
+      result = result.filter(cv => cv.userId === userFilter);
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = cvs.filter(cv =>
-      cv.userEmail?.toLowerCase().includes(query) ||
-      cv.userDisplayName?.toLowerCase().includes(query) ||
-      cv.jobTitle?.toLowerCase().includes(query) ||
-      cv.cvId.toLowerCase().includes(query)
-    );
-    setFilteredCvs(filtered);
-  }, [searchQuery, cvs]);
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(cv =>
+        cv.userEmail?.toLowerCase().includes(query) ||
+        cv.userDisplayName?.toLowerCase().includes(query) ||
+        cv.jobTitle?.toLowerCase().includes(query) ||
+        cv.cvId.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort by date
+    result.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+    setFilteredCvs(result);
+  }, [searchQuery, cvs, userFilter, sortOrder]);
 
   const handleDelete = async (cvId: string, userId: string) => {
     try {
@@ -181,6 +202,19 @@ export function CVsSection() {
                 className="pl-8 w-[200px] md:w-[250px]"
               />
             </div>
+            <Select value={userFilter} onValueChange={setUserFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t('allUsers')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('allUsers')}</SelectItem>
+                {uniqueUsers.map((user) => (
+                  <SelectItem key={user.userId} value={user.userId}>
+                    {user.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder={t('allStatuses')} />
@@ -257,7 +291,17 @@ export function CVsSection() {
                   <TableHead>{t('table.jobTitle')}</TableHead>
                   <TableHead>{t('table.status')}</TableHead>
                   <TableHead>{t('table.model')}</TableHead>
-                  <TableHead>{t('table.created')}</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 font-medium hover:bg-transparent"
+                      onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                    >
+                      {t('table.created')}
+                      <ArrowDownUp className="ml-1 h-3 w-3" />
+                    </Button>
+                  </TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>

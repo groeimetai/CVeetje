@@ -1010,6 +1010,7 @@
       "description": "Overview of all generated CVs",
       "search": "Search by user or job title...",
       "allStatuses": "All statuses",
+      "allUsers": "All users",
       "retry": "Retry",
       "noCvs": "No CVs found",
       "generalCv": "General CV",

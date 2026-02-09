@@ -1010,6 +1010,7 @@
       "description": "Overzicht van alle gegenereerde CVs",
       "search": "Zoek op gebruiker of vacature...",
       "allStatuses": "Alle statussen",
+      "allUsers": "Alle gebruikers",
       "retry": "Opnieuw",
       "noCvs": "Geen CVs gevonden",
       "generalCv": "Algemeen CV",
