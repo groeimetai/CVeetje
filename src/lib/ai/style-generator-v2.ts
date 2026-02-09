@@ -467,6 +467,7 @@ export async function generateDesignTokens(
   userPreferences?: string,
   creativityLevel: StyleCreativityLevel = 'balanced',
   hasPhoto: boolean = false,
+  styleHistory?: CVDesignTokens[],
 ): Promise<StyleGenerationV2Result> {
   const temperature = temperatureMap[creativityLevel];
 
@@ -502,7 +503,7 @@ export async function generateDesignTokens(
     console.log(`[Style Gen] LLM returned:`, JSON.stringify(result.object, null, 2));
 
     // Validate and fix the generated tokens
-    const tokens = validateAndFixTokens(result.object as CVDesignTokens, creativityLevel);
+    const tokens = validateAndFixTokens(result.object as CVDesignTokens, creativityLevel, styleHistory);
 
     console.log(`[Style Gen] After validation: theme=${tokens.themeBase}, header=${tokens.headerVariant}, photo=${tokens.showPhoto}, primary=${tokens.colors.primary}, decorationTheme=${tokens.decorationTheme || 'none'}, customDecorations=${tokens.customDecorations?.length || 0}`);
 
@@ -524,11 +525,87 @@ export async function generateDesignTokens(
   }
 }
 
+// ============ Style History Helpers ============
+
+type UsageCounts = Record<string, Record<string, number>>;
+
+/**
+ * Count how often each token value has been used in recent style history.
+ * Only tracks the most visually impactful fields.
+ */
+function buildUsageCounts(history: CVDesignTokens[]): UsageCounts {
+  const counts: UsageCounts = {};
+
+  const trackedFields = [
+    'headerVariant',
+    'sectionStyle',
+    'fontPairing',
+    'themeBase',
+    'layout',
+  ] as const;
+
+  for (const field of trackedFields) {
+    counts[field] = {};
+    for (const tokens of history) {
+      const value = tokens[field] as string | undefined;
+      if (value) {
+        counts[field][value] = (counts[field][value] || 0) + 1;
+      }
+    }
+  }
+
+  return counts;
+}
+
+/**
+ * Pick the least-used value for a token field.
+ * Only replaces if the current value is the most used AND there are alternatives with lower count.
+ */
+function pickLeastUsed(
+  field: string,
+  currentValue: string,
+  counts: UsageCounts,
+  allowedValues: readonly string[],
+): string {
+  const fieldCounts = counts[field];
+  if (!fieldCounts || Object.keys(fieldCounts).length === 0) return currentValue;
+
+  const currentCount = fieldCounts[currentValue] || 0;
+
+  // Find the max count across all used values
+  const maxCount = Math.max(...Object.values(fieldCounts));
+
+  // Only rotate if the current value is the most used (or tied for most)
+  if (currentCount < maxCount) return currentValue;
+
+  // Find allowed values with the lowest usage count
+  let minCount = Infinity;
+  for (const val of allowedValues) {
+    const count = fieldCounts[val] || 0;
+    if (count < minCount) minCount = count;
+  }
+
+  // Collect all values tied for lowest count
+  const leastUsed = allowedValues.filter(val => (fieldCounts[val] || 0) === minCount);
+
+  if (leastUsed.length === 0) return currentValue;
+
+  // Pick a random one among the least-used for variety
+  const picked = leastUsed[Math.floor(Math.random() * leastUsed.length)];
+
+  if (picked !== currentValue) {
+    console.log(`[Style Gen] History rotation: ${field} "${currentValue}" (used ${currentCount}x) → "${picked}" (used ${minCount}x)`);
+  }
+
+  return picked;
+}
+
 // ============ Validation & Fixing ============
 
 function validateAndFixTokens(
   tokens: CVDesignTokens,
-  creativityLevel: StyleCreativityLevel
+  creativityLevel: StyleCreativityLevel,
+  styleHistory?: CVDesignTokens[],
 ): CVDesignTokens {
   const constraints = creativityConstraints[creativityLevel];
 
@@ -633,6 +710,21 @@ function validateAndFixTokens(
   const allowedSkillTagStyles = constraints.allowedSkillTagStyles as readonly string[];
   if (tokens.skillTagStyle && !allowedSkillTagStyles.includes(tokens.skillTagStyle)) {
     tokens.skillTagStyle = undefined;
+  }
+
+  // === Style history rotation: prefer least-used values for variety ===
+  if (styleHistory && styleHistory.length > 0 &&
+      (creativityLevel === 'creative' || creativityLevel === 'experimental')) {
+    const counts = buildUsageCounts(styleHistory);
+    const allowedFonts = constraints.allowedFontPairings as readonly string[];
+
+    tokens.headerVariant = pickLeastUsed('headerVariant', tokens.headerVariant, counts, allowedHeaders) as CVDesignTokens['headerVariant'];
+    tokens.sectionStyle = pickLeastUsed('sectionStyle', tokens.sectionStyle, counts, allowedSections) as CVDesignTokens['sectionStyle'];
+    tokens.fontPairing = pickLeastUsed('fontPairing', tokens.fontPairing, counts, allowedFonts) as CVDesignTokens['fontPairing'];
+    tokens.themeBase = pickLeastUsed('themeBase', tokens.themeBase, counts, constraints.allowedThemes as readonly string[]) as CVDesignTokens['themeBase'];
+    if (tokens.layout) {
+      tokens.layout = pickLeastUsed('layout', tokens.layout, counts, allowedLayouts) as CVDesignTokens['layout'];
+    }
   }
 
   // === 1A: Block dangerous token combinations ===

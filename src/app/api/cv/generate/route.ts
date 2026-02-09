@@ -143,6 +143,7 @@ export async function POST(request: NextRequest) {
       },
       brandStyle: null,
       styleConfig,
+      designTokens: designTokens || null,
       avatarUrl: avatarUrl || null,
       generatedContent: content,
       pdfUrl: null,

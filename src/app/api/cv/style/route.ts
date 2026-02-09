@@ -9,6 +9,7 @@ import type {
   JobVacancy,
   LLMProvider,
   StyleCreativityLevel,
+  CVDesignTokens,
 } from '@/types';
 
 // Reduced from 120s since we only make 1 API call now (was 12+)
@@ -94,6 +95,25 @@ export async function POST(request: NextRequest) {
     const provider = userData.apiKey.provider as LLMProvider;
     const model = userData.apiKey.model;
 
+    // Fetch recent style history for variety rotation (creative/experimental)
+    let styleHistory: CVDesignTokens[] = [];
+    if (creativityLevel === 'creative' || creativityLevel === 'experimental') {
+      try {
+        const recentCvs = await db.collection('users').doc(userId).collection('cvs')
+          .orderBy('createdAt', 'desc')
+          .limit(10)
+          .select('designTokens')
+          .get();
+
+        styleHistory = recentCvs.docs
+          .map(doc => doc.data()?.designTokens)
+          .filter(Boolean) as CVDesignTokens[];
+        console.log(`[Style Gen v2] Loaded ${styleHistory.length} style history entries for variety rotation`);
+      } catch (e) {
+        console.warn('[Style Gen v2] Could not fetch style history, continuing without:', e);
+      }
+    }
+
     // Create a summary of LinkedIn data for style generation (v2)
     const linkedInSummary = createLinkedInSummaryV2(linkedInData);
 
@@ -124,7 +144,8 @@ export async function POST(request: NextRequest) {
               model,
               userPreferences,
               creativityLevel,
-              hasPhoto
+              hasPhoto,
+              styleHistory
             );
             console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
 
@@ -173,7 +194,8 @@ export async function POST(request: NextRequest) {
       model,
       userPreferences,
       creativityLevel,
-      hasPhoto
+      hasPhoto,
+      styleHistory
     );
     console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
 

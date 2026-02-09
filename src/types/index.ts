@@ -772,6 +772,7 @@ export interface CV {
   colorScheme: CVColorScheme;
   brandStyle: string | null;
   styleConfig: CVStyleConfig | null;  // Dynamic AI-generated style
+  designTokens?: import('./design-tokens').CVDesignTokens | null; // Design tokens for style history tracking
   avatarUrl: string | null;           // Optional profile photo
   generatedContent: GeneratedCVContent | null;
   elementOverrides?: CVElementOverrides | null; // User's manual element edits
