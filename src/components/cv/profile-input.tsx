@@ -713,6 +713,47 @@ export function ProfileInput({
       setParsed(result.data);
       setMode('preview');
       // Don't call onParsed here - let user review and click "Doorgaan"
+
+      // Auto-save profile in platform mode so the user doesn't lose paid work
+      if (llmMode === 'platform' && result.data.fullName) {
+        try {
+          const autoSaveResponse = await fetch('/api/profiles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: result.data.fullName,
+              parsedData: result.data,
+              avatarUrl: avatarUrl || undefined,
+              sourceInfo: {
+                inputType: sources.some(s => s.type === 'file')
+                  ? (sources.some(s => s.type === 'text') ? 'mixed' : 'file')
+                  : 'text',
+                fileNames: sources.filter(s => s.type === 'file').map(s => s.file?.name).filter(Boolean) as string[],
+                lastUpdated: new Date(),
+              },
+              isDefault: savedProfiles.length === 0, // First profile becomes default
+            }),
+          });
+          if (autoSaveResponse.ok) {
+            const saveData = await autoSaveResponse.json();
+            if (saveData.success && saveData.profile) {
+              setSavedProfiles(prev => [{
+                id: saveData.profile.id,
+                name: saveData.profile.name,
+                description: saveData.profile.description,
+                headline: saveData.profile.parsedData?.headline || null,
+                experienceCount: saveData.profile.parsedData?.experience?.length || 0,
+                avatarUrl: saveData.profile.avatarUrl || null,
+                isDefault: saveData.profile.isDefault,
+                updatedAt: new Date(),
+              }, ...prev]);
+              setSelectedProfileId(saveData.profile.id);
+            }
+          }
+        } catch {
+          // Silent fail — auto-save is best-effort, don't block the user
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verwerking mislukt');
     } finally {
