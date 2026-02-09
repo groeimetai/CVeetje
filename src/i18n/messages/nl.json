@@ -1005,6 +1005,31 @@
       "templatesSaved": "Templates opgeslagen",
       "templatesSaving": "Opslaan..."
     },
+    "cvs": {
+      "title": "Alle CVs",
+      "description": "Overzicht van alle gegenereerde CVs",
+      "search": "Zoek op gebruiker of vacature...",
+      "allStatuses": "Alle statussen",
+      "retry": "Opnieuw",
+      "noCvs": "Geen CVs gevonden",
+      "generalCv": "Algemeen CV",
+      "statsTotal": "{count} totaal",
+      "statsPdfReady": "{count} klaar",
+      "statsGenerated": "{count} gegenereerd",
+      "statsDraft": "{count} concept",
+      "statsFailed": "{count} mislukt",
+      "deleteTitle": "CV Verwijderen",
+      "deleteConfirm": "Weet je zeker dat je deze CV van {user} wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen",
+      "table": {
+        "user": "Gebruiker",
+        "jobTitle": "Vacature",
+        "status": "Status",
+        "model": "Model",
+        "created": "Aangemaakt"
+      }
+    },
     "globalTemplates": {
       "title": "Globale Templates",
       "description": "Beheer templates die aan gebruikers kunnen worden toegewezen",

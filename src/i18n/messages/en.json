@@ -1005,6 +1005,31 @@
       "templatesSaved": "Templates saved",
       "templatesSaving": "Saving..."
     },
+    "cvs": {
+      "title": "All CVs",
+      "description": "Overview of all generated CVs",
+      "search": "Search by user or job title...",
+      "allStatuses": "All statuses",
+      "retry": "Retry",
+      "noCvs": "No CVs found",
+      "generalCv": "General CV",
+      "statsTotal": "{count} total",
+      "statsPdfReady": "{count} ready",
+      "statsGenerated": "{count} generated",
+      "statsDraft": "{count} draft",
+      "statsFailed": "{count} failed",
+      "deleteTitle": "Delete CV",
+      "deleteConfirm": "Are you sure you want to delete this CV from {user}? This action cannot be undone.",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "table": {
+        "user": "User",
+        "jobTitle": "Job Title",
+        "status": "Status",
+        "model": "Model",
+        "created": "Created"
+      }
+    },
     "globalTemplates": {
       "title": "Global Templates",
       "description": "Manage templates that can be assigned to users",

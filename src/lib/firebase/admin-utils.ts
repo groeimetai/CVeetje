@@ -311,6 +311,122 @@ export async function deleteUser(userId: string): Promise<void> {
   console.log(`[Admin] Deleted user ${userId} and all associated data`);
 }
 
+// Admin CV list response type
+export interface AdminCV {
+  cvId: string;
+  userId: string;
+  userEmail: string;
+  userDisplayName: string | null;
+  status: string;
+  jobTitle: string | null;
+  llmProvider: string | null;
+  llmModel: string | null;
+  createdAt: Date;
+}
+
+export interface AdminCVListResponse {
+  cvs: AdminCV[];
+  total: number;
+}
+
+/**
+ * Get all CVs across all users (admin only)
+ * Iterates through users and fetches their CV subcollections
+ */
+export async function getAllCVs(
+  limit: number = 100,
+  userIdFilter?: string,
+  statusFilter?: string
+): Promise<AdminCVListResponse> {
+  const auth = getAdminAuth();
+  const db = getAdminDb();
+
+  const allCvs: AdminCV[] = [];
+
+  if (userIdFilter) {
+    // Fetch CVs for a specific user
+    const userRecord = await auth.getUser(userIdFilter).catch(() => null);
+    if (!userRecord) return { cvs: [], total: 0 };
+
+    let query = db.collection('users').doc(userIdFilter).collection('cvs')
+      .orderBy('createdAt', 'desc');
+
+    if (statusFilter) {
+      query = db.collection('users').doc(userIdFilter).collection('cvs')
+        .where('status', '==', statusFilter)
+        .orderBy('createdAt', 'desc');
+    }
+
+    const snapshot = await query.get();
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      allCvs.push({
+        cvId: doc.id,
+        userId: userIdFilter,
+        userEmail: userRecord.email || 'Unknown',
+        userDisplayName: userRecord.displayName || null,
+        status: data.status || 'unknown',
+        jobTitle: data.jobVacancy?.title || null,
+        llmProvider: data.llmProvider || null,
+        llmModel: data.llmModel || null,
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+      });
+    }
+  } else {
+    // Iterate through all users
+    let pageToken: string | undefined;
+    do {
+      const listResult = await auth.listUsers(100, pageToken);
+
+      for (const userRecord of listResult.users) {
+        let query = db.collection('users').doc(userRecord.uid).collection('cvs')
+          .orderBy('createdAt', 'desc');
+
+        if (statusFilter) {
+          query = db.collection('users').doc(userRecord.uid).collection('cvs')
+            .where('status', '==', statusFilter)
+            .orderBy('createdAt', 'desc');
+        }
+
+        const snapshot = await query.get();
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          allCvs.push({
+            cvId: doc.id,
+            userId: userRecord.uid,
+            userEmail: userRecord.email || 'Unknown',
+            userDisplayName: userRecord.displayName || null,
+            status: data.status || 'unknown',
+            jobTitle: data.jobVacancy?.title || null,
+            llmProvider: data.llmProvider || null,
+            llmModel: data.llmModel || null,
+            createdAt: data.createdAt?.toDate?.() || new Date(),
+          });
+        }
+      }
+
+      pageToken = listResult.pageToken;
+    } while (pageToken);
+  }
+
+  // Sort all CVs by createdAt descending
+  allCvs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  return {
+    cvs: allCvs.slice(0, limit),
+    total: allCvs.length,
+  };
+}
+
+/**
+ * Delete a specific CV (admin only)
+ */
+export async function deleteAdminCV(userId: string, cvId: string): Promise<void> {
+  const db = getAdminDb();
+  await db.collection('users').doc(userId).collection('cvs').doc(cvId).delete();
+  console.log(`[Admin] Deleted CV ${cvId} for user ${userId}`);
+}
+
 /**
  * Setup initial admin user based on ADMIN_EMAIL env var
  * This should only be called once during initial setup
