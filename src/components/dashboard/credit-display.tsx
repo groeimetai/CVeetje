@@ -14,7 +14,7 @@ export function CreditDisplay() {
   const nextResetDate = getNextResetDate();
 
   // Max free credits is 5, show progress relative to that
-  const progressPercent = Math.min((credits / 5) * 100, 100);
+  const progressPercent = Math.min((credits / 10) * 100, 100);
 
   return (
     <Card>

@@ -74,7 +74,7 @@
     "signInDescription": "Log in op je CVeetje account om je CVs te beheren",
     "signUpTitle": "Account Aanmaken",
     "signUpDescription": "Registreer om professionele CVs te maken met AI",
-    "termsAgreement": "Door te registreren ga je akkoord met onze Algemene Voorwaarden en Privacybeleid. Je krijgt 5 gratis credits per maand.",
+    "termsAgreement": "Door te registreren ga je akkoord met onze Algemene Voorwaarden en Privacybeleid. Je krijgt 10 gratis credits per maand.",
     "verifyEmail": {
       "title": "Verifieer je email",
       "description": "We hebben een verificatie email gestuurd naar {email}. Klik op de link in de email om je account te activeren.",
@@ -105,7 +105,7 @@
     "heroDescription": "Geen urenlang CV's aanpassen meer. Sla je profiel één keer op, plak een vacature, en ontvang een CV waarin je ervaring automatisch wordt gematcht op wat de vacature vraagt. Dezelfde jij, perfecte fit.",
     "ctaStart": "Gratis Starten",
     "ctaHowItWorks": "Bekijk Hoe Het Werkt",
-    "freeNote": "5 gratis downloads per maand. Geen creditcard nodig.",
+    "freeNote": "10 gratis credits per maand. Geen creditcard nodig.",
     "valueProps": {
       "enterOnce": "Eén keer invoeren",
       "enterOnceDesc": "Sla je profiel op en hergebruik het voor elke sollicitatie",
@@ -222,13 +222,13 @@
         "unlimitedStyles": "Genereer onbeperkt nieuwe stijlen"
       },
       "apiKey": {
-        "title": "Jouw Data, Jouw Key",
-        "description": "Gebruik je eigen AI API key",
-        "providers": "20+ providers: OpenAI, Anthropic, Google, Groq, en meer",
-        "transparent": "Volledig transparant: zie exact je tokenverbruik en kosten",
-        "payForUse": "Betaal alleen AI-kosten die je daadwerkelijk maakt",
-        "encrypted": "API key versleuteld opgeslagen",
-        "fullControl": "Volledig in jouw controle"
+        "title": "Twee Manieren om AI te Gebruiken",
+        "description": "Direct starten of eigen API key meenemen",
+        "platformAI": "Platform AI: direct starten zonder configuratie",
+        "ownKey": "Eigen API key: 20+ providers naar keuze",
+        "encrypted": "API keys versleuteld opgeslagen",
+        "transparent": "Volledig transparant over kosten",
+        "fullControl": "Altijd in jouw controle"
       }
     },
     "stats": {
@@ -239,13 +239,51 @@
       "enterOnce": "1x invoeren",
       "enterOnceLabel": "Onbeperkt hergebruiken"
     },
+    "aiModes": {
+      "title": "Kies Hoe Je AI Gebruikt",
+      "subtitle": "Start direct met Platform AI of neem je eigen API key mee voor maximale controle",
+      "platform": {
+        "badge": "Makkelijkst",
+        "title": "Platform AI",
+        "description": "Direct starten zonder configuratie. Wij regelen de AI voor je.",
+        "model": "Claude Opus 4.6",
+        "creditCost": "1 credit per AI-actie",
+        "noSetup": "Geen configuratie nodig",
+        "freeCredits": "10 gratis credits per maand",
+        "idealFor": "Ideaal voor: snel aan de slag willen"
+      },
+      "ownKey": {
+        "badge": "Voordeligst",
+        "title": "Eigen API Key",
+        "description": "Breng je eigen API key mee. AI-acties kosten geen credits.",
+        "providers": "20+ providers: OpenAI, Anthropic, Google, en meer",
+        "noCreditCost": "AI-acties kosten 0 credits",
+        "onlyPdf": "Alleen PDF download kost 1 credit",
+        "transparent": "Volledig transparant tokenverbruik",
+        "idealFor": "Ideaal voor: regelmatig gebruik, maximale controle"
+      },
+      "comparison": {
+        "action": "Actie",
+        "platform": "Platform AI",
+        "ownKey": "Eigen Key",
+        "profileParse": "Profiel parsen",
+        "jobParse": "Vacature parsen",
+        "fitAnalysis": "Fit analyse",
+        "styleGenerate": "Stijl genereren",
+        "cvGenerate": "CV genereren",
+        "pdfDownload": "PDF downloaden",
+        "total": "Totaal per CV",
+        "free": "Gratis",
+        "credit": "{n} credit"
+      }
+    },
     "pricing": {
       "title": "Simpele Prijzen",
       "subtitle": "Betaal alleen voor downloads. Geen abonnementen.",
       "free": {
         "title": "Gratis",
         "description": "Elke maand opnieuw",
-        "amount": "5",
+        "amount": "10",
         "unit": "credits/maand",
         "cvDownloads": "CV downloads",
         "jobTargeting": "Vacature targeting",
@@ -435,7 +473,7 @@
         "fitAnalysis": "Fit analyse",
         "styleGenerate": "Stijl genereren",
         "cvGenerate": "CV genereren",
-        "cvChat": "CV chat (per bericht)",
+        "cvChat": "CV chat (per 40.000 tekens)",
         "creditsCost": "1 credit"
       },
       "currentCredits": "Huidig saldo: {credits} credit(s)",
@@ -1093,7 +1131,7 @@
     },
     "register": {
       "title": "Gratis Account Aanmaken",
-      "description": "Maak gratis een CVeetje account aan en ontvang 5 credits per maand. Start direct met het maken van professionele CVs met AI."
+      "description": "Maak gratis een CVeetje account aan en ontvang 10 credits per maand. Start direct met het maken van professionele CVs met AI."
     },
     "dashboard": {
       "title": "Dashboard",
@@ -1127,7 +1165,7 @@
       "creditsAndPayments": {
         "title": "4. Credits en Betalingen",
         "subtitle1": "4.1 Credit Systeem",
-        "content1": "CVeetje werkt met een credit-systeem:\n\n• Elke nieuwe gebruiker ontvangt 5 gratis credits per maand\n• Gratis credits worden op de eerste dag van elke maand gereset\n• Niet-gebruikte gratis credits vervallen aan het einde van de maand\n• Gekochte credits vervallen niet en worden opgeteld bij je saldo\n• Het downloaden van een CV kost 1 credit\n• Het genereren van een motivatiebrief kost 1 extra credit\n• Het genereren van LinkedIn-export content kost 1 credit",
+        "content1": "CVeetje werkt met een credit-systeem:\n\n• Elke nieuwe gebruiker ontvangt 10 gratis credits per maand\n• Gratis credits worden op de eerste dag van elke maand gereset\n• Niet-gebruikte gratis credits vervallen aan het einde van de maand\n• Gekochte credits vervallen niet en worden opgeteld bij je saldo\n• Het downloaden van een CV kost 1 credit\n• Het genereren van een motivatiebrief kost 1 extra credit\n• Het genereren van LinkedIn-export content kost 1 credit\n• Bij gebruik van Platform AI (zonder eigen API key) kosten AI-acties elk 1 credit extra",
         "subtitle2": "4.2 Aankopen",
         "content2": "Credits kunnen worden gekocht via Mollie, onze betalingsprovider. Beschikbare pakketten:\n\n• 5 credits voor €4,99\n• 15 credits voor €12,99\n• 30 credits voor €22,99\n\nAlle prijzen zijn inclusief BTW. Betalingen worden verwerkt in euro's.",
         "subtitle3": "4.3 Restitutiebeleid",
@@ -1135,7 +1173,7 @@
       },
       "apiKeys": {
         "title": "5. API-Sleutels en Externe Diensten",
-        "content": "De Dienst vereist dat je je eigen API-sleutel verstrekt van een ondersteunde AI-provider (zoals OpenAI, Anthropic of Google).\n\nDoor een API-sleutel te verstrekken:\n\n• Bevestig je dat je gemachtigd bent om de betreffende API te gebruiken\n• Ga je akkoord met de algemene voorwaarden van de betreffende AI-provider\n• Begrijp je dat je verantwoordelijk bent voor alle kosten die voortvloeien uit het gebruik van je API-sleutel via onze Dienst\n• Begrijp je dat de kwaliteit van AI-gegenereerde content afhangt van de gekozen AI-provider en model\n\nJe API-sleutel wordt versleuteld opgeslagen en wordt alleen gebruikt voor het genereren van content in jouw naam. Wij hebben geen toegang tot de onversleutelde sleutel en kunnen deze niet inzien."
+        "content": "De Dienst biedt twee manieren om AI-functies te gebruiken:\n\n1. Platform AI: Gebruik onze ingebouwde AI (Claude Opus 4.6) zonder eigen API-sleutel. Elke AI-actie kost credits.\n2. Eigen API-sleutel: Verstrek je eigen API-sleutel van een ondersteunde AI-provider (zoals OpenAI, Anthropic of Google). AI-acties kosten geen credits.\n\nDoor een API-sleutel te verstrekken:\n\n• Bevestig je dat je gemachtigd bent om de betreffende API te gebruiken\n• Ga je akkoord met de algemene voorwaarden van de betreffende AI-provider\n• Begrijp je dat je verantwoordelijk bent voor alle kosten die voortvloeien uit het gebruik van je API-sleutel via onze Dienst\n• Begrijp je dat de kwaliteit van AI-gegenereerde content afhangt van de gekozen AI-provider en model\n\nJe API-sleutel wordt versleuteld opgeslagen en wordt alleen gebruikt voor het genereren van content in jouw naam. Wij hebben geen toegang tot de onversleutelde sleutel en kunnen deze niet inzien."
       },
       "userContent": {
         "title": "6. Gebruikersinhoud en Data",

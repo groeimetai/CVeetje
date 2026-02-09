@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       photoURL: authUser.photoURL || null,
       apiKey: null,
       credits: {
-        free: 5,
+        free: 10,
         purchased: 0,
         lastFreeReset: Timestamp.now(),
       },
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       created: true,
-      credits: { free: 5, purchased: 0 },
+      credits: { free: 10, purchased: 0 },
     });
   } catch (error) {
     console.error('[Auth Init] Failed to init user document:', error);

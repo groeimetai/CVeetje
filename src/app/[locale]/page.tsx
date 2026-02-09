@@ -15,6 +15,8 @@ import {
   Eye,
   Linkedin,
   Upload,
+  Key,
+  Cpu,
 } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
@@ -598,7 +600,7 @@ export default async function LandingPage({ params }: Props) {
                   </CardContent>
                 </Card>
 
-                {/* API Key */}
+                {/* API Key / AI Modes */}
                 <Card className="border-2 hover:border-primary/50 transition-colors">
                   <CardHeader>
                     <Shield className="h-10 w-10 text-primary mb-2" />
@@ -608,20 +610,20 @@ export default async function LandingPage({ params }: Props) {
                   <CardContent>
                     <ul className="space-y-2 text-sm">
                       <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                        {t('features.apiKey.providers')}
+                        <Cpu className="h-4 w-4 text-primary flex-shrink-0" />
+                        {t('features.apiKey.platformAI')}
                       </li>
                       <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                        {t('features.apiKey.transparent')}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
-                        {t('features.apiKey.payForUse')}
+                        <Key className="h-4 w-4 text-primary flex-shrink-0" />
+                        {t('features.apiKey.ownKey')}
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
                         {t('features.apiKey.encrypted')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        {t('features.apiKey.transparent')}
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
@@ -652,6 +654,124 @@ export default async function LandingPage({ params }: Props) {
                   <Save className="h-12 w-12 mx-auto mb-4 opacity-90" />
                   <p className="text-4xl font-bold mb-2">{t('stats.enterOnce')}</p>
                   <p className="opacity-90">{t('stats.enterOnceLabel')}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* AI Modes Comparison */}
+          <section aria-labelledby="ai-modes-heading" className="py-20">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-12">
+                <h2 id="ai-modes-heading" className="text-3xl font-bold mb-4">{t('aiModes.title')}</h2>
+                <p className="text-muted-foreground max-w-xl mx-auto">
+                  {t('aiModes.subtitle')}
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
+                {/* Platform AI */}
+                <Card className="border-2 hover:border-primary/50 transition-colors">
+                  <CardHeader>
+                    <Badge className="w-fit" variant="secondary">
+                      <Cpu className="mr-1 h-3 w-3" />
+                      {t('aiModes.platform.badge')}
+                    </Badge>
+                    <CardTitle className="text-xl">{t('aiModes.platform.title')}</CardTitle>
+                    <CardDescription>{t('aiModes.platform.description')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3 text-sm">
+                      <li className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+                        {t('aiModes.platform.model')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-primary flex-shrink-0" />
+                        {t('aiModes.platform.creditCost')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        {t('aiModes.platform.noSetup')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        {t('aiModes.platform.freeCredits')}
+                      </li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground mt-4 italic">
+                      {t('aiModes.platform.idealFor')}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Own API Key */}
+                <Card className="border-2 hover:border-primary/50 transition-colors">
+                  <CardHeader>
+                    <Badge className="w-fit" variant="secondary">
+                      <Key className="mr-1 h-3 w-3" />
+                      {t('aiModes.ownKey.badge')}
+                    </Badge>
+                    <CardTitle className="text-xl">{t('aiModes.ownKey.title')}</CardTitle>
+                    <CardDescription>{t('aiModes.ownKey.description')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3 text-sm">
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        {t('aiModes.ownKey.providers')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        {t('aiModes.ownKey.noCreditCost')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-primary flex-shrink-0" />
+                        {t('aiModes.ownKey.onlyPdf')}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        {t('aiModes.ownKey.transparent')}
+                      </li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground mt-4 italic">
+                      {t('aiModes.ownKey.idealFor')}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Comparison Table */}
+              <div className="max-w-2xl mx-auto">
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left py-3 px-4 font-medium">{t('aiModes.comparison.action')}</th>
+                        <th className="text-center py-3 px-4 font-medium">{t('aiModes.comparison.platform')}</th>
+                        <th className="text-center py-3 px-4 font-medium">{t('aiModes.comparison.ownKey')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(['profileParse', 'jobParse', 'fitAnalysis', 'styleGenerate', 'cvGenerate'] as const).map((action) => (
+                        <tr key={action} className="border-b">
+                          <td className="py-2.5 px-4">{t(`aiModes.comparison.${action}`)}</td>
+                          <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
+                          <td className="py-2.5 px-4 text-center text-green-600 font-medium">{t('aiModes.comparison.free')}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-b">
+                        <td className="py-2.5 px-4">{t('aiModes.comparison.pdfDownload')}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
+                      </tr>
+                      <tr className="bg-muted/50 font-medium">
+                        <td className="py-2.5 px-4">{t('aiModes.comparison.total')}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 6 })}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

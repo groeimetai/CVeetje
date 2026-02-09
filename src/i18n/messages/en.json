@@ -74,7 +74,7 @@
     "signInDescription": "Sign in to your CVeetje account to manage your CVs",
     "signUpTitle": "Create Account",
     "signUpDescription": "Sign up to start creating professional CVs with AI",
-    "termsAgreement": "By signing up, you agree to our Terms of Service and Privacy Policy. You get 5 free credits per month.",
+    "termsAgreement": "By signing up, you agree to our Terms of Service and Privacy Policy. You get 10 free credits per month.",
     "verifyEmail": {
       "title": "Verify your email",
       "description": "We sent a verification email to {email}. Click the link in the email to activate your account.",
@@ -105,7 +105,7 @@
     "heroDescription": "No more hours of tweaking CVs. Save your profile once, paste a job posting, and receive a CV where your experience is automatically matched to what the job requires. Same you, perfect fit.",
     "ctaStart": "Get Started Free",
     "ctaHowItWorks": "See How It Works",
-    "freeNote": "5 free downloads per month. No credit card required.",
+    "freeNote": "10 free credits per month. No credit card required.",
     "valueProps": {
       "enterOnce": "Enter once",
       "enterOnceDesc": "Save your profile and reuse it for every application",
@@ -222,13 +222,13 @@
         "unlimitedStyles": "Generate unlimited new styles"
       },
       "apiKey": {
-        "title": "Your Data, Your Key",
-        "description": "Use your own AI API key",
-        "providers": "20+ providers: OpenAI, Anthropic, Google, Groq, and more",
-        "transparent": "Fully transparent: see exact token usage and costs",
-        "payForUse": "Only pay for AI costs you actually incur",
-        "encrypted": "API key stored encrypted",
-        "fullControl": "Fully in your control"
+        "title": "Two Ways to Use AI",
+        "description": "Start directly or bring your own API key",
+        "platformAI": "Platform AI: start directly without configuration",
+        "ownKey": "Own API key: 20+ providers of your choice",
+        "encrypted": "API keys stored encrypted",
+        "transparent": "Fully transparent about costs",
+        "fullControl": "Always in your control"
       }
     },
     "stats": {
@@ -239,13 +239,51 @@
       "enterOnce": "Enter once",
       "enterOnceLabel": "Reuse unlimited"
     },
+    "aiModes": {
+      "title": "Choose How You Use AI",
+      "subtitle": "Start directly with Platform AI or bring your own API key for maximum control",
+      "platform": {
+        "badge": "Easiest",
+        "title": "Platform AI",
+        "description": "Start directly without configuration. We handle the AI for you.",
+        "model": "Claude Opus 4.6",
+        "creditCost": "1 credit per AI action",
+        "noSetup": "No configuration needed",
+        "freeCredits": "10 free credits per month",
+        "idealFor": "Ideal for: getting started quickly"
+      },
+      "ownKey": {
+        "badge": "Most affordable",
+        "title": "Own API Key",
+        "description": "Bring your own API key. AI actions cost no credits.",
+        "providers": "20+ providers: OpenAI, Anthropic, Google, and more",
+        "noCreditCost": "AI actions cost 0 credits",
+        "onlyPdf": "Only PDF download costs 1 credit",
+        "transparent": "Fully transparent token usage",
+        "idealFor": "Ideal for: regular use, maximum control"
+      },
+      "comparison": {
+        "action": "Action",
+        "platform": "Platform AI",
+        "ownKey": "Own Key",
+        "profileParse": "Parse profile",
+        "jobParse": "Parse job posting",
+        "fitAnalysis": "Fit analysis",
+        "styleGenerate": "Generate style",
+        "cvGenerate": "Generate CV",
+        "pdfDownload": "PDF download",
+        "total": "Total per CV",
+        "free": "Free",
+        "credit": "{n} credit"
+      }
+    },
     "pricing": {
       "title": "Simple Pricing",
       "subtitle": "Only pay for downloads. No subscriptions.",
       "free": {
         "title": "Free",
         "description": "Every month again",
-        "amount": "5",
+        "amount": "10",
         "unit": "credits/month",
         "cvDownloads": "CV downloads",
         "jobTargeting": "Job targeting",
@@ -435,7 +473,7 @@
         "fitAnalysis": "Fit analysis",
         "styleGenerate": "Generate style",
         "cvGenerate": "Generate CV",
-        "cvChat": "CV chat (per message)",
+        "cvChat": "CV chat (per 40,000 characters)",
         "creditsCost": "1 credit"
       },
       "currentCredits": "Current balance: {credits} credit(s)",
@@ -1093,7 +1131,7 @@
     },
     "register": {
       "title": "Create Free Account",
-      "description": "Create a free CVeetje account and receive 5 credits per month. Start creating professional CVs with AI right away."
+      "description": "Create a free CVeetje account and receive 10 credits per month. Start creating professional CVs with AI right away."
     },
     "dashboard": {
       "title": "Dashboard",
@@ -1127,7 +1165,7 @@
       "creditsAndPayments": {
         "title": "4. Credits and Payments",
         "subtitle1": "4.1 Credit System",
-        "content1": "CVeetje operates with a credit system:\n\n• Each new user receives 5 free credits per month\n• Free credits are reset on the first day of each month\n• Unused free credits expire at the end of the month\n• Purchased credits do not expire and are added to your balance\n• Downloading a CV costs 1 credit\n• Generating a cover letter costs 1 extra credit\n• Generating LinkedIn export content costs 1 credit",
+        "content1": "CVeetje operates with a credit system:\n\n• Each new user receives 10 free credits per month\n• Free credits are reset on the first day of each month\n• Unused free credits expire at the end of the month\n• Purchased credits do not expire and are added to your balance\n• Downloading a CV costs 1 credit\n• Generating a cover letter costs 1 extra credit\n• Generating LinkedIn export content costs 1 credit\n• When using Platform AI (without own API key), AI actions each cost 1 extra credit",
         "subtitle2": "4.2 Purchases",
         "content2": "Credits can be purchased via Mollie, our payment provider. Available packages:\n\n• 5 credits for €4.99\n• 15 credits for €12.99\n• 30 credits for €22.99\n\nAll prices include VAT. Payments are processed in euros.",
         "subtitle3": "4.3 Refund Policy",
@@ -1135,7 +1173,7 @@
       },
       "apiKeys": {
         "title": "5. API Keys and External Services",
-        "content": "The Service requires you to provide your own API key from a supported AI provider (such as OpenAI, Anthropic or Google).\n\nBy providing an API key:\n\n• You confirm that you are authorized to use the relevant API\n• You agree to the terms and conditions of the relevant AI provider\n• You understand that you are responsible for all costs arising from the use of your API key via our Service\n• You understand that the quality of AI-generated content depends on the chosen AI provider and model\n\nYour API key is stored encrypted and is only used to generate content on your behalf. We do not have access to the unencrypted key and cannot view it."
+        "content": "The Service offers two ways to use AI features:\n\n1. Platform AI: Use our built-in AI (Claude Opus 4.6) without your own API key. Each AI action costs credits.\n2. Own API Key: Provide your own API key from a supported AI provider (such as OpenAI, Anthropic or Google). AI actions cost no credits.\n\nBy providing an API key:\n\n• You confirm that you are authorized to use the relevant API\n• You agree to the terms and conditions of the relevant AI provider\n• You understand that you are responsible for all costs arising from the use of your API key via our Service\n• You understand that the quality of AI-generated content depends on the chosen AI provider and model\n\nYour API key is stored encrypted and is only used to generate content on your behalf. We do not have access to the unencrypted key and cannot view it."
       },
       "userContent": {
         "title": "6. User Content and Data",
