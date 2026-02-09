@@ -4,7 +4,8 @@ import { streamText, tool, convertToModelMessages } from 'ai';
 import { z } from 'zod';
 import { getAdminAuth } from '@/lib/firebase/admin';
 import { getModelId } from '@/lib/ai/providers';
-import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
+import { resolveProvider, chargePlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { CHAT_CHAR_LIMIT } from '@/lib/ai/platform-config';
 import type { CVChatContext } from '@/types/chat';
 import type { UIMessage } from 'ai';
 
@@ -151,10 +152,12 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json();
-    const { messages, context } = body as {
+    const { messages, context, chargedCredits: clientChargedCredits } = body as {
       messages: UIMessage[];
       context: CVChatContext;
+      chargedCredits?: number;
     };
+    const chargedCredits = typeof clientChargedCredits === 'number' ? clientChargedCredits : 0;
 
     if (!messages || !context || !context.currentContent) {
       return new Response(JSON.stringify({ error: 'Onvolledige request data' }), {
@@ -169,8 +172,7 @@ export async function POST(request: NextRequest) {
       // tool responses produce empty intermediate blocks (e.g. step-start splitting)
       .filter(msg => !Array.isArray(msg.content) || msg.content.length > 0);
 
-    // Resolve AI provider (handles own-key vs platform mode + credit deduction)
-    // Streaming: credit upfront, no refund on failure
+    // Resolve AI provider — cv-chat cost is 0 in config; we handle credits manually below
     let resolved;
     try {
       resolved = await resolveProvider({ userId, operation: 'cv-chat' });
@@ -182,6 +184,32 @@ export async function POST(request: NextRequest) {
         });
       }
       throw err;
+    }
+
+    // Character-based credit billing for platform mode
+    if (resolved.mode === 'platform') {
+      const totalChars = messages.reduce((sum: number, msg: UIMessage) => {
+        const text = (msg.parts ?? [])
+          .filter((p: { type: string }) => p.type === 'text')
+          .map((p: { type: string; text?: string }) => (p as { text: string }).text)
+          .join('');
+        return sum + text.length;
+      }, 0);
+      const requiredCredits = Math.max(1, Math.ceil(totalChars / CHAT_CHAR_LIMIT));
+      const diff = requiredCredits - chargedCredits;
+      if (diff > 0) {
+        try {
+          await chargePlatformCredits(userId, diff, 'cv-chat');
+        } catch (err) {
+          if (err instanceof ProviderError) {
+            return new Response(JSON.stringify({ error: err.message }), {
+              status: err.statusCode,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+          throw err;
+        }
+      }
     }
 
     const aiProvider = resolved.provider;

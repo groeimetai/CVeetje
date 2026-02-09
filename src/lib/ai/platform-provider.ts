@@ -192,6 +192,26 @@ async function deductPlatformCredits(
 }
 
 /**
+ * Charge platform credits for a given cost.
+ * Used by routes that manage their own credit logic (e.g. character-based chat billing).
+ *
+ * @throws ProviderError with 402 if insufficient credits
+ */
+export async function chargePlatformCredits(
+  userId: string,
+  cost: number,
+  operation: string,
+): Promise<void> {
+  const db = getAdminDb();
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) {
+    throw new ProviderError('User not found', 404);
+  }
+  const userData = userDoc.data()!;
+  await deductPlatformCredits(userId, userData, cost, operation);
+}
+
+/**
  * Refund credits when a platform AI call fails.
  * Only call this when mode === 'platform'.
  */

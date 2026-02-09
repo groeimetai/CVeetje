@@ -2,7 +2,8 @@
   "footer": {
     "copyright": "© {year} CVeetje. Alle rechten voorbehouden.",
     "privacy": "Privacy",
-    "terms": "Voorwaarden"
+    "terms": "Voorwaarden",
+    "aiTransparency": "AI Transparantie"
   },
   "cookieConsent": {
     "title": "Cookies & Privacy",
@@ -1144,6 +1145,10 @@
     "privacy": {
       "title": "Privacybeleid",
       "description": "Lees ons privacybeleid over hoe wij je gegevens verwerken"
+    },
+    "aiTransparency": {
+      "title": "AI Transparantie - Verantwoord Gebruik van AI",
+      "description": "Lees hoe CVeetje AI gebruikt, welke modellen worden ingezet, en hoe wij zorgen voor transparantie en verantwoord AI-gebruik conform de EU AI Act."
     }
   },
   "terms": {
@@ -1156,7 +1161,7 @@
       },
       "serviceDescription": {
         "title": "2. Beschrijving van de Dienst",
-        "content": "CVeetje is een AI-ondersteunde CV-generator die gebruikers helpt bij het maken van professionele CV's. De Dienst omvat:\n\n• Het parseren en opslaan van profielgegevens (zoals LinkedIn-informatie)\n• Het analyseren van vacatureteksten\n• Het genereren van op maat gemaakte CV's met behulp van AI\n• Het genereren van visuele stijlen en opmaak\n• Het downloaden van CV's als PDF\n• Het optioneel genereren van motivatiebrieven\n• Het exporteren van LinkedIn-geoptimaliseerde content\n\nDe Dienst maakt gebruik van externe AI-providers (zoals OpenAI, Anthropic, Google) via API-sleutels die door de gebruiker worden verstrekt. CVeetje is geen AI-provider en biedt geen directe AI-modellen aan."
+        "content": "CVeetje is een AI-ondersteunde CV-generator die gebruikers helpt bij het maken van professionele CV's. De Dienst omvat:\n\n• Het parseren en opslaan van profielgegevens (zoals LinkedIn-informatie)\n• Het analyseren van vacatureteksten\n• Het genereren van op maat gemaakte CV's met behulp van AI\n• Het genereren van visuele stijlen en opmaak\n• Het downloaden van CV's als PDF\n• Het optioneel genereren van motivatiebrieven\n• Het exporteren van LinkedIn-geoptimaliseerde content\n• Het bieden van een indicatieve fit-analyse tussen je profiel en een vacature\n\nDe Dienst biedt twee AI-modi: Platform AI (ingebouwde AI via Claude van Anthropic) en de mogelijkheid om een eigen API-sleutel te gebruiken van een ondersteunde provider. CVeetje is een schrijfhulpmiddel en geen selectie- of screeningstool voor werkgevers.\n\nVoor meer informatie over hoe wij AI inzetten, zie onze AI Transparantie pagina."
       },
       "accountRegistration": {
         "title": "3. Account en Registratie",
@@ -1197,7 +1202,7 @@
         "subtitle1": "9.1 Dienst \"As Is\"",
         "content1": "De Dienst wordt geleverd \"as is\" en \"as available\" zonder enige garanties, expliciet of impliciet. Wij garanderen niet dat:\n\n• De Dienst ononderbroken of foutloos zal werken\n• De AI-gegenereerde content accuraat, volledig of geschikt is voor enig doel\n• De Dienst zal voldoen aan je specifieke verwachtingen",
         "subtitle2": "9.2 AI-Gegenereerde Content",
-        "content2": "Content gegenereerd door AI-modellen kan fouten, onnauwkeurigheden of ongeschikte formuleringen bevatten. Het is jouw verantwoordelijkheid om:\n\n• Alle gegenereerde content te controleren voordat je deze gebruikt\n• Feitelijke informatie te verifiëren\n• Content aan te passen waar nodig\n\nWij zijn niet verantwoordelijk voor de uitkomsten van sollicitaties of voor beslissingen die worden genomen op basis van door de Dienst gegenereerde content.",
+        "content2": "Content gegenereerd door AI-modellen kan fouten, onnauwkeurigheden of ongeschikte formuleringen bevatten. Het is jouw verantwoordelijkheid om:\n\n• Alle gegenereerde content te controleren voordat je deze gebruikt\n• Feitelijke informatie te verifiëren (datums, functietitels, bedrijfsnamen)\n• Content aan te passen waar nodig\n• Geen misleidende informatie in je CV op te nemen\n\nOnze AI is geïnstrueerd om geen werkervaring, opleidingen of vaardigheden te verzinnen die niet in je profiel staan. Desondanks kan AI-gegenereerde content onbedoelde fouten bevatten. Controleer daarom altijd het eindresultaat.\n\nDe fit-analyse is een indicatieve AI-inschatting en geen garantie of voorspelling van je kansen bij een sollicitatie.\n\nWij zijn niet verantwoordelijk voor de uitkomsten van sollicitaties of voor beslissingen die worden genomen op basis van door de Dienst gegenereerde content.\n\nVoor meer informatie over hoe wij AI inzetten en je rechten hieromtrent, zie onze AI Transparantie pagina.",
         "subtitle3": "9.3 Beperking van Aansprakelijkheid",
         "content3": "Voor zover wettelijk toegestaan, is CVeetje niet aansprakelijk voor:\n\n• Indirecte, incidentele, speciale of gevolgschade\n• Verlies van gegevens, winst of zakelijke kansen\n• Schade als gevolg van het gebruik van of onvermogen om de Dienst te gebruiken\n• Kosten voortvloeiend uit API-gebruik bij derden\n\nOnze totale aansprakelijkheid is beperkt tot het bedrag dat je in de voorafgaande 12 maanden aan ons hebt betaald voor de Dienst."
       },
@@ -1263,7 +1268,7 @@
         "subtitle2": "7.2 Mollie (Betalingen)",
         "content2": "Wij gebruiken Mollie voor het verwerken van betalingen. Wanneer je credits koopt, worden je betalingsgegevens rechtstreeks door Mollie verwerkt. Wij ontvangen alleen een bevestiging van de betaling, niet je volledige betaalgegevens.\n\nMollie is gevestigd in Nederland en verwerkt data conform de AVG.\n\nMeer informatie: https://www.mollie.com/nl/privacy",
         "subtitle3": "7.3 AI-Providers",
-        "content3": "Voor het genereren van CV-content gebruiken wij AI-modellen via jouw eigen API-sleutel. De volgende providers worden ondersteund:\n\n• OpenAI (ChatGPT, GPT-4)\n• Anthropic (Claude)\n• Google (Gemini)\n\nWanneer je content genereert, wordt je profieldata en de vacaturetekst naar de door jou gekozen AI-provider gestuurd. Deze verwerking valt onder het privacybeleid en de voorwaarden van de betreffende provider.\n\nWij raden aan het privacybeleid van je gekozen AI-provider te lezen voordat je de dienst gebruikt."
+        "content3": "Voor het genereren van CV-content worden AI-modellen ingezet op twee manieren:\n\n1. Platform AI (onze ingebouwde AI): Wij bieden Claude van Anthropic (momenteel Claude Opus 4.6) aan als AI-dienst. Bij gebruik van Platform AI is CVeetje de verwerkingsverantwoordelijke en Anthropic de verwerker. Wij hebben een verwerkersovereenkomst (DPA) met Anthropic. Je profielgegevens en vacaturetekst worden naar Anthropic (VS) gestuurd voor verwerking. Anthropic gebruikt deze data niet voor het trainen van AI-modellen (conform hun API-voorwaarden voor zakelijk gebruik).\n\n2. Eigen API-sleutel: Je kunt je eigen API-sleutel meenemen van een ondersteunde provider, waaronder OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), en meer dan 20 andere providers. Bij gebruik van je eigen key worden je gegevens rechtstreeks naar de door jou gekozen provider gestuurd. Deze verwerking valt onder het privacybeleid en de voorwaarden van de betreffende provider.\n\nVoor meer informatie over hoe wij AI inzetten, zie onze AI Transparantie pagina."
       },
       "cookies": {
         "title": "8. Cookies en Lokale Opslag",
@@ -1279,7 +1284,7 @@
       },
       "dataTransfers": {
         "title": "11. Internationale Doorgifte",
-        "content": "Je gegevens kunnen worden verwerkt buiten de Europese Economische Ruimte (EER), met name:\n\n• Door Firebase/Google (VS): Google is gecertificeerd onder het EU-US Data Privacy Framework en maakt gebruik van Standard Contractual Clauses (SCC's).\n\n• Door AI-providers (VS): OpenAI, Anthropic en Google zijn allen gevestigd in de VS. Verwerking vindt plaats met jouw eigen API-sleutel en onder de voorwaarden van de betreffende provider.\n\nWij nemen passende maatregelen om een adequaat beschermingsniveau te waarborgen conform hoofdstuk V van de AVG."
+        "content": "Je gegevens kunnen worden verwerkt buiten de Europese Economische Ruimte (EER), met name:\n\n• Door Firebase/Google (VS): Google is gecertificeerd onder het EU-US Data Privacy Framework en maakt gebruik van Standard Contractual Clauses (SCC's).\n\n• Door Anthropic (VS) bij Platform AI: Wanneer je Platform AI gebruikt, worden je profielgegevens en vacaturetekst verwerkt door Anthropic in de Verenigde Staten. Wij hanteren Standard Contractual Clauses (SCC's) als waarborg voor deze doorgifte.\n\n• Door AI-providers (VS) bij eigen key: OpenAI, Anthropic en Google zijn allen gevestigd in de VS. Bij gebruik van je eigen API-sleutel vindt verwerking plaats onder de voorwaarden van de betreffende provider.\n\nWij nemen passende maatregelen om een adequaat beschermingsniveau te waarborgen conform hoofdstuk V van de AVG."
       },
       "security": {
         "title": "12. Beveiliging",
@@ -1296,6 +1301,52 @@
       "contact": {
         "title": "15. Contact",
         "content": "Voor vragen, opmerkingen of verzoeken met betrekking tot dit privacybeleid of de verwerking van je persoonsgegevens kun je contact met ons opnemen:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nNederland\n\nKvK-nummer: 90102304\nBTW-nummer: NL004787305B79\nE-mail: info@groeimetai.io\n\nWij streven ernaar binnen 5 werkdagen te reageren op algemene vragen en binnen 30 dagen op verzoeken met betrekking tot je rechten onder de AVG."
+      }
+    }
+  },
+  "aiTransparency": {
+    "title": "AI Transparantie",
+    "lastUpdated": "Laatst bijgewerkt: {date}",
+    "intro": "CVeetje gebruikt kunstmatige intelligentie (AI) om je te helpen bij het maken van professionele CV's. Op deze pagina leggen we uit hoe wij AI inzetten, welke keuzes we maken, en hoe wij voldoen aan de Europese regelgeving voor AI-systemen.",
+    "sections": {
+      "whatAiDoes": {
+        "title": "1. Wat Doet de AI in CVeetje",
+        "content": "CVeetje zet AI in voor de volgende functies:\n\n• CV-content genereren: Op basis van je profielgegevens en een vacaturetekst schrijft AI professionele samenvattingen, ervaringsbeschrijvingen en vaardigheidssecties.\n\n• Vacature analyseren: AI extraheert functie-eisen, keywords en andere relevante informatie uit vacatureteksten.\n\n• Fit-analyse: AI vergelijkt je profiel met een vacature en geeft een inschatting van hoe goed je ervaring aansluit bij de functie-eisen.\n\n• Stijl genereren: AI genereert een visueel design (kleuren, lettertypen, layout) passend bij je industrie en de vacature.\n\n• Profiel verwerken: AI kan informatie extraheren uit geüploade documenten zoals LinkedIn PDF's of screenshots.\n\n• Motivatiebrief genereren: AI schrijft een motivatiebrief op basis van je CV en de vacature.\n\n• LinkedIn-content genereren: AI maakt geoptimaliseerde teksten voor je LinkedIn-profiel."
+      },
+      "whatAiDoesNot": {
+        "title": "2. Wat de AI Niet Doet",
+        "content": "CVeetje hanteert strikte regels voor AI-gegenereerde content:\n\n• Geen verzinnen van ervaring: De AI verzint geen werkervaring, opleidingen, certificeringen of vaardigheden die niet in je profiel staan. Je CV bevat alleen informatie die je zelf hebt aangeleverd.\n\n• Geen autonome beslissingen: De AI neemt geen beslissingen over je carrière of sollicitaties. Alle AI-gegenereerde content is een hulpmiddel dat jij controleert.\n\n• Geen screening of selectie: CVeetje beoordeelt je niet als kandidaat en maakt geen selectiebeslissingen. De fit-analyse is uitsluitend een indicatief hulpmiddel voor jou als werkzoekende.\n\n• Geen opslag voor AI-training: Je persoonsgegevens worden niet gebruikt om AI-modellen te trainen."
+      },
+      "models": {
+        "title": "3. Welke AI-Modellen Worden Gebruikt",
+        "content": "CVeetje biedt twee manieren om AI te gebruiken:\n\n• Platform AI: Wij bieden Claude van Anthropic (momenteel Claude Opus 4.6) aan als ingebouwde AI-optie. Hiervoor heb je geen eigen API-sleutel nodig. Elke AI-actie kost credits.\n\n• Eigen API Key: Je kunt je eigen API-sleutel meenemen van een ondersteunde provider, waaronder OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), en meer dan 20 andere providers. In dit geval worden AI-acties rechtstreeks via jouw eigen account bij de provider verwerkt.\n\nBij Platform AI is Anthropic (gevestigd in de VS) de AI-provider. Anthropic verwerkt de data conform hun privacybeleid en gebruiksvoorwaarden. Wij hebben een verwerkersovereenkomst met Anthropic voor de verwerking van persoonsgegevens."
+      },
+      "dataFlow": {
+        "title": "4. Hoe Je Gegevens Worden Verwerkt",
+        "subtitle1": "4.1 Platform AI Modus",
+        "content1": "Wanneer je Platform AI gebruikt, worden de volgende gegevens naar Anthropic (VS) gestuurd voor verwerking:\n\n• Je profielgegevens (naam, werkervaring, opleiding, vaardigheden)\n• De vacaturetekst (indien opgegeven)\n• Instructies voor het genereren van content\n\nDeze gegevens worden uitsluitend verwerkt om je verzoek te voltooien en worden niet door Anthropic gebruikt voor het trainen van AI-modellen (conform de Anthropic API-voorwaarden voor zakelijk gebruik).\n\nDe verwerking vindt plaats op servers van Anthropic in de Verenigde Staten. Wij hanteren passende waarborgen voor deze internationale doorgifte conform hoofdstuk V van de AVG, waaronder Standard Contractual Clauses (SCC's).",
+        "subtitle2": "4.2 Eigen API Key Modus",
+        "content2": "Wanneer je je eigen API-sleutel gebruikt, worden je gegevens rechtstreeks naar de door jou gekozen AI-provider gestuurd. CVeetje fungeert hierbij als doorgeefluik — de verwerking valt onder de voorwaarden en het privacybeleid van de betreffende provider. Je bent zelf verantwoordelijk voor het lezen en accepteren van hun voorwaarden."
+      },
+      "userResponsibility": {
+        "title": "5. Jouw Verantwoordelijkheid",
+        "content": "AI-gegenereerde content is een hulpmiddel, geen eindproduct. Het is jouw verantwoordelijkheid om:\n\n• Alle gegenereerde tekst te controleren op juistheid en volledigheid\n• Feitelijke informatie te verifiëren (datums, functietitels, bedrijfsnamen)\n• Content aan te passen aan je persoonlijke situatie\n• Geen misleidende of onjuiste informatie in je CV op te nemen\n\nWerkgevers kunnen vragen of je CV met behulp van AI is opgesteld. Wij raden aan hier eerlijk over te zijn als ernaar gevraagd wordt."
+      },
+      "fitAnalysis": {
+        "title": "6. Fit-Analyse Disclaimer",
+        "content": "De fit-analyse functie vergelijkt je profiel met een vacature en geeft een indicatieve score. Het is belangrijk om te weten dat:\n\n• De score een AI-inschatting is en geen garantie of voorspelling van je kansen\n• De analyse niet wordt gebruikt door werkgevers — alleen jij ziet het resultaat\n• De score geen beslissing is en niet als zodanig moet worden behandeld\n• Je altijd zelf de afweging moet maken of een vacature bij je past\n\nDeze functie is bedoeld als hulpmiddel om je te helpen bij het inschatten van je match met een vacature, niet als definitief oordeel."
+      },
+      "classification": {
+        "title": "7. EU AI Act Classificatie",
+        "content": "CVeetje is geclassificeerd als een AI-systeem met beperkt risico (limited risk) onder de EU AI-verordening (Verordening (EU) 2024/1689). Deze classificatie is gebaseerd op de volgende overwegingen:\n\n• CVeetje is een consumenten-tool die werkzoekenden helpt bij het schrijven van hun eigen CV's\n• CVeetje screent, rankt of filtert geen kandidaten namens werkgevers\n• CVeetje neemt geen aanname- of selectiebeslissingen\n• De AI verbetert de presentatie van bestaande informatie die de gebruiker zelf heeft aangeleverd (Artikel 6(3)(b) — verbetering van eerder voltooide menselijke activiteit)\n\nWij voldoen aan de transparantieverplichtingen van Artikel 50 van de EU AI-verordening door:\n\n• Duidelijk te communiceren dat CVeetje AI gebruikt voor het genereren van content\n• Te vermelden welke AI-modellen worden ingezet\n• Gebruikers te informeren over hun verantwoordelijkheden bij het gebruik van AI-gegenereerde content\n\nWij documenteren onze risicobeoordeling en houden deze beschikbaar voor toezichthouders. De Autoriteit Persoonsgegevens (AP) is de verantwoordelijke toezichthouder in Nederland."
+      },
+      "rights": {
+        "title": "8. Jouw Rechten",
+        "content": "Met betrekking tot de AI-verwerking van je gegevens heb je het recht om:\n\n• Geïnformeerd te worden over hoe AI je gegevens verwerkt (deze pagina)\n• Inzage te krijgen in welke gegevens naar AI-providers worden gestuurd\n• Verwijdering te verzoeken van je opgeslagen profielgegevens en CV's\n• Bezwaar te maken tegen AI-verwerking — je kunt altijd handmatig je CV invullen zonder AI\n• Een klacht in te dienen bij de Autoriteit Persoonsgegevens (https://autoriteitpersoonsgegevens.nl)\n\nVoor het uitoefenen van deze rechten kun je contact met ons opnemen via info@groeimetai.io."
+      },
+      "contact": {
+        "title": "9. Contact en Vragen",
+        "content": "Heb je vragen over hoe CVeetje AI gebruikt? Neem contact met ons op:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nNederland\n\nKvK-nummer: 90102304\nBTW-nummer: NL004787305B79\nE-mail: info@groeimetai.io\n\nWij streven ernaar binnen 5 werkdagen te reageren."
       }
     }
   }

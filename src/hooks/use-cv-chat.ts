@@ -2,7 +2,8 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useCallback, useRef, useState, useMemo } from 'react';
+import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
+import { CHAT_CHAR_LIMIT } from '@/lib/ai/platform-config';
 import type { CVChatContext, CVChatToolName } from '@/types/chat';
 import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation } from '@/types';
 import type { CVDesignTokens, HeaderVariant, FontPairing, SpacingScale, SectionStyle, CVLayout, ContactLayout, SkillsDisplay, AccentStyle, NameStyle, SkillTagStyle, TypeScale } from '@/types/design-tokens';
@@ -333,6 +334,8 @@ function applyToolCallToContent(
  */
 export function useCVChat({ context, onContentChange, onTokensChange }: UseCVChatOptions) {
   const [input, setInput] = useState('');
+  const [chargedCredits, setChargedCredits] = useState(0);
+  const chargedCreditsRef = useRef(0);
 
   // Use refs to avoid stale closures in callbacks
   const contextRef = useRef(context);
@@ -346,10 +349,14 @@ export function useCVChat({ context, onContentChange, onTokensChange }: UseCVCha
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addToolOutputRef = useRef<(args: any) => Promise<void>>(undefined);
 
-  // Create transport with context in body
+  // Create transport with context + chargedCredits in body
+  // chargedCredits uses a getter so the transport always reads the latest ref value
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/cv/chat',
-    body: { context },
+    body: {
+      context,
+      get chargedCredits() { return chargedCreditsRef.current; },
+    },
   }), [context]);
 
   const {
@@ -413,27 +420,82 @@ export function useCVChat({ context, onContentChange, onTokensChange }: UseCVCha
     setInput(e.target.value);
   }, []);
 
-  // Handle form submission
+  // Handle form submission — compute required credits before sending
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!input.trim() || status === 'streaming') return;
 
     const message = input.trim();
+
+    // Count existing message chars + new input
+    const existingChars = messages.reduce((sum, msg) => {
+      const text = (msg.parts ?? [])
+        .filter((p) => p.type === 'text')
+        .map((p) => ('text' in p ? (p as { text: string }).text : ''))
+        .join('');
+      return sum + text.length;
+    }, 0);
+    const totalChars = existingChars + message.length;
+    const requiredCredits = Math.max(1, Math.ceil(totalChars / CHAT_CHAR_LIMIT));
+
+    // Update ref synchronously so the transport body getter reads the latest value
+    chargedCreditsRef.current = requiredCredits;
+    setChargedCredits(requiredCredits);
+
     setInput('');
     await sendMessage({ text: message });
-  }, [input, sendMessage, status]);
+  }, [input, sendMessage, status, messages]);
 
-  // Append a message programmatically
+  // Append a message programmatically (e.g. quick actions)
   const append = useCallback(async (message: { role: 'user' | 'assistant'; content: string }) => {
     if (message.role === 'user') {
+      // Compute credits like handleSubmit
+      const existingChars = messages.reduce((sum, msg) => {
+        const text = (msg.parts ?? [])
+          .filter((p) => p.type === 'text')
+          .map((p) => ('text' in p ? (p as { text: string }).text : ''))
+          .join('');
+        return sum + text.length;
+      }, 0);
+      const total = existingChars + message.content.length;
+      const requiredCredits = Math.max(1, Math.ceil(total / CHAT_CHAR_LIMIT));
+      chargedCreditsRef.current = requiredCredits;
+      setChargedCredits(requiredCredits);
+
       await sendMessage({ text: message.content });
     }
-  }, [sendMessage]);
+  }, [sendMessage, messages]);
 
-  // Clear chat history
+  // Clear chat history and reset credits
   const clearChat = useCallback(() => {
     setMessages([]);
+    chargedCreditsRef.current = 0;
+    setChargedCredits(0);
   }, [setMessages]);
+
+  // Compute total chars across all messages for the UI counter
+  const totalChars = useMemo(() => {
+    return messages.reduce((sum, msg) => {
+      const text = (msg.parts ?? [])
+        .filter((p) => p.type === 'text')
+        .map((p) => ('text' in p ? (p as { text: string }).text : ''))
+        .join('');
+      return sum + text.length;
+    }, 0);
+  }, [messages]);
+
+  // When AI responds we may have crossed a credit boundary — update chargedCredits
+  // so the next request sends the correct value
+  useEffect(() => {
+    const required = Math.max(messages.length > 0 ? 1 : 0, Math.ceil(totalChars / CHAT_CHAR_LIMIT));
+    if (required > chargedCreditsRef.current) {
+      chargedCreditsRef.current = required;
+      setChargedCredits(required);
+    }
+  }, [totalChars, messages.length]);
+
+  // Warning: next message will cost another credit
+  const creditWarning = messages.length > 0 && Math.ceil(totalChars / CHAT_CHAR_LIMIT) >= chargedCredits;
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
@@ -447,5 +509,8 @@ export function useCVChat({ context, onContentChange, onTokensChange }: UseCVCha
     append,
     stop,
     clearChat,
+    creditWarning,
+    chargedCredits,
+    totalChars,
   };
 }

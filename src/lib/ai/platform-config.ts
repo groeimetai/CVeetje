@@ -29,8 +29,11 @@ export const PLATFORM_CREDIT_COSTS: Record<PlatformOperation, number> = {
   'job-parse': 1,
   'fit-analysis': 1,
   'style-generate': 1,
-  'cv-chat': 1,
+  'cv-chat': 0, // handled manually in chat route (character-based billing)
 };
+
+/** Characters per credit in CV chat (soft limit) */
+export const CHAT_CHAR_LIMIT = 40_000;
 
 /** Monthly free credits for all users */
 export const MONTHLY_FREE_CREDITS = 10;

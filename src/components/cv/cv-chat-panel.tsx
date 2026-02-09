@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle, Coins } from 'lucide-react';
+import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle, Coins, TriangleAlert } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-context';
 import { useCVChat } from '@/hooks/use-cv-chat';
 import type { CVChatContext } from '@/types/chat';
@@ -75,6 +75,8 @@ export function CVChatPanel({
     error,
     append,
     clearChat,
+    creditWarning,
+    totalChars,
   } = useCVChat({ context, onContentChange, onTokensChange });
 
   // Scroll to bottom when messages change
@@ -252,6 +254,14 @@ export function CVChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Credit warning banner */}
+      {llmMode === 'platform' && creditWarning && (
+        <div className="flex items-center gap-2 px-4 py-2 text-xs text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/30 border-t">
+          <TriangleAlert className="h-3.5 w-3.5 flex-shrink-0" />
+          <span>Je volgende bericht kost 1 extra credit.</span>
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t p-4">
         <form onSubmit={onSubmit} className="flex gap-2">
@@ -282,7 +292,7 @@ export function CVChatPanel({
           Shift+Enter voor nieuwe regel
           {llmMode === 'platform' && (
             <span className="inline-flex items-center ml-2">
-              · <Coins className="h-3 w-3 mx-1" />1 credit per bericht
+              · <Coins className="h-3 w-3 mx-1" />{(totalChars / 1000).toFixed(1)}k / 40k tekens
             </span>
           )}
         </p>
