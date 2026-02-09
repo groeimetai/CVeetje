@@ -39,6 +39,7 @@ interface TemplateStylePickerProps {
   jobVacancy?: JobVacancy | null;
   onStyleSelected: (styleConfig: CVStyleConfig, tokens: CVDesignTokens) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
+  onCreditsRefresh?: () => void;
   onBack: () => void;
 }
 
@@ -46,6 +47,7 @@ export function TemplateStylePicker({
   linkedInData,
   onStyleSelected,
   onTokenUsage,
+  onCreditsRefresh,
   onBack,
 }: TemplateStylePickerProps) {
   const t = useTranslations('templateStyle');
@@ -142,13 +144,15 @@ export function TemplateStylePicker({
       if (result.usage && onTokenUsage) {
         onTokenUsage(result.usage);
       }
+
+      onCreditsRefresh?.();
     } catch (err) {
       console.error('[Template Style] Analysis error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsAnalyzing(false);
     }
-  }, [file, onTokenUsage]);
+  }, [file, onTokenUsage, onCreditsRefresh]);
 
   // Handle continue with selected style
   const handleContinue = () => {

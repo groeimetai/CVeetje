@@ -88,6 +88,7 @@ type ProfileTokenStep = 'profile-parse' | 'profile-enrich' | 'linkedin-export';
 interface ProfileInputProps {
   onParsed: (data: ParsedLinkedIn) => void;
   onTokenUsage?: (step: ProfileTokenStep, usage: TokenUsage) => void;
+  onCreditsRefresh?: () => void;
   initialData?: ParsedLinkedIn | null;
   initialAvatarUrl?: string | null;
   onAvatarChange?: (url: string | null) => void;
@@ -147,6 +148,7 @@ function getFileIcon(mediaType: string) {
 export function ProfileInput({
   onParsed,
   onTokenUsage,
+  onCreditsRefresh,
   initialData,
   initialAvatarUrl,
   onAvatarChange,
@@ -641,8 +643,8 @@ export function ProfileInput({
       return;
     }
 
-    // Check if token warning threshold is exceeded
-    if (exceedsWarningThreshold(tokenEstimate.estimatedTokens) && hasFileSource) {
+    // Check if token warning threshold is exceeded (skip in platform mode)
+    if (llmMode !== 'platform' && exceedsWarningThreshold(tokenEstimate.estimatedTokens) && hasFileSource) {
       setShowWarningDialog(true);
       return;
     }
@@ -708,6 +710,7 @@ export function ProfileInput({
         onTokenUsage('profile-parse', result.usage);
       }
 
+      onCreditsRefresh?.();
       setParsed(result.data);
       setMode('preview');
       // Don't call onParsed here - let user review and click "Doorgaan"
@@ -2199,8 +2202,8 @@ export function ProfileInput({
             </div>
           )}
 
-          {/* Token estimate */}
-          {showTokenEstimate && (
+          {/* Token estimate (hidden in platform mode — users pay credits, not tokens) */}
+          {showTokenEstimate && llmMode !== 'platform' && (
             <div className="bg-muted rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

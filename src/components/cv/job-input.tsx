@@ -32,10 +32,11 @@ type EditFormData = z.infer<typeof editSchema>;
 interface JobInputProps {
   onSubmit: (data: JobVacancy | null) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
+  onCreditsRefresh?: () => void;
   initialData?: JobVacancy | null;
 }
 
-export function JobInput({ onSubmit, onTokenUsage, initialData }: JobInputProps) {
+export function JobInput({ onSubmit, onTokenUsage, onCreditsRefresh, initialData }: JobInputProps) {
   const t = useTranslations('jobInput');
   const { llmMode } = useAuth();
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
@@ -100,6 +101,7 @@ export function JobInput({ onSubmit, onTokenUsage, initialData }: JobInputProps)
         onTokenUsage(result.usage);
       }
 
+      onCreditsRefresh?.();
       setParsedJob(job);
       setRequirements(job.requirements || []);
       setKeywords(job.keywords || []);

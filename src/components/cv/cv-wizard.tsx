@@ -782,6 +782,7 @@ export function CVWizard() {
         <ProfileInput
           onParsed={handleLinkedInParsed}
           onTokenUsage={(step, usage) => addTokenUsage(step, usage)}
+          onCreditsRefresh={refreshCredits}
           initialData={linkedInData}
           initialAvatarUrl={avatarUrl}
           onAvatarChange={setAvatarUrl}
@@ -794,6 +795,7 @@ export function CVWizard() {
         <JobInput
           onSubmit={handleJobSubmit}
           onTokenUsage={(usage) => addTokenUsage('job', usage)}
+          onCreditsRefresh={refreshCredits}
           initialData={jobVacancy}
         />
       )}
@@ -805,6 +807,7 @@ export function CVWizard() {
           onContinue={handleFitAnalysisContinue}
           onChangeJob={handleFitAnalysisChangeJob}
           onTokenUsage={(usage) => addTokenUsage('style', usage)}
+          onCreditsRefresh={refreshCredits}
           onAnalysisComplete={setFitAnalysis}
         />
       )}
@@ -858,6 +861,7 @@ export function CVWizard() {
             jobVacancy={jobVacancy}
             onStyleSelected={handleStyleGenerated}
             onTokenUsage={(usage) => addTokenUsage('style', usage)}
+            onCreditsRefresh={refreshCredits}
             onBack={() => setCurrentStep('style-choice')}
           />
         </div>
@@ -905,6 +909,7 @@ export function CVWizard() {
             avatarUrl={avatarUrl}
             onStyleGenerated={handleStyleGenerated}
             onTokenUsage={(usage) => addTokenUsage('style', usage)}
+            onCreditsRefresh={refreshCredits}
             initialStyleConfig={styleConfig}
             initialTokens={designTokens}
           />

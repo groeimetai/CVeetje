@@ -33,6 +33,7 @@ interface FitAnalysisCardProps {
   onContinue: () => void;
   onChangeJob: () => void;
   onTokenUsage?: (usage: TokenUsage) => void;
+  onCreditsRefresh?: () => void;
   onAnalysisComplete?: (analysis: FitAnalysis) => void;
 }
 
@@ -135,6 +136,7 @@ export function FitAnalysisCard({
   onContinue,
   onChangeJob,
   onTokenUsage,
+  onCreditsRefresh,
   onAnalysisComplete,
 }: FitAnalysisCardProps) {
   const t = useTranslations('fitAnalysis');
@@ -170,6 +172,7 @@ export function FitAnalysisCard({
         if (result.usage && onTokenUsage) {
           onTokenUsage(result.usage);
         }
+        onCreditsRefresh?.();
       } else {
         throw new Error(result.error || 'Analyse mislukt');
       }

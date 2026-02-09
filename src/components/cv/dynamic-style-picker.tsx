@@ -134,6 +134,7 @@ interface DynamicStylePickerProps {
   avatarUrl?: string | null;
   onStyleGenerated: (styleConfig: CVStyleConfig, tokens: CVDesignTokens) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
+  onCreditsRefresh?: () => void;
   initialStyleConfig?: CVStyleConfig | null;
   initialTokens?: CVDesignTokens | null;
 }
@@ -144,6 +145,7 @@ export function DynamicStylePicker({
   avatarUrl,
   onStyleGenerated,
   onTokenUsage,
+  onCreditsRefresh,
   initialStyleConfig,
   initialTokens,
 }: DynamicStylePickerProps) {
@@ -265,6 +267,7 @@ export function DynamicStylePicker({
                     if (data.usage && onTokenUsage) {
                       onTokenUsage(data.usage);
                     }
+                    onCreditsRefresh?.();
                   }
                   if (data.type === 'error') {
                     throw new Error(data.error || 'Failed to generate style');
@@ -303,6 +306,7 @@ export function DynamicStylePicker({
                 if (data.usage && onTokenUsage) {
                   onTokenUsage(data.usage);
                 }
+                onCreditsRefresh?.();
               }
 
               // Handle error
@@ -327,7 +331,7 @@ export function DynamicStylePicker({
       setIsGenerating(false);
       setGenerationMessage('');
     }
-  }, [linkedInData, jobVacancy, avatarUrl, userPreferences, creativityLevel, onTokenUsage]);
+  }, [linkedInData, jobVacancy, avatarUrl, userPreferences, creativityLevel, onTokenUsage, onCreditsRefresh]);
 
   const handleContinue = () => {
     if (tokens) {
