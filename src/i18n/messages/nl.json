@@ -1018,6 +1018,8 @@
       "statsGenerated": "{count} gegenereerd",
       "statsDraft": "{count} concept",
       "statsFailed": "{count} mislukt",
+      "viewDescription": "Bekijk de inhoud van deze CV",
+      "noContent": "Deze CV heeft nog geen gegenereerde inhoud.",
       "deleteTitle": "CV Verwijderen",
       "deleteConfirm": "Weet je zeker dat je deze CV van {user} wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
       "cancel": "Annuleren",

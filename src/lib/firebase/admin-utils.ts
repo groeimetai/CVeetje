@@ -419,6 +419,35 @@ export async function getAllCVs(
 }
 
 /**
+ * Get a specific CV with full data (admin only)
+ */
+export async function getAdminCVFull(userId: string, cvId: string): Promise<Record<string, unknown> | null> {
+  const db = getAdminDb();
+  const doc = await db.collection('users').doc(userId).collection('cvs').doc(cvId).get();
+
+  if (!doc.exists) return null;
+
+  const data = doc.data()!;
+
+  // Convert Timestamps to serializable dates
+  const convertTimestamps = (obj: Record<string, unknown>): Record<string, unknown> => {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value && typeof value === 'object' && 'toDate' in value && typeof (value as Timestamp).toDate === 'function') {
+        result[key] = (value as Timestamp).toDate().toISOString();
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        result[key] = convertTimestamps(value as Record<string, unknown>);
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  };
+
+  return { id: doc.id, ...convertTimestamps(data) };
+}
+
+/**
  * Delete a specific CV (admin only)
  */
 export async function deleteAdminCV(userId: string, cvId: string): Promise<void> {

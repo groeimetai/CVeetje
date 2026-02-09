@@ -33,12 +33,14 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  Eye,
   FileText,
   Loader2,
   RefreshCw,
   Search,
   Trash2,
 } from 'lucide-react';
+import { AdminCVDialog } from '@/components/admin/admin-cv-dialog';
 import type { AdminCV } from '@/lib/firebase/admin-utils';
 
 const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -60,6 +62,8 @@ export function CVsSection() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedCV, setSelectedCV] = useState<AdminCV | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const fetchCvs = useCallback(async (showRefresh = false) => {
     try {
@@ -259,7 +263,14 @@ export function CVsSection() {
               </TableHeader>
               <TableBody>
                 {filteredCvs.map((cv) => (
-                  <TableRow key={`${cv.userId}-${cv.cvId}`}>
+                  <TableRow
+                    key={`${cv.userId}-${cv.cvId}`}
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setSelectedCV(cv);
+                      setDialogOpen(true);
+                    }}
+                  >
                     <TableCell>
                       <div>
                         <p className="font-medium text-sm">
@@ -291,30 +302,42 @@ export function CVsSection() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {t('deleteConfirm', { user: cv.userEmail })}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(cv.cvId, cv.userId)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              {t('delete')}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCV(cv);
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t('deleteConfirm', { user: cv.userEmail })}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(cv.cvId, cv.userId)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {t('delete')}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -323,6 +346,13 @@ export function CVsSection() {
           </div>
         )}
       </CardContent>
+
+      {/* CV Preview Dialog */}
+      <AdminCVDialog
+        cv={selectedCV}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </Card>
   );
 }
