@@ -773,6 +773,20 @@ export default async function LandingPage({ params }: Props) {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Why credits explanation */}
+                <div className="mt-8 rounded-lg border bg-muted/30 p-6">
+                  <h3 className="font-semibold mb-2">{t('aiModes.whyCredits.title')}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {t('aiModes.whyCredits.description')}
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {t('aiModes.whyCredits.ownKeyBenefit')}
+                  </p>
+                  <p className="text-sm font-medium text-primary">
+                    {t('aiModes.whyCredits.tip')}
+                  </p>
+                </div>
               </div>
             </div>
           </section>

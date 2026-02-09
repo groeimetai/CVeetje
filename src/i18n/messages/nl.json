@@ -276,6 +276,12 @@
         "total": "Totaal per CV",
         "free": "Gratis",
         "credit": "{n} credit"
+      },
+      "whyCredits": {
+        "title": "Waarom kosten Platform AI-acties credits?",
+        "description": "Bij Platform AI draait CVeetje de AI voor je op onze servers met Claude Opus 4.6. Elke AI-actie (profiel parsen, CV genereren, etc.) kost ons rekenkosten bij Anthropic. Credits dekken deze kosten eerlijk en transparant.",
+        "ownKeyBenefit": "Met je eigen API key betaal je AI-kosten rechtstreeks aan je provider (zoals OpenAI of Google) — vaak voordeliger bij regelmatig gebruik. CVeetje rekent dan alleen 1 credit voor de PDF download.",
+        "tip": "Tip: start gratis met 10 Platform AI credits. Bevalt het? Voeg je eigen API key toe om kosten te besparen."
       }
     },
     "pricing": {
