@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { UsersTable } from '@/components/admin/users-table';
 import { UserDetailDialog } from '@/components/admin/user-detail-dialog';
 import { CVsSection } from '@/components/admin/cvs-section';
+import { EmailsSection } from '@/components/admin/emails-section';
 import { GlobalTemplatesSection } from '@/components/admin/global-templates-section';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -195,6 +196,9 @@ export default function AdminPage() {
 
       {/* CVs Section */}
       <CVsSection />
+
+      {/* Emails Section */}
+      <EmailsSection />
 
       {/* Global Templates Section */}
       <GlobalTemplatesSection />
