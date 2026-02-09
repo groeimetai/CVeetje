@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { MONTHLY_FREE_CREDITS } from '@/lib/ai/platform-config';
 
 const RESET_DAY_OF_MONTH = 1;
@@ -36,8 +37,40 @@ export async function POST(request: NextRequest) {
     const userDoc = await userRef.get();
     const userData = userDoc.data();
 
-    if (!userData) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    // Safety net: if user document doesn't exist (init-user failed), create it now
+    if (!userDoc.exists || !userData) {
+      const auth = getAdminAuth();
+      const authUser = await auth.getUser(userId);
+      await userRef.set({
+        email: authUser.email || '',
+        displayName: authUser.displayName || null,
+        photoURL: authUser.photoURL || null,
+        apiKey: null,
+        llmMode: 'platform',
+        credits: {
+          free: MONTHLY_FREE_CREDITS,
+          purchased: 0,
+          lastFreeReset: new Date(),
+        },
+        role: 'user',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      await userRef.collection('transactions').add({
+        amount: MONTHLY_FREE_CREDITS,
+        type: 'monthly_free',
+        description: `Initial free credits (safety net recovery)`,
+        molliePaymentId: null,
+        cvId: null,
+        createdAt: new Date(),
+      });
+
+      return NextResponse.json({
+        success: true,
+        reset: true,
+        message: 'User document created with initial credits (safety net)',
+      });
     }
 
     // Check if credits need to be reset

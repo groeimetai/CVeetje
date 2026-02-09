@@ -166,8 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Defaults to false if role is not set
   const isAdmin = userData?.role === 'admin';
 
-  // LLM mode: 'own-key' (default) or 'platform'
-  const llmMode: LLMMode = userData?.llmMode || 'own-key';
+  // LLM mode: 'platform' (default) or 'own-key'
+  const llmMode: LLMMode = userData?.llmMode || 'platform';
 
   // User has AI access if they're in platform mode OR have their own API key
   const hasAIAccess = llmMode === 'platform' || !!userData?.apiKey;

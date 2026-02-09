@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       displayName: authUser.displayName || null,
       photoURL: authUser.photoURL || null,
       apiKey: null,
+      llmMode: 'platform',
       credits: {
         free: 10,
         purchased: 0,
