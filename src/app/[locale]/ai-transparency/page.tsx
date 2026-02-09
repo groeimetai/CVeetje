@@ -16,16 +16,16 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'metadata.privacy' });
+  const t = await getTranslations({ locale, namespace: 'metadata.aiTransparency' });
 
   return {
     title: t('title'),
     description: t('description'),
     alternates: {
-      canonical: `/${locale}/privacy`,
+      canonical: `/${locale}/ai-transparency`,
       languages: {
-        'nl': '/nl/privacy',
-        'en': '/en/privacy',
+        'nl': '/nl/ai-transparency',
+        'en': '/en/ai-transparency',
       },
     },
   };
@@ -44,11 +44,11 @@ function FormattedContent({ content }: { content: string }) {
   );
 }
 
-export default async function PrivacyPage({ params }: Props) {
+export default async function AITransparencyPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const t = await getTranslations('privacy');
+  const t = await getTranslations('aiTransparency');
 
   // Format date based on locale
   const lastUpdatedDate = new Date('2026-02-09').toLocaleDateString(
@@ -57,20 +57,14 @@ export default async function PrivacyPage({ params }: Props) {
   );
 
   const sections = [
-    'introduction',
-    'dataController',
-    'dataCollection',
-    'dataUsage',
-    'legalBasis',
-    'dataSharing',
-    'thirdPartyServices',
-    'cookies',
-    'dataRetention',
-    'yourRights',
-    'dataTransfers',
-    'security',
-    'children',
-    'changes',
+    'whatAiDoes',
+    'whatAiDoesNot',
+    'models',
+    'dataFlow',
+    'userResponsibility',
+    'fitAnalysis',
+    'classification',
+    'rights',
     'contact',
   ] as const;
 
@@ -78,7 +72,7 @@ export default async function PrivacyPage({ params }: Props) {
     <>
     <BreadcrumbStructuredData items={[
       { name: 'Home', url: `/${locale}` },
-      { name: t('title'), url: `/${locale}/privacy` },
+      { name: t('title'), url: `/${locale}/ai-transparency` },
     ]} />
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -109,6 +103,13 @@ export default async function PrivacyPage({ params }: Props) {
             <p className="text-muted-foreground">{t('lastUpdated', { date: lastUpdatedDate })}</p>
           </div>
 
+          {/* Intro */}
+          <Card className="mb-8 border-primary/20 bg-primary/5">
+            <CardContent className="pt-6">
+              <p className="text-muted-foreground leading-relaxed">{t('intro')}</p>
+            </CardContent>
+          </Card>
+
           {/* Table of Contents */}
           <Card className="mb-8">
             <CardContent className="pt-6">
@@ -138,35 +139,19 @@ export default async function PrivacyPage({ params }: Props) {
                   {t(`sections.${sectionKey}.title`)}
                 </h2>
 
-                {/* Handle sections with subsections */}
-                {sectionKey === 'dataCollection' && (
+                {/* Handle dataFlow section with subsections */}
+                {sectionKey === 'dataFlow' && (
                   <>
-                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.dataCollection.subtitle1')}</h3>
-                    <FormattedContent content={t('sections.dataCollection.content1')} />
+                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.dataFlow.subtitle1')}</h3>
+                    <FormattedContent content={t('sections.dataFlow.content1')} />
 
-                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.dataCollection.subtitle2')}</h3>
-                    <FormattedContent content={t('sections.dataCollection.content2')} />
-
-                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.dataCollection.subtitle3')}</h3>
-                    <FormattedContent content={t('sections.dataCollection.content3')} />
-                  </>
-                )}
-
-                {sectionKey === 'thirdPartyServices' && (
-                  <>
-                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.thirdPartyServices.subtitle1')}</h3>
-                    <FormattedContent content={t('sections.thirdPartyServices.content1')} />
-
-                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.thirdPartyServices.subtitle2')}</h3>
-                    <FormattedContent content={t('sections.thirdPartyServices.content2')} />
-
-                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.thirdPartyServices.subtitle3')}</h3>
-                    <FormattedContent content={t('sections.thirdPartyServices.content3')} />
+                    <h3 className="text-lg font-medium mt-6 mb-3">{t('sections.dataFlow.subtitle2')}</h3>
+                    <FormattedContent content={t('sections.dataFlow.content2')} />
                   </>
                 )}
 
                 {/* Regular sections with single content */}
-                {!['dataCollection', 'thirdPartyServices'].includes(sectionKey) && (
+                {sectionKey !== 'dataFlow' && (
                   <FormattedContent content={t(`sections.${sectionKey}.content`)} />
                 )}
 
@@ -177,12 +162,33 @@ export default async function PrivacyPage({ params }: Props) {
             ))}
           </div>
 
+          {/* Related Links */}
+          <Card className="mt-12">
+            <CardContent className="pt-6">
+              <h2 className="font-semibold mb-4">
+                {locale === 'nl' ? 'Gerelateerde pagina\'s' : 'Related pages'}
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/privacy">
+                  <Button variant="outline" size="sm">
+                    {locale === 'nl' ? 'Privacybeleid' : 'Privacy Policy'}
+                  </Button>
+                </Link>
+                <Link href="/terms">
+                  <Button variant="outline" size="sm">
+                    {locale === 'nl' ? 'Algemene Voorwaarden' : 'Terms of Service'}
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Bottom CTA */}
           <div className="mt-16 text-center">
             <p className="text-muted-foreground mb-4">
               {locale === 'nl'
-                ? 'Heb je vragen over ons privacybeleid?'
-                : 'Have questions about our privacy policy?'}
+                ? 'Heb je vragen over ons AI-gebruik?'
+                : 'Have questions about our AI usage?'}
             </p>
             <Link href="mailto:info@groeimetai.io">
               <Button variant="outline">
@@ -202,13 +208,13 @@ export default async function PrivacyPage({ params }: Props) {
               © {new Date().getFullYear()} CVeetje
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <Link href="/privacy" className="hover:text-foreground font-medium text-foreground">
+              <Link href="/privacy" className="hover:text-foreground">
                 {locale === 'nl' ? 'Privacy' : 'Privacy'}
               </Link>
               <Link href="/terms" className="hover:text-foreground">
                 {locale === 'nl' ? 'Voorwaarden' : 'Terms'}
               </Link>
-              <Link href="/ai-transparency" className="hover:text-foreground">
+              <Link href="/ai-transparency" className="hover:text-foreground font-medium text-foreground">
                 {locale === 'nl' ? 'AI Transparantie' : 'AI Transparency'}
               </Link>
             </div>

@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/register', changeFrequency: 'monthly' as const, priority: 0.5 },
     { path: '/privacy', changeFrequency: 'yearly' as const, priority: 0.3 },
     { path: '/terms', changeFrequency: 'yearly' as const, priority: 0.3 },
+    { path: '/ai-transparency', changeFrequency: 'yearly' as const, priority: 0.4 },
   ];
 
   return publicRoutes.flatMap((route) =>

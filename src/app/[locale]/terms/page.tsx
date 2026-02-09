@@ -51,7 +51,7 @@ export default async function TermsPage({ params }: Props) {
   const t = await getTranslations('terms');
 
   // Format date based on locale
-  const lastUpdatedDate = new Date('2025-01-19').toLocaleDateString(
+  const lastUpdatedDate = new Date('2026-02-09').toLocaleDateString(
     locale === 'nl' ? 'nl-NL' : 'en-US',
     { year: 'numeric', month: 'long', day: 'numeric' }
   );
@@ -219,6 +219,9 @@ export default async function TermsPage({ params }: Props) {
               </Link>
               <Link href="/terms" className="hover:text-foreground font-medium text-foreground">
                 {locale === 'nl' ? 'Voorwaarden' : 'Terms'}
+              </Link>
+              <Link href="/ai-transparency" className="hover:text-foreground">
+                {locale === 'nl' ? 'AI Transparantie' : 'AI Transparency'}
               </Link>
             </div>
           </div>

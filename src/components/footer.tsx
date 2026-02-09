@@ -33,6 +33,9 @@ export function Footer({ minimal = false }: FooterProps) {
               <Link href="/terms" className="hover:text-foreground">
                 {t('terms')}
               </Link>
+              <Link href="/ai-transparency" className="hover:text-foreground">
+                {t('aiTransparency')}
+              </Link>
             </div>
           </div>
         </div>
@@ -65,6 +68,9 @@ export function Footer({ minimal = false }: FooterProps) {
               </Link>
               <Link href="/terms" className="hover:text-foreground">
                 {t('terms')}
+              </Link>
+              <Link href="/ai-transparency" className="hover:text-foreground">
+                {t('aiTransparency')}
               </Link>
               <a href="mailto:info@groeimetai.io" className="hover:text-foreground">
                 {locale === 'nl' ? 'Contact' : 'Contact'}
