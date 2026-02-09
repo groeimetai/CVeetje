@@ -39,6 +39,18 @@ pdf-template-examples/
 trigger-config.yaml
 linkedin-bio.txt
 
+# example templates and outputs
+doc-example-template/
+pdf-example-templates/
+doc-outputs/
+
+# local test/debug scripts
+compare-outputs.js
+inspect-docx.js
+inspect-docx2.js
+test-detection.js
+test-local-template.js
+
 # social media posts
 /posts/
 
