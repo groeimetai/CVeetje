@@ -37,74 +37,54 @@ import type {
 } from '@/types';
 import type { CVDesignTokens, DecorationIntensity, ExperienceDescriptionFormat } from '@/types/design-tokens';
 
-function linkedInToPreviewContent(data: ParsedLinkedIn): GeneratedCVContent {
-  return {
-    headline: data.headline || 'Professional',
-    summary: data.about || 'Ervaren professional met een bewezen track record.',
-    experience: data.experience.map((exp) => {
-      const period = exp.endDate
-        ? `${exp.startDate} - ${exp.endDate}`
-        : `${exp.startDate} - Heden`;
-      return {
-        title: exp.title,
-        company: exp.company,
-        location: exp.location,
-        period,
-        highlights: exp.description
-          ? exp.description.split(/\n+/).filter(Boolean).slice(0, 4)
-          : [],
-        description: exp.description || undefined,
-      };
-    }),
-    education: data.education.map((edu) => {
-      const degree = [edu.degree, edu.fieldOfStudy].filter(Boolean).join(' - ') || edu.school;
-      const year = edu.endYear || edu.startYear || '';
-      return {
-        degree,
-        institution: edu.school,
-        year,
-        details: null,
-      };
-    }),
-    skills: {
-      technical: data.skills.map((s) => s.name),
-      soft: [],
-    },
-    languages: data.languages.map((l) => ({
-      language: l.language,
-      level: l.proficiency || '',
-    })),
-    certifications: data.certifications.map((c) => c.name),
-  };
-}
+const SAMPLE_CONTENT: GeneratedCVContent = {
+  headline: 'Senior Professional',
+  summary: 'Ervaren professional met een bewezen track record in het leveren van resultaten. Beschikt over sterke analytische vaardigheden en een passie voor innovatie.',
+  experience: [{
+    title: 'Senior Functie',
+    company: 'Voorbeeldbedrijf',
+    location: 'Amsterdam',
+    period: '2021 - Heden',
+    highlights: ['Leidde team van 5 medewerkers', 'Verbeterde processen met 30%'],
+    description: 'Verantwoordelijk voor het aansturen van een team van 5 medewerkers en het optimaliseren van bedrijfsprocessen, wat resulteerde in een efficiëntieverbetering van 30%.',
+  }],
+  education: [{
+    degree: 'Master of Science',
+    institution: 'Universiteit van Amsterdam',
+    year: '2018',
+    details: null,
+  }],
+  skills: {
+    technical: ['React', 'TypeScript', 'Node.js', 'Python'],
+    soft: ['Leiderschap', 'Communicatie'],
+  },
+  languages: [
+    { language: 'Nederlands', level: 'Moedertaal' },
+    { language: 'Engels', level: 'Vloeiend' },
+  ],
+  certifications: [],
+};
 
 // A4 dimensions in px (96 dpi: 210mm ≈ 794px, 297mm ≈ 1123px)
 const A4_WIDTH_PX = 794;
 const A4_HEIGHT_PX = 1123;
 
-// Scaled iframe that renders the real CV HTML with profile data
+// Scaled iframe that renders the real CV HTML with sample content
 function StylePreviewFrame({
   tokens,
   fullName,
   avatarUrl,
-  linkedInData,
 }: {
   tokens: CVDesignTokens;
   fullName: string;
   avatarUrl?: string | null;
-  linkedInData: ParsedLinkedIn;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
 
-  const previewContent = useMemo(
-    () => linkedInToPreviewContent(linkedInData),
-    [linkedInData]
-  );
-
   const html = useMemo(
-    () => generateCVHTML(previewContent, tokens, fullName, avatarUrl, linkedInData.headline),
-    [previewContent, tokens, fullName, avatarUrl, linkedInData.headline]
+    () => generateCVHTML(SAMPLE_CONTENT, tokens, fullName, avatarUrl),
+    [tokens, fullName, avatarUrl]
   );
 
   useEffect(() => {
@@ -681,7 +661,6 @@ export function DynamicStylePicker({
               tokens={tokens}
               fullName={linkedInData.fullName}
               avatarUrl={avatarUrl}
-              linkedInData={linkedInData}
             />
 
             {/* Actions */}
