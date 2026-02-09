@@ -11,6 +11,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { withRetry } from './retry';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -215,38 +216,45 @@ export async function generateMotivationLetter(
 
   console.log(`[Motivation Gen] Generating letter in ${language} for ${jobVacancy.title}`);
 
-  const result = await generateObject({
-    model: aiProvider(modelId),
-    schema: motivationLetterSchema,
-    system: systemPrompt,
-    prompt: userPrompt,
-    temperature: 0.7, // Some creativity for the letter
-  });
+  try {
+    const result = await withRetry(() =>
+      generateObject({
+        model: aiProvider(modelId),
+        schema: motivationLetterSchema,
+        system: systemPrompt,
+        prompt: userPrompt,
+        temperature: 0.7,
+      })
+    );
 
-  // Format the complete letter
-  const fullText = formatFullLetter(
-    result.object,
-    linkedInData.fullName,
-    jobVacancy.title,
-    jobVacancy.company,
-    language
-  );
+    // Format the complete letter
+    const fullText = formatFullLetter(
+      result.object,
+      linkedInData.fullName,
+      jobVacancy.title,
+      jobVacancy.company,
+      language
+    );
 
-  const letter: GeneratedMotivationLetter = {
-    opening: result.object.opening,
-    whyCompany: result.object.whyCompany,
-    whyMe: result.object.whyMe,
-    motivation: result.object.motivation,
-    closing: result.object.closing,
-    fullText,
-  };
+    const letter: GeneratedMotivationLetter = {
+      opening: result.object.opening,
+      whyCompany: result.object.whyCompany,
+      whyMe: result.object.whyMe,
+      motivation: result.object.motivation,
+      closing: result.object.closing,
+      fullText,
+    };
 
-  const usage: TokenUsage = {
-    promptTokens: result.usage?.inputTokens ?? 0,
-    completionTokens: result.usage?.outputTokens ?? 0,
-  };
+    const usage: TokenUsage = {
+      promptTokens: result.usage?.inputTokens ?? 0,
+      completionTokens: result.usage?.outputTokens ?? 0,
+    };
 
-  console.log(`[Motivation Gen] Generated letter: ${usage.promptTokens} input, ${usage.completionTokens} output tokens`);
+    console.log(`[Motivation Gen] Generated letter: ${usage.promptTokens} input, ${usage.completionTokens} output tokens`);
 
-  return { letter, usage };
+    return { letter, usage };
+  } catch (error) {
+    console.error('[Motivation Gen] Failed after retries:', error);
+    throw error;
+  }
 }

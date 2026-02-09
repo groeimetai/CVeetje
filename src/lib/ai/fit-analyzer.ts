@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { withRetry } from './retry';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -187,19 +188,27 @@ export async function analyzeFit(
 
   const prompt = buildFitAnalysisPrompt(linkedIn, jobVacancy);
 
-  const { object, usage } = await generateObject({
-    model: aiProvider(modelId),
-    schema: fitAnalysisSchema,
-    prompt,
-  });
+  try {
+    const { object, usage } = await withRetry(() =>
+      generateObject({
+        model: aiProvider(modelId),
+        schema: fitAnalysisSchema,
+        prompt,
+        temperature: 0.3,
+      })
+    );
 
-  return {
-    analysis: object as FitAnalysis,
-    usage: {
-      promptTokens: usage?.inputTokens ?? 0,
-      completionTokens: usage?.outputTokens ?? 0,
-    },
-  };
+    return {
+      analysis: object as FitAnalysis,
+      usage: {
+        promptTokens: usage?.inputTokens ?? 0,
+        completionTokens: usage?.outputTokens ?? 0,
+      },
+    };
+  } catch (error) {
+    console.error('[Fit Analyzer] Failed after retries:', error);
+    throw error;
+  }
 }
 
 // Helper function to get verdict color (for UI)

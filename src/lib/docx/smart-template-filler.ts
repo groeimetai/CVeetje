@@ -422,6 +422,121 @@ function duplicateWorkExperienceSlots(
   return docXml.substring(0, blockEnd) + insertXml + docXml.substring(blockEnd);
 }
 
+// ==================== Education Block Duplication ====================
+
+/**
+ * Detect education slots using paragraph-based grouping.
+ * Works the same way as detectWorkExperienceSlots but for education sections.
+ * A slot starts at a paragraph whose combined text matches a year/period pattern.
+ */
+function detectEducationSlots(
+  docXml: string,
+  segments: { index: number; text: string; start: number; end: number; section?: SectionType; isHeader?: boolean }[]
+): WorkExperienceSlot[] {
+  const eduSegments = segments.filter(s => s.section === 'education' && !s.isHeader);
+  const slots: WorkExperienceSlot[] = [];
+
+  // Period pattern to detect start of an education block
+  // Matches year ranges (2015-2017) and single years (2017)
+  const periodPattern = /\d{4}(\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow))?/;
+
+  // Group education segments by parent paragraph
+  interface EduPara { paraStart: number; paraEnd: number; combinedText: string; segments: typeof eduSegments }
+  const eduParas: EduPara[] = [];
+  const seenParaStarts = new Set<number>();
+
+  for (const seg of eduSegments) {
+    const p = findParentParagraph(docXml, seg.start);
+    if (!p) continue;
+
+    if (seenParaStarts.has(p.start)) {
+      const existing = eduParas.find(wp => wp.paraStart === p.start)!;
+      existing.combinedText += seg.text;
+      existing.segments.push(seg);
+    } else {
+      seenParaStarts.add(p.start);
+      eduParas.push({
+        paraStart: p.start,
+        paraEnd: p.end,
+        combinedText: seg.text,
+        segments: [seg],
+      });
+    }
+  }
+
+  // Sort by position
+  eduParas.sort((a, b) => a.paraStart - b.paraStart);
+
+  // Detect slots: an education slot starts at a paragraph whose combined text matches the period pattern
+  let currentSlotParas: EduPara[] = [];
+
+  const flushSlot = () => {
+    if (currentSlotParas.length === 0) return;
+
+    const segmentIndices: number[] = [];
+    const paragraphs: { start: number; end: number }[] = [];
+
+    for (const wp of currentSlotParas) {
+      for (const s of wp.segments) {
+        segmentIndices.push(s.index);
+      }
+      paragraphs.push({ start: wp.paraStart, end: wp.paraEnd });
+    }
+
+    if (paragraphs.length > 0) {
+      slots.push({ segmentIndices, paragraphs });
+    }
+    currentSlotParas = [];
+  };
+
+  for (const wp of eduParas) {
+    if (periodPattern.test(wp.combinedText)) {
+      // Period paragraph found — flush previous slot, start new one
+      flushSlot();
+      currentSlotParas = [wp];
+    } else if (currentSlotParas.length > 0) {
+      // Continue current slot
+      currentSlotParas.push(wp);
+    }
+  }
+
+  // Flush the last slot
+  flushSlot();
+
+  return slots;
+}
+
+/**
+ * Duplicate education slots by cloning paragraph XML.
+ * Works the same way as duplicateWorkExperienceSlots.
+ */
+function duplicateEducationSlots(
+  docXml: string,
+  slots: WorkExperienceSlot[],
+  targetCount: number
+): string {
+  if (slots.length === 0 || slots.length >= targetCount) return docXml;
+
+  const additionalNeeded = targetCount - slots.length;
+  const lastSlot = slots[slots.length - 1];
+  const paras = lastSlot.paragraphs;
+
+  // Extract the XML of all paragraphs in the last slot
+  const blockStart = paras[0].start;
+  const blockEnd = paras[paras.length - 1].end;
+  const blockXml = docXml.substring(blockStart, blockEnd);
+
+  // Clone the block for each additional education, with spacer between blocks
+  const spacerXml = '<w:p></w:p>';
+  let insertXml = '';
+  for (let i = 0; i < additionalNeeded; i++) {
+    insertXml += spacerXml + blockXml;
+  }
+
+  // Insert after the last education block
+  return docXml.substring(0, blockEnd) + insertXml + docXml.substring(blockEnd);
+}
+
 // ==================== Multi-line Bullet Expansion ====================
 
 /**
@@ -974,20 +1089,67 @@ function applyFilledSegments(
           const pOpenMatch = group.paraXml.match(/^<w:p[^>]*>/);
           const pOpen = pOpenMatch ? pOpenMatch[0] : '<w:p>';
 
-          // Build clean pPr with style + left indent only
-          const indentPos = 2880;
-          let newPPr = '<w:pPr>';
-          if (pPrXml) {
-            const styleMatch = pPrXml.match(/<w:pStyle[^/]*\/>/);
-            if (styleMatch) newPPr = `<w:pPr>${styleMatch[0]}`;
+          // Check if content contains a tab character (AI returns "period\tvalue" for
+          // education/WE period fields). Literal \t in <w:t> doesn't render — need <w:tab/>.
+          if (combinedContent.includes('\t')) {
+            const tabParts = combinedContent.split('\t');
+            const labelPart = tabParts[0].trim();
+            const valuePart = tabParts.slice(1).join(' ').trim();
+
+            if (labelPart && valuePart) {
+              // Build tab-aligned paragraph with proper <w:tab/> element
+              const tabPos = extractTabStopPos(pPrXml) !== TAB_STOP_POS
+                ? extractTabStopPos(pPrXml)
+                : 2880;
+
+              const tabRuns = buildTabAlignedRuns(labelPart, valuePart, rPrXml);
+              let newPPr = pPrXml;
+              if (newPPr) {
+                newPPr = addTabAlignmentToParagraphXml(newPPr, tabPos);
+              } else {
+                newPPr = `<w:pPr><w:tabs><w:tab w:val="left" w:pos="${tabPos}"/></w:tabs><w:ind w:left="${tabPos}" w:hanging="${tabPos}"/></w:pPr>`;
+              }
+
+              // Add spacing before period paragraphs for visual separation
+              const periodPattern = /\d{4}\s*[-–—]\s*(\d{4}|[Hh]eden|[Pp]resent|[Nn]u|[Nn]ow)/;
+              if (periodPattern.test(labelPart)) {
+                newPPr = newPPr.replace('</w:pPr>', '<w:spacing w:before="240"/></w:pPr>');
+              }
+
+              const newParaXml = `${pOpen}${newPPr}${tabRuns}</w:p>`;
+              result = result.substring(0, group.paraStart) + newParaXml + result.substring(group.paraEnd);
+            } else {
+              // Tab present but one side empty — use the non-empty part as plain text
+              const plainContent = (labelPart || valuePart).replace(/\t/g, ' ');
+              const indentPos = 2880;
+              let newPPr = '<w:pPr>';
+              if (pPrXml) {
+                const styleMatch = pPrXml.match(/<w:pStyle[^/]*\/>/);
+                if (styleMatch) newPPr = `<w:pPr>${styleMatch[0]}`;
+              }
+              newPPr += `<w:ind w:left="${indentPos}"/></w:pPr>`;
+
+              const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
+              const escapedContent = escapeXml(plainContent);
+              const newParaXml = `${pOpen}${newPPr}<w:r>${rPr}<w:t xml:space="preserve">${escapedContent}</w:t></w:r></w:p>`;
+              result = result.substring(0, group.paraStart) + newParaXml + result.substring(group.paraEnd);
+            }
+          } else {
+            // No tab — simple content replacement with left indent
+            const indentPos = 2880;
+            let newPPr = '<w:pPr>';
+            if (pPrXml) {
+              const styleMatch = pPrXml.match(/<w:pStyle[^/]*\/>/);
+              if (styleMatch) newPPr = `<w:pPr>${styleMatch[0]}`;
+            }
+            newPPr += `<w:ind w:left="${indentPos}"/></w:pPr>`;
+
+            const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
+            const escapedContent = escapeXml(combinedContent);
+            const newParaXml = `${pOpen}${newPPr}<w:r>${rPr}<w:t xml:space="preserve">${escapedContent}</w:t></w:r></w:p>`;
+
+            result = result.substring(0, group.paraStart) + newParaXml + result.substring(group.paraEnd);
           }
-          newPPr += `<w:ind w:left="${indentPos}"/></w:pPr>`;
-
-          const rPr = rPrXml ? `<w:rPr>${rPrXml.replace(/<\/?w:rPr>/g, '')}</w:rPr>` : '';
-          const escapedContent = escapeXml(combinedContent);
-          const newParaXml = `${pOpen}${newPPr}<w:r>${rPr}<w:t xml:space="preserve">${escapedContent}</w:t></w:r></w:p>`;
-
-          result = result.substring(0, group.paraStart) + newParaXml + result.substring(group.paraEnd);
         } else {
           // All whitespace — preserve as-is (spacer paragraph)
           const sortedIndices = [...group.matchIndices].sort((a, b) => matches[b].start - matches[a].start);
@@ -1130,6 +1292,18 @@ export async function fillSmartTemplate(
 
       if (weSlots.length > 0 && weSlots.length < experienceCount) {
         docXml = duplicateWorkExperienceSlots(docXml, weSlots, experienceCount);
+      }
+    }
+
+    // ==== EDUCATION BLOCK DUPLICATION ====
+    // Same approach as WE: detect existing slots, clone if profile has more educations
+    const educationCount = profileData.education?.length || 0;
+    if (educationCount > 0) {
+      const preliminary = extractIndexedSegments(docXml);
+      const eduSlots = detectEducationSlots(docXml, preliminary.segments);
+
+      if (eduSlots.length > 0 && eduSlots.length < educationCount) {
+        docXml = duplicateEducationSlots(docXml, eduSlots, educationCount);
       }
     }
 

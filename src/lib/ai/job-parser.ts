@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { withRetry } from './retry';
 import type { JobVacancy, LLMProvider, TokenUsage } from '@/types';
 
 // Schema for compensation/benefits
@@ -163,20 +164,28 @@ export async function parseJobVacancy(
 
   const prompt = buildParsePrompt(rawText);
 
-  const { object, usage } = await generateObject({
-    model: aiProvider(modelId),
-    schema: jobVacancySchema,
-    prompt,
-  });
+  try {
+    const { object, usage } = await withRetry(() =>
+      generateObject({
+        model: aiProvider(modelId),
+        schema: jobVacancySchema,
+        prompt,
+        temperature: 0.3,
+      })
+    );
 
-  return {
-    vacancy: {
-      ...object,
-      rawText, // Preserve original text
-    } as JobVacancy,
-    usage: {
-      promptTokens: usage?.inputTokens ?? 0,
-      completionTokens: usage?.outputTokens ?? 0,
-    },
-  };
+    return {
+      vacancy: {
+        ...object,
+        rawText, // Preserve original text
+      } as JobVacancy,
+      usage: {
+        promptTokens: usage?.inputTokens ?? 0,
+        completionTokens: usage?.outputTokens ?? 0,
+      },
+    };
+  } catch (error) {
+    console.error('[Job Parser] Failed after retries:', error);
+    throw error;
+  }
 }

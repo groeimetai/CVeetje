@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { withRetry } from './retry';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -467,17 +468,25 @@ export async function generateCV(
 
   const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language, descriptionFormat);
 
-  const { object, usage } = await generateObject({
-    model: aiProvider(modelId),
-    schema: cvContentSchema,
-    prompt,
-  });
+  try {
+    const { object, usage } = await withRetry(() =>
+      generateObject({
+        model: aiProvider(modelId),
+        schema: cvContentSchema,
+        prompt,
+        temperature: 0.5,
+      })
+    );
 
-  return {
-    content: object as GeneratedCVContent,
-    usage: {
-      promptTokens: usage?.inputTokens ?? 0,
-      completionTokens: usage?.outputTokens ?? 0,
-    },
-  };
+    return {
+      content: object as GeneratedCVContent,
+      usage: {
+        promptTokens: usage?.inputTokens ?? 0,
+        completionTokens: usage?.outputTokens ?? 0,
+      },
+    };
+  } catch (error) {
+    console.error('[CV Gen] Failed after retries:', error);
+    throw error;
+  }
 }

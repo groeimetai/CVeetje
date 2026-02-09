@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, type LLMProvider } from './providers';
+import { withRetry } from './retry';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
@@ -144,8 +145,10 @@ TAB-SEPARATED FIELDS:
 
 EDUCATION PERIOD FIELDS:
 - Education periods work the SAME way as work experience periods
-- For period segments in education (e.g., "2022-2024"), return "STARTYEAR-ENDYEAR\tSchoolName - Degree"
+- For period segments in education (e.g., "2022-2024" or "2022-2024 : "), return "STARTYEAR-ENDYEAR\tSchoolName - Degree"
 - Example: [5] "2022-2024" → return { "index": "5", "value": "2015-2017\tRijn IJssel - MBO 4 Entrepreneurship" }
+- Example: [5] "2022-2024 : " → return { "index": "5", "value": "2015-2017\tRijn IJssel - MBO 4 Entrepreneurship" }
+- ALWAYS include the school name and degree after the tab separator! Never return just the year range.
 - ALWAYS keep the full year range together (e.g., "2015-2017"), NEVER split it across label and value
 - The year range goes in the LEFT column, school + degree in the RIGHT column
 
@@ -171,19 +174,25 @@ NEVER fill two slots with the same experience!
 
 EDUCATION ORDER:
 Education entries follow the same pattern as work experience.
-Each education period segment should contain the FULL year range (e.g., "2015-2017"), NOT just the start year.
-The school name and degree go in the value column after a tab separator.
+After block duplication, all education slots may have IDENTICAL placeholder text.
+You MUST fill each slot with a DIFFERENT education from the profile, in chronological order (most recent first).
+Slot 1 = education 1, Slot 2 = education 2, etc.
+NEVER fill two education slots with the same education!
+Each education period segment MUST contain "STARTYEAR-ENDYEAR\tSchool - Degree" (with tab separator).
+NEVER return just the year range — ALWAYS include the school name and degree after the tab.
 
 IMPORTANT:
 - Fill ALL empty segments where data belongs
 - For "Label : " segments, return ONLY the value (not the label)
 - For period segments ("2024-Present : "), return "YEAR-YEAR\tCompanyName"
-- For education period segments, return "STARTYEAR-ENDYEAR\tSchool - Degree"
+- For education period segments ("2022-2024" or "2022-2024 : "), return "STARTYEAR-ENDYEAR\tSchool - Degree"
 - Fill availability, transport etc. if known
 - Return ONLY segments that need to be changed
 - NEVER return section header segments
 - FILL ALL work experience - including older jobs! Skip no experience.
+- FILL ALL education entries - including older ones! Skip no education.
 - If there are multiple work experience slots, fill them ALL with available experiences
+- If there are multiple education slots, fill them ALL with available educations
 - Space is NOT a problem - fill everything from the profile`,
     };
   }
@@ -220,8 +229,10 @@ TAB-GESCHEIDEN VELDEN:
 
 OPLEIDING PERIODE VELDEN:
 - Opleidingsperiodes werken HETZELFDE als werkervaring periodes
-- Voor periode segmenten in opleidingen (bijv. "2022-2024"), retourneer "STARTJAAR-EINDJAAR\tSchool - Diploma"
+- Voor periode segmenten in opleidingen (bijv. "2022-2024" of "2022-2024 : "), retourneer "STARTJAAR-EINDJAAR\tSchool - Diploma"
 - Voorbeeld: [5] "2022-2024" → retourneer { "index": "5", "value": "2015-2017\tRijn IJssel - MBO 4 Entrepreneurship" }
+- Voorbeeld: [5] "2022-2024 : " → retourneer { "index": "5", "value": "2015-2017\tRijn IJssel - MBO 4 Entrepreneurship" }
+- Retourneer ALTIJD de schoolnaam en diploma na de tab-scheiding! Retourneer nooit alleen het jaarbereik.
 - Houd ALTIJD het volledige jaarbereik bij elkaar (bijv. "2015-2017"), splits het NOOIT over label en waarde
 - Het jaarbereik gaat in de LINKER kolom, school + diploma in de RECHTER kolom
 
@@ -247,19 +258,25 @@ Vul NOOIT twee slots met dezelfde ervaring!
 
 OPLEIDING VOLGORDE:
 Opleidingen volgen hetzelfde patroon als werkervaring.
-Elk opleiding-periode segment moet het VOLLEDIGE jaarbereik bevatten (bijv. "2015-2017"), NIET alleen het startjaar.
-De schoolnaam en het diploma gaan in de waarde-kolom na een tab-scheiding.
+Na blok-duplicatie kunnen alle opleiding slots IDENTIEKE placeholder tekst hebben.
+Je MOET elk slot vullen met een ANDERE opleiding uit het profiel, in chronologische volgorde (meest recent eerst).
+Slot 1 = opleiding 1, Slot 2 = opleiding 2, etc.
+Vul NOOIT twee opleiding slots met dezelfde opleiding!
+Elk opleiding-periode segment MOET "STARTJAAR-EINDJAAR\tSchool - Diploma" bevatten (met tab-scheiding).
+Retourneer NOOIT alleen het jaarbereik — neem ALTIJD de schoolnaam en diploma op na de tab.
 
 BELANGRIJK:
 - Vul ALLE lege segmenten in waar data hoort
 - Voor "Label : " segmenten, retourneer ALLEEN de waarde (niet het label)
 - Voor periode segmenten ("2024-Heden : "), retourneer "JAAR-JAAR\tBedrijfsnaam"
-- Voor opleiding periode segmenten, retourneer "STARTJAAR-EINDJAAR\tSchool - Diploma"
+- Voor opleiding periode segmenten ("2022-2024" of "2022-2024 : "), retourneer "STARTJAAR-EINDJAAR\tSchool - Diploma"
 - Beschikbaarheid, vervoer etc. ook invullen indien bekend
 - Retourneer ALLEEN segmenten die gewijzigd moeten worden
 - Retourneer NOOIT sectie header segmenten
 - VUL ALLE werkervaring in - ook oudere banen! Sla geen ervaring over.
+- VUL ALLE opleidingen in - ook oudere! Sla geen opleiding over.
 - Als er meerdere werkervaring slots zijn, vul ze ALLEMAAL in met de beschikbare ervaringen
+- Als er meerdere opleiding slots zijn, vul ze ALLEMAAL in met de beschikbare opleidingen
 - Ruimte is GEEN probleem - vul alles in wat in het profiel staat`,
   };
 }
@@ -548,12 +565,15 @@ ${jobSummary ? `\n${prompts.jobHeader}:\n${jobSummary}` : ''}${fitSummary}${form
 ${prompts.instructions}`;
 
   try {
-    const result = await generateObject({
-      model: aiProvider(model),
-      schema: indexedFillSchema,
-      system: systemPrompt,
-      prompt: userPrompt,
-    });
+    const result = await withRetry(() =>
+      generateObject({
+        model: aiProvider(model),
+        schema: indexedFillSchema,
+        system: systemPrompt,
+        prompt: userPrompt,
+        temperature: 0.5,
+      })
+    );
 
     // Convert array format to Record format for compatibility
     const filledSegmentsRecord: Record<string, string> = {};
