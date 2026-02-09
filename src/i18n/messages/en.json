@@ -52,7 +52,11 @@
     "signOut": "Sign Out",
     "admin": "Admin",
     "userManagement": "User Management",
-    "adminSection": "Admin"
+    "adminSection": "Admin",
+    "adminUsers": "Users",
+    "adminCvs": "CVs",
+    "adminEmails": "Emails",
+    "adminTemplates": "Templates"
   },
   "auth": {
     "signIn": "Sign In",

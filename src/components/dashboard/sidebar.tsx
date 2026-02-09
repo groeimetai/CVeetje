@@ -14,6 +14,7 @@ import {
   Users,
   Menu,
   LayoutTemplate,
+  Mail,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -46,7 +47,10 @@ const navigationItems = [
 ];
 
 const adminNavigationItems = [
-  { key: 'userManagement', href: '/admin', icon: Users },
+  { key: 'adminUsers', href: '/admin/users', icon: Users },
+  { key: 'adminCvs', href: '/admin/cvs', icon: FileText },
+  { key: 'adminEmails', href: '/admin/emails', icon: Mail },
+  { key: 'adminTemplates', href: '/admin/templates', icon: LayoutTemplate },
 ];
 
 // Sidebar content component (shared between desktop and mobile)

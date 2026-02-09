@@ -52,7 +52,11 @@
     "signOut": "Uitloggen",
     "admin": "Admin",
     "userManagement": "Gebruikersbeheer",
-    "adminSection": "Beheer"
+    "adminSection": "Beheer",
+    "adminUsers": "Gebruikers",
+    "adminCvs": "CVs",
+    "adminEmails": "E-mails",
+    "adminTemplates": "Templates"
   },
   "auth": {
     "signIn": "Inloggen",
