@@ -23,11 +23,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const db = getAdminDb();
     const userDoc = await db.collection('users').doc(userId).get();
 
-    if (!userDoc.exists) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const assignedTemplates: string[] = userDoc.data()?.assignedTemplates || [];
+    // Return empty array if user has no Firestore doc yet (Auth-only user)
+    const assignedTemplates: string[] = userDoc.exists
+      ? userDoc.data()?.assignedTemplates || []
+      : [];
 
     return NextResponse.json({
       success: true,

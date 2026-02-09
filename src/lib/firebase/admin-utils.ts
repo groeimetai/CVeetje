@@ -265,11 +265,11 @@ export async function updateUserCredits(
 ): Promise<void> {
   const db = getAdminDb();
 
-  await db.collection('users').doc(userId).update({
-    'credits.free': free,
-    'credits.purchased': purchased,
+  // Use set with merge so it works even if Firestore doc doesn't exist yet
+  await db.collection('users').doc(userId).set({
+    credits: { free, purchased },
     updatedAt: FieldValue.serverTimestamp(),
-  });
+  }, { merge: true });
 
   console.log(`[Admin] Updated credits for user ${userId}: free=${free}, purchased=${purchased}`);
 }
