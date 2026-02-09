@@ -275,10 +275,12 @@ FONTS: all 12 pairings — PREFER display/serif fonts for maximum impact:
   - 'playfair-inter': elegant serif contrast
   - plus all standard pairings
 
-HEADERS: simple, accented, banner, or split — don't always default to banner!
-  - 'split' creates an interesting asymmetric layout
-  - 'accented' with bold colors can be just as impactful as banner
-  - 'simple' with uppercase name + bold colors = clean power
+HEADERS: simple, accented, banner, or split — ROTATE between all four! Do NOT always pick banner!
+  - 'split': asymmetric — name left, contact right — modern and distinctive
+  - 'accented': left border accent — editorial, bold with strong colors
+  - 'banner': full-width color block — dramatic, immersive
+  - 'simple': clean with uppercase name + bold colors = powerful minimalism
+  Pick a RANDOM header variant each time. If you notice yourself defaulting to banner, STOP and pick something else!
 
 SECTION STYLES: clean, underlined, boxed, timeline, accent-left, card
   - 'card': sections as cards with subtle shadows — modern SaaS feel
@@ -305,12 +307,12 @@ EXTENDED STYLING (ALL required for experimental!):
 - skillTagStyle: 'outlined' or 'pill' (NOT 'filled')
 - pageBackground: subtle tinted background (REQUIRED — e.g. #faf8f5 warm, #f5f0eb cream, #f0f4f8 cool blue)
 
-EXAMPLE COMBINATIONS (for inspiration, don't copy exactly):
+EXAMPLE COMBINATIONS (for inspiration, don't copy exactly — VARY the header!):
 1. Sidebar-right + accented header + card sections + pill skill tags + dm-serif-dm-sans
 2. Single-column + split header + accent-left sections + outlined skills + oswald-source-sans + uppercase name
-3. Sidebar-left + banner header + clean sections + extra-bold name + space-grotesk-work-sans
-4. Single-column + simple header + timeline sections + quote accent + libre-baskerville-source-sans + warm page background
-5. Sidebar-right + banner + boxed sections + pill border-radius + poppins-nunito
+3. Sidebar-left + accented header + timeline sections + extra-bold name + space-grotesk-work-sans
+4. Single-column + split header + boxed sections + quote accent + libre-baskerville-source-sans + warm page background
+5. Sidebar-right + banner header + card sections + pill border-radius + poppins-nunito
 
 COLORS: Be adventurous!
 - Don't default to generic blue/gray — use VIBRANT, unexpected colors
@@ -839,7 +841,12 @@ function applyVarietyBoosts(tokens: CVDesignTokens, needed: number, level: Style
   }
 
   if (applied < needed && tokens.headerVariant === 'simple') {
-    tokens.headerVariant = level === 'experimental' ? 'banner' : 'split';
+    if (level === 'experimental') {
+      const options = ['banner', 'split', 'accented'] as const;
+      tokens.headerVariant = options[Math.floor(Math.random() * options.length)];
+    } else {
+      tokens.headerVariant = 'split';
+    }
     applied++;
     console.log(`[Style Gen] Variety boost: headerVariant → ${tokens.headerVariant}`);
   }
