@@ -23,7 +23,6 @@ import {
   ArrowRight,
   Upload,
   Plus,
-  Settings,
   CheckCircle,
   Sparkles,
   Brain,
@@ -42,12 +41,10 @@ interface TemplateSelectorProps {
 export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, language = 'nl', onFill, onBack }: TemplateSelectorProps) {
   const t = useTranslations('templates.selector');
   const tUpload = useTranslations('templates.upload');
-  const tConfig = useTranslations('templates.configurator');
   const [templates, setTemplates] = useState<PDFTemplateSummary[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<PDFTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
 
   // Upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -55,10 +52,6 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
   const [newTemplateName, setNewTemplateName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Configure state - show after upload
-  const [showConfigurePrompt, setShowConfigurePrompt] = useState(false);
-  const [newlyUploadedTemplate, setNewlyUploadedTemplate] = useState<PDFTemplate | null>(null);
 
   // Custom values for fields not in LinkedIn data
   const [customValues, setCustomValues] = useState<Record<string, string>>({
@@ -140,10 +133,6 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
 
       // Refresh templates list
       await fetchTemplates();
-
-      // Store newly uploaded template and show configure prompt
-      setNewlyUploadedTemplate(data.template);
-      setShowConfigurePrompt(true);
 
       // Close upload dialog and reset
       setUploadDialogOpen(false);
@@ -227,68 +216,6 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Show configure prompt after upload
-  if (showConfigurePrompt && newlyUploadedTemplate) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-600">
-              <FileText className="h-5 w-5" />
-              {t('uploadSuccess')}
-            </CardTitle>
-            <CardDescription>
-              {t('uploadSuccessDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-lg bg-muted/50 p-4">
-              <div className="flex items-center gap-3">
-                <FileText className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="font-medium">{newlyUploadedTemplate.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {newlyUploadedTemplate.fileName} • {newlyUploadedTemplate.pageCount} {t('pages')}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <Alert>
-              <Settings className="h-4 w-4" />
-              <span className="ml-2">{t('configureHint')}</span>
-            </Alert>
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowConfigurePrompt(false);
-                  setNewlyUploadedTemplate(null);
-                }}
-                className="flex-1"
-              >
-                {t('configureLater')}
-              </Button>
-              <Button
-                onClick={() => {
-                  // Open settings in new tab for configuration
-                  window.open(`/settings?tab=templates&configure=${newlyUploadedTemplate.id}`, '_blank');
-                  setShowConfigurePrompt(false);
-                  setNewlyUploadedTemplate(null);
-                }}
-                className="flex-1"
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                {t('configureNow')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
