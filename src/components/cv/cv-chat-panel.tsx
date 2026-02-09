@@ -3,7 +3,8 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle } from 'lucide-react';
+import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle, Coins } from 'lucide-react';
+import { useAuth } from '@/components/auth/auth-context';
 import { useCVChat } from '@/hooks/use-cv-chat';
 import type { CVChatContext } from '@/types/chat';
 import type { GeneratedCVContent, ParsedLinkedIn, JobVacancy, FitAnalysis, OutputLanguage } from '@/types';
@@ -50,6 +51,7 @@ export function CVChatPanel({
   onContentChange,
   onTokensChange,
 }: CVChatPanelProps) {
+  const { llmMode } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
@@ -278,6 +280,11 @@ export function CVChatPanel({
         </form>
         <p className="text-xs text-muted-foreground mt-2 text-center">
           Shift+Enter voor nieuwe regel
+          {llmMode === 'platform' && (
+            <span className="inline-flex items-center ml-2">
+              · <Coins className="h-3 w-3 mx-1" />1 credit per bericht
+            </span>
+          )}
         </p>
       </div>
     </div>

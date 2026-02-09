@@ -68,6 +68,7 @@ import {
   formatCost,
   exceedsWarningThreshold,
 } from '@/lib/token-estimator';
+import { useAuth } from '@/components/auth/auth-context';
 import { AvatarUpload } from './avatar-upload';
 import type {
   ParsedLinkedIn,
@@ -153,6 +154,7 @@ export function ProfileInput({
   apiKey,
 }: ProfileInputProps) {
   const t = useTranslations('profileInput');
+  const { llmMode } = useAuth();
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
   const [sources, setSources] = useState<ProfileInputSource[]>([]);
   const [parsed, setParsed] = useState<ParsedLinkedIn | null>(initialData || null);
@@ -2238,7 +2240,14 @@ export function ProfileInput({
                 Informatie verwerken...
               </>
             ) : (
-              'Informatie verwerken'
+              <>
+                Informatie verwerken
+                {llmMode === 'platform' && hasFileSource && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Coins className="h-3 w-3 mr-1" />1 credit
+                  </Badge>
+                )}
+              </>
             )}
           </Button>
 

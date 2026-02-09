@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { GeneratedCVContent, CVElementOverrides, ElementOverride, EditableElementType, CVContactInfo, JobVacancy, ParsedLinkedIn, FitAnalysis } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import { useAuth } from '@/components/auth/auth-context';
 import { generateCVHTML } from '@/lib/cv/html-generator';
 import { fontPairings, typeScales, spacingScales, themeDefaults } from '@/lib/cv/templates/themes';
 import { CVContentEditor, type ElementColorOverrides } from './cv-content-editor';
@@ -100,6 +101,7 @@ export function CVPreview({
   onElementColorsChange,
   onTokensChange,
 }: CVPreviewProps) {
+  const { llmMode } = useAuth();
   const [activeTab, setActiveTab] = useState('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -745,6 +747,11 @@ export function CVPreview({
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
                   Regenereer
+                  {llmMode === 'platform' && (
+                    <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
+                      <Coins className="h-3 w-3 mr-1" />1 credit
+                    </Badge>
+                  )}
                 </>
               )}
             </Button>

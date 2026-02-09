@@ -22,7 +22,9 @@ import {
   Lightbulb,
   RefreshCw,
   ArrowRight,
+  Coins,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth/auth-context';
 import type { FitAnalysis, FitVerdict, FitWarningSeverity, ParsedLinkedIn, JobVacancy, TokenUsage } from '@/types';
 
 interface FitAnalysisCardProps {
@@ -136,6 +138,7 @@ export function FitAnalysisCard({
   onAnalysisComplete,
 }: FitAnalysisCardProps) {
   const t = useTranslations('fitAnalysis');
+  const { llmMode } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [analysis, setAnalysis] = useState<FitAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -210,6 +213,11 @@ export function FitAnalysisCard({
             <Button onClick={runAnalysis} className="gap-2">
               <TrendingUp className="h-4 w-4" />
               {t('analyzeButton')}
+              {llmMode === 'platform' && (
+                <Badge variant="secondary" className="ml-1">
+                  <Coins className="h-3 w-3 mr-1" />1 credit
+                </Badge>
+              )}
             </Button>
             <Button variant="outline" onClick={onContinue}>
               {t('skipButton')}
@@ -261,6 +269,11 @@ export function FitAnalysisCard({
             <Button onClick={runAnalysis} variant="outline" className="gap-2">
               <RefreshCw className="h-4 w-4" />
               {t('retryButton')}
+              {llmMode === 'platform' && (
+                <Badge variant="secondary" className="ml-1">
+                  <Coins className="h-3 w-3 mr-1" />1 credit
+                </Badge>
+              )}
             </Button>
             <Button onClick={onContinue}>
               {t('continueAnywayButton')}

@@ -20,7 +20,9 @@ import {
   Shield,
   Scale,
   Zap,
+  Coins,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { generateCVHTML } from '@/lib/cv/html-generator';
 import { tokensToStyleConfig } from '@/lib/cv/templates/adapter';
@@ -165,6 +167,7 @@ export function DynamicStylePicker({
   initialStyleConfig,
   initialTokens,
 }: DynamicStylePickerProps) {
+  const { llmMode } = useAuth();
   const [userPreferences, setUserPreferences] = useState('');
   const [creativityLevel, setCreativityLevel] = useState<StyleCreativityLevel>('balanced');
   const [styleConfig, setStyleConfig] = useState<CVStyleConfig | null>(initialStyleConfig || null);
@@ -446,6 +449,11 @@ export function DynamicStylePicker({
           >
             <Sparkles className="mr-2 h-4 w-4" />
             Generate AI Style
+            {llmMode === 'platform' && (
+              <Badge variant="secondary" className="ml-2">
+                <Coins className="h-3 w-3 mr-1" />1 credit
+              </Badge>
+            )}
           </Button>
         )}
 
@@ -690,6 +698,11 @@ export function DynamicStylePicker({
                   <RefreshCw className="mr-2 h-4 w-4" />
                 )}
                 Regenerate
+                {llmMode === 'platform' && (
+                  <Badge variant="secondary" className="ml-2">
+                    <Coins className="h-3 w-3 mr-1" />1
+                  </Badge>
+                )}
               </Button>
               <Button onClick={handleContinue} className="flex-1">
                 <Check className="mr-2 h-4 w-4" />

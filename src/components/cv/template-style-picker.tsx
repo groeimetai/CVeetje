@@ -21,7 +21,9 @@ import {
   RefreshCw,
   Eye,
   Image as ImageIcon,
+  Coins,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth/auth-context';
 import { cn } from '@/lib/utils';
 import type {
   CVStyleConfig,
@@ -47,6 +49,7 @@ export function TemplateStylePicker({
   onBack,
 }: TemplateStylePickerProps) {
   const t = useTranslations('templateStyle');
+  const { llmMode } = useAuth();
 
   // State
   const [file, setFile] = useState<File | null>(null);
@@ -302,6 +305,11 @@ export function TemplateStylePicker({
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
                       {t('analyzeButton')}
+                      {llmMode === 'platform' && (
+                        <Badge variant="secondary" className="ml-2">
+                          <Coins className="h-3 w-3 mr-1" />1 credit
+                        </Badge>
+                      )}
                     </>
                   )}
                 </Button>
