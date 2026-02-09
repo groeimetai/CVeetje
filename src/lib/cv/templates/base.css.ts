@@ -79,8 +79,9 @@ export const baseStyles = `
     }
 
     .cv-container {
-      padding: 0;
       max-width: none;
+      /* Keep internal padding so content has breathing room,
+         but backgrounds/headers extend edge-to-edge (Puppeteer margin=0) */
     }
 
     .section {

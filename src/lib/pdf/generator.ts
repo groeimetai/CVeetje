@@ -3,7 +3,6 @@ import chromium from '@sparticuz/chromium';
 import type { GeneratedCVContent, CVElementOverrides, CVContactInfo } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { generateCVHTML, getDefaultTokens } from '@/lib/cv/html-generator';
-import { spacingScales } from '@/lib/cv/templates/themes';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -61,13 +60,13 @@ export async function generatePDF(
   // Set content
   await page.setContent(html, { waitUntil: 'networkidle0' });
 
-  // Get page margin from tokens
-  const pageMargin = spacingScales[effectiveTokens.spacing].pageMargin;
-
-  // For full-bleed header, use CSS @page rules for per-page margin control
   const isFullBleed = effectiveTokens.headerFullBleed === true;
 
   let pdf: Uint8Array;
+
+  // Always use zero Puppeteer margins — the CV container handles its own
+  // internal padding so backgrounds/headers extend edge-to-edge on the page.
+  const zeroMargin = { top: '0', right: '0', bottom: '0', left: '0' };
 
   if (pageMode === 'single-page') {
     // Single-page mode: measure content and create one tall page
@@ -92,35 +91,15 @@ export async function generatePDF(
       width: `${a4WidthMm}mm`,
       height: `${contentHeightMm}mm`,
       printBackground: true,
-      margin: isFullBleed
-        ? { top: '0', right: '0', bottom: '0', left: '0' }
-        : {
-            top: pageMargin,
-            right: pageMargin,
-            bottom: pageMargin,
-            left: pageMargin,
-          },
+      margin: zeroMargin,
     });
   } else {
     // Multi-page mode: standard A4 pages
     pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      // For full-bleed: let CSS @page rules handle margins (first page vs subsequent pages)
-      // For normal: use consistent margins from tokens
-      ...(isFullBleed
-        ? {
-            preferCSSPageSize: true,
-            margin: { top: '0', right: '0', bottom: '0', left: '0' },
-          }
-        : {
-            margin: {
-              top: pageMargin,
-              right: pageMargin,
-              bottom: pageMargin,
-              left: pageMargin,
-            },
-          }),
+      ...(isFullBleed ? { preferCSSPageSize: true } : {}),
+      margin: zeroMargin,
     });
   }
 
