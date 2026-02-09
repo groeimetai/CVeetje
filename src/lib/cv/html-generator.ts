@@ -21,6 +21,7 @@ import {
   getNameStyleCSS,
   getSkillTagStyleCSS,
   getSidebarLayoutCSS,
+  fullBleedPageCSS,
 } from './templates/base.css';
 import {
   getFontUrls,
@@ -451,6 +452,11 @@ function generateCSS(tokens: CVDesignTokens): string {
   // Add sidebar layout CSS
   if (tokens.layout && tokens.layout !== 'single-column') {
     cssParts.push(getSidebarLayoutCSS());
+  }
+
+  // Add full-bleed @page rules ONLY when headerFullBleed is active
+  if (tokens.headerFullBleed) {
+    cssParts.push(fullBleedPageCSS);
   }
 
   // Add page background

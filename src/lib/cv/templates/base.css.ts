@@ -304,26 +304,6 @@ export const headerVariants = {
       margin-right: 0;
     }
 
-    /* Page margins for full-bleed PDF */
-    .cv-container.full-bleed-mode ~ style,
-    .full-bleed-mode {
-      --page-margin-first-top: 0;
-      --page-margin-top: 15mm;
-    }
-
-    @page:first {
-      margin-top: 0;
-      margin-left: 0;
-      margin-right: 0;
-      margin-bottom: 15mm;
-    }
-
-    @page {
-      margin-top: 15mm;
-      margin-left: 0;
-      margin-right: 0;
-      margin-bottom: 15mm;
-    }
   `,
 
   split: `
@@ -932,6 +912,24 @@ export const skillTagVariants = {
 export function getSkillTagStyleCSS(style: keyof typeof skillTagVariants): string {
   return skillTagVariants[style] || '';
 }
+
+// ============ Full-Bleed Page Rules (only include when headerFullBleed is true) ============
+
+export const fullBleedPageCSS = `
+  @page:first {
+    margin-top: 0;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 15mm;
+  }
+
+  @page {
+    margin-top: 15mm;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 15mm;
+  }
+`;
 
 // ============ Sidebar Layout ============
 
