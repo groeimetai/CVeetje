@@ -10,7 +10,8 @@ export async function GET(
   { params }: { params: Promise<{ cvId: string }> }
 ) {
   try {
-    const token = request.cookies.get('firebase-token')?.value;
+    const token = request.cookies.get('firebase-token')?.value ||
+      request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       return NextResponse.json(
@@ -67,7 +68,8 @@ export async function DELETE(
   { params }: { params: Promise<{ cvId: string }> }
 ) {
   try {
-    const token = request.cookies.get('firebase-token')?.value;
+    const token = request.cookies.get('firebase-token')?.value ||
+      request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       return NextResponse.json(

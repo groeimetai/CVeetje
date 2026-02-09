@@ -16,6 +16,7 @@ import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
 import type { GeneratedCVContent, CVStyleConfig } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { AdminCV } from '@/lib/firebase/admin-utils';
+import { useAuth } from '@/components/auth/auth-context';
 
 interface AdminCVDialogProps {
   cv: AdminCV | null;
@@ -26,6 +27,7 @@ interface AdminCVDialogProps {
 export function AdminCVDialog({ cv, open, onOpenChange }: AdminCVDialogProps) {
   const t = useTranslations('admin.cvs');
   const tStatus = useTranslations('dashboard.status');
+  const { refreshToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cvHTML, setCvHTML] = useState<string | null>(null);
@@ -44,7 +46,13 @@ export function AdminCVDialog({ cv, open, onOpenChange }: AdminCVDialogProps) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/admin/cvs/${cv!.cvId}?userId=${cv!.userId}`);
+        // Refresh token to ensure cookie is fresh (prevents 403 on expired tokens)
+        const token = await refreshToken();
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const response = await fetch(`/api/admin/cvs/${cv!.cvId}?userId=${cv!.userId}`, { headers });
         if (!response.ok) throw new Error('Failed to fetch CV');
 
         const data = await response.json();

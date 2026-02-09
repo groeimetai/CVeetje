@@ -7,7 +7,8 @@ import { verifyAdminRequest, getAllCVs } from '@/lib/firebase/admin-utils';
  */
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('firebase-token')?.value;
+    const token = request.cookies.get('firebase-token')?.value ||
+      request.headers.get('Authorization')?.replace('Bearer ', '');
 
     if (!token) {
       return NextResponse.json(
