@@ -12,37 +12,29 @@ import {
   updateProfile,
   sendEmailVerification as firebaseSendEmailVerification,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { auth, db } from './config';
-import type { User } from '@/types';
+import { auth } from './config';
 
 const googleProvider = new GoogleAuthProvider();
 const appleProvider = new OAuthProvider('apple.com');
 appleProvider.addScope('email');
 appleProvider.addScope('name');
 
-// Create user document in Firestore
-async function createUserDocument(firebaseUser: FirebaseUser): Promise<void> {
-  const userRef = doc(db, 'users', firebaseUser.uid);
-  const userSnap = await getDoc(userRef);
+// Initialize user document via server API (Admin SDK bypasses Firestore rules)
+async function initUserDocument(firebaseUser: FirebaseUser): Promise<void> {
+  const token = await firebaseUser.getIdToken();
+  const response = await fetch('/api/auth/init-user', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
 
-  if (!userSnap.exists()) {
-    const userData: Omit<User, 'createdAt' | 'updatedAt'> & { createdAt: ReturnType<typeof serverTimestamp>; updatedAt: ReturnType<typeof serverTimestamp> } = {
-      email: firebaseUser.email || '',
-      displayName: firebaseUser.displayName,
-      photoURL: firebaseUser.photoURL,
-      apiKey: null,
-      credits: {
-        free: 5,        // 5 free monthly credits
-        purchased: 0,   // No purchased credits yet
-        lastFreeReset: Timestamp.now(),
-      },
-      role: 'user',     // Default role for new users
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    await setDoc(userRef, userData);
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    console.error('[Auth] Failed to init user document:', data.error);
+    // Don't throw — the user is already authenticated, the doc will be
+    // created on next sign-in or via admin. Throwing here would show
+    // "Google inloggen mislukt" even though auth succeeded.
   }
 }
 
@@ -86,7 +78,7 @@ export async function registerWithEmail(
   await updateProfile(userCredential.user, { displayName });
 
   // Create user document
-  await createUserDocument(userCredential.user);
+  await initUserDocument(userCredential.user);
 
   // Send email verification
   await firebaseSendEmailVerification(userCredential.user, {
@@ -128,14 +120,14 @@ export async function signInWithEmail(
 // Google Sign In (OAuth has built-in bot protection)
 export async function signInWithGoogle(): Promise<FirebaseUser> {
   const userCredential = await signInWithPopup(auth, googleProvider);
-  await createUserDocument(userCredential.user);
+  await initUserDocument(userCredential.user);
   return userCredential.user;
 }
 
 // Apple Sign In (OAuth has built-in bot protection)
 export async function signInWithApple(): Promise<FirebaseUser> {
   const userCredential = await signInWithPopup(auth, appleProvider);
-  await createUserDocument(userCredential.user);
+  await initUserDocument(userCredential.user);
   return userCredential.user;
 }
 
