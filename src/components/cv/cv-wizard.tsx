@@ -33,7 +33,20 @@ import type {
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { ModelInfo, ProviderInfo } from '@/lib/ai/models-registry';
 import { findModelInProviders } from '@/lib/ai/models-registry';
+import { PLATFORM_MODEL } from '@/lib/ai/platform-config';
 import Link from 'next/link';
+
+const PLATFORM_MODEL_INFO: ModelInfo = {
+  id: PLATFORM_MODEL.modelId,
+  name: PLATFORM_MODEL.displayName,
+  family: 'claude',
+  provider: 'Anthropic',
+  providerId: PLATFORM_MODEL.provider,
+  capabilities: { toolCall: true, reasoning: true, structuredOutput: true },
+  pricing: { input: 15, output: 75 },
+  limits: { context: 200000, output: 32000 },
+  modalities: { input: ['text', 'image', 'pdf'], output: ['text'] },
+};
 
 export function CVWizard() {
   const router = useRouter();
@@ -155,6 +168,12 @@ export function CVWizard() {
 
   // Fetch providers to get model capabilities
   useEffect(() => {
+    // Platform AI users get a known model info directly
+    if (llmMode === 'platform') {
+      setModelInfo(PLATFORM_MODEL_INFO);
+      return;
+    }
+
     async function fetchProviders() {
       try {
         const response = await fetch('/api/models');
@@ -179,10 +198,14 @@ export function CVWizard() {
     }
 
     fetchProviders();
-  }, [userData?.apiKey]);
+  }, [userData?.apiKey, llmMode]);
 
   // Update model info when user data changes
   useEffect(() => {
+    if (llmMode === 'platform') {
+      setModelInfo(PLATFORM_MODEL_INFO);
+      return;
+    }
     if (providers.length > 0 && userData?.apiKey) {
       const model = findModelInProviders(
         providers,
@@ -191,7 +214,7 @@ export function CVWizard() {
       );
       setModelInfo(model);
     }
-  }, [providers, userData?.apiKey]);
+  }, [providers, userData?.apiKey, llmMode]);
 
   // Track whether user chose template-style mode (upload own design)
   const [useTemplateStyleMode, setUseTemplateStyleMode] = useState(false);

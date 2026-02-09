@@ -679,7 +679,7 @@ export function ProfileInput({
       }
 
       // Has files: use AI API
-      if (!apiKey) {
+      if (!apiKey && llmMode !== 'platform') {
         setError('Configureer je API key in Instellingen om bestanden te verwerken.');
         return;
       }
@@ -689,8 +689,7 @@ export function ProfileInput({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sources,
-          provider: apiKey.provider,
-          model: apiKey.model,
+          ...(apiKey && { provider: apiKey.provider, model: apiKey.model }),
         }),
       });
 
@@ -2039,7 +2038,7 @@ export function ProfileInput({
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2">
-            {fileInputSupported && apiKey && (
+            {fileInputSupported && (apiKey || llmMode === 'platform') && (
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
@@ -2080,7 +2079,7 @@ export function ProfileInput({
           )}
 
           {/* API key required warning */}
-          {fileInputSupported && !apiKey && (
+          {fileInputSupported && !apiKey && llmMode !== 'platform' && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <div className="ml-2">
@@ -2120,7 +2119,7 @@ export function ProfileInput({
           )}
 
           {/* Drop zone (only when no sources yet and file upload is supported) */}
-          {sources.length === 0 && fileInputSupported && apiKey && (
+          {sources.length === 0 && fileInputSupported && (apiKey || llmMode === 'platform') && (
             <div
               className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
               onDrop={handleDrop}
@@ -2186,7 +2185,7 @@ export function ProfileInput({
               </div>
 
               {/* Drop zone for adding more files */}
-              {fileInputSupported && apiKey && (
+              {fileInputSupported && (apiKey || llmMode === 'platform') && (
                 <div
                   className="border border-dashed rounded-lg p-4 text-center hover:border-primary transition-colors cursor-pointer"
                   onDrop={handleDrop}
