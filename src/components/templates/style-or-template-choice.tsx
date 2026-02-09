@@ -32,7 +32,7 @@ export function StyleOrTemplateChoice({
         <p className="text-muted-foreground mt-1">{t('description')}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* AI Style Option */}
         <Card
           className="cursor-pointer hover:border-primary transition-colors relative overflow-hidden"
@@ -74,8 +74,10 @@ export function StyleOrTemplateChoice({
           </CardContent>
         </Card>
 
-        {/* Own Design Option */}
-        <Card
+        {/* Own Design Option — hidden for now.
+           Not polished enough yet and fewer choices makes the UX simpler
+           (also easier for us to maintain). */}
+        {/* <Card
           className="cursor-pointer hover:border-primary transition-colors"
           onClick={onChooseTemplateStyle}
         >
@@ -108,7 +110,7 @@ export function StyleOrTemplateChoice({
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Template Fill Option */}
         {onChooseTemplate && (
