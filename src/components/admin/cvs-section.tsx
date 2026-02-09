@@ -34,6 +34,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   ArrowDownUp,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   FileText,
   Loader2,
@@ -67,6 +69,8 @@ export function CVsSection() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selectedCV, setSelectedCV] = useState<AdminCV | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
 
   const fetchCvs = useCallback(async (showRefresh = false) => {
     try {
@@ -133,6 +137,7 @@ export function CVsSection() {
     });
 
     setFilteredCvs(result);
+    setPage(0);
   }, [searchQuery, cvs, userFilter, sortOrder]);
 
   const handleDelete = async (cvId: string, userId: string) => {
@@ -283,111 +288,159 @@ export function CVsSection() {
         ) : filteredCvs.length === 0 ? (
           <p className="text-center py-8 text-muted-foreground">{t('noCvs')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('table.user')}</TableHead>
-                  <TableHead>{t('table.jobTitle')}</TableHead>
-                  <TableHead>{t('table.status')}</TableHead>
-                  <TableHead>{t('table.model')}</TableHead>
-                  <TableHead>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 font-medium hover:bg-transparent"
-                      onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                    >
-                      {t('table.created')}
-                      <ArrowDownUp className="ml-1 h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCvs.map((cv) => (
-                  <TableRow
-                    key={`${cv.userId}-${cv.cvId}`}
-                    className="cursor-pointer"
-                    onClick={() => {
-                      setSelectedCV(cv);
-                      setDialogOpen(true);
-                    }}
-                  >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {cv.userDisplayName || cv.userEmail}
-                        </p>
-                        {cv.userDisplayName && (
-                          <p className="text-xs text-muted-foreground">{cv.userEmail}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">
-                        {cv.jobTitle || <span className="text-muted-foreground italic">{t('generalCv')}</span>}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANTS[cv.status] || 'outline'}>
-                        {getStatusLabel(cv.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs text-muted-foreground">
-                        {cv.llmModel || '-'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(cv.createdAt)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCV(cv);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {t('deleteConfirm', { user: cv.userEmail })}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(cv.cvId, cv.userId)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                {t('delete')}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('table.user')}</TableHead>
+                    <TableHead>{t('table.jobTitle')}</TableHead>
+                    <TableHead>{t('table.status')}</TableHead>
+                    <TableHead>{t('table.model')}</TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                      >
+                        {t('table.created')}
+                        <ArrowDownUp className="ml-1 h-3 w-3" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredCvs.slice(page * pageSize, (page + 1) * pageSize).map((cv) => (
+                    <TableRow
+                      key={`${cv.userId}-${cv.cvId}`}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setSelectedCV(cv);
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-sm">
+                            {cv.userDisplayName || cv.userEmail}
+                          </p>
+                          {cv.userDisplayName && (
+                            <p className="text-xs text-muted-foreground">{cv.userEmail}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {cv.jobTitle || <span className="text-muted-foreground italic">{t('generalCv')}</span>}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANTS[cv.status] || 'outline'}>
+                          {getStatusLabel(cv.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">
+                          {cv.llmModel || '-'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(cv.createdAt)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCV(cv);
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t('deleteTitle')}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t('deleteConfirm', { user: cv.userEmail })}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(cv.cvId, cv.userId)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {t('delete')}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between pt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {t('pagination.rowsPerPage')}
+                </span>
+                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}>
+                  <SelectTrigger className="w-[70px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {t('pagination.showing', {
+                    from: page * pageSize + 1,
+                    to: Math.min((page + 1) * pageSize, filteredCvs.length),
+                    total: filteredCvs.length,
+                  })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage(p => p - 1)}
+                  disabled={page === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={(page + 1) * pageSize >= filteredCvs.length}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
 

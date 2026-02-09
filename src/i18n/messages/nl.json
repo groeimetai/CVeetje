@@ -1115,6 +1115,10 @@
         "status": "Status",
         "model": "Model",
         "created": "Aangemaakt"
+      },
+      "pagination": {
+        "rowsPerPage": "Rijen per pagina",
+        "showing": "{from}-{to} van {total}"
       }
     },
     "emails": {
