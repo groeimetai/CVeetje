@@ -761,14 +761,19 @@ export default async function LandingPage({ params }: Props) {
                         </tr>
                       ))}
                       <tr className="border-b">
+                        <td className="py-2.5 px-4">{t('aiModes.comparison.motivationLetter')}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
+                      </tr>
+                      <tr className="border-b">
                         <td className="py-2.5 px-4">{t('aiModes.comparison.pdfDownload')}</td>
                         <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
                         <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
                       </tr>
                       <tr className="bg-muted/50 font-medium">
                         <td className="py-2.5 px-4">{t('aiModes.comparison.total')}</td>
-                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 6 })}</td>
-                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 1 })}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 8 })}</td>
+                        <td className="py-2.5 px-4 text-center">{t('aiModes.comparison.credit', { n: 2 })}</td>
                       </tr>
                     </tbody>
                   </table>
