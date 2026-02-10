@@ -54,6 +54,7 @@ export interface ExtractionResult {
   tables: TableInfo[];
   templateMap: string;
   processedXml: string;  // XML after pre-processing (placeholder injection for empty cells)
+  mergeGroups: Record<string, string[]>;  // leader segment ID → follower segment IDs
 }
 
 // ==================== Pre-processing ====================
@@ -371,9 +372,72 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
     }
   }
 
-  const templateMap = buildTemplateMap(segments, tables, processedXml);
+  const bodySegments = segments.filter(s => s.location.context === 'body');
+  const mergeGroups = computeMergeGroups(bodySegments, processedXml);
+  const templateMap = buildTemplateMap(segments, tables, processedXml, mergeGroups);
 
-  return { segments, tables, templateMap, processedXml };
+  return { segments, tables, templateMap, processedXml, mergeGroups };
+}
+
+// ==================== Merge Groups ====================
+
+/**
+ * Compute merge groups for body paragraph segments.
+ *
+ * Within a paragraph, Word often splits text across multiple <w:r> runs
+ * (due to formatting changes, spell-check marks, etc.). This creates
+ * fragmented segments like "20", "20", "-", "2025" instead of "2020-2025".
+ *
+ * Merge groups identify which consecutive segments should be treated as one:
+ * - The first segment in the group is the "leader" — the AI fills this one.
+ * - The remaining segments are "followers" — they get emptied automatically.
+ * - Tab boundaries (<w:tab/>) act as separators: segments on different sides
+ *   of a tab are NOT merged.
+ *
+ * Returns a map: leader segment ID → array of follower segment IDs.
+ */
+function computeMergeGroups(
+  bodySegments: StructuredSegment[],
+  processedXml?: string,
+): Record<string, string[]> {
+  const mergeGroups: Record<string, string[]> = {};
+  const paraGroups = groupByParagraph(bodySegments);
+
+  for (const group of paraGroups) {
+    if (group.length <= 1) continue;
+
+    if (processedXml && paragraphHasTabs(group, processedXml)) {
+      // Split segments into sub-groups at tab boundaries
+      const subGroups: StructuredSegment[][] = [];
+      let currentSubGroup: StructuredSegment[] = [group[0]];
+
+      for (let i = 1; i < group.length; i++) {
+        if (hasTabBetween(group[i - 1], group[i], processedXml)) {
+          subGroups.push(currentSubGroup);
+          currentSubGroup = [group[i]];
+        } else {
+          currentSubGroup.push(group[i]);
+        }
+      }
+      subGroups.push(currentSubGroup);
+
+      // Each sub-group with >1 segment forms a merge group
+      for (const subGroup of subGroups) {
+        if (subGroup.length > 1) {
+          const leader = subGroup[0].id;
+          const followers = subGroup.slice(1).map(s => s.id);
+          mergeGroups[leader] = followers;
+        }
+      }
+    } else {
+      // No tabs — entire paragraph group is one merge group
+      const leader = group[0].id;
+      const followers = group.slice(1).map(s => s.id);
+      mergeGroups[leader] = followers;
+    }
+  }
+
+  return mergeGroups;
 }
 
 // ==================== Template Map Builder ====================
@@ -382,8 +446,21 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
  * Build a compact text representation of the template structure for AI consumption.
  * Groups segments by their structural context (body paragraphs vs table rows).
  */
-export function buildTemplateMap(segments: StructuredSegment[], tables: TableInfo[], processedXml?: string): string {
+export function buildTemplateMap(
+  segments: StructuredSegment[],
+  tables: TableInfo[],
+  processedXml?: string,
+  mergeGroups?: Record<string, string[]>,
+): string {
   const lines: string[] = [];
+
+  // Build a set of all follower IDs for quick lookup
+  const followerIds = new Set<string>();
+  if (mergeGroups) {
+    for (const followers of Object.values(mergeGroups)) {
+      for (const fid of followers) followerIds.add(fid);
+    }
+  }
 
   // Body paragraphs
   const bodySegments = segments.filter(s => s.location.context === 'body');
@@ -396,21 +473,55 @@ export function buildTemplateMap(segments: StructuredSegment[], tables: TableInf
       const combinedText = group.map(s => s.text).join('');
       if (!combinedText.trim()) continue;
 
-      // Check if this paragraph has tabs between segments
-      if (processedXml && group.length > 1 && paragraphHasTabs(group, processedXml)) {
-        // Render each segment individually with [TAB] markers between them
-        const parts: string[] = [];
-        for (let i = 0; i < group.length; i++) {
-          parts.push(`[${group[i].id}] "${truncateText(group[i].text, 40)}"`);
-          if (i < group.length - 1 && hasTabBetween(group[i], group[i + 1], processedXml)) {
-            parts.push('[TAB]');
+      if (mergeGroups && Object.keys(mergeGroups).length > 0) {
+        // Use merge-aware rendering
+        if (processedXml && group.length > 1 && paragraphHasTabs(group, processedXml)) {
+          // Tab-separated paragraph: split into sub-groups at tab boundaries,
+          // then show leader + combined text per sub-group
+          const parts: string[] = [];
+          const subGroups: StructuredSegment[][] = [];
+          let currentSubGroup: StructuredSegment[] = [group[0]];
+
+          for (let i = 1; i < group.length; i++) {
+            if (hasTabBetween(group[i - 1], group[i], processedXml)) {
+              subGroups.push(currentSubGroup);
+              currentSubGroup = [group[i]];
+            } else {
+              currentSubGroup.push(group[i]);
+            }
           }
+          subGroups.push(currentSubGroup);
+
+          for (let si = 0; si < subGroups.length; si++) {
+            const sub = subGroups[si];
+            const leader = sub[0];
+            const subText = sub.map(s => s.text).join('');
+            parts.push(`[${leader.id}] "${truncateText(subText, 40)}"`);
+            if (si < subGroups.length - 1) {
+              parts.push('[TAB]');
+            }
+          }
+          lines.push(parts.join(' '));
+        } else {
+          // Non-tab paragraph: show leader ID + combined text
+          const leader = group[0];
+          lines.push(`[${leader.id}] "${truncateText(combinedText, 80)}"`);
         }
-        lines.push(parts.join(' '));
       } else {
-        // Combine all segments in one line (existing behavior for S4Y etc.)
-        const ids = group.map(s => s.id).join(',');
-        lines.push(`[${ids}] "${truncateText(combinedText, 80)}"`);
+        // Fallback: no merge groups (backwards compat)
+        if (processedXml && group.length > 1 && paragraphHasTabs(group, processedXml)) {
+          const parts: string[] = [];
+          for (let i = 0; i < group.length; i++) {
+            parts.push(`[${group[i].id}] "${truncateText(group[i].text, 40)}"`);
+            if (i < group.length - 1 && hasTabBetween(group[i], group[i + 1], processedXml)) {
+              parts.push('[TAB]');
+            }
+          }
+          lines.push(parts.join(' '));
+        } else {
+          const ids = group.map(s => s.id).join(',');
+          lines.push(`[${ids}] "${truncateText(combinedText, 80)}"`);
+        }
       }
     }
     lines.push('');
@@ -469,12 +580,28 @@ export function buildTemplateMap(segments: StructuredSegment[], tables: TableInf
 export function applyStructuredFills(
   docXml: string,
   fills: Record<string, string>,
-  segments: StructuredSegment[]
+  segments: StructuredSegment[],
+  mergeGroups?: Record<string, string[]>,
 ): string {
+  // Expand fills: when a leader segment has a fill, add empty fills for its followers
+  const expandedFills = { ...fills };
+  if (mergeGroups) {
+    for (const [leaderId, followerIds] of Object.entries(mergeGroups)) {
+      if (leaderId in expandedFills) {
+        for (const fid of followerIds) {
+          // Only auto-empty followers that the AI didn't explicitly fill
+          if (!(fid in expandedFills)) {
+            expandedFills[fid] = '';
+          }
+        }
+      }
+    }
+  }
+
   // Build replacement list sorted by start position descending (reverse order)
   const replacements: { start: number; end: number; newXml: string }[] = [];
 
-  for (const [segId, newText] of Object.entries(fills)) {
+  for (const [segId, newText] of Object.entries(expandedFills)) {
     const seg = segments.find(s => s.id === segId);
     if (!seg) continue;
 

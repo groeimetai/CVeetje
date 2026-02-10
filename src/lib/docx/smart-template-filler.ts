@@ -156,8 +156,8 @@ export async function fillSmartTemplate(
       fillWarnings = fillResult.warnings;
 
       // Phase 5: Apply fills
-      console.log(`[smart-template-filler] Phase 5: Applying ${Object.keys(fills).length} fills...`);
-      docXml = applyStructuredFills(docXml, fills, reExtraction.segments);
+      console.log(`[smart-template-filler] Phase 5: Applying ${Object.keys(fills).length} fills (${Object.keys(reExtraction.mergeGroups).length} merge groups)...`);
+      docXml = applyStructuredFills(docXml, fills, reExtraction.segments, reExtraction.mergeGroups);
     } else {
       // No duplication needed — use combined analyze+fill in single call for efficiency
       // But we already have the blueprint, so just do the fill
@@ -180,8 +180,8 @@ export async function fillSmartTemplate(
       fills = fillResult.fills;
       fillWarnings = fillResult.warnings;
 
-      console.log(`[smart-template-filler] Applying ${Object.keys(fills).length} fills...`);
-      docXml = applyStructuredFills(docXml, fills, extraction.segments);
+      console.log(`[smart-template-filler] Applying ${Object.keys(fills).length} fills (${Object.keys(extraction.mergeGroups).length} merge groups)...`);
+      docXml = applyStructuredFills(docXml, fills, extraction.segments, extraction.mergeGroups);
     }
 
     warnings.push(...fillWarnings);
@@ -217,7 +217,7 @@ export async function fillSmartTemplate(
             customValues,
           );
 
-          hfXml = applyStructuredFills(hfXml, hfResult.fills, hfExtraction.segments);
+          hfXml = applyStructuredFills(hfXml, hfResult.fills, hfExtraction.segments, hfExtraction.mergeGroups);
         }
 
         zip.file(fileName, hfXml);
