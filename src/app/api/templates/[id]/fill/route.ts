@@ -180,6 +180,7 @@ export async function POST(
         language: language || 'nl',
         fitAnalysis,
         customInstructions,
+        templateName: template.name,
       };
 
       // Fill the DOCX template using AI
