@@ -406,34 +406,32 @@ function computeMergeGroups(
   for (const group of paraGroups) {
     if (group.length <= 1) continue;
 
-    if (processedXml && paragraphHasTabs(group, processedXml)) {
-      // Split segments into sub-groups at tab boundaries
-      const subGroups: StructuredSegment[][] = [];
-      let currentSubGroup: StructuredSegment[] = [group[0]];
+    // Only merge within tab-containing paragraphs.
+    // Non-tab paragraphs may have label + value segments with different formatting
+    // (e.g., bold name after "Naam: "), so merging those would lose formatting.
+    if (!processedXml || !paragraphHasTabs(group, processedXml)) continue;
 
-      for (let i = 1; i < group.length; i++) {
-        if (hasTabBetween(group[i - 1], group[i], processedXml)) {
-          subGroups.push(currentSubGroup);
-          currentSubGroup = [group[i]];
-        } else {
-          currentSubGroup.push(group[i]);
-        }
-      }
-      subGroups.push(currentSubGroup);
+    // Split segments into sub-groups at tab boundaries
+    const subGroups: StructuredSegment[][] = [];
+    let currentSubGroup: StructuredSegment[] = [group[0]];
 
-      // Each sub-group with >1 segment forms a merge group
-      for (const subGroup of subGroups) {
-        if (subGroup.length > 1) {
-          const leader = subGroup[0].id;
-          const followers = subGroup.slice(1).map(s => s.id);
-          mergeGroups[leader] = followers;
-        }
+    for (let i = 1; i < group.length; i++) {
+      if (hasTabBetween(group[i - 1], group[i], processedXml)) {
+        subGroups.push(currentSubGroup);
+        currentSubGroup = [group[i]];
+      } else {
+        currentSubGroup.push(group[i]);
       }
-    } else {
-      // No tabs — entire paragraph group is one merge group
-      const leader = group[0].id;
-      const followers = group.slice(1).map(s => s.id);
-      mergeGroups[leader] = followers;
+    }
+    subGroups.push(currentSubGroup);
+
+    // Each sub-group with >1 segment forms a merge group
+    for (const subGroup of subGroups) {
+      if (subGroup.length > 1) {
+        const leader = subGroup[0].id;
+        const followers = subGroup.slice(1).map(s => s.id);
+        mergeGroups[leader] = followers;
+      }
     }
   }
 
@@ -454,14 +452,6 @@ export function buildTemplateMap(
 ): string {
   const lines: string[] = [];
 
-  // Build a set of all follower IDs for quick lookup
-  const followerIds = new Set<string>();
-  if (mergeGroups) {
-    for (const followers of Object.values(mergeGroups)) {
-      for (const fid of followers) followerIds.add(fid);
-    }
-  }
-
   // Body paragraphs
   const bodySegments = segments.filter(s => s.location.context === 'body');
   if (bodySegments.length > 0) {
@@ -473,55 +463,44 @@ export function buildTemplateMap(
       const combinedText = group.map(s => s.text).join('');
       if (!combinedText.trim()) continue;
 
-      if (mergeGroups && Object.keys(mergeGroups).length > 0) {
-        // Use merge-aware rendering
-        if (processedXml && group.length > 1 && paragraphHasTabs(group, processedXml)) {
-          // Tab-separated paragraph: split into sub-groups at tab boundaries,
-          // then show leader + combined text per sub-group
-          const parts: string[] = [];
-          const subGroups: StructuredSegment[][] = [];
-          let currentSubGroup: StructuredSegment[] = [group[0]];
+      if (processedXml && group.length > 1 && paragraphHasTabs(group, processedXml)) {
+        // Tab-separated paragraph: split into sub-groups at tab boundaries.
+        // Merged sub-groups show leader ID + combined text; single segments show as-is.
+        const parts: string[] = [];
+        const subGroups: StructuredSegment[][] = [];
+        let currentSubGroup: StructuredSegment[] = [group[0]];
 
-          for (let i = 1; i < group.length; i++) {
-            if (hasTabBetween(group[i - 1], group[i], processedXml)) {
-              subGroups.push(currentSubGroup);
-              currentSubGroup = [group[i]];
-            } else {
-              currentSubGroup.push(group[i]);
-            }
+        for (let i = 1; i < group.length; i++) {
+          if (hasTabBetween(group[i - 1], group[i], processedXml)) {
+            subGroups.push(currentSubGroup);
+            currentSubGroup = [group[i]];
+          } else {
+            currentSubGroup.push(group[i]);
           }
-          subGroups.push(currentSubGroup);
+        }
+        subGroups.push(currentSubGroup);
 
-          for (let si = 0; si < subGroups.length; si++) {
-            const sub = subGroups[si];
-            const leader = sub[0];
+        for (let si = 0; si < subGroups.length; si++) {
+          const sub = subGroups[si];
+          if (sub.length > 1 && mergeGroups && sub[0].id in mergeGroups) {
+            // Merged sub-group: show leader + combined text
             const subText = sub.map(s => s.text).join('');
-            parts.push(`[${leader.id}] "${truncateText(subText, 40)}"`);
-            if (si < subGroups.length - 1) {
-              parts.push('[TAB]');
+            parts.push(`[${sub[0].id}] "${truncateText(subText, 40)}"`);
+          } else {
+            // Single segment or no merge: show each individually
+            for (const seg of sub) {
+              parts.push(`[${seg.id}] "${truncateText(seg.text, 40)}"`);
             }
           }
-          lines.push(parts.join(' '));
-        } else {
-          // Non-tab paragraph: show leader ID + combined text
-          const leader = group[0];
-          lines.push(`[${leader.id}] "${truncateText(combinedText, 80)}"`);
+          if (si < subGroups.length - 1) {
+            parts.push('[TAB]');
+          }
         }
+        lines.push(parts.join(' '));
       } else {
-        // Fallback: no merge groups (backwards compat)
-        if (processedXml && group.length > 1 && paragraphHasTabs(group, processedXml)) {
-          const parts: string[] = [];
-          for (let i = 0; i < group.length; i++) {
-            parts.push(`[${group[i].id}] "${truncateText(group[i].text, 40)}"`);
-            if (i < group.length - 1 && hasTabBetween(group[i], group[i + 1], processedXml)) {
-              parts.push('[TAB]');
-            }
-          }
-          lines.push(parts.join(' '));
-        } else {
-          const ids = group.map(s => s.id).join(',');
-          lines.push(`[${ids}] "${truncateText(combinedText, 80)}"`);
-        }
+        // Non-tab paragraph: show all segment IDs (old behavior, preserves formatting)
+        const ids = group.map(s => s.id).join(',');
+        lines.push(`[${ids}] "${truncateText(combinedText, 80)}"`);
       }
     }
     lines.push('');
