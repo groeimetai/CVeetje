@@ -22,6 +22,7 @@ import { extractStructuredSegments, applyStructuredFills } from './structure-ext
 import { analyzeTemplateBlueprint } from '@/lib/ai/template-analyzer';
 import { duplicateBlocksInXml } from './block-duplicator';
 import { fillStructuredSegments } from '@/lib/ai/docx-content-replacer';
+import { fillS4YTemplate } from './s4y-template-filler';
 
 // ==================== Public Types ====================
 
@@ -43,6 +44,57 @@ export interface FillResult {
   mode: 'ai' | 'none';
 }
 
+// ==================== S4Y Template Detection ====================
+
+/**
+ * Detect whether this is an S4Y-style template (label:value paragraphs with "word : " pattern).
+ *
+ * S4Y templates use paragraphs like "Functie : ", "Naam : ", "Beschikbaarheid : "
+ * without significant table content or tab separators. The universal AI-driven approach
+ * broke these, so we route them to the legacy filler.
+ *
+ * Detection criteria:
+ * 1. No significant table content (content-bearing <w:tbl> with text)
+ * 2. No <w:tab/> tab separators (rules out tab-separated templates like John Doe)
+ * 3. At least 3 paragraphs with "word : " pattern (space-colon-space at end)
+ */
+function isS4YTemplate(docXml: string): boolean {
+  // Check 1: No significant table content
+  // Tables in S4Y templates are only for layout (borders, no data cells)
+  const tableMatches = docXml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g);
+  if (tableMatches) {
+    for (const table of tableMatches) {
+      // Check if table has actual text content (not just formatting)
+      const textInTable = table.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+      if (textInTable && textInTable.length > 3) {
+        // Table has significant text content — not S4Y format
+        return false;
+      }
+    }
+  }
+
+  // Check 2: No tab separators
+  if (docXml.includes('<w:tab/>')) {
+    return false;
+  }
+
+  // Check 3: At least 3 paragraphs with "Label : " pattern
+  // Extract all text from <w:t> elements and check for the pattern
+  const textMatches = docXml.match(/<w:t[^>]*>([^<]*)<\/w:t>/g);
+  if (!textMatches) return false;
+
+  let labelValueCount = 0;
+  for (const match of textMatches) {
+    const textContent = match.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, '');
+    // Match "Label : " pattern — word(s) followed by space-colon-space at the end
+    if (/^.+?\s*:\s*$/.test(textContent) && textContent.trim().length > 2) {
+      labelValueCount++;
+    }
+  }
+
+  return labelValueCount >= 3;
+}
+
 // ==================== Main Entry Point ====================
 
 /**
@@ -51,7 +103,7 @@ export interface FillResult {
  * Supports any document structure:
  * - Table-based templates (rows/columns for WE, education)
  * - Tab-separated paragraph templates
- * - Simple label:value paragraph templates
+ * - Simple label:value paragraph templates (S4Y — routed to legacy filler)
  * - Mixed layouts
  */
 export async function fillSmartTemplate(
@@ -76,6 +128,12 @@ export async function fillSmartTemplate(
   let docXml = await documentXmlFile.async('string');
   const language = options.language || 'nl';
   const descriptionFormat = options.descriptionFormat || 'bullets';
+
+  // Route S4Y-style templates to the legacy filler
+  if (isS4YTemplate(docXml)) {
+    console.log('[smart-template-filler] S4Y template detected, using legacy filler');
+    return fillS4YTemplate(docxBuffer, profileData, customValues, options);
+  }
 
   try {
     const profileCounts = {
