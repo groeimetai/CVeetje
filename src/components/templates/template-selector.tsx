@@ -451,10 +451,6 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
                   <p className="text-xs text-muted-foreground">
                     {t('aiMode.enabledDescription')}
                   </p>
-                  <div className="flex items-center gap-2 text-xs">
-                    <Sparkles className="h-3 w-3 text-amber-500" />
-                    <span className="text-amber-600">{t('aiMode.creditWarning')}</span>
-                  </div>
                 </div>
               )}
 
