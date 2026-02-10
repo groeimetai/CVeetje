@@ -1,4 +1,5 @@
 import { getAdminDb } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * Queue an email by writing to the Firestore `mail` collection.
@@ -19,6 +20,7 @@ export function queueEmail(
     .add({
       to,
       message: { subject, html },
+      createdAt: FieldValue.serverTimestamp(),
     })
     .catch((err) => {
       console.error(`[Email] Failed to queue "${subject}" to ${to}:`, err);

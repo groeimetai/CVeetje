@@ -46,25 +46,28 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100', 10);
 
     const db = getAdminDb();
+    // Note: the mail collection documents are created by queueEmail() without
+    // a createdAt field. The Firebase "Trigger Email" extension adds
+    // delivery.startTime/endTime later. We cannot orderBy a field that
+    // doesn't exist on every document, so we fetch all and sort in JS.
     const snapshot = await db.collection('mail')
-      .orderBy('createdAt', 'desc')
       .limit(limit)
       .get();
+
+    const toTimestamp = (val: unknown): string | null => {
+      if (!val) return null;
+      if (val instanceof Timestamp) return val.toDate().toISOString();
+      if (typeof val === 'object' && val !== null && 'toDate' in val) {
+        return (val as Timestamp).toDate().toISOString();
+      }
+      if (typeof val === 'string') return val;
+      return null;
+    };
 
     const emails: AdminEmail[] = snapshot.docs.map(doc => {
       const data = doc.data();
       const delivery = data.delivery || {};
       const message = data.message || {};
-
-      const toTimestamp = (val: unknown): string | null => {
-        if (!val) return null;
-        if (val instanceof Timestamp) return val.toDate().toISOString();
-        if (typeof val === 'object' && val !== null && 'toDate' in val) {
-          return (val as Timestamp).toDate().toISOString();
-        }
-        if (typeof val === 'string') return val;
-        return null;
-      };
 
       return {
         id: doc.id,
@@ -77,8 +80,15 @@ export async function GET(request: NextRequest) {
         deliveryStartTime: toTimestamp(delivery.startTime),
         deliveryEndTime: toTimestamp(delivery.endTime),
         deliveryInfo: delivery.info || null,
-        createdAt: toTimestamp(data.createdAt),
+        createdAt: toTimestamp(data.createdAt) || toTimestamp(delivery.startTime),
       };
+    });
+
+    // Sort by most recent first (use createdAt which falls back to delivery.startTime)
+    emails.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
     });
 
     return NextResponse.json({
