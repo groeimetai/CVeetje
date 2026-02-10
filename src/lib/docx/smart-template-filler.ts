@@ -84,8 +84,11 @@ export async function fillSmartTemplate(
     };
 
     // Phase 1: Extract structured segments
+    // extractStructuredSegments pre-processes the XML (injects placeholders for empty cells)
+    // We must use processedXml for all subsequent operations so positions match
     console.log('[smart-template-filler] Phase 1: Extracting structured segments...');
     const extraction = extractStructuredSegments(docXml);
+    docXml = extraction.processedXml; // Use pre-processed XML from here on
     console.log(`[smart-template-filler] Found ${extraction.segments.length} segments, ${extraction.tables.length} tables`);
     console.log('[smart-template-filler] Template map:\n' + extraction.templateMap);
 
@@ -129,6 +132,7 @@ export async function fillSmartTemplate(
       // Re-extract after duplication (positions changed)
       console.log('[smart-template-filler] Re-extracting after duplication...');
       const reExtraction = extractStructuredSegments(docXml);
+      docXml = reExtraction.processedXml; // Use pre-processed XML
       console.log(`[smart-template-filler] After duplication: ${reExtraction.segments.length} segments`);
 
       // Phase 4: AI fills segments (separate call after duplication)
@@ -195,6 +199,7 @@ export async function fillSmartTemplate(
       if (file) {
         let hfXml = await file.async('string');
         const hfExtraction = extractStructuredSegments(hfXml);
+        hfXml = hfExtraction.processedXml; // Use pre-processed XML
 
         if (hfExtraction.segments.length > 0) {
           const hfResult = await fillStructuredSegments(

@@ -53,9 +53,104 @@ export interface ExtractionResult {
   segments: StructuredSegment[];
   tables: TableInfo[];
   templateMap: string;
+  processedXml: string;  // XML after pre-processing (placeholder injection for empty cells)
+}
+
+// ==================== Pre-processing ====================
+
+/**
+ * Inject placeholder <w:t> elements into table cell runs that have content
+ * elements (<w:br/>) but no text. This makes "empty" cells (like description
+ * placeholders in the Together Abroad template) visible to the AI.
+ *
+ * Without this, cells like:
+ *   <w:r><w:rPr>...</w:rPr><w:br/></w:r>
+ * would produce no segments, and the AI couldn't fill them.
+ *
+ * After injection:
+ *   <w:r><w:rPr>...</w:rPr><w:t xml:space="preserve"> </w:t></w:r>
+ */
+function injectPlaceholdersForEmptyCells(docXml: string): string {
+  // Find all <w:tc> cells and check if they contain runs with <w:br/> but no <w:t>
+  let result = docXml;
+
+  // Process in reverse order to keep positions valid
+  const cellRegex = /<w:tc[\s>]/g;
+  const cellPositions: number[] = [];
+  let cm;
+  while ((cm = cellRegex.exec(docXml)) !== null) {
+    cellPositions.push(cm.index);
+  }
+
+  // Process cells in reverse
+  for (let i = cellPositions.length - 1; i >= 0; i--) {
+    const cellStart = cellPositions[i];
+    const cellEndTag = result.indexOf('</w:tc>', cellStart);
+    if (cellEndTag === -1) continue;
+    const cellEnd = cellEndTag + '</w:tc>'.length;
+
+    const cellXml = result.substring(cellStart, cellEnd);
+
+    // Skip cells that already have <w:t> (they don't need placeholders)
+    if (/<w:t[\s>]/.test(cellXml)) continue;
+
+    // Skip cells without <w:br/> (truly empty cells or cells with only images/shapes)
+    if (!cellXml.includes('<w:br/>')) continue;
+
+    // Skip cells that contain <w:pict> (horizontal rules, decorative elements)
+    // These are visual separators, not content placeholders
+    // But only skip if ALL paragraphs have <w:pict> (some cells mix content and separators)
+
+    // Replace <w:br/> with <w:t> placeholder in the FIRST qualifying run only.
+    // One placeholder per cell keeps the template map clean for the AI.
+    let newCellXml = cellXml;
+    const runRegex = /<w:r[\s>][\s\S]*?<\/w:r>/g;
+    let replaced = false;
+
+    let rm;
+    while ((rm = runRegex.exec(cellXml)) !== null) {
+      if (replaced) break;
+      const runXml = rm[0];
+      // Only process runs that have <w:br/> but no <w:t> and no <w:pict>
+      if (runXml.includes('<w:br/>') && !/<w:t[\s>]/.test(runXml) && !runXml.includes('<w:pict')) {
+        // Replace <w:br/> with a placeholder <w:t>
+        const newRun = runXml.replace('<w:br/>', '<w:t xml:space="preserve"> </w:t>');
+        newCellXml = newCellXml.substring(0, rm.index) + newRun + newCellXml.substring(rm.index + rm[0].length);
+        replaced = true;
+      }
+    }
+
+    if (newCellXml !== cellXml) {
+      result = result.substring(0, cellStart) + newCellXml + result.substring(cellEnd);
+    }
+  }
+
+  return result;
 }
 
 // ==================== Extraction ====================
+
+/**
+ * Find the next occurrence of an exact XML open tag (not prefix matches).
+ * E.g. for tagName "w:tbl", matches `<w:tbl>` and `<w:tbl ` but NOT `<w:tblPr>`.
+ */
+function findNextExactOpenTag(xml: string, tagName: string, pos: number): number {
+  const searchTag = `<${tagName}`;
+  let i = pos;
+  while (i < xml.length) {
+    const idx = xml.indexOf(searchTag, i);
+    if (idx === -1) return -1;
+    const afterTag = idx + searchTag.length;
+    if (afterTag >= xml.length) return -1;
+    const ch = xml[afterTag];
+    // Must be followed by whitespace, >, or / (not another letter like in <w:tblPr>)
+    if (ch === '>' || ch === '/' || ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+      return idx;
+    }
+    i = idx + 1;
+  }
+  return -1;
+}
 
 /**
  * Find all non-overlapping occurrences of a tag pair in XML.
@@ -64,23 +159,26 @@ export interface ExtractionResult {
  */
 function findAllElements(xml: string, tagName: string): { start: number; end: number }[] {
   const results: { start: number; end: number }[] = [];
-  const openPattern = new RegExp(`<${tagName}[\\s>/]`, 'g');
   const closeTag = `</${tagName}>`;
 
-  let m: RegExpExecArray | null;
-  while ((m = openPattern.exec(xml)) !== null) {
+  let searchPos = 0;
+  while (searchPos < xml.length) {
+    const m = findNextExactOpenTag(xml, tagName, searchPos);
+    if (m === -1) break;
+
     // Check this isn't a self-closing tag
-    const selfCloseCheck = xml.indexOf('/>', m.index);
-    const nextClose = xml.indexOf('>', m.index);
-    if (nextClose !== -1 && selfCloseCheck === nextClose - 1) {
+    const nextGt = xml.indexOf('>', m);
+    if (nextGt === -1) break;
+    if (xml[nextGt - 1] === '/') {
       // Self-closing — skip
+      searchPos = nextGt + 1;
       continue;
     }
 
     let depth = 1;
-    let pos = nextClose + 1;
+    let pos = nextGt + 1;
     while (depth > 0 && pos < xml.length) {
-      const nextOpen = xml.indexOf(`<${tagName}`, pos);
+      const nextOpen = findNextExactOpenTag(xml, tagName, pos);
       const nextClosePos = xml.indexOf(closeTag, pos);
 
       if (nextClosePos === -1) break;
@@ -98,11 +196,15 @@ function findAllElements(xml: string, tagName: string): { start: number; end: nu
       } else {
         depth--;
         if (depth === 0) {
-          results.push({ start: m.index, end: nextClosePos + closeTag.length });
+          results.push({ start: m, end: nextClosePos + closeTag.length });
         }
         pos = nextClosePos + closeTag.length;
       }
     }
+
+    searchPos = (results.length > 0 && results[results.length - 1].start === m)
+      ? results[results.length - 1].end
+      : nextGt + 1;
   }
 
   return results;
@@ -121,18 +223,22 @@ function findParagraphs(xml: string, rangeStart: number, rangeEnd: number): { st
  * Extract all <w:t> segments from XML with their structural context.
  */
 export function extractStructuredSegments(docXml: string): ExtractionResult {
+  // Pre-process: inject placeholder <w:t> into empty table cells
+  // so they become visible segments the AI can fill
+  const processedXml = injectPlaceholdersForEmptyCells(docXml);
+
   const segments: StructuredSegment[] = [];
   const tables: TableInfo[] = [];
 
   // Step 1: Find all tables
-  const tableElements = findAllElements(docXml, 'w:tbl');
+  const tableElements = findAllElements(processedXml, 'w:tbl');
   const tableRanges = new Set<string>();
 
   for (let ti = 0; ti < tableElements.length; ti++) {
     const tbl = tableElements[ti];
     tableRanges.add(`${tbl.start}-${tbl.end}`);
 
-    const tblSlice = docXml.substring(tbl.start, tbl.end);
+    const tblSlice = processedXml.substring(tbl.start, tbl.end);
     const rowElements = findAllElements(tblSlice, 'w:tr');
 
     const tableInfo: TableInfo = {
@@ -147,7 +253,7 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
       const rowStart = row.start + tbl.start;
       const rowEnd = row.end + tbl.start;
 
-      const rowSlice = docXml.substring(rowStart, rowEnd);
+      const rowSlice = processedXml.substring(rowStart, rowEnd);
       const cellElements = findAllElements(rowSlice, 'w:tc');
 
       const rowInfo: TableRowInfo = {
@@ -171,8 +277,8 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
         };
 
         // Find all <w:t> in this cell
-        const cellSlice = docXml.substring(cellStart, cellEnd);
-        const paras = findParagraphs(docXml, cellStart, cellEnd);
+        const cellSlice = processedXml.substring(cellStart, cellEnd);
+        const paras = findParagraphs(processedXml, cellStart, cellEnd);
 
         const wtRegex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
         let wtMatch;
@@ -218,7 +324,7 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
   // Step 2: Find all <w:t> segments in body (outside tables)
   const wtRegex = /<w:t([^>]*)>([^<]*)<\/w:t>/g;
   let wtMatch;
-  while ((wtMatch = wtRegex.exec(docXml)) !== null) {
+  while ((wtMatch = wtRegex.exec(processedXml)) !== null) {
     const absStart = wtMatch.index;
     const absEnd = absStart + wtMatch[0].length;
 
@@ -227,7 +333,7 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
     if (inTable) continue;
 
     // Find parent paragraph
-    const paraMatch = findParentParagraphSimple(docXml, absStart);
+    const paraMatch = findParentParagraphSimple(processedXml, absStart);
     const para = paraMatch || { start: absStart, end: absEnd };
 
     const seg: StructuredSegment = {
@@ -267,7 +373,7 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
 
   const templateMap = buildTemplateMap(segments, tables);
 
-  return { segments, tables, templateMap };
+  return { segments, tables, templateMap, processedXml };
 }
 
 // ==================== Template Map Builder ====================
@@ -324,7 +430,10 @@ export function buildTemplateMap(segments: StructuredSegment[], tables: TableInf
         } else {
           const ids = cellSegs.map(s => s.id).join(',');
           const text = cellSegs.map(s => s.text).join('');
-          cellTexts.push(`[${ids}] "${truncateText(text.replace(/\n/g, '\\n'), 60)}"`);
+          const displayText = text.trim() === ''
+            ? '(placeholder - fill with content)'
+            : truncateText(text.replace(/\n/g, '\\n'), 60);
+          cellTexts.push(`[${ids}] "${displayText}"`);
         }
       }
       lines.push(`  Row ${row.rowIndex}: ${cellTexts.join(' | ')}`);
