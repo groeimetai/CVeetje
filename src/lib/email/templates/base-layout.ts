@@ -23,9 +23,7 @@ export function wrapInLayout(title: string, bodyHtml: string): string {
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
                 <tr>
                   <td style="vertical-align:middle;padding-right:12px;">
-                    <div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:inline-block;text-align:center;line-height:40px;">
-                      <span style="color:#ffffff;font-size:16px;font-weight:700;">CV</span>
-                    </div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='96' ry='96' fill='url(%23g)'/%3E%3Cpath d='M160 96h128l80 80v240c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V128c0-17.7 14.3-32 32-32z' fill='white' fill-opacity='0.95'/%3E%3Cpath d='M288 96v48c0 17.7 14.3 32 32 32h48L288 96z' fill='white' fill-opacity='0.7'/%3E%3Ctext x='196' y='340' font-family='Arial,sans-serif' font-size='140' font-weight='700' fill='%236366f1'%3ECV%3C/text%3E%3C/svg%3E" alt="CVeetje" width="40" height="40" style="display:block;border:0;border-radius:10px;" />
                   </td>
                   <td style="vertical-align:middle;">
                     <span style="color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.5px;">CVeetje</span>
