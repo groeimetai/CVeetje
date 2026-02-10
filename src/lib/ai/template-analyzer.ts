@@ -82,7 +82,9 @@ RULES:
 - For table-based repeating blocks, use blockType "table_rows"
 - For paragraph-based repeating blocks, use blockType "paragraph_group"
 - Include ALL segment IDs for each section, including header segments
-- A segment should belong to exactly one section`;
+- A segment should belong to exactly one section
+- [TAB] markers indicate tab-separated label/value pairs within a paragraph (e.g., "Name" [TAB] ": " [TAB] value)
+- Tab-separated paragraphs are paragraph_group type repeating blocks when they repeat for multiple entries`;
 
   const userPrompt = `TEMPLATE STRUCTURE:
 ${templateMap}
@@ -200,6 +202,11 @@ SECTION RULES:
 - special_notes: ONLY availability, transport, driver's license
 - NEVER mix content between sections!
 
+TAB-SEPARATED LAYOUTS:
+- [TAB] markers indicate tab-separated label/value pairs within a paragraph
+- Segments BEFORE [TAB] are labels — do NOT change these
+- Segments AFTER [TAB] are value fields — fill these with profile data
+
 ORDER: Fill work experience and education in reverse chronological order (most recent first).`;
 }
 
@@ -228,6 +235,11 @@ SECTIE REGELS:
 - languages: ALLEEN talen en taalniveaus
 - special_notes: ALLEEN beschikbaarheid, vervoer, rijbewijs
 - MIX NOOIT content tussen secties!
+
+TAB-GESCHEIDEN LAYOUTS:
+- [TAB] markers geven tab-gescheiden label/waarde paren aan binnen een paragraaf
+- Segmenten VOOR [TAB] zijn labels — wijzig deze NIET
+- Segmenten NA [TAB] zijn waarde-velden — vul deze met profieldata
 
 VOLGORDE: Vul werkervaring en opleidingen in omgekeerd chronologische volgorde (meest recent eerst).`;
 }

@@ -179,6 +179,12 @@ TABLE CELLS:
 - Fill each cell with the appropriate data for its column position
 - For multi-line content within one cell, use \\n for line breaks
 
+TAB-SEPARATED LAYOUTS:
+- Some templates use [TAB] markers to separate labels from values within a paragraph
+- Segments BEFORE [TAB] are labels (e.g., "Name", "Date of birth") — do NOT change these
+- Segments AFTER [TAB] are value fields — fill these with the corresponding profile data
+- Example: [s1] "Name" [TAB] [s2] ": " [TAB] [s3] " " → only fill s3 with the person's name, leave s1 and s2 unchanged
+
 ORDER: Fill in reverse chronological order (most recent first).
 Slot 1 = most recent, Slot 2 = second most recent, etc.
 
@@ -213,6 +219,12 @@ TABEL CELLEN:
 - Sommige templates gebruiken tabellen waar elke cel een segment is
 - Vul elke cel met de juiste data voor de kolompositie
 - Voor multi-line content binnen een cel, gebruik \\n voor regelafbrekingen
+
+TAB-GESCHEIDEN LAYOUTS:
+- Sommige templates gebruiken [TAB] markers om labels van waarden te scheiden binnen een paragraaf
+- Segmenten VOOR [TAB] zijn labels (bijv. "Naam", "Geboortedatum") — wijzig deze NIET
+- Segmenten NA [TAB] zijn waarde-velden — vul deze met de bijbehorende profieldata
+- Voorbeeld: [s1] "Naam" [TAB] [s2] ": " [TAB] [s3] " " → vul alleen s3 in met de naam, laat s1 en s2 ongewijzigd
 
 VOLGORDE: Vul in omgekeerd chronologische volgorde (meest recent eerst).
 Slot 1 = meest recent, Slot 2 = op een na meest recent, etc.

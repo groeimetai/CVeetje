@@ -371,7 +371,7 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
     }
   }
 
-  const templateMap = buildTemplateMap(segments, tables);
+  const templateMap = buildTemplateMap(segments, tables, processedXml);
 
   return { segments, tables, templateMap, processedXml };
 }
@@ -382,7 +382,7 @@ export function extractStructuredSegments(docXml: string): ExtractionResult {
  * Build a compact text representation of the template structure for AI consumption.
  * Groups segments by their structural context (body paragraphs vs table rows).
  */
-export function buildTemplateMap(segments: StructuredSegment[], tables: TableInfo[]): string {
+export function buildTemplateMap(segments: StructuredSegment[], tables: TableInfo[], processedXml?: string): string {
   const lines: string[] = [];
 
   // Body paragraphs
@@ -394,8 +394,22 @@ export function buildTemplateMap(segments: StructuredSegment[], tables: TableInf
     const paraGroups = groupByParagraph(bodySegments);
     for (const group of paraGroups) {
       const combinedText = group.map(s => s.text).join('');
-      const ids = group.map(s => s.id).join(',');
-      if (combinedText.trim()) {
+      if (!combinedText.trim()) continue;
+
+      // Check if this paragraph has tabs between segments
+      if (processedXml && group.length > 1 && paragraphHasTabs(group, processedXml)) {
+        // Render each segment individually with [TAB] markers between them
+        const parts: string[] = [];
+        for (let i = 0; i < group.length; i++) {
+          parts.push(`[${group[i].id}] "${truncateText(group[i].text, 40)}"`);
+          if (i < group.length - 1 && hasTabBetween(group[i], group[i + 1], processedXml)) {
+            parts.push('[TAB]');
+          }
+        }
+        lines.push(parts.join(' '));
+      } else {
+        // Combine all segments in one line (existing behavior for S4Y etc.)
+        const ids = group.map(s => s.id).join(',');
         lines.push(`[${ids}] "${truncateText(combinedText, 80)}"`);
       }
     }
@@ -515,6 +529,26 @@ function findParentParagraphSimple(xml: string, pos: number): { start: number; e
   if (pEnd === -1) return null;
 
   return { start: pStart, end: pEnd + '</w:p>'.length };
+}
+
+/**
+ * Check if there is a <w:tab/> between two consecutive segments in the XML.
+ */
+function hasTabBetween(segA: StructuredSegment, segB: StructuredSegment, xml: string): boolean {
+  const between = xml.substring(segA.end, segB.start);
+  return between.includes('<w:tab/>') || between.includes('<w:tab />');
+}
+
+/**
+ * Check if any <w:tab/> exists between consecutive segments in a paragraph group.
+ */
+function paragraphHasTabs(group: StructuredSegment[], xml: string): boolean {
+  for (let i = 0; i < group.length - 1; i++) {
+    if (hasTabBetween(group[i], group[i + 1], xml)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function groupByParagraph(segments: StructuredSegment[]): StructuredSegment[][] {
