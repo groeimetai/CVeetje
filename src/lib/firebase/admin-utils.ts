@@ -331,7 +331,7 @@ export interface AdminCVListResponse {
 
 /**
  * Get all CVs across all users (admin only)
- * Uses collectionGroup query for reliable cross-user CV retrieval
+ * Iterates through Firestore users collection for reliable cross-user CV retrieval
  */
 export async function getAllCVs(
   limit: number = 100,
@@ -343,107 +343,80 @@ export async function getAllCVs(
 
   const allCvs: AdminCV[] = [];
 
+  // Build list of user IDs to query
+  const userEntries: { uid: string; email: string; displayName: string | null }[] = [];
+
   if (userIdFilter) {
-    // Fetch CVs for a specific user
     const userRecord = await auth.getUser(userIdFilter).catch(() => null);
     if (!userRecord) return { cvs: [], total: 0 };
-
-    let query = db.collection('users').doc(userIdFilter).collection('cvs')
-      .orderBy('createdAt', 'desc');
-
-    if (statusFilter) {
-      query = db.collection('users').doc(userIdFilter).collection('cvs')
-        .where('status', '==', statusFilter)
-        .orderBy('createdAt', 'desc');
-    }
-
-    const snapshot = await query.get();
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      allCvs.push({
-        cvId: doc.id,
-        userId: userIdFilter,
-        userEmail: userRecord.email || 'Unknown',
-        userDisplayName: userRecord.displayName || null,
-        status: data.status || 'unknown',
-        jobTitle: data.jobVacancy?.title || null,
-        llmProvider: data.llmProvider || null,
-        llmModel: data.llmModel || null,
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-      });
-    }
+    userEntries.push({
+      uid: userIdFilter,
+      email: userRecord.email || 'Unknown',
+      displayName: userRecord.displayName || null,
+    });
   } else {
-    // Use collectionGroup to query ALL cvs across all users
-    let query: FirebaseFirestore.Query = db.collectionGroup('cvs')
-      .orderBy('createdAt', 'desc');
+    // Get all user documents from Firestore directly (more reliable than auth.listUsers)
+    const usersSnapshot = await db.collection('users').get();
 
-    if (statusFilter) {
-      query = db.collectionGroup('cvs')
-        .where('status', '==', statusFilter)
-        .orderBy('createdAt', 'desc');
-    }
+    // Batch-fetch auth info for display names/emails
+    const uids = usersSnapshot.docs.map(d => d.id);
+    const authMap = new Map<string, { email: string; displayName: string | null }>();
 
-    const snapshot = await query.get();
-
-    // Collect unique userIds to batch-fetch user info
-    const userIds = new Set<string>();
-    const cvDocs: { doc: FirebaseFirestore.QueryDocumentSnapshot; userId: string }[] = [];
-
-    for (const doc of snapshot.docs) {
-      // Path: users/{userId}/cvs/{cvId}
-      const userId = doc.ref.parent.parent?.id;
-      if (!userId) continue;
-      userIds.add(userId);
-      cvDocs.push({ doc, userId });
-    }
-
-    // Batch-fetch user info from Auth
-    const userInfoMap = new Map<string, { email: string; displayName: string | null }>();
-    const userIdArray = Array.from(userIds);
-
-    // Fetch in batches of 100 (Firebase Auth getUsers limit)
-    for (let i = 0; i < userIdArray.length; i += 100) {
-      const batch = userIdArray.slice(i, i + 100);
-      const identifiers = batch.map(uid => ({ uid }));
+    for (let i = 0; i < uids.length; i += 100) {
+      const batch = uids.slice(i, i + 100);
       try {
-        const result = await auth.getUsers(identifiers);
-        for (const userRecord of result.users) {
-          userInfoMap.set(userRecord.uid, {
-            email: userRecord.email || 'Unknown',
-            displayName: userRecord.displayName || null,
-          });
+        const result = await auth.getUsers(batch.map(uid => ({ uid })));
+        for (const u of result.users) {
+          authMap.set(u.uid, { email: u.email || 'Unknown', displayName: u.displayName || null });
         }
       } catch {
-        // Fall back to individual lookups if batch fails
+        // Fall back to individual lookups
         for (const uid of batch) {
           try {
-            const userRecord = await auth.getUser(uid);
-            userInfoMap.set(uid, {
-              email: userRecord.email || 'Unknown',
-              displayName: userRecord.displayName || null,
-            });
+            const u = await auth.getUser(uid);
+            authMap.set(uid, { email: u.email || 'Unknown', displayName: u.displayName || null });
           } catch {
-            userInfoMap.set(uid, { email: 'Unknown', displayName: null });
+            authMap.set(uid, { email: 'Unknown', displayName: null });
           }
         }
       }
     }
 
-    // Build CV list
-    for (const { doc, userId } of cvDocs) {
-      const data = doc.data();
-      const userInfo = userInfoMap.get(userId) || { email: 'Unknown', displayName: null };
-      allCvs.push({
-        cvId: doc.id,
-        userId,
-        userEmail: userInfo.email,
-        userDisplayName: userInfo.displayName,
-        status: data.status || 'unknown',
-        jobTitle: data.jobVacancy?.title || null,
-        llmProvider: data.llmProvider || null,
-        llmModel: data.llmModel || null,
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-      });
+    for (const userDoc of usersSnapshot.docs) {
+      const info = authMap.get(userDoc.id) || { email: 'Unknown', displayName: null };
+      userEntries.push({ uid: userDoc.id, ...info });
+    }
+  }
+
+  // Query CVs for each user
+  for (const user of userEntries) {
+    try {
+      let query = db.collection('users').doc(user.uid).collection('cvs')
+        .orderBy('createdAt', 'desc');
+
+      if (statusFilter) {
+        query = db.collection('users').doc(user.uid).collection('cvs')
+          .where('status', '==', statusFilter)
+          .orderBy('createdAt', 'desc');
+      }
+
+      const snapshot = await query.get();
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        allCvs.push({
+          cvId: doc.id,
+          userId: user.uid,
+          userEmail: user.email,
+          userDisplayName: user.displayName,
+          status: data.status || 'unknown',
+          jobTitle: data.jobVacancy?.title || null,
+          llmProvider: data.llmProvider || null,
+          llmModel: data.llmModel || null,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+        });
+      }
+    } catch (err) {
+      console.warn(`[Admin] Failed to fetch CVs for user ${user.uid}:`, err);
     }
   }
 
