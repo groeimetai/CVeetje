@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Plus, FileText, MoreVertical, Download, Trash2, Eye, Building2 } from 'lucide-react';
+import { Plus, FileText, MoreVertical, Download, Trash2, Eye, Building2, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -136,6 +136,23 @@ export default function CVListPage() {
                         <span>
                           {cv.createdAt?.toDate?.()?.toLocaleDateString() || tCommon('recently')}
                         </span>
+                        {cv.fitAnalysis && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Target className="h-3 w-3" />
+                              <span className={
+                                cv.fitAnalysis.overallScore >= 80 ? 'text-green-600 dark:text-green-400 font-medium' :
+                                cv.fitAnalysis.overallScore >= 60 ? 'text-blue-600 dark:text-blue-400 font-medium' :
+                                cv.fitAnalysis.overallScore >= 40 ? 'text-yellow-600 dark:text-yellow-400 font-medium' :
+                                cv.fitAnalysis.overallScore >= 20 ? 'text-orange-600 dark:text-orange-400 font-medium' :
+                                'text-red-600 dark:text-red-400 font-medium'
+                              }>
+                                {cv.fitAnalysis.overallScore}%
+                              </span>
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

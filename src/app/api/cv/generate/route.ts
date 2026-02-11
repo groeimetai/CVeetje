@@ -13,6 +13,7 @@ import type {
   JobVacancy,
   CVStyleConfig,
   OutputLanguage,
+  FitAnalysis,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
       designTokens,
       avatarUrl,
       language = 'nl',
+      fitAnalysis,
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
       designTokens?: CVDesignTokens;
       avatarUrl?: string | null;
       language?: OutputLanguage;
+      fitAnalysis?: FitAnalysis | null;
     };
 
     // Validate input
@@ -148,6 +151,8 @@ export async function POST(request: NextRequest) {
       status: 'generated',
       llmProvider: resolved.providerName,
       llmModel: resolved.model,
+      fitAnalysis: fitAnalysis || null,
+      language: language || 'nl',
       createdAt: new Date(),
       updatedAt: new Date(),
     });

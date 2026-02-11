@@ -784,6 +784,8 @@ export interface CV {
   status: CVStatus;
   llmProvider: string | null;
   llmModel: string | null;
+  fitAnalysis?: FitAnalysis | null;
+  language?: OutputLanguage;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

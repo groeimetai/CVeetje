@@ -422,6 +422,7 @@ export function CVWizard() {
           designTokens: tokens,
           avatarUrl,
           language: outputLanguage,
+          fitAnalysis,
         }),
       });
 
@@ -468,6 +469,7 @@ export function CVWizard() {
           designTokens,
           avatarUrl,
           language: outputLanguage,
+          fitAnalysis,
         }),
       });
 
