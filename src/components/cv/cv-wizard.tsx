@@ -777,7 +777,9 @@ export function CVWizard() {
               </Button>
             )}
           </div>
-          <TokenUsageDisplay history={tokenHistory} modelName={modelInfo?.name} />
+          {llmMode !== 'platform' && (
+            <TokenUsageDisplay history={tokenHistory} modelName={modelInfo?.name} />
+          )}
         </div>
 
         {/* Platform AI credit indicator */}
