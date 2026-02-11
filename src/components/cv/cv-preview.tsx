@@ -56,6 +56,7 @@ interface CVPreviewProps {
   isDownloading: boolean;
   isRegenerating: boolean;
   credits: number;
+  pdfDownloaded?: boolean;
   elementOverrides?: CVElementOverrides | null;
   onUpdateOverrides?: (overrides: CVElementOverrides) => void;
   onContentChange?: (content: GeneratedCVContent) => void;
@@ -93,6 +94,7 @@ export function CVPreview({
   isDownloading,
   isRegenerating,
   credits,
+  pdfDownloaded,
   elementOverrides: initialOverrides,
   onUpdateOverrides,
   onContentChange,
@@ -701,14 +703,16 @@ export function CVPreview({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    disabled={credits < 1}
+                    disabled={!pdfDownloaded && credits < 1}
                     className="flex-1"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
-                    <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                      <Coins className="h-3 w-3 mr-1" />1 credit
-                    </Badge>
+                    {!pdfDownloaded && (
+                      <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
+                        <Coins className="h-3 w-3 mr-1" />1 credit
+                      </Badge>
+                    )}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -770,7 +774,7 @@ export function CVPreview({
           </div>
 
           {/* Credits warning */}
-          {credits < 1 && (
+          {!pdfDownloaded && credits < 1 && (
             <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm text-amber-800 flex items-center gap-2">
                 <Coins className="h-4 w-4" />

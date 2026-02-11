@@ -785,6 +785,7 @@ export interface CV {
   llmProvider: string | null;
   llmModel: string | null;
   fitAnalysis?: FitAnalysis | null;
+  motivationLetter?: GeneratedMotivationLetter | null;
   language?: OutputLanguage;
   createdAt: Timestamp;
   updatedAt: Timestamp;

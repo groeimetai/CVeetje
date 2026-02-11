@@ -96,22 +96,7 @@ export async function POST(
 
     const db = getAdminDb();
 
-    // Check user credits (free + purchased)
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    const freeCredits = userData?.credits?.free ?? 0;
-    const purchasedCredits = userData?.credits?.purchased ?? 0;
-    const totalCredits = freeCredits + purchasedCredits;
-
-    if (!userData || totalCredits < 1) {
-      return NextResponse.json(
-        { error: 'Insufficient credits. Please purchase more credits.' },
-        { status: 402 }
-      );
-    }
-
-    // Get CV document
+    // Get CV document first to check if PDF was already downloaded
     const cvDoc = await db
       .collection('users')
       .doc(userId)
@@ -127,6 +112,24 @@ export async function POST(
     }
 
     const cvData = cvDoc.data() as CV & { tokens?: CVDesignTokens };
+
+    // If PDF was already downloaded (paid for), skip credit check
+    const alreadyPaid = cvData.status === 'pdf_ready';
+
+    // Check user credits (free + purchased) — only if not already paid
+    const userDoc = await db.collection('users').doc(userId).get();
+    const userData = userDoc.data();
+
+    const freeCredits = userData?.credits?.free ?? 0;
+    const purchasedCredits = userData?.credits?.purchased ?? 0;
+    const totalCredits = freeCredits + purchasedCredits;
+
+    if (!alreadyPaid && (!userData || totalCredits < 1)) {
+      return NextResponse.json(
+        { error: 'Insufficient credits. Please purchase more credits.' },
+        { status: 402 }
+      );
+    }
 
     if (!cvData.generatedContent) {
       return NextResponse.json(
@@ -211,40 +214,42 @@ export async function POST(
       pageMode
     );
 
-    // Deduct credit (use free credits first, then purchased)
-    if (freeCredits >= 1) {
-      await db.collection('users').doc(userId).update({
-        'credits.free': FieldValue.increment(-1),
-        updatedAt: new Date(),
+    // Deduct credit only if not already paid
+    if (!alreadyPaid) {
+      if (freeCredits >= 1) {
+        await db.collection('users').doc(userId).update({
+          'credits.free': FieldValue.increment(-1),
+          updatedAt: new Date(),
+        });
+      } else {
+        await db.collection('users').doc(userId).update({
+          'credits.purchased': FieldValue.increment(-1),
+          updatedAt: new Date(),
+        });
+      }
+
+      // Log transaction
+      const creditSource = freeCredits >= 1 ? 'free' : 'purchased';
+      await db.collection('users').doc(userId).collection('transactions').add({
+        amount: -1,
+        type: 'cv_generation',
+        description: `CV PDF download (${creditSource} credit)`,
+        molliePaymentId: null,
+        cvId,
+        createdAt: new Date(),
       });
-    } else {
-      await db.collection('users').doc(userId).update({
-        'credits.purchased': FieldValue.increment(-1),
-        updatedAt: new Date(),
-      });
+
+      // Update CV status to mark as paid
+      await db
+        .collection('users')
+        .doc(userId)
+        .collection('cvs')
+        .doc(cvId)
+        .update({
+          status: 'pdf_ready',
+          updatedAt: new Date(),
+        });
     }
-
-    // Log transaction
-    const creditSource = freeCredits >= 1 ? 'free' : 'purchased';
-    await db.collection('users').doc(userId).collection('transactions').add({
-      amount: -1,
-      type: 'cv_generation',
-      description: `CV PDF download (${creditSource} credit)`,
-      molliePaymentId: null,
-      cvId,
-      createdAt: new Date(),
-    });
-
-    // Update CV status
-    await db
-      .collection('users')
-      .doc(userId)
-      .collection('cvs')
-      .doc(cvId)
-      .update({
-        status: 'pdf_ready',
-        updatedAt: new Date(),
-      });
 
     // Return PDF (convert Buffer to Uint8Array for NextResponse compatibility)
     return new NextResponse(new Uint8Array(pdfBuffer), {

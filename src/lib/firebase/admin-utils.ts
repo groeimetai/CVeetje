@@ -331,7 +331,7 @@ export interface AdminCVListResponse {
 
 /**
  * Get all CVs across all users (admin only)
- * Iterates through users and fetches their CV subcollections
+ * Uses collectionGroup query for reliable cross-user CV retrieval
  */
 export async function getAllCVs(
   limit: number = 100,
@@ -373,40 +373,78 @@ export async function getAllCVs(
       });
     }
   } else {
-    // Iterate through all users
-    let pageToken: string | undefined;
-    do {
-      const listResult = await auth.listUsers(100, pageToken);
+    // Use collectionGroup to query ALL cvs across all users
+    let query: FirebaseFirestore.Query = db.collectionGroup('cvs')
+      .orderBy('createdAt', 'desc');
 
-      for (const userRecord of listResult.users) {
-        let query = db.collection('users').doc(userRecord.uid).collection('cvs')
-          .orderBy('createdAt', 'desc');
+    if (statusFilter) {
+      query = db.collectionGroup('cvs')
+        .where('status', '==', statusFilter)
+        .orderBy('createdAt', 'desc');
+    }
 
-        if (statusFilter) {
-          query = db.collection('users').doc(userRecord.uid).collection('cvs')
-            .where('status', '==', statusFilter)
-            .orderBy('createdAt', 'desc');
-        }
+    const snapshot = await query.get();
 
-        const snapshot = await query.get();
-        for (const doc of snapshot.docs) {
-          const data = doc.data();
-          allCvs.push({
-            cvId: doc.id,
-            userId: userRecord.uid,
-            userEmail: userRecord.email || 'Unknown',
-            userDisplayName: userRecord.displayName || null,
-            status: data.status || 'unknown',
-            jobTitle: data.jobVacancy?.title || null,
-            llmProvider: data.llmProvider || null,
-            llmModel: data.llmModel || null,
-            createdAt: data.createdAt?.toDate?.() || new Date(),
+    // Collect unique userIds to batch-fetch user info
+    const userIds = new Set<string>();
+    const cvDocs: { doc: FirebaseFirestore.QueryDocumentSnapshot; userId: string }[] = [];
+
+    for (const doc of snapshot.docs) {
+      // Path: users/{userId}/cvs/{cvId}
+      const userId = doc.ref.parent.parent?.id;
+      if (!userId) continue;
+      userIds.add(userId);
+      cvDocs.push({ doc, userId });
+    }
+
+    // Batch-fetch user info from Auth
+    const userInfoMap = new Map<string, { email: string; displayName: string | null }>();
+    const userIdArray = Array.from(userIds);
+
+    // Fetch in batches of 100 (Firebase Auth getUsers limit)
+    for (let i = 0; i < userIdArray.length; i += 100) {
+      const batch = userIdArray.slice(i, i + 100);
+      const identifiers = batch.map(uid => ({ uid }));
+      try {
+        const result = await auth.getUsers(identifiers);
+        for (const userRecord of result.users) {
+          userInfoMap.set(userRecord.uid, {
+            email: userRecord.email || 'Unknown',
+            displayName: userRecord.displayName || null,
           });
         }
+      } catch {
+        // Fall back to individual lookups if batch fails
+        for (const uid of batch) {
+          try {
+            const userRecord = await auth.getUser(uid);
+            userInfoMap.set(uid, {
+              email: userRecord.email || 'Unknown',
+              displayName: userRecord.displayName || null,
+            });
+          } catch {
+            userInfoMap.set(uid, { email: 'Unknown', displayName: null });
+          }
+        }
       }
+    }
 
-      pageToken = listResult.pageToken;
-    } while (pageToken);
+    // Build CV list
+    for (const { doc, userId } of cvDocs) {
+      const data = doc.data();
+      const userInfo = userInfoMap.get(userId) || { email: 'Unknown', displayName: null };
+      allCvs.push({
+        cvId: doc.id,
+        userId,
+        userEmail: userInfo.email,
+        userDisplayName: userInfo.displayName,
+        status: data.status || 'unknown',
+        jobTitle: data.jobVacancy?.title || null,
+        llmProvider: data.llmProvider || null,
+        llmModel: data.llmModel || null,
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+      });
+    }
   }
 
   // Sort all CVs by createdAt descending

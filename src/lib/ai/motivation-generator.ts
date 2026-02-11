@@ -35,11 +35,9 @@ const motivationLetterSchema = z.object({
 function buildSystemPrompt(language: OutputLanguage): string {
   const languageInstructions = language === 'nl'
     ? `Write the entire letter in Dutch (Nederlands). Use formal but warm "u" form.
-       Use professional Dutch business letter conventions.
-       Sign off with "Met vriendelijke groet," or similar formal Dutch closing.`
+       Use professional Dutch business letter conventions.`
     : `Write the entire letter in English. Use professional but personable tone.
-       Use standard business letter conventions.
-       Sign off with "Kind regards," or similar professional closing.`;
+       Use standard business letter conventions.`;
 
   return `You are an expert cover letter writer who creates compelling, personalized motivation letters that get results.
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,10 +61,32 @@ export function MotivationLetterSection({
   const [isExpanded, setIsExpanded] = useState(false);
   const [personalMotivation, setPersonalMotivation] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingSaved, setIsLoadingSaved] = useState(true);
   const [letter, setLetter] = useState<GeneratedMotivationLetter | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const placeholders = MOTIVATION_PLACEHOLDERS[language];
+
+  // Load previously saved motivation letter
+  useEffect(() => {
+    async function loadSavedLetter() {
+      try {
+        const response = await fetch(`/api/cv/${cvId}/motivation`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.letter) {
+            setLetter(result.letter);
+            setIsExpanded(true);
+          }
+        }
+      } catch {
+        // Silently fail - user can still generate a new letter
+      } finally {
+        setIsLoadingSaved(false);
+      }
+    }
+    loadSavedLetter();
+  }, [cvId]);
 
   const handleGenerate = async () => {
     if (credits < 1) return;
@@ -151,10 +173,12 @@ export function MotivationLetterSection({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Mail className="h-5 w-5 text-primary" />
-            Motivatiebrief Genereren
-            <Badge variant="secondary" className="ml-2">
-              <Coins className="h-3 w-3 mr-1" />1 credit
-            </Badge>
+            {letter ? 'Motivatiebrief' : 'Motivatiebrief Genereren'}
+            {!letter && (
+              <Badge variant="secondary" className="ml-2">
+                <Coins className="h-3 w-3 mr-1" />1 credit
+              </Badge>
+            )}
           </CardTitle>
           {isExpanded ? (
             <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -166,8 +190,16 @@ export function MotivationLetterSection({
 
       {isExpanded && (
         <CardContent className="space-y-4">
+          {/* Loading saved letter */}
+          {isLoadingSaved && (
+            <div className="flex items-center justify-center py-4 text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span className="text-sm">Opgeslagen brief laden...</span>
+            </div>
+          )}
+
           {/* Personal motivation input */}
-          {!letter && (
+          {!isLoadingSaved && !letter && (
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium">

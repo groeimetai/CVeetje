@@ -87,6 +87,7 @@ export function CVWizard() {
   // Loading/error state
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Token usage tracking
@@ -525,7 +526,7 @@ export function CVWizard() {
   }, []);
 
   const handleDownload = async (pageMode: PDFPageMode = 'multi-page') => {
-    if (!cvId || credits < 1) return;
+    if (!cvId || (!pdfDownloaded && credits < 1)) return;
 
     setIsDownloading(true);
     setError(null);
@@ -584,6 +585,9 @@ export function CVWizard() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
+
+      // Mark as downloaded so subsequent downloads are free
+      setPdfDownloaded(true);
 
       // Refresh credits
       await refreshCredits();
@@ -1060,6 +1064,7 @@ export function CVWizard() {
           isDownloading={isDownloading}
           isRegenerating={isGenerating}
           credits={credits}
+          pdfDownloaded={pdfDownloaded}
           onContentChange={handleContentChange}
           onHeaderChange={handleHeaderChange}
           onColorsChange={handleColorsChange}

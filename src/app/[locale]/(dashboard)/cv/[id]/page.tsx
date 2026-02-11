@@ -361,8 +361,10 @@ export default function CVDetailPage() {
     fetchCV();
   }, [firebaseUser, cvId]);
 
+  const pdfDownloaded = cv?.status === 'pdf_ready';
+
   const handleDownload = async (pageMode: 'multi-page' | 'single-page' = 'multi-page') => {
-    if (!cvId || credits < 1) return;
+    if (!cvId || (!pdfDownloaded && credits < 1)) return;
 
     setIsDownloading(true);
     setError(null);
@@ -470,7 +472,7 @@ export default function CVDetailPage() {
         </Alert>
       )}
 
-      {credits < 1 && (
+      {!pdfDownloaded && credits < 1 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <span className="ml-2">
@@ -512,6 +514,7 @@ export default function CVDetailPage() {
           isDownloading={isDownloading}
           isRegenerating={false}
           credits={credits}
+          pdfDownloaded={pdfDownloaded}
           elementOverrides={cv.elementOverrides}
           onUpdateOverrides={handleUpdateOverrides}
         />
