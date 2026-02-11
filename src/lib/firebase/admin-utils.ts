@@ -357,6 +357,8 @@ export async function getAllCVs(
   } else {
     // Get all user documents from Firestore directly (more reliable than auth.listUsers)
     const usersSnapshot = await db.collection('users').get();
+    console.log(`[Admin] Found ${usersSnapshot.docs.length} user documents in Firestore`);
+    console.log(`[Admin] User IDs: ${usersSnapshot.docs.map(d => d.id).join(', ')}`);
 
     // Batch-fetch auth info for display names/emails
     const uids = usersSnapshot.docs.map(d => d.id);
@@ -391,18 +393,16 @@ export async function getAllCVs(
   // Query CVs for each user
   for (const user of userEntries) {
     try {
-      let query = db.collection('users').doc(user.uid).collection('cvs')
-        .orderBy('createdAt', 'desc');
+      // Query without orderBy first to catch CVs that might lack createdAt
+      const snapshot = await db.collection('users').doc(user.uid).collection('cvs').get();
+      console.log(`[Admin] User ${user.email} (${user.uid}): ${snapshot.docs.length} CVs found`);
 
-      if (statusFilter) {
-        query = db.collection('users').doc(user.uid).collection('cvs')
-          .where('status', '==', statusFilter)
-          .orderBy('createdAt', 'desc');
-      }
-
-      const snapshot = await query.get();
       for (const doc of snapshot.docs) {
         const data = doc.data();
+
+        // Apply status filter manually if needed
+        if (statusFilter && data.status !== statusFilter) continue;
+
         allCvs.push({
           cvId: doc.id,
           userId: user.uid,
@@ -416,7 +416,7 @@ export async function getAllCVs(
         });
       }
     } catch (err) {
-      console.warn(`[Admin] Failed to fetch CVs for user ${user.uid}:`, err);
+      console.error(`[Admin] Failed to fetch CVs for user ${user.uid} (${user.email}):`, err);
     }
   }
 
