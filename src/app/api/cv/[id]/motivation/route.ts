@@ -101,6 +101,13 @@ export async function POST(
       );
     }
 
+    if (!cvData.jobVacancy) {
+      return NextResponse.json(
+        { error: 'No job vacancy linked to this CV. A motivation letter requires a target job.' },
+        { status: 400 }
+      );
+    }
+
     // Generate motivation letter
     const { letter, usage } = await generateMotivationLetter(
       cvData.linkedInData as ParsedLinkedIn,
