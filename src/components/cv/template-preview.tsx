@@ -7,19 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   FileText,
   FileType,
   Loader2,
   ArrowLeft,
   CheckCircle,
   Download,
-  ChevronDown,
   Coins,
   Briefcase,
   MessageSquare,
@@ -220,42 +213,18 @@ export function TemplatePreview({
                 {t('downloading')}
               </Button>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    disabled={credits < 1}
-                    className="flex-1"
-                    size="lg"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    {t('download')}
-                    <Badge variant="secondary" className="ml-2">
-                      <Coins className="h-3 w-3 mr-1" />1 credit
-                    </Badge>
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuItem onClick={() => onDownload('docx')}>
-                    <FileType className="mr-2 h-4 w-4 text-blue-500" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">Word (.docx)</span>
-                      <span className="text-xs text-muted-foreground">
-                        {t('downloadDocxDesc')}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDownload('pdf')}>
-                    <FileText className="mr-2 h-4 w-4 text-red-500" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">PDF</span>
-                      <span className="text-xs text-muted-foreground">
-                        {t('downloadPdfDesc')}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                disabled={credits < 1}
+                className="flex-1"
+                size="lg"
+                onClick={() => onDownload('docx')}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {t('download')} (.docx)
+                <Badge variant="secondary" className="ml-2">
+                  <Coins className="h-3 w-3 mr-1" />1 credit
+                </Badge>
+              </Button>
             )}
 
             <Button
