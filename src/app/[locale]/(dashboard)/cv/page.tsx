@@ -204,7 +204,7 @@ export default function CVListPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
