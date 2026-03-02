@@ -5,6 +5,39 @@ import { routing } from './i18n/routing';
 // Create the intl middleware
 const intlMiddleware = createIntlMiddleware(routing);
 
+// Allowed origins for CORS (comma-separated in env var)
+function getAllowedOrigins(): string[] {
+  const origins: string[] = [];
+  const envOrigins = process.env.ALLOWED_ORIGINS;
+  if (envOrigins) {
+    origins.push(...envOrigins.split(',').map(o => o.trim()).filter(Boolean));
+  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    origins.push(appUrl.replace(/\/$/, ''));
+  }
+  return origins;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  const allowed = getAllowedOrigins();
+  // If no origins are configured, allow all (development-friendly)
+  if (allowed.length === 0) return true;
+  return allowed.includes(origin);
+}
+
+function setCorsHeaders(response: NextResponse, origin: string | null): NextResponse {
+  if (origin && isAllowedOrigin(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Max-Age', '86400');
+  }
+  return response;
+}
+
 // Routes that require authentication (after locale prefix)
 const PROTECTED_ROUTES = [
   '/dashboard',
@@ -51,10 +84,23 @@ function getLocaleFromPath(pathname: string): string {
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const origin = request.headers.get('origin');
 
-  // Skip middleware for API routes and static files
+  // Handle API routes - add CORS headers
+  if (pathname.startsWith('/api')) {
+    // Handle preflight OPTIONS requests
+    if (request.method === 'OPTIONS') {
+      const response = new NextResponse(null, { status: 204 });
+      return setCorsHeaders(response, origin);
+    }
+
+    // For actual API requests, add CORS headers
+    const response = NextResponse.next();
+    return setCorsHeaders(response, origin);
+  }
+
+  // Skip middleware for static files
   if (
-    pathname.startsWith('/api') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/_vercel') ||
     pathname.includes('.') // Static files
@@ -92,10 +138,10 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
   // Match all pathnames except:
-  // - API routes
   // - Static files (images, fonts, etc.)
   // - Next.js internal routes
+  // Note: API routes are included for CORS handling
   matcher: [
-    '/((?!api|_next|_vercel|.*\\..*).*)',
+    '/((?!_next|_vercel|.*\\..*).*)',
   ],
 };

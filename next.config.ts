@@ -22,11 +22,6 @@ const nextConfig: NextConfig = {
       // Apply to all routes
       source: "/:path*",
       headers: [
-        // Prevent clickjacking
-        {
-          key: "X-Frame-Options",
-          value: "DENY",
-        },
         // Prevent MIME type sniffing
         {
           key: "X-Content-Type-Options",
@@ -73,6 +68,8 @@ const nextConfig: NextConfig = {
             "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com https://recaptcha.google.com",
             // Form submissions only to self
             "form-action 'self'",
+            // Allow iframe embedding from self and configured origins
+            `frame-ancestors 'self' ${process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean).join(' ') || ''}`.trim(),
             // Restrict base URIs
             "base-uri 'self'",
             // Report violations (optional - uncomment if you have a reporting endpoint)
