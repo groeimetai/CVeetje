@@ -22,11 +22,6 @@ const nextConfig: NextConfig = {
       // Apply to all routes
       source: "/:path*",
       headers: [
-        // Prevent clickjacking (SAMEORIGIN allows embedding from same domain)
-        {
-          key: "X-Frame-Options",
-          value: "SAMEORIGIN",
-        },
         // Prevent MIME type sniffing
         {
           key: "X-Content-Type-Options",
