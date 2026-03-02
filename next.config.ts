@@ -22,10 +22,10 @@ const nextConfig: NextConfig = {
       // Apply to all routes
       source: "/:path*",
       headers: [
-        // Prevent clickjacking
+        // Prevent clickjacking (SAMEORIGIN allows embedding from same domain)
         {
           key: "X-Frame-Options",
-          value: "DENY",
+          value: "SAMEORIGIN",
         },
         // Prevent MIME type sniffing
         {
@@ -73,6 +73,8 @@ const nextConfig: NextConfig = {
             "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com https://recaptcha.google.com",
             // Form submissions only to self
             "form-action 'self'",
+            // Allow iframe embedding from self and configured origins
+            `frame-ancestors 'self' ${process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean).join(' ') || ''}`.trim(),
             // Restrict base URIs
             "base-uri 'self'",
             // Report violations (optional - uncomment if you have a reporting endpoint)
