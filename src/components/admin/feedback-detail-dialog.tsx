@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Dialog,
@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ExternalLink } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ExternalLink, Send, MessageCircle, Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -23,6 +24,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { FeedbackItem, FeedbackStatus } from '@/types';
+
+interface GitHubComment {
+  id: number;
+  body: string;
+  author: string;
+  avatarUrl: string;
+  createdAt: string;
+}
 
 interface FeedbackDetailDialogProps {
   feedback: FeedbackItem | null;
@@ -40,12 +49,40 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
   const [adminNotes, setAdminNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // GitHub comments
+  const [comments, setComments] = useState<GitHubComment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
+
   useEffect(() => {
     if (feedback) {
       setStatus(feedback.status);
       setAdminNotes(feedback.adminNotes || '');
+      setComments([]);
+      setNewComment('');
     }
   }, [feedback]);
+
+  const fetchComments = useCallback(async () => {
+    if (!feedback?.githubIssueNumber) return;
+    setLoadingComments(true);
+    try {
+      const res = await fetch(`/api/admin/feedback/${feedback.id}/comments`);
+      if (res.ok) {
+        const data = await res.json();
+        setComments(data.comments);
+      }
+    } finally {
+      setLoadingComments(false);
+    }
+  }, [feedback?.id, feedback?.githubIssueNumber]);
+
+  useEffect(() => {
+    if (open && feedback?.githubIssueNumber) {
+      fetchComments();
+    }
+  }, [open, fetchComments, feedback?.githubIssueNumber]);
 
   if (!feedback) return null;
 
@@ -72,6 +109,24 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
     if (res.ok) {
       onUpdate();
       onOpenChange(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!newComment.trim()) return;
+    setPostingComment(true);
+    try {
+      const res = await fetch(`/api/admin/feedback/${feedback.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: newComment.trim() }),
+      });
+      if (res.ok) {
+        setNewComment('');
+        fetchComments();
+      }
+    } finally {
+      setPostingComment(false);
     }
   };
 
@@ -206,6 +261,70 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
             </div>
           )}
 
+          {/* GitHub Comments */}
+          {feedback.githubIssueNumber && (
+            <div className="border-t pt-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="size-4 text-muted-foreground" />
+                <Label>GitHub Comments</Label>
+              </div>
+
+              {loadingComments ? (
+                <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : comments.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">No comments yet</p>
+              ) : (
+                <div className="space-y-3 max-h-[200px] overflow-y-auto">
+                  {comments.map(comment => (
+                    <div key={comment.id} className="rounded-lg bg-muted/50 p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <img
+                          src={comment.avatarUrl}
+                          alt={comment.author}
+                          className="size-5 rounded-full"
+                        />
+                        <span className="text-xs font-medium">{comment.author}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{comment.body}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Post comment */}
+              <div className="flex gap-2">
+                <Input
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  placeholder="Add a comment to the GitHub issue..."
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handlePostComment();
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  onClick={handlePostComment}
+                  disabled={!newComment.trim() || postingComment}
+                >
+                  {postingComment ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Send className="size-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Admin controls */}
           <div className="border-t pt-4 space-y-3">
             <div className="space-y-2">
@@ -243,7 +362,7 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
             {t('delete')}
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {tf('form.title') && 'Cancel'}
+            Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? '...' : t('save')}
