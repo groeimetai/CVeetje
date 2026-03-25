@@ -39,9 +39,9 @@ export type SpacingScale = 'compact' | 'comfortable' | 'spacious';
 
 // ============ Component Variants ============
 
-export type HeaderVariant = 'simple' | 'accented' | 'banner' | 'split';
-export type SectionStyle = 'clean' | 'underlined' | 'boxed' | 'timeline' | 'accent-left' | 'card';
-export type SkillsDisplay = 'tags' | 'list' | 'compact';
+export type HeaderVariant = 'simple' | 'accented' | 'banner' | 'split' | 'asymmetric';
+export type SectionStyle = 'clean' | 'underlined' | 'boxed' | 'timeline' | 'accent-left' | 'card' | 'alternating' | 'magazine';
+export type SkillsDisplay = 'tags' | 'list' | 'compact' | 'bars';
 
 // ============ Layout Options ============
 

@@ -783,6 +783,8 @@ function generateSkills(
     skillsContent = generateSkillsTags(skills, overrides);
   } else if (displayStyle === 'list') {
     skillsContent = generateSkillsList(skills, overrides);
+  } else if (displayStyle === 'bars') {
+    skillsContent = generateSkillsBars(skills, overrides);
   } else {
     skillsContent = generateSkillsCompact(skills, overrides);
   }
@@ -865,6 +867,47 @@ function generateSkillsCompact(
       <div class="skills-group">
         <span class="skills-group-title">${title}: </span>
         <div class="skills-container">${skillItems}</div>
+      </div>`;
+  };
+
+  return `
+    ${renderGroup('Technical', skills.technical, 'skill-tech')}
+    ${renderGroup('Soft Skills', skills.soft, 'skill-soft')}
+  `;
+}
+
+function generateSkillsBars(
+  skills: GeneratedCVContent['skills'],
+  overrides?: CVElementOverrides | null
+): string {
+  // Simple hash to get a pseudo-random but deterministic width per skill
+  const getBarWidth = (skill: string, index: number): number => {
+    let hash = 0;
+    for (let i = 0; i < skill.length; i++) {
+      hash = ((hash << 5) - hash) + skill.charCodeAt(i);
+      hash |= 0;
+    }
+    // Map to 60-100% range
+    return 60 + (Math.abs(hash + index * 17) % 41);
+  };
+
+  const renderGroup = (title: string, items: string[], prefix: string) => {
+    if (items.length === 0) return '';
+
+    const bars = items.map((skill, index) => {
+      const itemOverride = getOverride(overrides, `${prefix}-${index}`);
+      if (itemOverride?.hidden) return '';
+      const width = getBarWidth(skill, index);
+      return `<div class="skill-bar" data-id="${prefix}-${index}" style="${getOverrideStyle(itemOverride)}">
+        <span class="skill-bar-label">${escapeHtml(skill)}</span>
+        <div class="skill-bar-track"><div class="skill-bar-fill" style="width: ${width}%"></div></div>
+      </div>`;
+    }).filter(Boolean).join('');
+
+    return `
+      <div class="skills-group">
+        <div class="skills-group-title">${title}</div>
+        <div class="skills-container">${bars}</div>
       </div>`;
   };
 

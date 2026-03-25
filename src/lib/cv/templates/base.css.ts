@@ -380,6 +380,64 @@ export const headerVariants = {
       margin-bottom: 4px;
     }
   `,
+
+  asymmetric: `
+    .cv-header {
+      padding-bottom: var(--space-section);
+      margin-bottom: var(--space-section);
+      position: relative;
+    }
+
+    .cv-header::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--color-accent);
+    }
+
+    .cv-header h1.name {
+      font-size: 40pt;
+      font-weight: 900;
+      color: var(--color-primary);
+      line-height: 1.0;
+      margin-bottom: var(--space-element);
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    .cv-header .headline {
+      font-size: var(--size-subheading);
+      color: var(--color-accent);
+      font-weight: 600;
+      text-align: right;
+      margin-bottom: var(--space-item);
+      font-style: italic;
+    }
+
+    .cv-header.with-photo {
+      display: flex;
+      gap: var(--space-item);
+      align-items: flex-start;
+    }
+
+    .cv-header.with-photo .header-content {
+      flex: 1;
+    }
+
+    .cv-header .contact-info {
+      font-size: var(--size-small);
+      color: var(--color-muted);
+      text-align: right;
+    }
+
+    .cv-header .contact-item {
+      display: block;
+      margin-bottom: 3px;
+    }
+  `,
 };
 
 // ============ Section Styles ============
@@ -516,6 +574,55 @@ export const sectionStyles = {
       margin-bottom: var(--space-item);
     }
   `,
+
+  alternating: `
+    .section {
+      margin-bottom: 0;
+      padding: var(--space-item) var(--space-item);
+    }
+
+    .section:nth-child(even) {
+      background: var(--color-secondary);
+    }
+
+    .section:nth-child(odd) {
+      background: transparent;
+    }
+
+    .section-title {
+      font-size: var(--size-heading);
+      font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: var(--space-item);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+  `,
+
+  magazine: `
+    .section {
+      margin-bottom: var(--space-section);
+    }
+
+    .section-title {
+      font-size: var(--size-heading);
+      font-weight: 700;
+      color: var(--color-white);
+      background: var(--color-primary);
+      padding: 5px 14px;
+      display: inline-block;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: var(--space-item);
+      border-radius: var(--radius);
+    }
+
+    .section-content {
+      padding-top: var(--space-element);
+      border-left: 2px solid var(--color-secondary);
+      padding-left: var(--space-item);
+    }
+  `,
 };
 
 // ============ Skills Display Styles ============
@@ -608,6 +715,54 @@ export const skillsDisplayStyles = {
       color: var(--color-primary);
       display: block;
       margin-bottom: 4px;
+    }
+  `,
+
+  bars: `
+    .skills-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .skill-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .skill-bar-label {
+      font-size: var(--size-small);
+      color: var(--color-text);
+      min-width: 100px;
+      flex-shrink: 0;
+    }
+
+    .skill-bar-track {
+      flex: 1;
+      height: 8px;
+      background: var(--color-secondary);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .skill-bar-fill {
+      height: 100%;
+      background: var(--color-accent);
+      border-radius: var(--radius);
+    }
+
+    .skills-group {
+      margin-bottom: var(--space-item);
+    }
+
+    .skills-group-title {
+      font-size: var(--size-small);
+      font-weight: 600;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-element);
     }
   `,
 };
