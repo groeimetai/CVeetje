@@ -1,0 +1,240 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { FeedbackItem, FeedbackStatus } from '@/types';
+
+interface FeedbackDetailDialogProps {
+  feedback: FeedbackItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdate: () => void;
+}
+
+const STATUSES: FeedbackStatus[] = ['new', 'in_review', 'planned', 'in_progress', 'resolved', 'declined'];
+
+export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }: FeedbackDetailDialogProps) {
+  const t = useTranslations('admin.feedback');
+  const tf = useTranslations('feedback');
+  const [status, setStatus] = useState<FeedbackStatus>('new');
+  const [adminNotes, setAdminNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (feedback) {
+      setStatus(feedback.status);
+      setAdminNotes(feedback.adminNotes || '');
+    }
+  }, [feedback]);
+
+  if (!feedback) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/feedback/${feedback.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, adminNotes }),
+      });
+      if (res.ok) {
+        onUpdate();
+        onOpenChange(false);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(t('deleteConfirm'))) return;
+    const res = await fetch(`/api/admin/feedback/${feedback.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      onUpdate();
+      onOpenChange(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{feedback.title}</DialogTitle>
+          <DialogDescription>{t('description')}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Meta info */}
+          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+            <Badge variant="outline">{tf(`type.${feedback.type}`)}</Badge>
+            <span>{feedback.userEmail}</span>
+            <span>·</span>
+            <span>{new Date(feedback.createdAt).toLocaleDateString()}</span>
+          </div>
+
+          {/* Type-specific fields */}
+          {feedback.type === 'feature_request' && (
+            <div className="space-y-3">
+              {feedback.description && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.description')}</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap rounded-lg bg-muted/50 p-3">{feedback.description}</p>
+                </div>
+              )}
+              {feedback.priority && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.priority')}</Label>
+                  <p className="mt-1"><Badge variant="outline">{tf(`priority.${feedback.priority}`)}</Badge></p>
+                </div>
+              )}
+              {feedback.useCase && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.useCase')}</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap rounded-lg bg-muted/50 p-3">{feedback.useCase}</p>
+                </div>
+              )}
+              {feedback.expectedBehavior && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.expectedBehavior')}</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap rounded-lg bg-muted/50 p-3">{feedback.expectedBehavior}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {feedback.type === 'bug_report' && (
+            <div className="space-y-3">
+              {feedback.stepsToReproduce && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.stepsToReproduce')}</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap rounded-lg bg-muted/50 p-3">{feedback.stepsToReproduce}</p>
+                </div>
+              )}
+              {feedback.expectedBehavior && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.expectedBehavior')}</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap rounded-lg bg-muted/50 p-3">{feedback.expectedBehavior}</p>
+                </div>
+              )}
+              {feedback.actualBehavior && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.actualBehavior')}</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap rounded-lg bg-muted/50 p-3">{feedback.actualBehavior}</p>
+                </div>
+              )}
+              {feedback.severity && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.severity')}</Label>
+                  <p className="mt-1"><Badge variant="outline">{tf(`priority.${feedback.severity}`)}</Badge></p>
+                </div>
+              )}
+              {feedback.browserInfo && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.browserInfo')}</Label>
+                  <p className="mt-1 text-xs text-muted-foreground break-all">{feedback.browserInfo}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {feedback.type === 'general_feedback' && (
+            <div className="space-y-3">
+              {feedback.message && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.message')}</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap rounded-lg bg-muted/50 p-3">{feedback.message}</p>
+                </div>
+              )}
+              {feedback.category && (
+                <div>
+                  <Label className="text-muted-foreground">{tf('form.category')}</Label>
+                  <p className="mt-1"><Badge variant="outline">{tf(`category.${feedback.category}`)}</Badge></p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Images */}
+          {feedback.imageUrls?.length > 0 && (
+            <div>
+              <Label className="text-muted-foreground">{t('images')}</Label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {feedback.imageUrls.map((url, i) => (
+                  <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={url}
+                      alt={`Attachment ${i + 1}`}
+                      className="max-h-40 rounded-lg border object-contain hover:opacity-80 transition-opacity"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Admin controls */}
+          <div className="border-t pt-4 space-y-3">
+            <div className="space-y-2">
+              <Label>{t('updateStatus')}</Label>
+              <Select value={status} onValueChange={v => setStatus(v as FeedbackStatus)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map(s => (
+                    <SelectItem key={s} value={s}>{tf(`status.${s}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('adminNotes')}</Label>
+              <Textarea
+                value={adminNotes}
+                onChange={e => setAdminNotes(e.target.value)}
+                placeholder={t('adminNotesPlaceholder')}
+                rows={3}
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            className="mr-auto"
+          >
+            {t('delete')}
+          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {tf('form.title') && 'Cancel'}
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? '...' : t('save')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -57,7 +57,9 @@
     "adminCvs": "CVs",
     "adminEmails": "Emails",
     "adminTemplates": "Templates",
-    "adminKanban": "Kanban"
+    "adminKanban": "Kanban",
+    "feedback": "Feedback",
+    "adminFeedback": "Feedback"
   },
   "auth": {
     "signIn": "Sign In",
@@ -670,6 +672,74 @@
       }
     }
   },
+  "feedback": {
+    "title": "Feedback",
+    "description": "Share your ideas, report bugs, or give general feedback",
+    "submitTitle": "Submit Feedback",
+    "myFeedback": "My Feedback",
+    "noFeedback": "You haven't submitted any feedback yet.",
+    "submitted": "Submitted",
+    "tabs": {
+      "featureRequest": "Feature Request",
+      "bugReport": "Bug Report",
+      "generalFeedback": "General Feedback"
+    },
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Short description...",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe the desired functionality in detail...",
+      "priority": "Priority",
+      "useCase": "Use Case",
+      "useCasePlaceholder": "When would you use this feature?",
+      "expectedBehavior": "Expected Behavior",
+      "expectedBehaviorPlaceholder": "What should happen?",
+      "stepsToReproduce": "Steps to Reproduce",
+      "stepsToReproducePlaceholder": "1. Go to...\n2. Click on...\n3. See error...",
+      "actualBehavior": "Actual Behavior",
+      "actualBehaviorPlaceholder": "What actually happens?",
+      "browserInfo": "Browser / Device",
+      "browserInfoPlaceholder": "Automatically filled in",
+      "severity": "Severity",
+      "message": "Message",
+      "messagePlaceholder": "Share your feedback...",
+      "category": "Category",
+      "images": "Screenshots",
+      "imagesHint": "Max 3 images, each max 5MB",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "submitSuccess": "Feedback submitted successfully!",
+      "submitError": "Could not submit feedback",
+      "removeImage": "Remove"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "category": {
+      "ux": "User Experience",
+      "performance": "Performance",
+      "content": "Content",
+      "other": "Other"
+    },
+    "status": {
+      "new": "New",
+      "in_review": "In Review",
+      "planned": "Planned",
+      "in_progress": "In Progress",
+      "resolved": "Resolved",
+      "declined": "Declined"
+    },
+    "type": {
+      "feature_request": "Feature Request",
+      "bug_report": "Bug Report",
+      "general_feedback": "General Feedback"
+    },
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this feedback?"
+  },
   "templatesPage": {
     "title": "Templates",
     "description": "Manage your templates for filling CVs",
@@ -1224,6 +1294,33 @@
         "tags": "Tags",
         "delete": "Delete Card",
         "deleteConfirm": "Are you sure you want to delete this card?"
+      }
+    },
+    "feedback": {
+      "title": "Feedback Management",
+      "description": "View and manage all user feedback",
+      "search": "Search by title or user...",
+      "allTypes": "All types",
+      "allStatuses": "All statuses",
+      "noFeedback": "No feedback found",
+      "adminNotes": "Admin Notes",
+      "adminNotesPlaceholder": "Internal notes...",
+      "updateStatus": "Update Status",
+      "save": "Save",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this feedback?",
+      "images": "Attachments",
+      "noImages": "No images",
+      "statsTotal": "{count} total",
+      "statsNew": "{count} new",
+      "statsInReview": "{count} in review",
+      "statsResolved": "{count} resolved",
+      "table": {
+        "type": "Type",
+        "user": "User",
+        "title": "Title",
+        "status": "Status",
+        "date": "Date"
       }
     }
   },

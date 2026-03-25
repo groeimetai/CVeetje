@@ -16,6 +16,7 @@ import {
   LayoutTemplate,
   Mail,
   Columns3,
+  MessageSquarePlus,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -45,6 +46,7 @@ const navigationItems = [
   { key: 'templates', href: '/templates', icon: LayoutTemplate },
   { key: 'credits', href: '/credits', icon: CreditCard },
   { key: 'settings', href: '/settings', icon: Settings },
+  { key: 'feedback', href: '/feedback', icon: MessageSquarePlus },
 ];
 
 const adminNavigationItems = [
@@ -53,6 +55,7 @@ const adminNavigationItems = [
   { key: 'adminEmails', href: '/admin/emails', icon: Mail },
   { key: 'adminTemplates', href: '/admin/templates', icon: LayoutTemplate },
   { key: 'adminKanban', href: '/admin/kanban', icon: Columns3 },
+  { key: 'adminFeedback', href: '/admin/feedback', icon: MessageSquarePlus },
 ];
 
 // Sidebar content component (shared between desktop and mobile)

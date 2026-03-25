@@ -57,7 +57,9 @@
     "adminCvs": "CVs",
     "adminEmails": "E-mails",
     "adminTemplates": "Templates",
-    "adminKanban": "Kanban"
+    "adminKanban": "Kanban",
+    "feedback": "Feedback",
+    "adminFeedback": "Feedback"
   },
   "auth": {
     "signIn": "Inloggen",
@@ -670,6 +672,74 @@
       }
     }
   },
+  "feedback": {
+    "title": "Feedback",
+    "description": "Deel je ideeën, meld bugs of geef algemene feedback",
+    "submitTitle": "Feedback Versturen",
+    "myFeedback": "Mijn Feedback",
+    "noFeedback": "Je hebt nog geen feedback verstuurd.",
+    "submitted": "Verstuurd",
+    "tabs": {
+      "featureRequest": "Feature Request",
+      "bugReport": "Bug Report",
+      "generalFeedback": "Algemene Feedback"
+    },
+    "form": {
+      "title": "Titel",
+      "titlePlaceholder": "Korte omschrijving...",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Beschrijf de gewenste functionaliteit in detail...",
+      "priority": "Prioriteit",
+      "useCase": "Use Case",
+      "useCasePlaceholder": "Wanneer zou je deze functie gebruiken?",
+      "expectedBehavior": "Verwacht Gedrag",
+      "expectedBehaviorPlaceholder": "Wat zou er moeten gebeuren?",
+      "stepsToReproduce": "Stappen om te Reproduceren",
+      "stepsToReproducePlaceholder": "1. Ga naar...\n2. Klik op...\n3. Zie fout...",
+      "actualBehavior": "Werkelijk Gedrag",
+      "actualBehaviorPlaceholder": "Wat gebeurt er in werkelijkheid?",
+      "browserInfo": "Browser / Apparaat",
+      "browserInfoPlaceholder": "Wordt automatisch ingevuld",
+      "severity": "Ernst",
+      "message": "Bericht",
+      "messagePlaceholder": "Deel je feedback...",
+      "category": "Categorie",
+      "images": "Screenshots",
+      "imagesHint": "Max 3 afbeeldingen, elk max 5MB",
+      "submit": "Verzenden",
+      "submitting": "Verzenden...",
+      "submitSuccess": "Feedback succesvol verstuurd!",
+      "submitError": "Kon feedback niet versturen",
+      "removeImage": "Verwijderen"
+    },
+    "priority": {
+      "low": "Laag",
+      "medium": "Gemiddeld",
+      "high": "Hoog",
+      "critical": "Kritiek"
+    },
+    "category": {
+      "ux": "Gebruikerservaring",
+      "performance": "Prestaties",
+      "content": "Inhoud",
+      "other": "Overig"
+    },
+    "status": {
+      "new": "Nieuw",
+      "in_review": "In Beoordeling",
+      "planned": "Gepland",
+      "in_progress": "In Ontwikkeling",
+      "resolved": "Opgelost",
+      "declined": "Afgewezen"
+    },
+    "type": {
+      "feature_request": "Feature Request",
+      "bug_report": "Bug Report",
+      "general_feedback": "Algemene Feedback"
+    },
+    "delete": "Verwijderen",
+    "deleteConfirm": "Weet je zeker dat je deze feedback wilt verwijderen?"
+  },
   "templatesPage": {
     "title": "Templates",
     "description": "Beheer je templates voor het invullen van CVs",
@@ -1224,6 +1294,33 @@
         "tags": "Tags",
         "delete": "Kaart Verwijderen",
         "deleteConfirm": "Weet je zeker dat je deze kaart wilt verwijderen?"
+      }
+    },
+    "feedback": {
+      "title": "Feedback Beheer",
+      "description": "Bekijk en beheer alle feedback van gebruikers",
+      "search": "Zoek op titel of gebruiker...",
+      "allTypes": "Alle types",
+      "allStatuses": "Alle statussen",
+      "noFeedback": "Geen feedback gevonden",
+      "adminNotes": "Admin Notities",
+      "adminNotesPlaceholder": "Interne notities...",
+      "updateStatus": "Status Bijwerken",
+      "save": "Opslaan",
+      "delete": "Verwijderen",
+      "deleteConfirm": "Weet je zeker dat je deze feedback wilt verwijderen?",
+      "images": "Bijlagen",
+      "noImages": "Geen afbeeldingen",
+      "statsTotal": "{count} totaal",
+      "statsNew": "{count} nieuw",
+      "statsInReview": "{count} in beoordeling",
+      "statsResolved": "{count} opgelost",
+      "table": {
+        "type": "Type",
+        "user": "Gebruiker",
+        "title": "Titel",
+        "status": "Status",
+        "date": "Datum"
       }
     }
   },
