@@ -536,7 +536,6 @@ function generateHeader(
 
   // For split header, structure is different
   if (tokens.headerVariant === 'split') {
-    // When photo is present, wrap name/headline in a container for proper flex layout
     const nameHeadlineContent = `
       <h1 class="name" style="${nameStyle}">${escapeHtml(fullName)}</h1>
       ${headline ? `<p class="headline" style="${headlineStyle}">${escapeHtml(headline)}</p>` : ''}
@@ -550,6 +549,26 @@ function generateHeader(
       </div>
       <div class="header-right">
         ${contactHtml}
+      </div>
+    </header>`;
+  }
+
+  // Asymmetric header: radically different structure
+  // Name takes full width on its own line, headline right-aligned, contact as vertical list on the right
+  if (tokens.headerVariant === 'asymmetric') {
+    return `
+    <header class="cv-header asymmetric-header ${photoClass}" style="${headerStyle}">
+      <div class="asymmetric-top">
+        ${avatarUrl && tokens.showPhoto ? generateAvatar(avatarUrl, tokens.roundedCorners) : ''}
+        <h1 class="name" style="${nameStyle}">${escapeHtml(fullName)}</h1>
+      </div>
+      <div class="asymmetric-bottom">
+        <div class="asymmetric-headline">
+          ${headline ? `<p class="headline" style="${headlineStyle}">${escapeHtml(headline)}</p>` : ''}
+        </div>
+        <div class="asymmetric-contact">
+          ${contactHtml}
+        </div>
       </div>
     </header>`;
   }

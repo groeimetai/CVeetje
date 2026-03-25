@@ -677,6 +677,20 @@ function validateAndFixTokens(
     tokens.headerVariant = constraints.allowedHeaderVariants[0];
   }
 
+  // For experimental: force away from banner (the most generic/overused header)
+  if (creativityLevel === 'experimental' && tokens.headerVariant === 'banner') {
+    const distinctHeaders = ['asymmetric', 'split', 'accented'] as const;
+    tokens.headerVariant = distinctHeaders[Math.floor(Math.random() * distinctHeaders.length)];
+    console.log(`[Style Gen] Forced experimental header away from banner → ${tokens.headerVariant}`);
+  }
+
+  // For creative: if banner chosen, 50% chance to switch to something more interesting
+  if (creativityLevel === 'creative' && tokens.headerVariant === 'banner' && Math.random() > 0.5) {
+    const options = ['asymmetric', 'split', 'accented'] as const;
+    tokens.headerVariant = options[Math.floor(Math.random() * options.length)];
+    console.log(`[Style Gen] Upgraded creative header from banner → ${tokens.headerVariant}`);
+  }
+
   // Validate section style
   const allowedSections = constraints.allowedSectionStyles as readonly string[];
   if (!allowedSections.includes(tokens.sectionStyle)) {

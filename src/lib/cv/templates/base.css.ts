@@ -382,60 +382,68 @@ export const headerVariants = {
   `,
 
   asymmetric: `
-    .cv-header {
+    .cv-header.asymmetric-header {
       padding-bottom: var(--space-section);
       margin-bottom: var(--space-section);
-      position: relative;
+      border-bottom: 3px solid var(--color-accent);
     }
 
-    .cv-header::after {
-      content: "";
-      position: absolute;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: var(--color-accent);
+    /* Top row: photo (optional) + giant name */
+    .asymmetric-top {
+      display: flex;
+      align-items: center;
+      gap: var(--space-item);
+      margin-bottom: var(--space-element);
     }
 
-    .cv-header h1.name {
-      font-size: 40pt;
+    .asymmetric-header h1.name {
+      font-size: 38pt;
       font-weight: 900;
       color: var(--color-primary);
       line-height: 1.0;
-      margin-bottom: var(--space-element);
+      letter-spacing: -0.5pt;
       word-break: normal;
       overflow-wrap: break-word;
     }
 
-    .cv-header .headline {
-      font-size: var(--size-subheading);
-      color: var(--color-accent);
-      font-weight: 600;
-      text-align: right;
-      margin-bottom: var(--space-item);
-      font-style: italic;
-    }
-
-    .cv-header.with-photo {
+    /* Bottom row: headline left, contact right */
+    .asymmetric-bottom {
       display: flex;
-      gap: var(--space-item);
+      justify-content: space-between;
       align-items: flex-start;
+      gap: var(--space-item);
+      margin-top: var(--space-element);
     }
 
-    .cv-header.with-photo .header-content {
+    .asymmetric-headline {
       flex: 1;
     }
 
-    .cv-header .contact-info {
-      font-size: var(--size-small);
-      color: var(--color-muted);
+    .asymmetric-headline .headline {
+      font-size: var(--size-subheading);
+      color: var(--color-accent);
+      font-weight: 500;
+      font-style: italic;
+    }
+
+    .asymmetric-contact {
+      flex-shrink: 0;
       text-align: right;
     }
 
-    .cv-header .contact-item {
+    .asymmetric-contact .contact-info {
+      font-size: var(--size-small);
+      color: var(--color-muted);
+    }
+
+    .asymmetric-contact .contact-item {
       display: block;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
+    }
+
+    .asymmetric-contact .contact-item:not(:last-child)::after {
+      content: "" !important;
+      margin: 0 !important;
     }
   `,
 };
