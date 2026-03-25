@@ -409,7 +409,7 @@ export async function getAllCVs(
           userEmail: user.email,
           userDisplayName: user.displayName,
           status: data.status || 'unknown',
-          jobTitle: data.jobVacancy?.title || null,
+          jobTitle: data.jobVacancy?.title || (data.template && data.template !== 'dynamic' ? `Template: ${data.template}` : null),
           llmProvider: data.llmProvider || null,
           llmModel: data.llmModel || null,
           createdAt: data.createdAt?.toDate?.() || new Date(),

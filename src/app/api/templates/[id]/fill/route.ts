@@ -106,7 +106,7 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { profileData, customValues, useAI, jobVacancy, language, fitAnalysis, customInstructions } = body as {
+    const { profileData, customValues, useAI, jobVacancy, language, fitAnalysis, customInstructions, avatarUrl } = body as {
       profileData: ParsedLinkedIn;
       customValues?: Record<string, string>;
       useAI?: boolean;
@@ -114,6 +114,7 @@ export async function POST(
       language?: OutputLanguage;
       fitAnalysis?: FitAnalysis;
       customInstructions?: string;
+      avatarUrl?: string | null;
     };
 
     if (!profileData) {
@@ -181,6 +182,7 @@ export async function POST(
         fitAnalysis,
         customInstructions,
         templateName: template.name,
+        avatarUrl,
       };
 
       // Fill the DOCX template using AI
@@ -235,8 +237,29 @@ export async function POST(
       }
     }
 
-    // Deduct credit (deduct from free first, then purchased) - unless skipCredit is true
+    // Deduct credit and save CV record (only on initial fill, not on PDF re-conversion)
     if (!skipCredit) {
+      // Save a CV record in Firestore so template-filled CVs appear in admin/dashboard
+      const cvRef = await db.collection('users').doc(userId).collection('cvs').add({
+        linkedInData: profileData,
+        jobVacancy: jobVacancy || null,
+        template: template.name,
+        templateId: template.id,
+        templateFileType: template.fileType,
+        fillMethod,
+        filledCount,
+        customValues: customValues || null,
+        avatarUrl: avatarUrl || null,
+        generatedContent: null,
+        pdfUrl: null,
+        status: 'generated',
+        llmProvider: null,
+        llmModel: null,
+        language: language || 'nl',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
       if (freeCredits > 0) {
         await db.collection('users').doc(userId).update({
           'credits.free': freeCredits - 1,
@@ -267,7 +290,7 @@ export async function POST(
         type: 'cv_generation',
         description: `Template filled: ${template.name} ${methodDescription}`,
         molliePaymentId: null,
-        cvId: null,
+        cvId: cvRef.id,
         createdAt: new Date(),
       });
     }
