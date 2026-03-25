@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Briefcase, Calendar, Cpu } from 'lucide-react';
+import { FileText, Loader2, User, Briefcase, Calendar, Cpu } from 'lucide-react';
 import { generateCVHTML, getDefaultTokens } from '@/lib/cv/html-generator';
 import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
 import type { GeneratedCVContent, CVStyleConfig } from '@/types';
@@ -204,6 +204,104 @@ export function AdminCVDialog({ cv, open, onOpenChange }: AdminCVDialogProps) {
               sandbox="allow-same-origin"
               style={{ border: 'none' }}
             />
+          </div>
+        ) : cvData && cvData.templateId ? (
+          /* Template-filled CV: show summary since there's no HTML to render */
+          <div className="border rounded-lg p-6 space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span>Template: {cvData.template as string}</span>
+              {cvData.templateFileType ? (
+                <Badge variant="outline" className="text-xs uppercase">
+                  {String(cvData.templateFileType)}
+                </Badge>
+              ) : null}
+            </div>
+
+            {/* Profile summary */}
+            {cvData.linkedInData ? (() => {
+              const profile = cvData.linkedInData as Record<string, unknown>;
+              return (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Profiel</h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {profile.fullName ? (
+                      <>
+                        <span className="text-muted-foreground">Naam</span>
+                        <span>{String(profile.fullName)}</span>
+                      </>
+                    ) : null}
+                    {profile.headline ? (
+                      <>
+                        <span className="text-muted-foreground">Titel</span>
+                        <span>{String(profile.headline)}</span>
+                      </>
+                    ) : null}
+                    {profile.location ? (
+                      <>
+                        <span className="text-muted-foreground">Locatie</span>
+                        <span>{String(profile.location)}</span>
+                      </>
+                    ) : null}
+                    {profile.email ? (
+                      <>
+                        <span className="text-muted-foreground">Email</span>
+                        <span>{String(profile.email)}</span>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })() : null}
+
+            {/* Job vacancy */}
+            {cvData.jobVacancy ? (() => {
+              const job = cvData.jobVacancy as Record<string, unknown>;
+              return (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Vacature</h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {job.title ? (
+                      <>
+                        <span className="text-muted-foreground">Functie</span>
+                        <span>{String(job.title)}</span>
+                      </>
+                    ) : null}
+                    {job.company ? (
+                      <>
+                        <span className="text-muted-foreground">Bedrijf</span>
+                        <span>{String(job.company)}</span>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })() : null}
+
+            {/* Fill info */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Invuldetails</h4>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                {cvData.fillMethod ? (
+                  <>
+                    <span className="text-muted-foreground">Methode</span>
+                    <span>{String(cvData.fillMethod)}</span>
+                  </>
+                ) : null}
+                {typeof cvData.filledCount === 'number' ? (
+                  <>
+                    <span className="text-muted-foreground">Velden ingevuld</span>
+                    <span>{cvData.filledCount}</span>
+                  </>
+                ) : null}
+                {cvData.language ? (
+                  <>
+                    <span className="text-muted-foreground">Taal</span>
+                    <span>{String(cvData.language) === 'nl' ? 'Nederlands' : 'Engels'}</span>
+                  </>
+                ) : null}
+              </div>
+            </div>
           </div>
         ) : cvData ? (
           <div className="text-center py-8 text-muted-foreground">
