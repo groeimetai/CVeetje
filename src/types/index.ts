@@ -1209,6 +1209,9 @@ export interface FeedbackItem {
   category?: FeedbackCategory;
   // Admin
   adminNotes?: string;
+  // GitHub
+  githubIssueNumber?: number;
+  githubIssueUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }

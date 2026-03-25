@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { ExternalLink } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -84,11 +85,25 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
 
         <div className="space-y-4">
           {/* Meta info */}
-          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge variant="outline">{tf(`type.${feedback.type}`)}</Badge>
             <span>{feedback.userEmail}</span>
             <span>·</span>
             <span>{new Date(feedback.createdAt).toLocaleDateString()}</span>
+            {feedback.githubIssueUrl && (
+              <>
+                <span>·</span>
+                <a
+                  href={feedback.githubIssueUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  <ExternalLink className="size-3" />
+                  Issue #{feedback.githubIssueNumber}
+                </a>
+              </>
+            )}
           </div>
 
           {/* Type-specific fields */}
