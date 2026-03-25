@@ -15,6 +15,7 @@ import {
   Menu,
   LayoutTemplate,
   Mail,
+  Columns3,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -51,6 +52,7 @@ const adminNavigationItems = [
   { key: 'adminCvs', href: '/admin/cvs', icon: FileText },
   { key: 'adminEmails', href: '/admin/emails', icon: Mail },
   { key: 'adminTemplates', href: '/admin/templates', icon: LayoutTemplate },
+  { key: 'adminKanban', href: '/admin/kanban', icon: Columns3 },
 ];
 
 // Sidebar content component (shared between desktop and mobile)

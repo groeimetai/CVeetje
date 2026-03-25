@@ -56,7 +56,8 @@
     "adminUsers": "Gebruikers",
     "adminCvs": "CVs",
     "adminEmails": "E-mails",
-    "adminTemplates": "Templates"
+    "adminTemplates": "Templates",
+    "adminKanban": "Kanban"
   },
   "auth": {
     "signIn": "Inloggen",
@@ -1166,6 +1167,56 @@
       "fileName": "Bestandsnaam",
       "fileSize": "Bestandsgrootte",
       "uploadedAt": "Geüpload op"
+    },
+    "kanban": {
+      "title": "Kanban Borden",
+      "description": "Beheer projectborden met kaarten en kolommen",
+      "newBoard": "Nieuw Bord",
+      "noBoards": "Nog geen borden. Maak je eerste bord aan om te beginnen.",
+      "cards": "{count} kaarten",
+      "createdBy": "Aangemaakt door {name}",
+      "boardTitle": "Bordnaam",
+      "boardTitlePlaceholder": "bijv. Sprint Planning",
+      "boardDescription": "Beschrijving",
+      "boardDescriptionPlaceholder": "Waar is dit bord voor?",
+      "create": "Aanmaken",
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen",
+      "deleteBoard": "Bord Verwijderen",
+      "deleteBoardConfirm": "Weet je zeker dat je \"{title}\" wilt verwijderen? Alle kaarten op dit bord worden ook verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "settings": "Bord Instellingen",
+      "columns": "Kolommen",
+      "tags": "Tags",
+      "addColumn": "Kolom Toevoegen",
+      "addTag": "Tag Toevoegen",
+      "columnName": "Kolomnaam",
+      "columnColor": "Kleur",
+      "tagLabel": "Tag label",
+      "tagColor": "Kleur",
+      "removeColumn": "Kolom verwijderen",
+      "removeTag": "Tag verwijderen",
+      "noCards": "Geen kaarten",
+      "empty": "Geen kaarten in deze kolom",
+      "dragHint": "Sleep kaarten om te herordenen of te verplaatsen",
+      "backToBoards": "Terug naar borden",
+      "defaultColumns": {
+        "backlog": "Backlog",
+        "inProgress": "In Uitvoering",
+        "review": "Review",
+        "done": "Afgerond"
+      },
+      "card": {
+        "newCard": "Nieuwe Kaart",
+        "editCard": "Kaart Bewerken",
+        "title": "Titel",
+        "titlePlaceholder": "Kaart titel...",
+        "description": "Beschrijving",
+        "descriptionPlaceholder": "Voeg details toe...",
+        "tags": "Tags",
+        "delete": "Kaart Verwijderen",
+        "deleteConfirm": "Weet je zeker dat je deze kaart wilt verwijderen?"
+      }
     }
   },
   "metadata": {

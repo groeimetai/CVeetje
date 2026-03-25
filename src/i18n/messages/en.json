@@ -56,7 +56,8 @@
     "adminUsers": "Users",
     "adminCvs": "CVs",
     "adminEmails": "Emails",
-    "adminTemplates": "Templates"
+    "adminTemplates": "Templates",
+    "adminKanban": "Kanban"
   },
   "auth": {
     "signIn": "Sign In",
@@ -1166,6 +1167,56 @@
       "fileName": "File name",
       "fileSize": "File size",
       "uploadedAt": "Uploaded at"
+    },
+    "kanban": {
+      "title": "Kanban Boards",
+      "description": "Manage project boards with cards and columns",
+      "newBoard": "New Board",
+      "noBoards": "No boards yet. Create your first board to get started.",
+      "cards": "{count} cards",
+      "createdBy": "Created by {name}",
+      "boardTitle": "Board Title",
+      "boardTitlePlaceholder": "e.g., Sprint Planning",
+      "boardDescription": "Description",
+      "boardDescriptionPlaceholder": "What is this board for?",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteBoard": "Delete Board",
+      "deleteBoardConfirm": "Are you sure you want to delete \"{title}\"? All cards on this board will also be deleted. This cannot be undone.",
+      "settings": "Board Settings",
+      "columns": "Columns",
+      "tags": "Tags",
+      "addColumn": "Add Column",
+      "addTag": "Add Tag",
+      "columnName": "Column name",
+      "columnColor": "Color",
+      "tagLabel": "Tag label",
+      "tagColor": "Color",
+      "removeColumn": "Remove column",
+      "removeTag": "Remove tag",
+      "noCards": "No cards",
+      "empty": "No cards in this column",
+      "dragHint": "Drag cards to reorder or move between columns",
+      "backToBoards": "Back to boards",
+      "defaultColumns": {
+        "backlog": "Backlog",
+        "inProgress": "In Progress",
+        "review": "Review",
+        "done": "Done"
+      },
+      "card": {
+        "newCard": "New Card",
+        "editCard": "Edit Card",
+        "title": "Title",
+        "titlePlaceholder": "Card title...",
+        "description": "Description",
+        "descriptionPlaceholder": "Add details...",
+        "tags": "Tags",
+        "delete": "Delete Card",
+        "deleteConfirm": "Are you sure you want to delete this card?"
+      }
     }
   },
   "metadata": {
