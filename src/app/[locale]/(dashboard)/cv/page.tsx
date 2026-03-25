@@ -18,7 +18,7 @@ import { getUserCVs, deleteCV } from '@/lib/firebase/firestore';
 import type { CV } from '@/types';
 
 export default function CVListPage() {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, effectiveUserId } = useAuth();
   const t = useTranslations('cvList');
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
@@ -27,20 +27,20 @@ export default function CVListPage() {
 
   useEffect(() => {
     async function fetchCVs() {
-      if (firebaseUser) {
-        const userCvs = await getUserCVs(firebaseUser.uid);
+      if (effectiveUserId) {
+        const userCvs = await getUserCVs(effectiveUserId);
         setCvs(userCvs);
         setLoading(false);
       }
     }
     fetchCVs();
-  }, [firebaseUser]);
+  }, [effectiveUserId]);
 
   const handleDelete = async (cvId: string) => {
-    if (!firebaseUser || !confirm(t('deleteConfirm'))) return;
+    if (!effectiveUserId || !confirm(t('deleteConfirm'))) return;
 
     try {
-      await deleteCV(firebaseUser.uid, cvId);
+      await deleteCV(effectiveUserId, cvId);
       setCvs(cvs.filter((cv) => cv.id !== cvId));
     } catch (error) {
       console.error('Failed to delete CV:', error);

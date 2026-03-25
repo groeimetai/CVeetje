@@ -325,7 +325,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
 export default function CVDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { firebaseUser, credits, refreshCredits } = useAuth();
+  const { firebaseUser, effectiveUserId, credits, refreshCredits } = useAuth();
 
   const [cv, setCV] = useState<(CV & { tokens?: CVDesignTokens }) | null>(null);
   const [loading, setLoading] = useState(true);
@@ -337,11 +337,11 @@ export default function CVDetailPage() {
 
   // Handle saving element overrides
   const handleUpdateOverrides = async (overrides: CVElementOverrides) => {
-    if (!firebaseUser || !cvId) return;
+    if (!effectiveUserId || !cvId) return;
 
     setIsSaving(true);
     try {
-      await updateCV(firebaseUser.uid, cvId, { elementOverrides: overrides });
+      await updateCV(effectiveUserId, cvId, { elementOverrides: overrides });
       setCV(prev => prev ? { ...prev, elementOverrides: overrides } : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save changes');
@@ -352,14 +352,14 @@ export default function CVDetailPage() {
 
   useEffect(() => {
     async function fetchCV() {
-      if (firebaseUser && cvId) {
-        const cvData = await getCV(firebaseUser.uid, cvId);
+      if (effectiveUserId && cvId) {
+        const cvData = await getCV(effectiveUserId, cvId);
         setCV(cvData as CV & { tokens?: CVDesignTokens });
         setLoading(false);
       }
     }
     fetchCV();
-  }, [firebaseUser, cvId]);
+  }, [effectiveUserId, cvId]);
 
   const pdfDownloaded = cv?.status === 'pdf_ready';
 

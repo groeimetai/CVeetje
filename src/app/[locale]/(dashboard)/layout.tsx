@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { Sidebar, MobileHeader } from '@/components/dashboard/sidebar';
 import { AuthProvider, useAuth } from '@/components/auth/auth-context';
+import { ImpersonationBanner } from '@/components/admin/impersonation-banner';
 import { Footer } from '@/components/footer';
 import { Loader2 } from 'lucide-react';
 
@@ -39,6 +40,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       <meta name="robots" content="noindex, nofollow" />
+      <ImpersonationBanner />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"

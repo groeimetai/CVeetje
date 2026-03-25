@@ -1090,6 +1090,14 @@
       "templatesSaved": "Templates opgeslagen",
       "templatesSaving": "Opslaan..."
     },
+    "impersonation": {
+      "impersonate": "Imiteer",
+      "impersonateDesc": "Bekijk de app als deze gebruiker",
+      "stopImpersonation": "Stop imitatie",
+      "viewingAs": "Je bekijkt als {name}",
+      "cannotImpersonateAdmin": "Kan geen admin-gebruiker imiteren",
+      "cannotImpersonateSelf": "Kan jezelf niet imiteren"
+    },
     "cvs": {
       "title": "Alle CVs",
       "description": "Overzicht van alle gegenereerde CVs",

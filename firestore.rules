@@ -15,6 +15,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Check if the authenticated user is an admin (via custom claims)
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
     // Check if a field exists and is not null
     function fieldExists(field) {
       return field != null;
@@ -27,8 +32,8 @@ service cloud.firestore {
     // Client-side updates are restricted to non-sensitive fields only
 
     match /users/{userId} {
-      // Users can read their own document
-      allow read: if isOwner(userId);
+      // Users can read their own document; admins can read any user (for impersonation)
+      allow read: if isOwner(userId) || isAdmin();
 
       // Users can create their own document (on signup)
       // But cannot set credits or apiKey directly - these are set by Admin SDK
@@ -63,8 +68,8 @@ service cloud.firestore {
       // /users/{userId}/transactions/{transactionId}
 
       match /transactions/{transactionId} {
-        // Users can read their own transactions
-        allow read: if isOwner(userId);
+        // Users can read their own transactions; admins can read any (for impersonation)
+        allow read: if isOwner(userId) || isAdmin();
 
         // Transactions can ONLY be created via Admin SDK (server-side)
         // This prevents users from creating fake purchase transactions
@@ -79,8 +84,8 @@ service cloud.firestore {
       // /users/{userId}/cvs/{cvId}
 
       match /cvs/{cvId} {
-        // Users can read their own CVs
-        allow read: if isOwner(userId);
+        // Users can read their own CVs; admins can read any (for impersonation)
+        allow read: if isOwner(userId) || isAdmin();
 
         // Users can create CVs
         allow create: if isOwner(userId) && validCVCreate();
@@ -106,8 +111,8 @@ service cloud.firestore {
       // /users/{userId}/profiles/{profileId}
 
       match /profiles/{profileId} {
-        // Users can read their own profiles
-        allow read: if isOwner(userId);
+        // Users can read their own profiles; admins can read any (for impersonation)
+        allow read: if isOwner(userId) || isAdmin();
 
         // Users can create profiles
         allow create: if isOwner(userId) && validProfileCreate();

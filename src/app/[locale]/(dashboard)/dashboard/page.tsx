@@ -13,7 +13,7 @@ import { getUserCVs } from '@/lib/firebase/firestore';
 import type { CV } from '@/types';
 
 export default function DashboardPage() {
-  const { firebaseUser, userData } = useAuth();
+  const { firebaseUser, userData, effectiveUserId } = useAuth();
   const t = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const [cvs, setCvs] = useState<CV[]>([]);
@@ -21,14 +21,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchCVs() {
-      if (firebaseUser) {
-        const userCvs = await getUserCVs(firebaseUser.uid);
+      if (effectiveUserId) {
+        const userCvs = await getUserCVs(effectiveUserId);
         setCvs(userCvs);
         setLoading(false);
       }
     }
     fetchCVs();
-  }, [firebaseUser]);
+  }, [effectiveUserId]);
 
   const getStatusBadge = (status: CV['status']) => {
     switch (status) {

@@ -17,7 +17,7 @@ import type { CreditTransaction } from '@/types';
 
 export default function CreditsPage() {
   const searchParams = useSearchParams();
-  const { firebaseUser, credits, refreshCredits } = useAuth();
+  const { effectiveUserId, credits, refreshCredits } = useAuth();
   const t = useTranslations('credits');
   const tCommon = useTranslations('common');
 
@@ -30,8 +30,8 @@ export default function CreditsPage() {
 
   useEffect(() => {
     async function fetchData() {
-      if (firebaseUser) {
-        const txs = await getTransactionHistory(firebaseUser.uid);
+      if (effectiveUserId) {
+        const txs = await getTransactionHistory(effectiveUserId);
         setTransactions(txs);
         setLoading(false);
 
@@ -42,7 +42,7 @@ export default function CreditsPage() {
       }
     }
     fetchData();
-  }, [firebaseUser, paymentStatus, refreshCredits]);
+  }, [effectiveUserId, paymentStatus, refreshCredits]);
 
   const handlePurchase = async (packageId: string) => {
     setPurchasing(packageId);

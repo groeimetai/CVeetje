@@ -24,6 +24,12 @@ interface AuthContextType {
   llmMode: LLMMode;         // 'own-key' or 'platform'
   hasAIAccess: boolean;     // true if platform mode OR own API key configured
   loading: boolean;
+  // Impersonation
+  impersonating: boolean;
+  impersonatedUserId: string | null;
+  effectiveUserId: string | null;
+  startImpersonation: (userId: string) => Promise<void>;
+  stopImpersonation: () => Promise<void>;
   refreshCredits: () => Promise<void>;
   refreshUserData: () => Promise<void>;
   refreshToken: () => Promise<string | null>;
@@ -39,6 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [freeCredits, setFreeCredits] = useState(0);
   const [purchasedCredits, setPurchasedCredits] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Impersonation state
+  const [impersonating, setImpersonating] = useState(false);
+  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(null);
+  const [impersonatedUserData, setImpersonatedUserData] = useState<User | null>(null);
+  const [impersonatedCredits, setImpersonatedCredits] = useState(0);
+  const [impersonatedFreeCredits, setImpersonatedFreeCredits] = useState(0);
+  const [impersonatedPurchasedCredits, setImpersonatedPurchasedCredits] = useState(0);
 
   // Helper to set the token cookie
   const setTokenCookie = useCallback((token: string) => {
@@ -72,6 +86,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Load impersonated user data from Firestore
+  const loadImpersonatedUser = useCallback(async (userId: string) => {
+    const data = await getUserData(userId);
+    setImpersonatedUserData(data);
+    const breakdown = await getUserCreditsBreakdown(userId);
+    setImpersonatedCredits(breakdown.total);
+    setImpersonatedFreeCredits(breakdown.free);
+    setImpersonatedPurchasedCredits(breakdown.purchased);
+  }, []);
+
+  // Start impersonating a user
+  const startImpersonation = useCallback(async (userId: string) => {
+    const response = await fetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to start impersonation');
+    }
+
+    setImpersonatedUserId(userId);
+    setImpersonating(true);
+    await loadImpersonatedUser(userId);
+  }, [loadImpersonatedUser]);
+
+  // Stop impersonating
+  const stopImpersonation = useCallback(async () => {
+    await fetch('/api/admin/impersonate', { method: 'DELETE' });
+
+    setImpersonating(false);
+    setImpersonatedUserId(null);
+    setImpersonatedUserData(null);
+    setImpersonatedCredits(0);
+    setImpersonatedFreeCredits(0);
+    setImpersonatedPurchasedCredits(0);
+  }, []);
+
   const refreshCredits = async () => {
     if (firebaseUser) {
       // Use getCreditsFromServer to bypass Firestore client cache —
@@ -91,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear cookies
       document.cookie = 'firebase-token=; path=/; max-age=0';
       document.cookie = 'session=; path=/; max-age=0';
+      document.cookie = 'impersonate-uid=; path=/; max-age=0';
       // Clear state
       setUserData(null);
       setCredits(0);
@@ -147,6 +202,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [setTokenCookie]);
 
+  // Check for existing impersonation session on mount
+  useEffect(() => {
+    if (!firebaseUser || loading) return;
+
+    // Only admins can impersonate
+    const role = userData?.role;
+    if (role !== 'admin') return;
+
+    // Check if impersonation cookie exists
+    const cookieMatch = document.cookie.match(/(?:^|; )impersonate-uid=([^;]*)/);
+    if (!cookieMatch) return;
+
+    const impersonateUid = cookieMatch[1];
+    if (impersonateUid && impersonateUid !== firebaseUser.uid) {
+      // Verify impersonation is still valid via API
+      fetch('/api/admin/impersonate')
+        .then(res => res.json())
+        .then(data => {
+          if (data.impersonating) {
+            setImpersonatedUserId(data.impersonating.userId);
+            setImpersonating(true);
+            loadImpersonatedUser(data.impersonating.userId);
+          }
+        })
+        .catch(() => {
+          // Impersonation check failed — ignore
+        });
+    }
+  }, [firebaseUser, loading, userData?.role, loadImpersonatedUser]);
+
   // Automatic token refresh every 50 minutes (before the 1 hour expiry)
   useEffect(() => {
     if (!firebaseUser) return;
@@ -169,24 +254,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = userData?.role === 'admin';
 
   // LLM mode: 'platform' (default) or 'own-key'
-  const llmMode: LLMMode = userData?.llmMode || 'platform';
+  const effectiveUserData = impersonating ? impersonatedUserData : userData;
+  const llmMode: LLMMode = effectiveUserData?.llmMode || 'platform';
 
   // User has AI access if they're in platform mode OR have their own API key
-  const hasAIAccess = llmMode === 'platform' || !!userData?.apiKey;
+  const hasAIAccess = llmMode === 'platform' || !!effectiveUserData?.apiKey;
+
+  // Effective userId for data fetching
+  const effectiveUserId = impersonatedUserId ?? firebaseUser?.uid ?? null;
+
+  // Effective credits — show impersonated user's credits when impersonating
+  const effectiveCredits = impersonating ? impersonatedCredits : credits;
+  const effectiveFreeCredits = impersonating ? impersonatedFreeCredits : freeCredits;
+  const effectivePurchasedCredits = impersonating ? impersonatedPurchasedCredits : purchasedCredits;
 
   return (
     <AuthContext.Provider
       value={{
         firebaseUser,
-        userData,
-        credits,
-        freeCredits,
-        purchasedCredits,
+        userData: effectiveUserData,
+        credits: effectiveCredits,
+        freeCredits: effectiveFreeCredits,
+        purchasedCredits: effectivePurchasedCredits,
         emailVerified,
         isAdmin,
         llmMode,
         hasAIAccess,
         loading,
+        impersonating,
+        impersonatedUserId,
+        effectiveUserId,
+        startImpersonation,
+        stopImpersonation,
         refreshCredits,
         refreshUserData,
         refreshToken,

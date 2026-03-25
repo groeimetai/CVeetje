@@ -39,7 +39,10 @@ import {
   Calendar,
   CreditCard,
   FileText,
+  Eye,
 } from 'lucide-react';
+import { useAuth } from '@/components/auth/auth-context';
+import { useRouter } from '@/i18n/navigation';
 import type { AdminUser } from '@/lib/firebase/admin-utils';
 import type { GlobalTemplate } from '@/types';
 
@@ -57,7 +60,10 @@ export function UserDetailDialog({
   onUserUpdated,
 }: UserDetailDialogProps) {
   const t = useTranslations('admin');
+  const { firebaseUser, startImpersonation } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [impersonateLoading, setImpersonateLoading] = useState(false);
   const [creditsLoading, setCreditsLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [disableReason, setDisableReason] = useState('');
@@ -216,6 +222,22 @@ export function UserDetailDialog({
       setTemplatesSaving(false);
     }
   };
+
+  const handleImpersonate = async () => {
+    if (!user) return;
+    setImpersonateLoading(true);
+    try {
+      await startImpersonation(user.uid);
+      onOpenChange(false);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Failed to impersonate:', error);
+    } finally {
+      setImpersonateLoading(false);
+    }
+  };
+
+  const canImpersonate = user && user.uid !== firebaseUser?.uid && user.role !== 'admin';
 
   const handleDeleteUser = async () => {
     setDeleteLoading(true);
@@ -411,6 +433,34 @@ export function UserDetailDialog({
           {/* Actions */}
           <div className="space-y-4">
             <h3 className="font-semibold">{t('userDialog.actions')}</h3>
+
+            {/* Impersonate */}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">{t('impersonation.impersonate')}</div>
+                <div className="text-sm text-muted-foreground">
+                  {!canImpersonate
+                    ? user.role === 'admin'
+                      ? t('impersonation.cannotImpersonateAdmin')
+                      : t('impersonation.cannotImpersonateSelf')
+                    : t('impersonation.impersonateDesc')}
+                </div>
+              </div>
+              <Button
+                onClick={handleImpersonate}
+                variant="outline"
+                disabled={!canImpersonate || impersonateLoading}
+              >
+                {impersonateLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-1" />
+                    {t('impersonation.impersonate')}
+                  </>
+                )}
+              </Button>
+            </div>
 
             {/* Toggle Role */}
             <div className="flex items-center justify-between">

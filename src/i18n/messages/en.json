@@ -1090,6 +1090,14 @@
       "templatesSaved": "Templates saved",
       "templatesSaving": "Saving..."
     },
+    "impersonation": {
+      "impersonate": "Impersonate",
+      "impersonateDesc": "View the app as this user",
+      "stopImpersonation": "Stop impersonation",
+      "viewingAs": "Viewing as {name}",
+      "cannotImpersonateAdmin": "Cannot impersonate admin users",
+      "cannotImpersonateSelf": "Cannot impersonate yourself"
+    },
     "cvs": {
       "title": "All CVs",
       "description": "Overview of all generated CVs",
