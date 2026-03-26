@@ -388,35 +388,36 @@ export const headerVariants = {
       border-bottom: 3px solid var(--color-accent);
     }
 
-    /* Top row: photo (optional) + giant name */
+    /* Top row: photo (optional) + name on same line */
     .asymmetric-top {
       display: flex;
       align-items: center;
       gap: var(--space-item);
-      margin-bottom: var(--space-element);
+      margin-bottom: 4px;
     }
 
     .asymmetric-header h1.name {
-      font-size: 38pt;
+      font-size: var(--size-name);
       font-weight: 900;
       color: var(--color-primary);
-      line-height: 1.0;
-      letter-spacing: -0.5pt;
+      line-height: 1.1;
+      letter-spacing: -0.3pt;
       word-break: normal;
       overflow-wrap: break-word;
     }
 
-    /* Bottom row: headline left, contact right */
+    /* Bottom row: headline left, contact stacked right */
     .asymmetric-bottom {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: var(--space-item);
-      margin-top: var(--space-element);
+      margin-top: 2px;
     }
 
     .asymmetric-headline {
       flex: 1;
+      min-width: 0;
     }
 
     .asymmetric-headline .headline {
@@ -428,6 +429,7 @@ export const headerVariants = {
 
     .asymmetric-contact {
       flex-shrink: 0;
+      max-width: 50%;
       text-align: right;
     }
 
@@ -439,6 +441,7 @@ export const headerVariants = {
     .asymmetric-contact .contact-item {
       display: block;
       margin-bottom: 2px;
+      overflow-wrap: anywhere;
     }
 
     .asymmetric-contact .contact-item:not(:last-child)::after {
