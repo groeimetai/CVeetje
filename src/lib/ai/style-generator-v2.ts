@@ -684,11 +684,14 @@ function validateAndFixTokens(
     console.log(`[Style Gen] Forced experimental header away from banner → ${tokens.headerVariant}`);
   }
 
-  // For creative: if banner chosen, 50% chance to switch to something more interesting
-  if (creativityLevel === 'creative' && tokens.headerVariant === 'banner' && Math.random() > 0.5) {
-    const options = ['asymmetric', 'split', 'accented'] as const;
-    tokens.headerVariant = options[Math.floor(Math.random() * options.length)];
-    console.log(`[Style Gen] Upgraded creative header from banner → ${tokens.headerVariant}`);
+  // For creative: always randomize the header to ensure variety across generations
+  if (creativityLevel === 'creative') {
+    const allCreativeHeaders = ['asymmetric', 'split', 'accented', 'banner', 'simple'] as const;
+    const randomHeader = allCreativeHeaders[Math.floor(Math.random() * allCreativeHeaders.length)];
+    if (randomHeader !== tokens.headerVariant) {
+      console.log(`[Style Gen] Creative header rotation: ${tokens.headerVariant} → ${randomHeader}`);
+      tokens.headerVariant = randomHeader;
+    }
   }
 
   // Validate section style
