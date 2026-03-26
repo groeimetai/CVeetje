@@ -407,6 +407,7 @@ export const headerVariants = {
       display: flex;
       align-items: center;
       gap: var(--space-item);
+      flex: 1;
       min-width: 0;
     }
 
@@ -417,25 +418,34 @@ export const headerVariants = {
       line-height: 1.1;
       word-break: normal;
       overflow-wrap: break-word;
+      min-width: 0;
     }
 
-    /* Contact stacked on the right */
+    /* Contact stacked vertically on the right — !important to override contact layout CSS */
     .asymmetric-contact {
       flex-shrink: 0;
       text-align: right;
+      max-width: 45%;
     }
 
-    .asymmetric-contact .contact-info {
-      font-size: var(--size-small);
-      color: var(--color-muted);
+    .cv-header.asymmetric-header .asymmetric-contact .contact-info {
+      font-size: var(--size-small) !important;
+      color: var(--color-muted) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 2px !important;
+      flex-wrap: nowrap !important;
+      align-items: flex-end !important;
     }
 
-    .asymmetric-contact .contact-item {
-      display: block;
-      margin-bottom: 2px;
+    .cv-header.asymmetric-header .asymmetric-contact .contact-item {
+      display: flex !important;
+      align-items: center;
+      justify-content: flex-end;
+      white-space: nowrap;
     }
 
-    .asymmetric-contact .contact-item:not(:last-child)::after {
+    .cv-header.asymmetric-header .asymmetric-contact .contact-item:not(:last-child)::after {
       content: "" !important;
       margin: 0 !important;
     }
