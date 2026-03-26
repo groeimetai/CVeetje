@@ -79,9 +79,9 @@ export const baseStyles = `
     }
 
     .cv-container {
-      max-width: none;
-      /* Keep internal padding so content has breathing room,
-         but backgrounds/headers extend edge-to-edge (Puppeteer margin=0) */
+      max-width: 210mm;
+      width: 210mm;
+      /* Match A4 width so print layout is identical to preview */
     }
 
     .section {

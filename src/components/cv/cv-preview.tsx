@@ -489,14 +489,13 @@ export function CVPreview({
             </TabsList>
 
             <TabsContent value="preview" className="space-y-4">
-              {/* Preview iframe - constrained to A4 width for WYSIWYG PDF fidelity */}
-              <div className="border rounded-lg bg-gray-100 overflow-hidden shadow-sm flex justify-center">
+              {/* Preview iframe */}
+              <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
                 <iframe
                   ref={iframeRef}
                   srcDoc={cvHTML}
                   title="CV Preview"
-                  className="min-h-[500px] sm:min-h-[800px] border-0 bg-white"
-                  style={{ width: '210mm', maxWidth: '100%' }}
+                  className="w-full min-h-[500px] sm:min-h-[800px] border-0"
                   sandbox="allow-same-origin allow-scripts"
                 />
               </div>

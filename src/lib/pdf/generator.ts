@@ -18,9 +18,10 @@ async function getBrowser() {
     });
   }
 
-  // Local development
+  // Local development — match serverless viewport for consistent rendering
   return puppeteer.launch({
     headless: true,
+    defaultViewport: { width: 1200, height: 1600 },
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 }
