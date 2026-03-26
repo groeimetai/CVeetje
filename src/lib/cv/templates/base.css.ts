@@ -280,35 +280,12 @@ export const headerVariants = {
       opacity: 0.6;
     }
 
-    /* Full-bleed mode: header extends to page edges, content gets padding */
+    /* Banner-specific full-bleed: background extends to edges */
     .cv-container.full-bleed-mode .cv-header {
       margin-top: 0;
       margin-left: 0;
       margin-right: 0;
-      padding: 15mm 20mm;
       width: 100%;
-    }
-
-    /* Single-column: sections get their own side padding */
-    .cv-container.full-bleed-mode .section {
-      margin-left: 20mm;
-      margin-right: 20mm;
-    }
-
-    .cv-container.full-bleed-mode .section:last-child {
-      margin-bottom: 15mm;
-    }
-
-    /* Sidebar layout: the cv-body grid gets padding instead of individual sections */
-    .cv-container.full-bleed-mode .cv-body.sidebar-left,
-    .cv-container.full-bleed-mode .cv-body.sidebar-right {
-      padding: 0 20mm 15mm 20mm;
-    }
-
-    .cv-container.full-bleed-mode .cv-body.sidebar-left .section,
-    .cv-container.full-bleed-mode .cv-body.sidebar-right .section {
-      margin-left: 0;
-      margin-right: 0;
     }
 
   `,
@@ -1103,6 +1080,36 @@ export const fullBleedPageCSS = `
   /* Full-bleed container: remove container padding, header/sections handle their own */
   .cv-container.full-bleed-mode {
     padding: 0;
+  }
+
+  /* ALL headers need their own padding in full-bleed mode since container has padding:0 */
+  .cv-container.full-bleed-mode .cv-header {
+    padding-left: 20mm;
+    padding-right: 20mm;
+    padding-top: 15mm;
+    padding-bottom: var(--space-section);
+  }
+
+  /* Single-column body: sections need side padding */
+  .cv-container.full-bleed-mode .section {
+    margin-left: 20mm;
+    margin-right: 20mm;
+  }
+
+  .cv-container.full-bleed-mode .section:last-child {
+    margin-bottom: 15mm;
+  }
+
+  /* Sidebar body: the grid container gets padding instead of individual sections */
+  .cv-container.full-bleed-mode .cv-body.sidebar-left,
+  .cv-container.full-bleed-mode .cv-body.sidebar-right {
+    padding: 0 20mm 15mm 20mm;
+  }
+
+  .cv-container.full-bleed-mode .cv-body.sidebar-left .section,
+  .cv-container.full-bleed-mode .cv-body.sidebar-right .section {
+    margin-left: 0;
+    margin-right: 0;
   }
 
   @page:first {
