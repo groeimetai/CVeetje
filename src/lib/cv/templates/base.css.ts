@@ -394,12 +394,20 @@ export const headerVariants = {
       border-bottom: 3px solid var(--color-accent);
     }
 
-    /* Top row: photo (optional) + name on same line */
-    .asymmetric-top {
+    /* Row 1: identity (photo+name) left, contact right */
+    .asymmetric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-item);
+      margin-bottom: var(--space-element);
+    }
+
+    .asymmetric-identity {
       display: flex;
       align-items: center;
       gap: var(--space-item);
-      margin-bottom: 4px;
+      min-width: 0;
     }
 
     .asymmetric-header h1.name {
@@ -407,35 +415,13 @@ export const headerVariants = {
       font-weight: 900;
       color: var(--color-primary);
       line-height: 1.1;
-      letter-spacing: -0.3pt;
       word-break: normal;
       overflow-wrap: break-word;
     }
 
-    /* Bottom row: headline left, contact stacked right */
-    .asymmetric-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: var(--space-item);
-      margin-top: 2px;
-    }
-
-    .asymmetric-headline {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .asymmetric-headline .headline {
-      font-size: var(--size-subheading);
-      color: var(--color-accent);
-      font-weight: 500;
-      font-style: italic;
-    }
-
+    /* Contact stacked on the right */
     .asymmetric-contact {
       flex-shrink: 0;
-      max-width: 50%;
       text-align: right;
     }
 
@@ -447,7 +433,6 @@ export const headerVariants = {
     .asymmetric-contact .contact-item {
       display: block;
       margin-bottom: 2px;
-      overflow-wrap: anywhere;
     }
 
     .asymmetric-contact .contact-item:not(:last-child)::after {
@@ -455,7 +440,18 @@ export const headerVariants = {
       margin: 0 !important;
     }
 
-    /* Full-bleed mode: asymmetric header needs own padding since container has padding:0 */
+    /* Row 2: headline full-width with accent left border */
+    .asymmetric-header > .headline {
+      font-size: var(--size-subheading);
+      color: var(--color-accent);
+      font-weight: 500;
+      font-style: italic;
+      border-left: 3px solid var(--color-accent);
+      padding-left: var(--space-element);
+      margin-top: var(--space-element);
+    }
+
+    /* Full-bleed mode: asymmetric header needs own padding */
     .cv-container.full-bleed-mode .cv-header.asymmetric-header {
       padding: 15mm 20mm var(--space-section) 20mm;
     }

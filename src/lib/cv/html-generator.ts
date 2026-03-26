@@ -553,23 +553,22 @@ function generateHeader(
     </header>`;
   }
 
-  // Asymmetric header: radically different structure
-  // Name takes full width on its own line, headline right-aligned, contact as vertical list on the right
+  // Asymmetric header: two-row layout
+  // Row 1: photo + name (left) | contact (right, stacked)
+  // Row 2: headline spans full width with accent border
   if (tokens.headerVariant === 'asymmetric') {
     return `
     <header class="cv-header asymmetric-header ${photoClass}" style="${headerStyle}">
-      <div class="asymmetric-top">
-        ${avatarUrl && tokens.showPhoto ? generateAvatar(avatarUrl, tokens.roundedCorners) : ''}
-        <h1 class="name" style="${nameStyle}">${escapeHtml(fullName)}</h1>
-      </div>
-      <div class="asymmetric-bottom">
-        <div class="asymmetric-headline">
-          ${headline ? `<p class="headline" style="${headlineStyle}">${escapeHtml(headline)}</p>` : ''}
+      <div class="asymmetric-row">
+        <div class="asymmetric-identity">
+          ${avatarUrl && tokens.showPhoto ? generateAvatar(avatarUrl, tokens.roundedCorners) : ''}
+          <h1 class="name" style="${nameStyle}">${escapeHtml(fullName)}</h1>
         </div>
         <div class="asymmetric-contact">
           ${contactHtml}
         </div>
       </div>
+      ${headline ? `<p class="headline" style="${headlineStyle}">${escapeHtml(headline)}</p>` : ''}
     </header>`;
   }
 
