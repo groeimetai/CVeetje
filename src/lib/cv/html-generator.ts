@@ -324,8 +324,8 @@ export function generateCVHTML(
     const mainSections = tokens.sectionOrder.filter(s => !sidebarSections.includes(s));
     const sidebarSectionNames = tokens.sectionOrder.filter(s => sidebarSections.includes(s));
 
-    const mainHTML = generateSectionsFromList(mainSections, content, tokens, overrides);
-    const sidebarHTML = generateSectionsFromList(sidebarSectionNames, content, tokens, overrides);
+    const mainHTML = generateSectionsFromList(mainSections, content, tokens, overrides, false);
+    const sidebarHTML = generateSectionsFromList(sidebarSectionNames, content, tokens, overrides, true);
 
     bodyContent = `
     <div class="cv-body ${sidebarClass}">
@@ -624,13 +624,14 @@ function generateSectionsFromList(
   sectionNames: string[],
   content: GeneratedCVContent,
   tokens: CVDesignTokens,
-  overrides?: CVElementOverrides | null
+  overrides?: CVElementOverrides | null,
+  inSidebar?: boolean
 ): string {
   const sectionGenerators: Record<string, () => string> = {
     summary: () => generateSummary(content.summary, overrides),
     experience: () => generateExperience(content.experience, tokens, overrides),
     education: () => generateEducation(content.education, overrides),
-    skills: () => generateSkills(content.skills, tokens, overrides),
+    skills: () => generateSkills(content.skills, tokens, overrides, inSidebar),
     languages: () => generateLanguages(content.languages, overrides),
     certifications: () => generateCertifications(content.certifications, overrides),
   };
@@ -785,12 +786,21 @@ function generateEducation(
 function generateSkills(
   skills: GeneratedCVContent['skills'],
   tokens: CVDesignTokens,
-  overrides?: CVElementOverrides | null
+  overrides?: CVElementOverrides | null,
+  inSidebar?: boolean
 ): string {
   if (!skills || (skills.technical.length === 0 && skills.soft.length === 0)) return '';
 
   const sectionOverride = getOverride(overrides, 'section-skills');
   if (sectionOverride?.hidden) return '';
+
+  // Limit skills count in sidebar to prevent overflow
+  const effectiveSkills = inSidebar
+    ? {
+        technical: skills.technical.slice(0, 12),
+        soft: skills.soft.slice(0, 6),
+      }
+    : skills;
 
   const displayStyle = tokens.skillsDisplay;
 
@@ -798,13 +808,13 @@ function generateSkills(
   let skillsContent = '';
 
   if (displayStyle === 'tags') {
-    skillsContent = generateSkillsTags(skills, overrides);
+    skillsContent = generateSkillsTags(effectiveSkills, overrides);
   } else if (displayStyle === 'list') {
-    skillsContent = generateSkillsList(skills, overrides);
+    skillsContent = generateSkillsList(effectiveSkills, overrides);
   } else if (displayStyle === 'bars') {
-    skillsContent = generateSkillsBars(skills, overrides);
+    skillsContent = generateSkillsBars(effectiveSkills, overrides);
   } else {
-    skillsContent = generateSkillsCompact(skills, overrides);
+    skillsContent = generateSkillsCompact(effectiveSkills, overrides);
   }
 
   return `

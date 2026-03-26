@@ -1151,6 +1151,7 @@ export const sidebarLayoutCSS = `
     background: var(--color-secondary);
     padding: var(--space-element) var(--space-item);
     border-radius: var(--radius);
+    overflow: hidden;
   }
 
   /* Reset section card/box/accent styling inside sidebar — sidebar provides its own container */
