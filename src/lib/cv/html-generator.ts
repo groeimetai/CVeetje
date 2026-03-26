@@ -351,7 +351,7 @@ export function generateCVHTML(
 </head>
 <body>
   ${watermarkHTML}
-  <div class="cv-container${tokens.headerFullBleed ? ' full-bleed-mode' : ''}"${tokens.headerFullBleed ? ' style="padding: 0;"' : ''}>
+  <div class="cv-container${tokens.headerFullBleed ? ' full-bleed-mode' : ''}">
     ${decorationsHTML}
     ${generateHeader(fullName, headline, avatarUrl, tokens, overrides, contactInfo)}
     ${bodyContent}

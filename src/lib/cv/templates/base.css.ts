@@ -280,7 +280,7 @@ export const headerVariants = {
       opacity: 0.6;
     }
 
-    /* Full-bleed mode: header extends to page edges */
+    /* Full-bleed mode: header extends to page edges, content gets padding */
     .cv-container.full-bleed-mode .cv-header {
       margin-top: 0;
       margin-left: 0;
@@ -289,6 +289,7 @@ export const headerVariants = {
       width: 100%;
     }
 
+    /* Single-column: sections get their own side padding */
     .cv-container.full-bleed-mode .section {
       margin-left: 20mm;
       margin-right: 20mm;
@@ -298,7 +299,12 @@ export const headerVariants = {
       margin-bottom: 15mm;
     }
 
-    /* Guard: reset full-bleed section margins when sidebar layout is active */
+    /* Sidebar layout: the cv-body grid gets padding instead of individual sections */
+    .cv-container.full-bleed-mode .cv-body.sidebar-left,
+    .cv-container.full-bleed-mode .cv-body.sidebar-right {
+      padding: 0 20mm 15mm 20mm;
+    }
+
     .cv-container.full-bleed-mode .cv-body.sidebar-left .section,
     .cv-container.full-bleed-mode .cv-body.sidebar-right .section {
       margin-left: 0;
@@ -447,6 +453,11 @@ export const headerVariants = {
     .asymmetric-contact .contact-item:not(:last-child)::after {
       content: "" !important;
       margin: 0 !important;
+    }
+
+    /* Full-bleed mode: asymmetric header needs own padding since container has padding:0 */
+    .cv-container.full-bleed-mode .cv-header.asymmetric-header {
+      padding: 15mm 20mm var(--space-section) 20mm;
     }
   `,
 };
@@ -1083,6 +1094,11 @@ export function getSkillTagStyleCSS(style: keyof typeof skillTagVariants): strin
 // ============ Full-Bleed Page Rules (only include when headerFullBleed is true) ============
 
 export const fullBleedPageCSS = `
+  /* Full-bleed container: remove container padding, header/sections handle their own */
+  .cv-container.full-bleed-mode {
+    padding: 0;
+  }
+
   @page:first {
     margin-top: 0;
     margin-left: 0;
