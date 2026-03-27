@@ -34,6 +34,14 @@ const linkedInExportSchema = z.object({
     })
   ).describe('LinkedIn-optimized descriptions for education entries'),
 
+  // Project descriptions
+  projectDescriptions: z.array(
+    z.object({
+      originalTitle: z.string().describe('The original project title for matching'),
+      description: z.string().describe('LinkedIn-optimized project description (200-500 chars), achievement-focused with metrics'),
+    })
+  ).describe('LinkedIn-optimized descriptions for project entries'),
+
   // Skills recommendations
   topSkills: z.array(z.string()).describe('Top 10 recommended skills to add to LinkedIn profile based on experience'),
 
@@ -152,6 +160,13 @@ ${profile.skills.map(s => s.name).join(', ') || 'Geen vaardigheden vermeld'}
 
 CERTIFICATEN:
 ${profile.certifications.map(c => c.name).join(', ') || 'Geen certificaten'}
+
+PROJECTEN:
+${profile.projects && profile.projects.length > 0 ? profile.projects.map((p, i) => `
+${i + 1}. ${p.title}
+   ${p.description || 'Geen beschrijving'}
+   ${p.technologies.length > 0 ? `Technologies: ${p.technologies.join(', ')}` : ''}
+`).join('\n') : 'Geen projecten'}
 
 ---
 

@@ -606,6 +606,7 @@ function generateSections(
     skills: () => generateSkills(content.skills, tokens, overrides),
     languages: () => generateLanguages(content.languages, overrides),
     certifications: () => generateCertifications(content.certifications, overrides),
+    projects: () => generateProjects(content.projects, overrides),
   };
 
   return tokens.sectionOrder
@@ -634,6 +635,7 @@ function generateSectionsFromList(
     skills: () => generateSkills(content.skills, tokens, overrides, inSidebar),
     languages: () => generateLanguages(content.languages, overrides),
     certifications: () => generateCertifications(content.certifications, overrides),
+    projects: () => generateProjects(content.projects, overrides),
   };
 
   return sectionNames
@@ -1010,6 +1012,61 @@ function generateCertifications(
   </section>`;
 }
 
+// ============ Projects Section ============
+
+function generateProjects(
+  projects: GeneratedCVContent['projects'],
+  overrides?: CVElementOverrides | null
+): string {
+  if (!projects || projects.length === 0) return '';
+
+  const sectionOverride = getOverride(overrides, 'section-projects');
+  if (sectionOverride?.hidden) return '';
+
+  const items = projects.map((proj, index) => {
+    const itemOverride = getOverride(overrides, `project-${index}`);
+    if (itemOverride?.hidden) return '';
+
+    const techHtml = proj.technologies && proj.technologies.length > 0
+      ? `<div class="project-tech">${proj.technologies.map(t => escapeHtml(t)).join(' · ')}</div>`
+      : '';
+
+    const highlightsHtml = proj.highlights && proj.highlights.length > 0
+      ? `<ul class="item-highlights">
+          ${proj.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+        </ul>`
+      : '';
+
+    const urlHtml = proj.url
+      ? `<div class="project-url"><a href="${escapeHtml(proj.url)}">${escapeHtml(proj.url)}</a></div>`
+      : '';
+
+    return `
+      <div class="item" data-id="project-${index}" style="${getOverrideStyle(itemOverride)}">
+        <div class="item-header">
+          <div>
+            <div class="item-title">${escapeHtml(proj.title)}</div>
+            ${techHtml}
+          </div>
+          <div class="item-meta">
+            ${proj.period ? `<span class="period">${escapeHtml(proj.period)}</span>` : ''}
+          </div>
+        </div>
+        <p class="item-description">${escapeHtml(proj.description)}</p>
+        ${highlightsHtml}
+        ${urlHtml}
+      </div>`;
+  }).filter(Boolean).join('');
+
+  return `
+  <section class="section" data-section="projects">
+    <h2 class="section-title">Projects</h2>
+    <div class="section-content">
+      ${items}
+    </div>
+  </section>`;
+}
+
 // ============ Override Helpers ============
 
 function getOverride(
@@ -1082,6 +1139,6 @@ export function getDefaultTokens(): CVDesignTokens {
     roundedCorners: true,
     headerFullBleed: false,
     decorations: 'none',
-    sectionOrder: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
+    sectionOrder: ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'],
   };
 }

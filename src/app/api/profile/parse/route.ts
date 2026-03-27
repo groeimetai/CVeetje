@@ -61,6 +61,17 @@ const profileSchema = z.object({
       issueDate: z.string().describe('Issue date, empty string if not specified'),
     })
   ).describe('Certifications'),
+  projects: z.array(
+    z.object({
+      title: z.string().describe('Project name'),
+      description: z.string().describe('Project description, empty string if not available'),
+      technologies: z.array(z.string()).describe('Technologies/tools used in the project'),
+      url: z.string().describe('Link to project/repo, empty string if not found'),
+      startDate: z.string().describe('Start date, empty string if not specified'),
+      endDate: z.string().describe('End date, empty string if not specified'),
+      role: z.string().describe('Role in the project, empty string if not specified'),
+    })
+  ).describe('Projects (personal, open source, academic, portfolio)'),
 });
 
 export async function POST(request: NextRequest) {
@@ -270,6 +281,15 @@ Instructions:
           ...cert,
           issuer: emptyToNull(cert.issuer),
           issueDate: emptyToNull(cert.issueDate),
+        })),
+        projects: object.projects.map(proj => ({
+          title: proj.title,
+          description: emptyToNull(proj.description),
+          technologies: proj.technologies || [],
+          url: emptyToNull(proj.url),
+          startDate: emptyToNull(proj.startDate),
+          endDate: emptyToNull(proj.endDate),
+          role: emptyToNull(proj.role),
         })),
         // Contact info extracted from source (convert empty strings to undefined)
         email: object.contactInfo.email || undefined,

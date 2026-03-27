@@ -99,6 +99,9 @@ ${certsList || 'No certifications listed'}
 **Languages:**
 ${linkedIn.languages.map(l => `${l.language} (${l.proficiency || 'N/A'})`).join(', ') || 'Not specified'}
 
+**Projects:**
+${linkedIn.projects && linkedIn.projects.length > 0 ? linkedIn.projects.map(p => `- ${p.title}${p.technologies.length > 0 ? ` [${p.technologies.join(', ')}]` : ''}`).join('\n') : 'No projects listed'}
+
 ---
 
 ## JOB VACANCY

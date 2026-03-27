@@ -123,6 +123,16 @@ export interface LinkedInCertification {
   issueDate: string | null;
 }
 
+export interface LinkedInProject {
+  title: string;
+  description: string | null;
+  technologies: string[];
+  url: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  role: string | null;
+}
+
 export interface ParsedLinkedIn {
   fullName: string;
   headline: string | null;
@@ -133,6 +143,7 @@ export interface ParsedLinkedIn {
   skills: LinkedInSkill[];
   languages: LinkedInLanguage[];
   certifications: LinkedInCertification[];
+  projects?: LinkedInProject[];
   // Contact info - manually entered by user (not from LinkedIn)
   email?: string;
   phone?: string;
@@ -820,6 +831,15 @@ export interface GeneratedCVLanguage {
   level: string;
 }
 
+export interface GeneratedCVProject {
+  title: string;
+  description: string;
+  technologies: string[];
+  url: string | null;
+  period: string;
+  highlights: string[];
+}
+
 export interface GeneratedCVContent {
   headline: string; // Professional headline adapted for the target job
   summary: string;
@@ -828,6 +848,7 @@ export interface GeneratedCVContent {
   skills: GeneratedCVSkills;
   languages: GeneratedCVLanguage[];
   certifications: string[];
+  projects?: GeneratedCVProject[];
 }
 
 // ============ Transaction Types ============

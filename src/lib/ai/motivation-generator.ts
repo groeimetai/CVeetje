@@ -99,6 +99,7 @@ KEY EXPERIENCE:
 ${topExperiences}
 
 KEY SKILLS: ${topSkills}
+${linkedInData.projects && linkedInData.projects.length > 0 ? `\nKEY PROJECTS:\n${linkedInData.projects.slice(0, 3).map(p => `- ${p.title}${p.description ? `: ${p.description.slice(0, 100)}` : ''}`).join('\n')}` : ''}
 
 ---
 

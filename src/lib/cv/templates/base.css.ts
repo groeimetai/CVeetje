@@ -968,6 +968,25 @@ export const certificationStyles = `
   }
 `;
 
+export const projectStyles = `
+  .project-tech {
+    font-size: var(--size-small);
+    color: var(--color-accent);
+    margin-top: 2px;
+  }
+
+  .project-url {
+    margin-top: var(--space-element);
+    font-size: var(--size-small);
+  }
+
+  .project-url a {
+    color: var(--color-accent);
+    text-decoration: none;
+    word-break: break-all;
+  }
+`;
+
 // ============ Combine All Base Styles ============
 
 export function getBaseCSS(): string {
@@ -982,6 +1001,7 @@ export function getBaseCSS(): string {
     summaryStyles,
     languageStyles,
     certificationStyles,
+    projectStyles,
   ].join('\n');
 }
 

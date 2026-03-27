@@ -5,6 +5,7 @@ import type {
   LinkedInSkill,
   LinkedInLanguage,
   LinkedInCertification,
+  LinkedInProject,
 } from '@/types';
 
 /**
@@ -24,6 +25,7 @@ export function parseLinkedInProfile(rawText: string): ParsedLinkedIn {
     skills: [],
     languages: [],
     certifications: [],
+    projects: [],
   };
 
   // Extract contact information from the raw text
@@ -49,6 +51,8 @@ export function parseLinkedInProfile(rawText: string): ParsedLinkedIn {
     'Talen',
     'Licenses & certifications',
     'Licenties en certificaten',
+    'Projects',
+    'Projecten',
     'About',
     'Info',
   ];
@@ -137,6 +141,8 @@ function processSection(
     sectionLower === 'licenties en certificaten'
   ) {
     result.certifications = parseCertifications(content);
+  } else if (sectionLower === 'projects' || sectionLower === 'projecten') {
+    result.projects = parseProjects(content);
   }
 }
 
@@ -409,6 +415,57 @@ function parseCertifications(content: string[]): LinkedInCertification[] {
   }
 
   return certifications;
+}
+
+function parseProjects(content: string[]): LinkedInProject[] {
+  const projects: LinkedInProject[] = [];
+  let current: Partial<LinkedInProject> = {};
+  let descriptionLines: string[] = [];
+
+  const datePattern = /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|jan|feb|mrt|apr|mei|jun|jul|aug|sep|okt|nov|dec)\s+\d{4}/i;
+  const urlPattern = /^https?:\/\//i;
+
+  const saveProject = () => {
+    if (current.title) {
+      projects.push({
+        title: current.title,
+        description: descriptionLines.length > 0 ? descriptionLines.join(' ').trim() : null,
+        technologies: [],
+        url: current.url || null,
+        startDate: current.startDate || null,
+        endDate: current.endDate || null,
+        role: current.role || null,
+      });
+    }
+    current = {};
+    descriptionLines = [];
+  };
+
+  for (const line of content) {
+    if (urlPattern.test(line)) {
+      current.url = line;
+    } else if (datePattern.test(line) || (line.includes(' - ') && line.length < 50)) {
+      if (current.title) {
+        current.startDate = extractStartDate(line);
+        current.endDate = extractEndDate(line);
+      }
+    } else if (line.match(/^\d+ connections?$/i) || line.match(/^Show (project|all)/i)) {
+      continue;
+    } else if (!current.title) {
+      // Start of a new project — save previous if exists
+      if (projects.length > 0 || descriptionLines.length > 0) {
+        saveProject();
+      }
+      current.title = line;
+    } else {
+      descriptionLines.push(line);
+    }
+  }
+
+  // Save last project
+  saveProject();
+
+  return projects;
 }
 
 /**

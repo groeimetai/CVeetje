@@ -50,6 +50,18 @@ const enrichmentSchema = z.object({
     })
   ).describe('NEW certifications to add'),
 
+  newProjects: z.array(
+    z.object({
+      title: z.string().describe('Project name'),
+      description: z.string().describe('Project description'),
+      technologies: z.array(z.string()).describe('Technologies/tools used'),
+      url: z.string().describe('Link to project, empty string if not available'),
+      startDate: z.string().describe('Start date, empty string if not specified'),
+      endDate: z.string().describe('End date, empty string if not specified'),
+      role: z.string().describe('Role in the project, empty string if not specified'),
+    })
+  ).describe('NEW projects to add (personal, open source, academic, portfolio)'),
+
   // Summary of what was changed
   changesSummary: z.string().describe('A brief summary in Dutch of what was added/updated'),
 });
@@ -222,6 +234,19 @@ INSTRUCTIES:
           })),
           ...existingProfile.certifications,
         ],
+        // Add new projects
+        projects: [
+          ...object.newProjects.map(proj => ({
+            title: proj.title,
+            description: emptyToNull(proj.description),
+            technologies: proj.technologies || [],
+            url: emptyToNull(proj.url),
+            startDate: emptyToNull(proj.startDate),
+            endDate: emptyToNull(proj.endDate),
+            role: emptyToNull(proj.role),
+          })),
+          ...(existingProfile.projects || []),
+        ],
       };
 
       // Build a summary of what changed
@@ -248,6 +273,9 @@ INSTRUCTIES:
       }
       if (object.newCertifications.length > 0) {
         changes.push(`${object.newCertifications.length} certificaat/certificaten toegevoegd`);
+      }
+      if (object.newProjects.length > 0) {
+        changes.push(`${object.newProjects.length} project(en) toegevoegd`);
       }
 
       const tokenUsage: TokenUsage | undefined = usage ? {

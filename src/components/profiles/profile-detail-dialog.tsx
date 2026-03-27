@@ -22,6 +22,7 @@ import {
   Mail,
   Phone,
   Globe,
+  FolderKanban,
   Linkedin,
   Github,
   Pencil,
@@ -325,6 +326,51 @@ export function ProfileDetailDialog({
                           {lang.language}
                           {lang.proficiency && ` (${lang.proficiency})`}
                         </Badge>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Projects */}
+                {data.projects && data.projects.length > 0 && (
+                  <section>
+                    <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <FolderKanban className="h-4 w-4" />
+                      Projecten ({data.projects.length})
+                    </h3>
+                    <div className="space-y-3">
+                      {data.projects.map((proj, idx) => (
+                        <div key={idx} className="border-l-2 border-muted pl-4">
+                          <div className="font-medium text-sm">{proj.title}</div>
+                          {proj.role && (
+                            <div className="text-sm text-muted-foreground">{proj.role}</div>
+                          )}
+                          {(proj.startDate || proj.endDate) && (
+                            <div className="text-xs text-muted-foreground">
+                              {proj.startDate} - {proj.endDate || 'Heden'}
+                            </div>
+                          )}
+                          {proj.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {proj.description}
+                            </p>
+                          )}
+                          {proj.technologies && proj.technologies.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {proj.technologies.map((tech, tIdx) => (
+                                <Badge key={tIdx} variant="secondary" className="text-xs">
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {proj.url && (
+                            <a href={proj.url} target="_blank" rel="noopener noreferrer"
+                               className="text-xs text-primary hover:underline mt-1 inline-block">
+                              {proj.url}
+                            </a>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </section>

@@ -114,6 +114,16 @@ const cvContentSchema = z.object({
     })
   ),
   certifications: z.array(z.string()).describe('Relevant certifications'),
+  projects: z.array(
+    z.object({
+      title: z.string().describe('Project name, refined for relevance to target job'),
+      description: z.string().describe('Tailored project description highlighting relevance to target job'),
+      technologies: z.array(z.string()).describe('Technologies/tools used, ordered by relevance to target job'),
+      url: z.string().nullable().describe('Link to project/repo if available from profile data'),
+      period: z.string().describe('Date range or "Ongoing"'),
+      highlights: z.array(z.string()).describe('1-3 key achievements or results from the project'),
+    })
+  ).describe('Projects ordered by relevance to target job. Include personal projects, open source, academic work.'),
 });
 
 // HONESTY RULES - Critical safeguards against fabrication
@@ -252,6 +262,11 @@ ${linkedIn.languages.map((l) => `${l.language}${l.proficiency ? ` (${l.proficien
 
 ### Certifications:
 ${linkedIn.certifications.map((c) => `${c.name}${c.issuer ? ` - ${c.issuer}` : ''}`).join(', ')}
+
+### Projects:
+${linkedIn.projects && linkedIn.projects.length > 0
+  ? linkedIn.projects.map((p) => `- **${p.title}**${p.description ? `: ${p.description}` : ''}${p.technologies.length > 0 ? ` [${p.technologies.join(', ')}]` : ''}${p.url ? ` (${p.url})` : ''}`).join('\n')
+  : 'No projects listed'}
 `;
 
   if (jobVacancy) {

@@ -70,6 +70,16 @@ export const linkedInCertificationSchema = z.object({
   issueDate: z.string().max(50).nullable(),
 });
 
+export const linkedInProjectSchema = z.object({
+  title: z.string().max(MAX_LENGTHS.shortText),
+  description: z.string().max(MAX_LENGTHS.longText).nullable(),
+  technologies: z.array(z.string().max(100)).max(30),
+  url: z.string().max(MAX_LENGTHS.url).nullable(),
+  startDate: z.string().max(50).nullable(),
+  endDate: z.string().max(50).nullable(),
+  role: z.string().max(MAX_LENGTHS.shortText).nullable(),
+});
+
 export const parsedLinkedInSchema = z.object({
   fullName: z.string().min(1).max(MAX_LENGTHS.name),
   headline: z.string().max(MAX_LENGTHS.headline).nullable(),
@@ -80,6 +90,7 @@ export const parsedLinkedInSchema = z.object({
   skills: z.array(linkedInSkillSchema).max(100),
   languages: z.array(linkedInLanguageSchema).max(20),
   certifications: z.array(linkedInCertificationSchema).max(50),
+  projects: z.array(linkedInProjectSchema).max(30).optional(),
   email: emailSchema,
   phone: phoneSchema,
   linkedinUrl: urlSchema,
