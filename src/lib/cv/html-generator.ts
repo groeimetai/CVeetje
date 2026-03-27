@@ -1139,6 +1139,6 @@ export function getDefaultTokens(): CVDesignTokens {
     roundedCorners: true,
     headerFullBleed: false,
     decorations: 'none',
-    sectionOrder: ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'],
+    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
   };
 }

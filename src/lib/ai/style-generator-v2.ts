@@ -846,7 +846,7 @@ function validateAndFixTokens(
 
   // Validate sidebarSections
   if (tokens.sidebarSections) {
-    const validSections = ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'];
+    const validSections = ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'];
     tokens.sidebarSections = tokens.sidebarSections.filter(s => validSections.includes(s));
     if (tokens.sidebarSections.length === 0) {
       tokens.sidebarSections = undefined;
@@ -952,7 +952,7 @@ function validateColors(colors: CVDesignTokens['colors']): CVDesignTokens['color
 }
 
 function validateSectionOrder(order: string[]): string[] {
-  const allSections = ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'];
+  const allSections = ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'];
 
   // Start with provided order, filtering to valid sections
   const validOrder = order.filter(s => allSections.includes(s));
@@ -1144,7 +1144,7 @@ function getFallbackTokens(
       headerFullBleed: true,
       decorations: 'abundant',
       decorationTheme,
-      sectionOrder: ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'],
+      sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
       layout: 'sidebar-right',
       borderRadius: 'pill',
       accentStyle: 'border-left',
@@ -1187,7 +1187,7 @@ function getFallbackTokens(
       headerFullBleed: true,
       decorations: 'moderate',
       decorationTheme,
-      sectionOrder: ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'],
+      sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
       borderRadius: 'medium',
       accentStyle: 'background',
       skillTagStyle: 'outlined',
@@ -1217,7 +1217,7 @@ function getFallbackTokens(
       roundedCorners: defaults.roundedCorners,
       headerFullBleed: false,
       decorations: 'minimal',
-      sectionOrder: ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'],
+      sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
     };
   }
 
@@ -1243,7 +1243,7 @@ function getFallbackTokens(
     roundedCorners: defaults.roundedCorners,
     headerFullBleed: false,
     decorations: 'none',
-    sectionOrder: ['summary', 'experience', 'projects', 'education', 'skills', 'languages', 'certifications'],
+    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
   };
 }
 
