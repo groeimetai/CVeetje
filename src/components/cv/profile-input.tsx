@@ -254,7 +254,12 @@ export function ProfileInput({
       const data = await response.json();
       if (data.success && data.profile?.parsedData) {
         setSelectedProfileId(profileId);
-        setParsed(data.profile.parsedData);
+        // Ensure projects array exists (profiles saved before projects feature won't have it)
+        const profileData = {
+          ...data.profile.parsedData,
+          projects: data.profile.parsedData.projects || [],
+        };
+        setParsed(profileData);
         // Also load avatar if available
         if (data.profile.avatarUrl) {
           handleAvatarChange(data.profile.avatarUrl);
@@ -459,7 +464,7 @@ export function ProfileInput({
   // Accept enrichment preview
   const handleAcceptEnrichment = () => {
     if (enrichmentPreview) {
-      setParsed(enrichmentPreview.enrichedProfile);
+      setParsed({ ...enrichmentPreview.enrichedProfile, projects: enrichmentPreview.enrichedProfile.projects || [] });
       setEnrichmentPreview(null);
       setShowEnrichDialog(false);
       setEnrichmentText('');
@@ -672,7 +677,7 @@ export function ProfileInput({
           return;
         }
 
-        setParsed(result);
+        setParsed({ ...result, projects: result.projects || [] });
         setMode('preview');
         // Don't call onParsed here - let user review and click "Doorgaan"
         return;
@@ -710,7 +715,7 @@ export function ProfileInput({
       }
 
       onCreditsRefresh?.();
-      setParsed(result.data);
+      setParsed({ ...result.data, projects: result.data.projects || [] });
       setMode('preview');
       // Don't call onParsed here - let user review and click "Doorgaan"
 
@@ -795,7 +800,7 @@ export function ProfileInput({
   // Save edited data
   const handleSaveEdit = () => {
     if (editData) {
-      setParsed(editData);
+      setParsed({ ...editData, projects: editData.projects || [] });
       setEditData(null);
       setMode('preview');
     }
