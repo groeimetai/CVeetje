@@ -1267,6 +1267,11 @@ export function ProfileInput({
             <Badge variant="secondary">
               {parsed.languages.length} Tal{parsed.languages.length !== 1 ? 'en' : ''}
             </Badge>
+            {(parsed.projects?.length || 0) > 0 && (
+              <Badge variant="secondary">
+                {parsed.projects!.length} Project{parsed.projects!.length !== 1 ? 'en' : ''}
+              </Badge>
+            )}
           </div>
 
           {parsed.experience.length > 0 && (
@@ -1281,6 +1286,27 @@ export function ProfileInput({
                 {parsed.experience.length > 3 && (
                   <li className="text-muted-foreground">
                     +{parsed.experience.length - 3} meer posities
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {parsed.projects && parsed.projects.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Projecten Preview</p>
+              <ul className="space-y-1 text-sm">
+                {parsed.projects.slice(0, 3).map((proj, i) => (
+                  <li key={i}>
+                    <span className="font-medium">{proj.title}</span>
+                    {proj.technologies.length > 0 && (
+                      <span className="text-muted-foreground"> · {proj.technologies.slice(0, 3).join(', ')}</span>
+                    )}
+                  </li>
+                ))}
+                {parsed.projects.length > 3 && (
+                  <li className="text-muted-foreground">
+                    +{parsed.projects.length - 3} meer projecten
                   </li>
                 )}
               </ul>
@@ -1719,6 +1745,30 @@ export function ProfileInput({
                       <div key={idx} className="border border-green-200 bg-green-50/50 rounded-lg p-3">
                         <p className="font-medium">{cert.name}</p>
                         {cert.issuer && <p className="text-sm text-muted-foreground">{cert.issuer}</p>}
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Preview new projects */}
+              {(enrichmentPreview.enrichedProfile.projects?.length || 0) > (parsed?.projects?.length || 0) && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Nieuwe Projecten</Label>
+                  {enrichmentPreview.enrichedProfile.projects!
+                    .slice(0, (enrichmentPreview.enrichedProfile.projects?.length || 0) - (parsed?.projects?.length || 0))
+                    .map((proj, idx) => (
+                      <div key={idx} className="border border-green-200 bg-green-50/50 rounded-lg p-3">
+                        <p className="font-medium">{proj.title}</p>
+                        {proj.role && <p className="text-sm text-muted-foreground">{proj.role}</p>}
+                        {proj.description && <p className="text-sm text-muted-foreground mt-1">{proj.description}</p>}
+                        {proj.technologies && proj.technologies.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {proj.technologies.map((tech, tIdx) => (
+                              <span key={tIdx} className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">{tech}</span>
+                            ))}
+                          </div>
+                        )}
+                        {proj.url && <p className="text-xs text-primary mt-1">{proj.url}</p>}
                       </div>
                     ))}
                 </div>
