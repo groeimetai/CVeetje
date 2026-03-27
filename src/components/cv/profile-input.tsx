@@ -461,13 +461,25 @@ export function ProfileInput({
     }
   };
 
-  // Accept enrichment preview
-  const handleAcceptEnrichment = () => {
-    if (enrichmentPreview) {
-      setParsed({ ...enrichmentPreview.enrichedProfile, projects: enrichmentPreview.enrichedProfile.projects || [] });
+  // Accept enrichment preview — update local state AND persist to Firestore
+  const handleAcceptEnrichment = async () => {
+    if (enrichmentPreview && selectedProfileId) {
+      const enrichedData = { ...enrichmentPreview.enrichedProfile, projects: enrichmentPreview.enrichedProfile.projects || [] };
+      setParsed(enrichedData);
       setEnrichmentPreview(null);
       setShowEnrichDialog(false);
       setEnrichmentText('');
+
+      // Persist enriched profile back to Firestore
+      try {
+        await fetch(`/api/profiles/${selectedProfileId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parsedData: enrichedData }),
+        });
+      } catch (err) {
+        console.error('Failed to save enriched profile:', err);
+      }
     }
   };
 
