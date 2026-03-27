@@ -50,7 +50,7 @@ export async function GET(
       id: profileDoc.id,
       name: data.name,
       description: data.description,
-      parsedData: data.parsedData,
+      parsedData: { ...data.parsedData, projects: data.parsedData?.projects || [] },
       avatarUrl: data.avatarUrl || null,
       sourceInfo: data.sourceInfo,
       isDefault: data.isDefault,
