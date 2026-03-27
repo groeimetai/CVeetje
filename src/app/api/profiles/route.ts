@@ -147,7 +147,10 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const profileData: Record<string, any> = {
       name,
-      parsedData: parsedData as ParsedLinkedIn,
+      parsedData: {
+        ...parsedData,
+        projects: parsedData.projects || [],
+      } as ParsedLinkedIn,
       isDefault: isDefault || false,
       createdAt: now,
       updatedAt: now,

@@ -153,7 +153,7 @@ export async function PUT(
 
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (parsedData !== undefined) updateData.parsedData = parsedData as ParsedLinkedIn;
+    if (parsedData !== undefined) updateData.parsedData = { ...parsedData, projects: parsedData.projects || [] } as ParsedLinkedIn;
     if (avatarUrl !== undefined) (updateData as Record<string, unknown>).avatarUrl = avatarUrl;
     if (isDefault !== undefined) updateData.isDefault = isDefault;
 
