@@ -63,9 +63,3 @@ test-local-template.js
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# python (mcp-servers/)
-__pycache__/
-*.pyc
-*.pyo
-.venv/
