@@ -317,6 +317,7 @@ export function CVWizard() {
           jobVacancy,
           language: outputLanguage,
           fitAnalysis,
+          avatarUrl,
         }),
       });
 
@@ -362,6 +363,7 @@ export function CVWizard() {
             jobVacancy,
             language: outputLanguage,
             fitAnalysis,
+            avatarUrl,
           }),
         }
       );

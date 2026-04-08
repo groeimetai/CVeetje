@@ -23,6 +23,7 @@ import { analyzeTemplateBlueprint } from '@/lib/ai/template-analyzer';
 import { duplicateBlocksInXml } from './block-duplicator';
 import { fillStructuredSegments } from '@/lib/ai/docx-content-replacer';
 import { fillS4YTemplate } from './s4y-template-filler';
+import { replaceProfileImage } from './image-replacer';
 
 // ==================== Public Types ====================
 
@@ -36,6 +37,7 @@ export interface FillOptions {
   customInstructions?: string;
   descriptionFormat?: ExperienceDescriptionFormat;
   templateName?: string;
+  avatarUrl?: string | null;
 }
 
 export interface FillResult {
@@ -241,6 +243,17 @@ export async function fillSmartTemplate(
         }
 
         zip.file(fileName, hfXml);
+      }
+    }
+
+    // Phase 6: Replace profile image if avatar URL provided
+    if (options.avatarUrl) {
+      console.log('[smart-template-filler] Phase 6: Replacing profile image...');
+      const imageResult = await replaceProfileImage(zip, options.avatarUrl);
+      if (imageResult.replaced) {
+        console.log('[smart-template-filler] Profile image replaced successfully');
+      } else if (imageResult.warning) {
+        warnings.push(imageResult.warning);
       }
     }
 

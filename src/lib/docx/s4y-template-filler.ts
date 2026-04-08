@@ -18,6 +18,7 @@ import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 import { buildProfileSummary, buildJobSummary, buildFitAnalysisSummary } from '@/lib/ai/docx-content-replacer';
 import type { FillOptions, FillResult } from './smart-template-filler';
+import { replaceProfileImage } from './image-replacer';
 
 // ==================== Section Types ====================
 
@@ -1668,6 +1669,17 @@ export async function fillS4YTemplate(
         }
 
         zip.file(fileName, content);
+      }
+    }
+
+    // Phase 6: Replace profile image if avatar URL provided
+    if (options.avatarUrl) {
+      console.log('[s4y-template-filler] Phase 6: Replacing profile image...');
+      const imageResult = await replaceProfileImage(zip, options.avatarUrl);
+      if (imageResult.replaced) {
+        console.log('[s4y-template-filler] Profile image replaced successfully');
+      } else if (imageResult.warning) {
+        warnings.push(imageResult.warning);
       }
     }
 
