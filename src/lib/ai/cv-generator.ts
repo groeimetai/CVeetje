@@ -2,6 +2,9 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
 import { withRetry } from './retry';
+import { honestyRules } from './prompts/honesty-rules';
+import { languageInstructions } from './prompts/language-instructions';
+import { getIndustryGuidance } from './prompts/industry-guidance';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -14,73 +17,6 @@ import type {
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
 // Schema for structured CV output
-// Helper function to get industry-specific content guidance
-function getIndustryGuidance(industry: string | undefined): string {
-  if (!industry) return '';
-
-  const industryLower = industry.toLowerCase();
-
-  if (industryLower.includes('tech') || industryLower.includes('software') || industryLower.includes('it')) {
-    return `
-**Industry Focus (Technology):**
-- Emphasize technical skills, programming languages, frameworks, and tools
-- Highlight innovation, problem-solving, and measurable technical impact
-- Include specific technologies and methodologies used
-- Quantify performance improvements, scale, or efficiency gains`;
-  }
-
-  if (industryLower.includes('finance') || industryLower.includes('bank') || industryLower.includes('accounting')) {
-    return `
-**Industry Focus (Finance/Banking):**
-- Emphasize compliance, accuracy, and attention to detail
-- Highlight risk management and regulatory knowledge
-- Focus on financial metrics and business impact
-- Include relevant certifications and regulatory experience`;
-  }
-
-  if (industryLower.includes('health') || industryLower.includes('medical') || industryLower.includes('pharma')) {
-    return `
-**Industry Focus (Healthcare/Medical):**
-- Emphasize patient care, safety protocols, and quality standards
-- Highlight certifications, licenses, and compliance experience
-- Focus on healthcare-specific methodologies and systems
-- Include regulatory knowledge (HIPAA, FDA, etc.)`;
-  }
-
-  if (industryLower.includes('consult')) {
-    return `
-**Industry Focus (Consulting):**
-- Emphasize problem-solving, client management, and project delivery
-- Highlight methodologies, frameworks, and strategic thinking
-- Focus on business impact and client outcomes
-- Include stakeholder management and presentation skills`;
-  }
-
-  if (industryLower.includes('marketing') || industryLower.includes('creative') || industryLower.includes('design')) {
-    return `
-**Industry Focus (Marketing/Creative):**
-- Emphasize campaign results, creative achievements, and brand impact
-- Highlight metrics like engagement, conversion, and ROI
-- Focus on tools, platforms, and creative processes
-- Include portfolio-worthy projects and awards`;
-  }
-
-  if (industryLower.includes('retail') || industryLower.includes('sales')) {
-    return `
-**Industry Focus (Retail/Sales):**
-- Emphasize revenue generation, customer relationships, and targets achieved
-- Highlight sales metrics, conversion rates, and customer satisfaction
-- Focus on negotiation, relationship building, and market knowledge
-- Include CRM experience and customer success stories`;
-  }
-
-  return `
-**Industry Focus (${industry}):**
-- Tailor language and terminology to this specific industry
-- Highlight relevant experience and transferable skills
-- Focus on achievements that resonate with this sector`;
-}
-
 const cvContentSchema = z.object({
   headline: z.string().describe('A professional headline/title that positions the candidate for the TARGET JOB. This appears under the name. Examples: "Senior Software Engineer | Cloud & DevOps Specialist" or "Marketing Manager | Digital Strategy & Brand Development". Should bridge the candidates background WITH the target role - not just copy their current title!'),
   summary: z.string().describe('A professional summary tailored to the target job, 2-3 sentences'),
@@ -125,68 +61,6 @@ const cvContentSchema = z.object({
     })
   ).describe('Projects ordered by relevance to target job. Include personal projects, open source, academic work.'),
 });
-
-// HONESTY RULES - Critical safeguards against fabrication
-const honestyRules = `
-⚠️ ABSOLUTE HONESTY RULES - VIOLATION IS UNACCEPTABLE:
-
-You are a CV OPTIMIZER, not a CV FABRICATOR. Your role is to present the candidate's REAL
-experience in the best possible light for the target role. You must NEVER:
-
-❌ FORBIDDEN - NEVER DO THESE:
-- Invent job titles, companies, or employment dates that don't exist
-- Fabricate skills, technologies, or certifications the candidate doesn't have
-- Claim years of experience beyond what the candidate actually has
-- Add achievements, metrics, or responsibilities not mentioned or reasonably implied
-- Create education credentials or degrees that don't exist
-- Manufacture projects, clients, or accomplishments
-- Inflate team sizes, revenue figures, or impact metrics beyond reasonable estimates
-- Add industry experience the candidate has never worked in
-
-✅ ALLOWED - THESE ARE ACCEPTABLE:
-- Reframe job titles to highlight relevant aspects (if truthful to their actual work)
-  Example: "Developer" → "Full-Stack Developer" (ONLY if they demonstrably did both frontend and backend)
-- Use industry synonyms and professional terminology for existing skills
-  Example: "Made websites" → "Developed responsive web applications"
-- Emphasize and prioritize the most relevant experiences and skills
-- Improve language, grammar, and professional phrasing
-- Reorganize content to prioritize relevance to the target job
-- Estimate reasonable metrics where the original text implies scale
-  Example: "Handled many customer requests" → "Handled 50+ customer requests daily" (if realistic for the role)
-  Example: "Managed a small team" → "Managed team of 3-5" (reasonable for context)
-- Translate soft descriptions into professional language
-  Example: "Helped fix bugs" → "Contributed to debugging and code quality improvements"
-
-📋 WHEN IN DOUBT:
-- If you're unsure whether something is true, DON'T include it
-- Omission is better than fabrication
-- Focus on what IS there, not what SHOULD be there
-- If the candidate lacks experience for a requirement, acknowledge the gap internally but don't invent experience
-
-🔒 VERIFICATION MINDSET:
-For every piece of content you generate, ask yourself:
-"Can this be traced back to something in the candidate's actual profile?"
-If the answer is no, remove it.
-`;
-
-// Language-specific instructions
-const languageInstructions: Record<OutputLanguage, { intro: string; outputNote: string }> = {
-  en: {
-    intro: 'You are an expert CV writer. Create a professional, tailored CV based on the following profile data.',
-    outputNote: 'Write ALL output in English. Use professional English language appropriate for CVs.',
-  },
-  nl: {
-    intro: 'Je bent een expert CV-schrijver. Maak een professionele, op maat gemaakte CV op basis van de volgende profielgegevens.',
-    outputNote: `Write ALL output in Dutch (Nederlands). Use professional Dutch language appropriate for CVs.
-Examples of Dutch CV language:
-- "Verantwoordelijk voor" → "Leidde" or "Beheerde"
-- "Worked on" → "Werkte aan"
-- "Led a team" → "Leidde een team van"
-- "Increased" → "Verhoogde" or "Groeide"
-- "Implemented" → "Implementeerde"
-- "Developed" → "Ontwikkelde"`,
-  },
-};
 
 function buildPrompt(
   linkedIn: ParsedLinkedIn,
