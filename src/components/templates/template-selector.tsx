@@ -53,9 +53,11 @@ export function TemplateSelector({ profileData, jobVacancy, fitAnalysis, languag
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Custom values for fields not in LinkedIn data
+  // Custom values for fields not in LinkedIn data.
+  // Pre-fill birthDate from profile if the parser was able to extract it,
+  // so the user doesn't have to retype it for the DOCX template flow.
   const [customValues, setCustomValues] = useState<Record<string, string>>({
-    birthDate: '',
+    birthDate: profileData.birthDate || '',
     nationality: '',
   });
 

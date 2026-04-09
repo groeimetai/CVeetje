@@ -504,6 +504,7 @@ export default function CVDetailPage() {
             linkedinUrl: cv.linkedInData.linkedinUrl,
             website: cv.linkedInData.website,
             github: cv.linkedInData.github,
+            birthDate: cv.linkedInData.birthDate,
           }}
           jobVacancy={cv.jobVacancy}
           cvId={cvId}

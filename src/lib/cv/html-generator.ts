@@ -507,6 +507,10 @@ function generateHeader(
     const icon = useIcons ? contactIcons.location : '';
     contactItems.push(`<span class="contact-item">${icon}${escapeHtml(contactInfo.location)}</span>`);
   }
+  if (contactInfo?.birthDate) {
+    const icon = useIcons ? contactIcons.birthDate : '';
+    contactItems.push(`<span class="contact-item">${icon}${escapeHtml(contactInfo.birthDate)}</span>`);
+  }
   if (contactInfo?.linkedinUrl) {
     const icon = useIcons ? contactIcons.linkedin : '';
     // Format LinkedIn URL nicely

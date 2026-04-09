@@ -150,6 +150,8 @@ export interface ParsedLinkedIn {
   linkedinUrl?: string;
   website?: string;
   github?: string;
+  // Personal info commonly included on Dutch CVs but not exported by LinkedIn
+  birthDate?: string;
 }
 
 // Contact information for CV header
@@ -160,6 +162,7 @@ export interface CVContactInfo {
   linkedinUrl?: string;
   website?: string;
   github?: string;
+  birthDate?: string;
 }
 
 // ============ Job Vacancy Types ============

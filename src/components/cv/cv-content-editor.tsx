@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Pencil, Check, X, Mail, Phone, MapPin, Linkedin, Github, Globe, Palette } from 'lucide-react';
+import { Pencil, Check, X, Mail, Phone, MapPin, Linkedin, Github, Globe, Palette, Calendar } from 'lucide-react';
 import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation, CVContactInfo } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 
@@ -357,6 +357,14 @@ export function CVContentEditor({
                   <EditableField
                     value={headerInfo.contactInfo?.website || ''}
                     onChange={(v) => updateContactInfo({ website: v || undefined })}
+                    className="text-sm flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <EditableField
+                    value={headerInfo.contactInfo?.birthDate || ''}
+                    onChange={(v) => updateContactInfo({ birthDate: v || undefined })}
                     className="text-sm flex-1"
                   />
                 </div>

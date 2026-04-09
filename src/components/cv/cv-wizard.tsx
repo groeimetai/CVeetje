@@ -550,6 +550,7 @@ export function CVWizard() {
           linkedinUrl: linkedInData.linkedinUrl,
           website: linkedInData.website,
           github: linkedInData.github,
+          birthDate: linkedInData.birthDate,
         } : undefined),
       };
 
@@ -1052,6 +1053,7 @@ export function CVWizard() {
             linkedinUrl: linkedInData.linkedinUrl,
             website: linkedInData.website,
             github: linkedInData.github,
+            birthDate: linkedInData.birthDate,
           }}
           jobVacancy={jobVacancy}
           linkedInData={linkedInData}

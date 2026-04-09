@@ -22,7 +22,8 @@ const profileSchema = z.object({
     linkedinUrl: z.string().describe('LinkedIn profile URL, empty string if not found'),
     website: z.string().describe('Personal website URL, empty string if not found'),
     github: z.string().describe('GitHub profile URL, empty string if not found'),
-  }).describe('Contact information extracted from the profile - use empty strings for missing fields'),
+    birthDate: z.string().describe('Date of birth in DD-MM-YYYY format if visible (often labeled "Geboortedatum", "Date of birth", "Born", etc.), empty string if not found'),
+  }).describe('Contact and personal information extracted from the profile - use empty strings for missing fields'),
   experience: z.array(
     z.object({
       title: z.string().describe('Job title'),
@@ -182,12 +183,13 @@ Instructions:
   - Professional headline/title
   - Location
   - About/Summary section
-  - **CONTACT INFORMATION** (IMPORTANT - look carefully for these):
+  - **CONTACT & PERSONAL INFORMATION** (IMPORTANT - look carefully for these):
     - Email address (look in header, contact sections, footer, or anywhere visible)
     - Phone number (look in header, contact sections, or anywhere visible)
     - LinkedIn URL (often in format linkedin.com/in/username)
     - Personal website or portfolio URL
     - GitHub profile URL
+    - Date of birth (often labeled "Geboortedatum", "Date of birth", "Born", "DOB" — common on Dutch/European CVs). Normalize to DD-MM-YYYY format. Leave empty if not visible.
   - ALL work experience entries with dates and descriptions
   - Education history
   - Skills (technical and soft skills)
@@ -297,6 +299,7 @@ Instructions:
         linkedinUrl: object.contactInfo.linkedinUrl || undefined,
         website: object.contactInfo.website || undefined,
         github: object.contactInfo.github || undefined,
+        birthDate: object.contactInfo.birthDate || undefined,
       };
 
       return NextResponse.json({

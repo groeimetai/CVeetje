@@ -168,6 +168,7 @@ export async function POST(
       linkedinUrl: cvData.linkedInData.linkedinUrl || undefined,
       website: cvData.linkedInData.website || undefined,
       github: cvData.linkedInData.github || undefined,
+      birthDate: cvData.linkedInData.birthDate || undefined,
     };
 
     // Use edited values - prefer edited header/content, then fall back to stored data
