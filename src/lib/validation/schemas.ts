@@ -96,6 +96,8 @@ export const parsedLinkedInSchema = z.object({
   linkedinUrl: urlSchema,
   website: urlSchema,
   github: urlSchema,
+  // Personal info commonly included on Dutch/European CVs
+  birthDate: z.string().max(50).optional(),
 });
 
 // ============ Job Vacancy Schemas ============

@@ -463,23 +463,45 @@ export function ProfileInput({
 
   // Accept enrichment preview — update local state AND persist to Firestore
   const handleAcceptEnrichment = async () => {
-    if (enrichmentPreview && selectedProfileId) {
-      const enrichedData = { ...enrichmentPreview.enrichedProfile, projects: enrichmentPreview.enrichedProfile.projects || [] };
-      setParsed(enrichedData);
+    if (!enrichmentPreview || !selectedProfileId) return;
+
+    const enrichedData = {
+      ...enrichmentPreview.enrichedProfile,
+      projects: enrichmentPreview.enrichedProfile.projects || [],
+    };
+    const previousParsed = parsed;
+
+    // Optimistically update local state so the preview reflects the change
+    setParsed(enrichedData);
+    setError(null);
+
+    // Persist enriched profile back to Firestore.
+    // CRITICAL: fetch() only throws on network failures, not HTTP errors,
+    // so we must explicitly check response.ok. Previously the try/catch
+    // was swallowing 4xx/5xx responses silently and the user lost data on
+    // the next page load.
+    try {
+      const response = await fetch(`/api/profiles/${selectedProfileId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parsedData: enrichedData }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Profiel opslaan mislukt (${response.status})`);
+      }
+
+      // Success — close the enrichment dialog
       setEnrichmentPreview(null);
       setShowEnrichDialog(false);
       setEnrichmentText('');
-
-      // Persist enriched profile back to Firestore
-      try {
-        await fetch(`/api/profiles/${selectedProfileId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ parsedData: enrichedData }),
-        });
-      } catch (err) {
-        console.error('Failed to save enriched profile:', err);
-      }
+    } catch (err) {
+      // Roll back local state so the UI matches what's actually in Firestore
+      setParsed(previousParsed);
+      const message = err instanceof Error ? err.message : 'Kon verrijking niet opslaan';
+      setError(`${message}. Je wijzigingen zijn NIET opgeslagen — probeer het opnieuw.`);
+      console.error('[Enrichment Save] Failed:', err);
     }
   };
 
