@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle, Coins, TriangleAlert } from 'lucide-react';
+import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle, Coins, TriangleAlert, Check, Wrench } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-context';
 import { useCVChat } from '@/hooks/use-cv-chat';
 import type { CVChatContext } from '@/types/chat';
@@ -37,6 +37,59 @@ function getMessageText(message: { parts: Array<{ type: string; text?: string }>
     .filter((part) => part.type === 'text' && part.text)
     .map((part) => part.text)
     .join('');
+}
+
+// Map raw tool names to short Dutch labels for the user-facing chip.
+// Falls back to a humanized version of the raw name when unknown.
+function getToolLabel(toolName: string): string {
+  const labels: Record<string, string> = {
+    update_summary: 'Samenvatting bijgewerkt',
+    update_headline: 'Headline bijgewerkt',
+    update_experience: 'Werkervaring bijgewerkt',
+    update_experience_highlight: 'Highlight bijgewerkt',
+    add_experience_highlight: 'Highlight toegevoegd',
+    remove_experience_highlight: 'Highlight verwijderd',
+    update_education: 'Opleiding bijgewerkt',
+    add_skill: 'Vaardigheid toegevoegd',
+    remove_skill: 'Vaardigheid verwijderd',
+    reorder_skills: 'Vaardigheden geherordend',
+    update_project: 'Project bijgewerkt',
+    update_project_highlight: 'Project highlight bijgewerkt',
+    add_project_highlight: 'Project highlight toegevoegd',
+    remove_project_highlight: 'Project highlight verwijderd',
+    update_header_variant: 'Header stijl gewijzigd',
+    update_colors: 'Kleuren aangepast',
+    update_font_pairing: 'Lettertype gewijzigd',
+    update_spacing: 'Witruimte aangepast',
+    update_section_style: 'Sectie stijl gewijzigd',
+    update_layout: 'Layout gewijzigd',
+    update_contact_layout: 'Contact layout gewijzigd',
+    update_skills_display: 'Skills weergave gewijzigd',
+    update_accent_style: 'Accent stijl gewijzigd',
+    update_name_style: 'Naam stijl gewijzigd',
+    update_skill_tag_style: 'Skill tag stijl gewijzigd',
+    update_scale: 'Tekstschaal gewijzigd',
+    toggle_feature: 'Feature aan/uit',
+  };
+  if (labels[toolName]) return labels[toolName];
+  // Humanize unknown names: "do_something_cool" → "Do something cool"
+  return toolName
+    .replace(/^tool_/, '')
+    .replace(/_/g, ' ')
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
+// Pull tool-call parts out of a message so we can render them as chips.
+// AI SDK v6 emits tool calls as parts with a `type` like "tool-<name>".
+function getMessageToolCalls(message: { parts: Array<{ type: string; toolName?: string }> }): string[] {
+  return message.parts
+    .filter((part) => part.type.startsWith('tool-') || part.type === 'tool-call')
+    .map((part) => {
+      // Some shapes include toolName directly, others encode it in the type.
+      if (part.toolName) return part.toolName;
+      return part.type.replace(/^tool-/, '');
+    })
+    .filter((name): name is string => typeof name === 'string' && name.length > 0);
 }
 
 export function CVChatPanel({
@@ -192,6 +245,8 @@ export function CVChatPanel({
         {/* Chat messages */}
         {messages.map((message) => {
           const textContent = getMessageText(message as { parts: Array<{ type: string; text?: string }> });
+          const toolCalls = getMessageToolCalls(message as { parts: Array<{ type: string; toolName?: string }> });
+          const hasContent = textContent || toolCalls.length > 0;
 
           return (
             <div
@@ -223,6 +278,33 @@ export function CVChatPanel({
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{textContent}</p>
+                  </div>
+                )}
+
+                {/* Tool-call activity chips — show what the assistant
+                    actually changed so the user always has feedback,
+                    even when the model only fires a tool without text. */}
+                {message.role === 'assistant' && toolCalls.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 max-w-[85%]">
+                    {toolCalls.map((toolName, idx) => (
+                      <span
+                        key={`${message.id}-tool-${idx}`}
+                        className="inline-flex items-center gap-1 text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5"
+                      >
+                        <Check className="h-3 w-3" />
+                        {getToolLabel(toolName)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Fallback: assistant message with no text and no detected
+                    tool calls. Show a generic "working" indicator instead
+                    of a confusing empty bubble. */}
+                {message.role === 'assistant' && !hasContent && (
+                  <div className="text-xs text-muted-foreground italic flex items-center gap-1.5">
+                    <Wrench className="h-3 w-3" />
+                    Aanpassing toegepast
                   </div>
                 )}
               </div>

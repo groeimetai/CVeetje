@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Pencil, Check, X, Mail, Phone, MapPin, Linkedin, Github, Globe, Palette, Calendar } from 'lucide-react';
-import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation, CVContactInfo } from '@/types';
+import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation, GeneratedCVProject, CVContactInfo } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 
 interface EditableFieldProps {
@@ -273,6 +273,44 @@ export function CVContentEditor({
     const newEducation = [...content.education];
     newEducation[index] = { ...newEducation[index], ...updates };
     onContentChange({ ...content, education: newEducation });
+  }, [content, onContentChange]);
+
+  // ─── Projects ────────────────────────────────────────────────────────
+  // Projects mirror experience: each project has title, description,
+  // technologies (array), period, url, and a highlights array. The
+  // technologies field is edited as a comma-separated string and parsed
+  // back into an array on change.
+
+  const updateProject = useCallback((index: number, updates: Partial<GeneratedCVProject>) => {
+    const projects = content.projects || [];
+    const newProjects = [...projects];
+    newProjects[index] = { ...newProjects[index], ...updates };
+    onContentChange({ ...content, projects: newProjects });
+  }, [content, onContentChange]);
+
+  const updateProjectHighlight = useCallback((projIndex: number, highlightIndex: number, value: string) => {
+    const projects = content.projects || [];
+    const newProjects = [...projects];
+    const newHighlights = [...newProjects[projIndex].highlights];
+    newHighlights[highlightIndex] = value;
+    newProjects[projIndex] = { ...newProjects[projIndex], highlights: newHighlights };
+    onContentChange({ ...content, projects: newProjects });
+  }, [content, onContentChange]);
+
+  const addProjectHighlight = useCallback((projIndex: number) => {
+    const projects = content.projects || [];
+    const newProjects = [...projects];
+    const newHighlights = [...newProjects[projIndex].highlights, ''];
+    newProjects[projIndex] = { ...newProjects[projIndex], highlights: newHighlights };
+    onContentChange({ ...content, projects: newProjects });
+  }, [content, onContentChange]);
+
+  const removeProjectHighlight = useCallback((projIndex: number, highlightIndex: number) => {
+    const projects = content.projects || [];
+    const newProjects = [...projects];
+    const newHighlights = newProjects[projIndex].highlights.filter((_, i) => i !== highlightIndex);
+    newProjects[projIndex] = { ...newProjects[projIndex], highlights: newHighlights };
+    onContentChange({ ...content, projects: newProjects });
   }, [content, onContentChange]);
 
   return (
@@ -545,6 +583,121 @@ export function CVContentEditor({
           </p>
         </div>
       </div>
+
+      {/* Projects */}
+      {content.projects && content.projects.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Projecten</h4>
+          {content.projects.map((proj, projIndex) => (
+            <div key={projIndex} className="space-y-2 p-3 border rounded bg-background">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 space-y-1">
+                  <EditableField
+                    value={proj.title}
+                    onChange={(v) => updateProject(projIndex, { title: v })}
+                    className="font-medium"
+                    color={getElementColor(`proj-${projIndex}-title`)}
+                    onColorChange={(c) => setElementColor(`proj-${projIndex}-title`, c)}
+                  />
+                  <EditableField
+                    value={proj.url || ''}
+                    onChange={(v) => updateProject(projIndex, { url: v || null })}
+                    className="text-xs text-muted-foreground"
+                  />
+                </div>
+                <EditableField
+                  value={proj.period}
+                  onChange={(v) => updateProject(projIndex, { period: v })}
+                  className="text-sm text-muted-foreground"
+                  color={getElementColor(`proj-${projIndex}-period`)}
+                  onColorChange={(c) => setElementColor(`proj-${projIndex}-period`, c)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Omschrijving:</span>
+                <EditableField
+                  value={proj.description}
+                  onChange={(v) => updateProject(projIndex, { description: v })}
+                  multiline
+                  className="text-sm"
+                  color={getElementColor(`proj-${projIndex}-description`)}
+                  onColorChange={(c) => setElementColor(`proj-${projIndex}-description`, c)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Technologieën (komma-gescheiden):</span>
+                <EditableField
+                  value={proj.technologies.join(', ')}
+                  onChange={(v) =>
+                    updateProject(projIndex, {
+                      technologies: v
+                        .split(',')
+                        .map((t) => t.trim())
+                        .filter((t) => t.length > 0),
+                    })
+                  }
+                  className="text-sm"
+                />
+              </div>
+
+              {proj.highlights.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Highlights:</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => addProjectHighlight(projIndex)}
+                    >
+                      + Toevoegen
+                    </Button>
+                  </div>
+                  <ul className="space-y-1">
+                    {proj.highlights.map((highlight, hIndex) => (
+                      <li key={hIndex} className="flex items-start gap-2">
+                        <span className="text-muted-foreground mt-1">•</span>
+                        <EditableField
+                          value={highlight}
+                          onChange={(v) => updateProjectHighlight(projIndex, hIndex, v)}
+                          className="text-sm flex-1"
+                          color={getElementColor(`proj-${projIndex}-highlight-${hIndex}`)}
+                          onColorChange={(c) => setElementColor(`proj-${projIndex}-highlight-${hIndex}`, c)}
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeProjectHighlight(projIndex, hIndex)}
+                          aria-label="Verwijder highlight"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {proj.highlights.length === 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => addProjectHighlight(projIndex)}
+                >
+                  + Highlight toevoegen
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

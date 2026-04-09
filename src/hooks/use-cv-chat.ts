@@ -5,7 +5,7 @@ import { DefaultChatTransport } from 'ai';
 import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import { CHAT_CHAR_LIMIT } from '@/lib/ai/platform-config';
 import type { CVChatContext, CVChatToolName } from '@/types/chat';
-import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation } from '@/types';
+import type { GeneratedCVContent, GeneratedCVExperience, GeneratedCVEducation, GeneratedCVProject } from '@/types';
 import type { CVDesignTokens, HeaderVariant, FontPairing, SpacingScale, SectionStyle, CVLayout, ContactLayout, SkillsDisplay, AccentStyle, NameStyle, SkillTagStyle, TypeScale } from '@/types/design-tokens';
 
 interface UseCVChatOptions {
@@ -33,6 +33,11 @@ interface ToolCallArgs {
   skill?: string;
   category?: 'technical' | 'soft';
   newOrder?: string[];
+  // Project tool args
+  projectIndex?: number;
+  description?: string;
+  technologies?: string[];
+  url?: string | null;
   // Style tool args
   layout?: string;
   sidebarSections?: string[];
@@ -320,6 +325,86 @@ function applyToolCallToContent(
         const newSkills = { ...updatedContent.skills };
         newSkills[reorderCategory] = newOrder;
         return { ...updatedContent, skills: newSkills };
+      }
+      break;
+    }
+
+    case 'update_project': {
+      const projIndex = args.projectIndex;
+      const projects = updatedContent.projects || [];
+      if (typeof projIndex === 'number' && projIndex < projects.length) {
+        const newProjects = [...projects];
+        const updates: Partial<GeneratedCVProject> = {};
+        if (args.title !== undefined) updates.title = args.title;
+        if (args.description !== undefined) updates.description = args.description;
+        if (args.technologies !== undefined) updates.technologies = args.technologies;
+        if (args.period !== undefined) updates.period = args.period;
+        if (args.url !== undefined) updates.url = args.url;
+        newProjects[projIndex] = { ...newProjects[projIndex], ...updates };
+        return { ...updatedContent, projects: newProjects };
+      }
+      break;
+    }
+
+    case 'update_project_highlight': {
+      const projIdx = args.projectIndex;
+      const highlightIdx = args.highlightIndex;
+      const newHighlight = args.newHighlight;
+      const projects = updatedContent.projects || [];
+      if (
+        typeof projIdx === 'number' &&
+        typeof highlightIdx === 'number' &&
+        typeof newHighlight === 'string' &&
+        projIdx < projects.length &&
+        highlightIdx < projects[projIdx].highlights.length
+      ) {
+        const newProjects = [...projects];
+        const newHighlights = [...newProjects[projIdx].highlights];
+        newHighlights[highlightIdx] = newHighlight;
+        newProjects[projIdx] = { ...newProjects[projIdx], highlights: newHighlights };
+        return { ...updatedContent, projects: newProjects };
+      }
+      break;
+    }
+
+    case 'add_project_highlight': {
+      const projIdx2 = args.projectIndex;
+      const newHighlight2 = args.newHighlight;
+      const pos2 = args.position || 'end';
+      const projects = updatedContent.projects || [];
+      if (
+        typeof projIdx2 === 'number' &&
+        typeof newHighlight2 === 'string' &&
+        projIdx2 < projects.length
+      ) {
+        const newProjects = [...projects];
+        const newHighlights = [...newProjects[projIdx2].highlights];
+        if (pos2 === 'start') {
+          newHighlights.unshift(newHighlight2);
+        } else {
+          newHighlights.push(newHighlight2);
+        }
+        newProjects[projIdx2] = { ...newProjects[projIdx2], highlights: newHighlights };
+        return { ...updatedContent, projects: newProjects };
+      }
+      break;
+    }
+
+    case 'remove_project_highlight': {
+      const projIdx3 = args.projectIndex;
+      const highlightIdx2 = args.highlightIndex;
+      const projects = updatedContent.projects || [];
+      if (
+        typeof projIdx3 === 'number' &&
+        typeof highlightIdx2 === 'number' &&
+        projIdx3 < projects.length &&
+        highlightIdx2 < projects[projIdx3].highlights.length
+      ) {
+        const newProjects = [...projects];
+        const newHighlights = [...newProjects[projIdx3].highlights];
+        newHighlights.splice(highlightIdx2, 1);
+        newProjects[projIdx3] = { ...newProjects[projIdx3], highlights: newHighlights };
+        return { ...updatedContent, projects: newProjects };
       }
       break;
     }

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { streamText, tool, convertToModelMessages } from 'ai';
+import { streamText, tool, convertToModelMessages, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { getAdminAuth } from '@/lib/firebase/admin';
 import { getModelId } from '@/lib/ai/providers';
@@ -61,14 +61,14 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
   const styleToolsSection = currentTokens
     ? `
 ## Style Tools
-- update_header_variant: Wijzig de header layout (simple, accented, banner, split)
+- update_header_variant: Wijzig de header layout (simple, accented, banner, split, asymmetric)
 - update_colors: Pas kleuren aan (primary, secondary, accent, text, muted)
 - update_font_pairing: Wijzig het lettertype
 - update_spacing: Pas de ruimte tussen elementen aan (compact, comfortable, spacious)
-- update_section_style: Wijzig de stijl van secties (clean, underlined, boxed, timeline, accent-left, card)
+- update_section_style: Wijzig de stijl van secties (clean, underlined, boxed, timeline, accent-left, card, alternating, magazine)
 - update_layout: Wijzig de pagina layout (single-column, sidebar-left, sidebar-right) en optioneel welke secties in de sidebar staan
 - update_contact_layout: Wijzig hoe contactgegevens worden weergegeven (single-row, double-row, single-column, double-column)
-- update_skills_display: Wijzig hoe skills worden weergegeven (tags, list, compact)
+- update_skills_display: Wijzig hoe skills worden weergegeven (tags, list, compact, bars)
 - update_accent_style: Wijzig de samenvatting styling (none, border-left, background, quote)
 - update_name_style: Wijzig de naam styling (normal, uppercase, extra-bold)
 - update_skill_tag_style: Wijzig skill tag variant (filled, outlined, pill)
@@ -307,12 +307,50 @@ export async function POST(request: NextRequest) {
         }),
       }),
 
+      update_project: tool({
+        description: 'Pas een project aan: titel, omschrijving, technologieën, periode of url. Gebruik projectIndex om aan te geven welk project (0 = eerste).',
+        inputSchema: z.object({
+          projectIndex: z.number().describe('Index van het project (0 = eerste)'),
+          title: z.string().optional().describe('Nieuwe projecttitel'),
+          description: z.string().optional().describe('Nieuwe omschrijving'),
+          technologies: z.array(z.string()).optional().describe('Nieuwe lijst van gebruikte technologieën'),
+          period: z.string().optional().describe('Nieuwe periode (bijv. "2024 - heden")'),
+          url: z.string().nullable().optional().describe('Nieuwe URL of null om te verwijderen'),
+        }),
+      }),
+
+      update_project_highlight: tool({
+        description: 'Wijzig een specifieke highlight van een project.',
+        inputSchema: z.object({
+          projectIndex: z.number().describe('Index van het project'),
+          highlightIndex: z.number().describe('Index van de highlight'),
+          newHighlight: z.string().describe('De nieuwe highlight tekst'),
+        }),
+      }),
+
+      add_project_highlight: tool({
+        description: 'Voeg een nieuwe highlight toe aan een project.',
+        inputSchema: z.object({
+          projectIndex: z.number().describe('Index van het project'),
+          newHighlight: z.string().describe('De nieuwe highlight tekst'),
+          position: z.enum(['start', 'end']).optional().describe('Positie: start of end (default: end)'),
+        }),
+      }),
+
+      remove_project_highlight: tool({
+        description: 'Verwijder een highlight van een project.',
+        inputSchema: z.object({
+          projectIndex: z.number().describe('Index van het project'),
+          highlightIndex: z.number().describe('Index van de te verwijderen highlight'),
+        }),
+      }),
+
       // Style tools - only available when design tokens are present
       ...(context.currentTokens ? {
         update_header_variant: tool({
-          description: 'Wijzig de header layout van de CV. Kies uit: simple (simpel met lijn), accented (accent balk links), banner (volle achtergrondkleur), split (naam links, contact rechts).',
+          description: 'Wijzig de header layout van de CV. Kies uit: simple (simpel met lijn), accented (accent balk links), banner (volle achtergrondkleur), split (naam links, contact rechts), asymmetric (oversized naam met verticaal accent — meest distinctief).',
           inputSchema: z.object({
-            variant: z.enum(['simple', 'accented', 'banner', 'split']).describe('De gewenste header variant'),
+            variant: z.enum(['simple', 'accented', 'banner', 'split', 'asymmetric']).describe('De gewenste header variant'),
           }),
         }),
 
@@ -347,9 +385,9 @@ export async function POST(request: NextRequest) {
         }),
 
         update_section_style: tool({
-          description: 'Wijzig de stijl van de secties (bijv. werkervaring, opleiding). Kies uit: clean (simpel), underlined (onderstreept), boxed (in box), timeline (tijdlijn), accent-left (accent links), card (kaart).',
+          description: 'Wijzig de stijl van de secties (bijv. werkervaring, opleiding). Kies uit: clean (simpel), underlined (onderstreept), boxed (in box), timeline (tijdlijn), accent-left (accent links), card (kaart), alternating (gekleurde banden per sectie), magazine (sectietitels als blokken — editorial).',
           inputSchema: z.object({
-            sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card']).describe('De gewenste sectie stijl'),
+            sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card', 'alternating', 'magazine']).describe('De gewenste sectie stijl'),
           }),
         }),
 
@@ -369,9 +407,9 @@ export async function POST(request: NextRequest) {
         }),
 
         update_skills_display: tool({
-          description: 'Wijzig hoe skills worden weergegeven. tags = gekleurde labels, list = opsomming in kolommen, compact = doorlopende tekst met punten.',
+          description: 'Wijzig hoe skills worden weergegeven. tags = gekleurde labels, list = opsomming in kolommen, compact = doorlopende tekst met punten, bars = infographic-stijl progress bars.',
           inputSchema: z.object({
-            skillsDisplay: z.enum(['tags', 'list', 'compact']).describe('De gewenste skills weergave'),
+            skillsDisplay: z.enum(['tags', 'list', 'compact', 'bars']).describe('De gewenste skills weergave'),
           }),
         }),
 
@@ -413,12 +451,21 @@ export async function POST(request: NextRequest) {
       } : {}),
     };
 
-    // Stream the response with tools
+    // Stream the response with tools.
+    //
+    // CRITICAL: stopWhen is required for multi-step generation. Without
+    // it, streamText stops as soon as the model emits a tool call —
+    // never producing the follow-up text response that confirms what
+    // happened. The result was that the chat would fire a tool but the
+    // user just saw an empty assistant bubble. stepCountIs(5) lets the
+    // model do up to 5 steps (e.g. tool call → tool result → text reply,
+    // or chained tool calls + final summary).
     const result = streamText({
       model: aiProvider(modelId),
       system: systemPrompt,
       messages: modelMessages,
       tools,
+      stopWhen: stepCountIs(5),
     });
 
     // Return UI message stream response (required for useChat with tool calls)
