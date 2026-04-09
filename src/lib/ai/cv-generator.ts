@@ -14,73 +14,6 @@ import type {
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
 // Schema for structured CV output
-// Helper function to get industry-specific content guidance
-function getIndustryGuidance(industry: string | undefined): string {
-  if (!industry) return '';
-
-  const industryLower = industry.toLowerCase();
-
-  if (industryLower.includes('tech') || industryLower.includes('software') || industryLower.includes('it')) {
-    return `
-**Industry Focus (Technology):**
-- Emphasize technical skills, programming languages, frameworks, and tools
-- Highlight innovation, problem-solving, and measurable technical impact
-- Include specific technologies and methodologies used
-- Quantify performance improvements, scale, or efficiency gains`;
-  }
-
-  if (industryLower.includes('finance') || industryLower.includes('bank') || industryLower.includes('accounting')) {
-    return `
-**Industry Focus (Finance/Banking):**
-- Emphasize compliance, accuracy, and attention to detail
-- Highlight risk management and regulatory knowledge
-- Focus on financial metrics and business impact
-- Include relevant certifications and regulatory experience`;
-  }
-
-  if (industryLower.includes('health') || industryLower.includes('medical') || industryLower.includes('pharma')) {
-    return `
-**Industry Focus (Healthcare/Medical):**
-- Emphasize patient care, safety protocols, and quality standards
-- Highlight certifications, licenses, and compliance experience
-- Focus on healthcare-specific methodologies and systems
-- Include regulatory knowledge (HIPAA, FDA, etc.)`;
-  }
-
-  if (industryLower.includes('consult')) {
-    return `
-**Industry Focus (Consulting):**
-- Emphasize problem-solving, client management, and project delivery
-- Highlight methodologies, frameworks, and strategic thinking
-- Focus on business impact and client outcomes
-- Include stakeholder management and presentation skills`;
-  }
-
-  if (industryLower.includes('marketing') || industryLower.includes('creative') || industryLower.includes('design')) {
-    return `
-**Industry Focus (Marketing/Creative):**
-- Emphasize campaign results, creative achievements, and brand impact
-- Highlight metrics like engagement, conversion, and ROI
-- Focus on tools, platforms, and creative processes
-- Include portfolio-worthy projects and awards`;
-  }
-
-  if (industryLower.includes('retail') || industryLower.includes('sales')) {
-    return `
-**Industry Focus (Retail/Sales):**
-- Emphasize revenue generation, customer relationships, and targets achieved
-- Highlight sales metrics, conversion rates, and customer satisfaction
-- Focus on negotiation, relationship building, and market knowledge
-- Include CRM experience and customer success stories`;
-  }
-
-  return `
-**Industry Focus (${industry}):**
-- Tailor language and terminology to this specific industry
-- Highlight relevant experience and transferable skills
-- Focus on achievements that resonate with this sector`;
-}
-
 const cvContentSchema = z.object({
   headline: z.string().describe('A professional headline/title that positions the candidate for the TARGET JOB. This appears under the name. Examples: "Senior Software Engineer | Cloud & DevOps Specialist" or "Marketing Manager | Digital Strategy & Brand Development". Should bridge the candidates background WITH the target role - not just copy their current title!'),
   summary: z.string().describe('A professional summary tailored to the target job, 2-3 sentences'),
@@ -126,47 +59,85 @@ const cvContentSchema = z.object({
   ).describe('Projects ordered by relevance to target job. Include personal projects, open source, academic work.'),
 });
 
-// HONESTY RULES - Critical safeguards against fabrication
+// HONESTY RULES - Two clear blocks: what is forbidden, what is encouraged.
+// The previous version was overly defensive and discouraged legitimate
+// rephrasing. Now: fabrication is strictly forbidden, but linguistic
+// reframing into the vacancy's vocabulary is explicitly encouraged.
 const honestyRules = `
-⚠️ ABSOLUTE HONESTY RULES - VIOLATION IS UNACCEPTABLE:
+⚠️ HONESTY MODEL — TWO BLOCKS
 
-You are a CV OPTIMIZER, not a CV FABRICATOR. Your role is to present the candidate's REAL
-experience in the best possible light for the target role. You must NEVER:
+You are a CV OPTIMIZER, not a CV FABRICATOR. The candidate's real experience
+must stay intact, but you SHOULD actively rephrase it in the language the
+target vacancy uses. Conservative omission is NOT a virtue here — under-
+selling a real qualification because you didn't dare translate it is just as
+harmful as fabrication.
 
-❌ FORBIDDEN - NEVER DO THESE:
+═══════════════════════════════════════════════
+BLOCK 1 — ❌ FORBIDDEN (never do these)
+═══════════════════════════════════════════════
 - Invent job titles, companies, or employment dates that don't exist
 - Fabricate skills, technologies, or certifications the candidate doesn't have
 - Claim years of experience beyond what the candidate actually has
-- Add achievements, metrics, or responsibilities not mentioned or reasonably implied
+- Add achievements, metrics, or responsibilities that have no basis in the source
 - Create education credentials or degrees that don't exist
 - Manufacture projects, clients, or accomplishments
-- Inflate team sizes, revenue figures, or impact metrics beyond reasonable estimates
+- Inflate team sizes, revenue, or impact beyond what the source reasonably implies
 - Add industry experience the candidate has never worked in
+- Upgrade job levels (Developer → Senior Developer) unless explicitly stated
+- Add technologies to job titles the candidate didn't actually work with
 
-✅ ALLOWED - THESE ARE ACCEPTABLE:
-- Reframe job titles to highlight relevant aspects (if truthful to their actual work)
-  Example: "Developer" → "Full-Stack Developer" (ONLY if they demonstrably did both frontend and backend)
-- Use industry synonyms and professional terminology for existing skills
-  Example: "Made websites" → "Developed responsive web applications"
-- Emphasize and prioritize the most relevant experiences and skills
-- Improve language, grammar, and professional phrasing
-- Reorganize content to prioritize relevance to the target job
-- Estimate reasonable metrics where the original text implies scale
-  Example: "Handled many customer requests" → "Handled 50+ customer requests daily" (if realistic for the role)
-  Example: "Managed a small team" → "Managed team of 3-5" (reasonable for context)
-- Translate soft descriptions into professional language
-  Example: "Helped fix bugs" → "Contributed to debugging and code quality improvements"
+═══════════════════════════════════════════════
+BLOCK 2 — ✅ ENCOURAGED (actively do these)
+═══════════════════════════════════════════════
+This is where most candidates lose ground: their real experience is described
+in their *own* words instead of the *vacancy's* words. Fix that.
 
-📋 WHEN IN DOUBT:
-- If you're unsure whether something is true, DON'T include it
-- Omission is better than fabrication
-- Focus on what IS there, not what SHOULD be there
-- If the candidate lacks experience for a requirement, acknowledge the gap internally but don't invent experience
+1. **Translate to vacancy vocabulary.** Read the vacancy first. For every
+   experience entry, ask: "Which words from the vacancy describe what this
+   person actually did?" Then use those words.
+   - Profile: "Hielp klanten met problemen oplossen" + vacancy asks for
+     "incident management" → "Loste klantincidenten op binnen SLA"
+   - Profile: "Maakte planningen voor het magazijn" + vacancy asks for
+     "supply chain coordination" → "Coördineerde de inkomende goederenstroom
+     en magazijnplanning"
+   - Profile: "Werkte met Kubernetes" + vacancy asks for "container
+     orchestration" → "Beheerde container-orchestratie met Kubernetes"
 
-🔒 VERIFICATION MINDSET:
-For every piece of content you generate, ask yourself:
-"Can this be traced back to something in the candidate's actual profile?"
-If the answer is no, remove it.
+2. **Reframe job titles toward the target role** when the actual work supports
+   it. Examples:
+   - "IT Consultant" → "ServiceNow Consultant" (ONLY if they did ServiceNow work)
+   - "Developer" → "Full-Stack Developer" (ONLY if they did frontend + backend)
+   - "Project Lead" → "Project Lead / Product Owner" (ONLY if they did PO tasks)
+   When the underlying work supports the reframe, USE the reframe — don't be
+   shy. Misleading titles are forbidden, but accurate-but-better-aimed titles
+   are exactly the point of this tool.
+
+3. **Use industry synonyms and standard terminology** for existing skills.
+   - "Made websites" → "Developed responsive web applications"
+   - "Helped fix bugs" → "Contributed to debugging and code quality"
+   - "Talked to customers" → "Managed client communication"
+
+4. **Estimate reasonable metrics** where the source implies scale.
+   - "Handled many customer requests" → "Handled 50+ customer requests daily"
+     (only if realistic for the described role)
+   - "Managed a small team" → "Managed team of 3-5"
+
+5. **Reorder and prioritize** by relevance to the target role. Most relevant
+   experience first, even if it's not the most recent.
+
+═══════════════════════════════════════════════
+JUDGEMENT CALL: forbidden vs encouraged
+═══════════════════════════════════════════════
+The dividing line is FACTUAL CLAIM vs LINGUISTIC FRAMING.
+- Adding a skill the candidate doesn't have = forbidden (factual fabrication).
+- Describing a skill the candidate DOES have using the vacancy's preferred
+  term = encouraged (linguistic framing).
+
+If a profile fact CAN be traced back to the source, you may freely choose the
+words you use to describe it. If it CANNOT be traced back, omit it.
+
+Do NOT omit a real qualification just because the profile didn't phrase it the
+same way as the vacancy. That's the bug we're fixing.
 `;
 
 // Language-specific instructions
@@ -282,8 +253,29 @@ ${jobVacancy.keywords.map((k) => `- ${k}`).join('\n')}
 - Ensure the skills section includes matching keywords`
       : '';
 
-    // Build industry guidance
-    const industryGuidance = getIndustryGuidance(jobVacancy.industry);
+    // Must-have / nice-to-have skills are structured fields on the parsed
+    // vacancy. Surface them explicitly so the model can match them
+    // deliberately instead of treating all keywords as equal weight.
+    const mustHaveSection = jobVacancy.mustHaveSkills && jobVacancy.mustHaveSkills.length > 0
+      ? `
+## Must-Have Skills (vacancy explicitly requires these):
+${jobVacancy.mustHaveSkills.map((s) => `- ${s}`).join('\n')}
+
+For EACH must-have above, you MUST consciously decide which profile experience
+demonstrates it, then describe that experience using the must-have's exact
+wording. If the candidate has functional-equivalent experience (e.g. profile
+mentions "Kubernetes" and must-have asks for "container orchestration"),
+describe it using the vacancy's term — that is encouraged framing, not fabrication.`
+      : '';
+
+    const niceToHaveSection = jobVacancy.niceToHaveSkills && jobVacancy.niceToHaveSkills.length > 0
+      ? `
+## Nice-to-Have Skills (vacancy bonus points):
+${jobVacancy.niceToHaveSkills.map((s) => `- ${s}`).join('\n')}
+
+If the candidate has any of these — even tangentially — surface them in skills
+or highlights. Don't fabricate them, but don't leave real matches buried either.`
+      : '';
 
     // Build top keywords for summary hint
     const topKeywords = jobVacancy.keywords && jobVacancy.keywords.length > 0
@@ -304,16 +296,55 @@ ${jobVacancy.employmentType ? `**Employment Type:** ${jobVacancy.employmentType}
 ${jobVacancy.description}
 
 ${jobVacancy.requirements.length > 0 ? `**Key Requirements:**\n${jobVacancy.requirements.map((r) => `- ${r}`).join('\n')}` : ''}
+${mustHaveSection}
+${niceToHaveSection}
 ${keywordsSection}
-${industryGuidance}
+
+${jobVacancy.industry ? `## Sector context
+The vacancy is in **${jobVacancy.industry}**. Infer the conventions of this
+sector from the vacancy text itself: which terminology, metrics, certifications
+or seniority signals matter here? Use that vocabulary when describing the
+candidate's experience. Do NOT fall back to generic phrasing — every sector has
+its own language and the CV must speak it.` : ''}
 
 ## Strategic Matching Instructions:
 
+**Step 0 - Terminology Mapping (DO THIS FIRST, INTERNALLY):**
+Before writing anything, build a mental mapping of profile-language → vacancy-language.
+
+For each skill, responsibility, or achievement in the candidate's profile, ask:
+"Which words does the vacancy use for this same concept?" Then use the
+vacancy's words consistently throughout headline, summary, experience and
+skills.
+
+This is the single biggest lever for a tailored CV. Most candidates fail not
+because they lack the experience, but because they describe it in their own
+words instead of the vacancy's. Fix that.
+
+Examples of correct mapping (the underlying fact stays the same, only the
+phrasing changes to match vacancy vocabulary):
+
+| Profile says | Vacancy asks for | Use in CV |
+|---|---|---|
+| "Hielp klanten bij problemen" | "Incident management" | "Loste klantincidenten op binnen SLA" |
+| "Maakte de planning voor het magazijn" | "Supply chain coordination" | "Coördineerde inkomende goederenstroom en magazijnplanning" |
+| "Werkte met Kubernetes en Docker" | "Container orchestration" | "Beheerde container-orchestratie met Kubernetes en Docker" |
+| "Gaf leiding aan 5 mensen" | "People management" | "Voerde direct leiderschap over een team van 5" |
+| "Onderhield contact met leveranciers" | "Vendor management" | "Beheerde de leveranciersrelaties en contractafspraken" |
+
+The fact never changes. The words do. This is ENCOURAGED framing — see Block 2
+of the honesty rules above.
+
 **Step 1 - Analyze Requirements:**
-For each job requirement listed above, identify which of the candidate's experiences best demonstrates that skill or capability.
+For each job requirement listed above, identify which of the candidate's
+experiences best demonstrates that skill or capability — including via
+functional equivalence (Kubernetes ≈ container orchestration, Salesforce ≈
+CRM, etc.).
 
 **Step 2 - CRITICAL: Experience Relevance Assessment:**
-Before writing, score EACH experience 1-5 on relevance to "${jobVacancy.title}":
+Before writing, score EACH experience 1-5 on relevance to "${jobVacancy.title}".
+Be generous about transferable relevance — a senior role in an adjacent domain
+often scores 3-4, not 1-2.
 - **5 (Highly Relevant):** Direct match - same role/field, directly applicable skills
 - **4 (Very Relevant):** Strong overlap - related role, most skills transfer
 - **3 (Moderately Relevant):** Some overlap - transferable skills apply
@@ -322,15 +353,24 @@ Before writing, score EACH experience 1-5 on relevance to "${jobVacancy.title}":
 
 **OUTPUT experiences ORDERED BY RELEVANCE (highest first), NOT chronologically!**
 
-**Step 3 - Job Title Adaptation (HONESTY FIRST!):**
-You may adapt job titles ONLY to highlight aspects that are TRUE about their actual work:
-- ✅ "Software Engineer" → "Software Engineer (Backend Focus)" - ONLY if job description shows they did backend work
-- ✅ "Project Lead" → "Project Lead / Product Owner" - ONLY if they actually did product ownership tasks
-- ✅ "IT Consultant" → "ServiceNow Consultant" - ONLY if they specifically worked with ServiceNow
-- ❌ NEVER add specializations they didn't actually do
-- ❌ NEVER upgrade job levels (Developer → Senior Developer) unless explicitly stated
-- ❌ NEVER add technologies to titles they didn't work with
-- When in doubt, keep the ORIGINAL title - misleading titles are worse than generic ones
+**Step 3 - Job Title Adaptation:**
+Reframe job titles toward the target role whenever the actual described work
+supports it. This is the default, not the exception. The whole point of this
+tool is to surface the relevant angle of each role.
+
+✅ DO reframe when the work supports it:
+- "IT Consultant" → "ServiceNow Consultant" (if they did ServiceNow work)
+- "Software Engineer" → "Software Engineer (Backend Focus)" (if backend work is described)
+- "Project Lead" → "Project Lead / Product Owner" (if they did PO tasks)
+- "Customer Service Rep" → "Customer Success Specialist" (if they did retention/upsell work)
+
+❌ DO NOT:
+- Upgrade levels (Developer → Senior Developer) unless explicitly stated
+- Add technologies the candidate didn't work with
+- Add specializations they didn't actually do
+
+Only fall back to the original title when the described work genuinely doesn't
+support any reframe — not as a default safety move.
 
 **Step 4 - Professional Headline (CRITICAL!):**
 Create a headline that BRIDGES the candidate's experience WITH the target role:
@@ -348,7 +388,7 @@ Create a headline that BRIDGES the candidate's experience WITH the target role:
 Write a summary that:
 - Opens with positioning for "${jobVacancy.title}" role
 ${topKeywords ? `- Naturally includes keywords like: ${topKeywords}` : ''}
-- References 1-2 key requirements the candidate clearly meets
+- References 1-2 key requirements the candidate clearly meets (using the vacancy's wording)
 - Closes with value proposition relevant to ${jobVacancy.company || 'this opportunity'}
 
 **Step 6 - Experience Tailoring by Relevance:**
@@ -357,19 +397,21 @@ ${topKeywords ? `- Naturally includes keywords like: ${topKeywords}` : ''}
 - **Score 2-1 roles:** 2 brief bullet points OR omit if CV is already long enough
 
 For ALL roles:
-- REWRITE highlights using terminology FROM the job posting
+- REWRITE highlights using vocabulary FROM the job posting (apply the Step 0 mapping)
 - QUANTIFY achievements where possible (%, numbers, scale, impact)
 - Lead with the most job-relevant accomplishments
 
 **Step 7 - Skills Optimization:**
 - Order technical skills by relevance to this specific job
-- Include job keywords in skills where the candidate has matching experience
-- Match skill names exactly as they appear in the job posting when applicable
+- Include job keywords in skills where the candidate has matching or equivalent experience
+- Match skill names exactly as they appear in the job posting when the candidate
+  has the underlying experience (e.g. write "Container orchestration (Kubernetes)"
+  rather than just "Kubernetes" if the vacancy uses that phrase)
 
 ## ATS Optimization:
-- Mirror the job posting's exact terminology where it fits naturally
+- Mirror the job posting's exact terminology where it fits the candidate's real experience
 - Avoid generic phrases; be specific with tools, technologies, methodologies
-- Include industry-standard terms for this ${jobVacancy.industry || 'field'}
+- Use the vocabulary that recruiters in this sector actually search for
 `;
   } else {
     prompt += `

@@ -34,17 +34,17 @@ const fitAnalysisSchema = z.object({
   })).describe('List of strengths/matches identified'),
 
   skillMatch: z.object({
-    matched: z.array(z.string()).describe('Skills candidate has that match job requirements'),
-    missing: z.array(z.string()).describe('Required skills candidate appears to lack'),
-    bonus: z.array(z.string()).describe('Nice-to-have skills candidate has'),
-    matchPercentage: z.number().describe('Percentage of must-have skills matched (0-100)'),
+    matched: z.array(z.string()).describe('Skills the candidate has that match job requirements — INCLUDING functional equivalents (e.g. list "container orchestration" as matched if the candidate has Kubernetes experience, even if the word "Kubernetes" is what appears in their profile)'),
+    missing: z.array(z.string()).describe('Skills the job requires for which the candidate has neither direct nor functional-equivalent experience nor any reasonable claim via transferable background. Be strict here: a skill only counts as "missing" if there is genuinely nothing in the profile that demonstrates it, not merely if the exact word does not appear.'),
+    bonus: z.array(z.string()).describe('Nice-to-have skills the candidate has (direct or equivalent)'),
+    matchPercentage: z.number().describe('Percentage of must-have skills matched, counting functional equivalents and transferable experience as matches (0-100)'),
   }),
 
   experienceMatch: z.object({
-    candidateYears: z.number().describe('Estimated total years of relevant experience'),
+    candidateYears: z.number().describe('Estimated years of RELEVANT experience — including transferable experience from adjacent roles, not only experience with the literal job title'),
     requiredYears: z.number().describe('Years of experience required by the job'),
-    gap: z.number().describe('Difference: candidateYears - requiredYears (negative = shortfall)'),
-    levelMatch: z.boolean().describe('Does candidate experience level match the required level?'),
+    gap: z.number().describe('Difference: candidateYears - requiredYears. Compute candidateYears generously (transferable counts), so a senior professional switching domains should not show a deep negative gap purely because their previous title was different.'),
+    levelMatch: z.boolean().describe('Does candidate experience level (junior/medior/senior/lead) match the required level? Judge by seniority of responsibilities, not by the literal job title.'),
   }),
 
   advice: z.string().describe('Actionable advice for the candidate (2-3 sentences). Be constructive and specific.'),
@@ -73,7 +73,43 @@ function buildFitAnalysisPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy
     : 'Not specified';
 
   return `You are an expert HR analyst and career coach. Analyze how well a candidate matches a job vacancy.
-Be HONEST and REALISTIC - don't sugarcoat significant gaps, but also recognize genuine strengths.
+
+## SCORING PHILOSOPHY (READ FIRST)
+
+Be honest about real, hard gaps — but give the candidate FULL credit for:
+- **Functional equivalents**: skills that are the same capability under a different name
+- **Implicit skills**: capabilities that are obviously implied by described work, even if not listed
+- **Transferable experience**: senior responsibilities and domain expertise that carry across sectors
+- **Adjacent-domain seniority**: a senior in a related field is not a junior in the target field
+
+The most common analyst error is mechanical literal matching: declaring a skill
+"missing" because the exact word isn't in the profile, or counting only years
+spent under the literal job title. DO NOT do that. Read between the lines.
+
+Examples of how to read generously but honestly:
+- Candidate has "Kubernetes" in skills, vacancy asks for "container orchestration"
+  → MATCHED (functional equivalent, same capability, different word)
+- Candidate worked 5 years as DevOps engineer with AWS, vacancy asks for "cloud
+  infrastructure experience" → MATCHED (implicit, this is literally the job)
+- Candidate has 8 years as senior product manager in fintech, vacancy is senior
+  PM in healthtech → NOT a junior, NOT missing PM experience. Industry domain
+  may be a learnable gap (info-level), but seniority and craft transfer fully.
+- Candidate ran a 5-person team at a logistics company, vacancy asks for "people
+  management" → MATCHED.
+- Candidate has Salesforce admin experience, vacancy asks for "CRM experience"
+  → MATCHED.
+- Candidate did "klantenservice" for 4 years, vacancy asks for "customer
+  success" → MATCHED at minimum on the customer-facing competency; whether it
+  rises to full "customer success" depends on whether retention/upsell tasks
+  are described.
+
+A skill is only TRULY "missing" when there is genuinely no direct, equivalent,
+or transferable evidence in the profile. Don't equate "different word" with
+"missing skill". That is the bug we are explicitly avoiding.
+
+Equally, don't fabricate matches. If the candidate is a graphic designer
+applying for a backend developer role, no amount of generous reading turns
+that into a match. Honesty cuts both ways.
 
 ## CANDIDATE PROFILE
 
@@ -129,49 +165,86 @@ ${jobVacancy.requirements.map(r => `- ${r}`).join('\n')}
 
 ## ANALYSIS INSTRUCTIONS
 
-Perform a thorough fit analysis:
+Perform a thorough fit analysis. Apply the SCORING PHILOSOPHY above
+throughout — every step below should treat functional equivalents and
+transferable experience as real matches.
 
 1. **Experience Analysis:**
-   - Count the candidate's years of RELEVANT experience (not total career length)
-   - Compare to the job requirements
-   - Consider if their experience level matches (junior/medior/senior/lead)
+   - Count the candidate's years of RELEVANT experience generously: include
+     experience under different titles when the described work clearly
+     overlaps with the target role's responsibilities.
+   - Compare to the job requirements. A senior in an adjacent field is not
+     a junior in the target field — judge by craft level, not title.
+   - When the vacancy has no explicit years requirement, do not invent one.
 
 2. **Skills Analysis:**
-   - Match candidate skills against must-have skills (be case-insensitive, consider synonyms)
-   - Identify any critical missing skills
-   - Note bonus/nice-to-have skills the candidate has
+   - For each must-have skill in the vacancy, scan the profile for: direct
+     mentions, synonyms, functional equivalents, AND implicit evidence from
+     described responsibilities.
+   - A skill counts as MATCHED when any of those four signals is present.
+   - A skill counts as MISSING ONLY when none of those four signals is
+     present. "The exact word doesn't appear" is NOT a missing-skill signal.
+   - Note bonus/nice-to-have skills the candidate has, including equivalents.
 
 3. **Education & Certifications:**
-   - Check if education meets requirements
-   - Note any missing required certifications
+   - Check if education meets requirements. Years of senior experience can
+     compensate for a missing degree unless the vacancy explicitly states
+     otherwise.
+   - Only flag missing certifications when the vacancy lists them as required,
+     not merely preferred.
 
 4. **Industry Fit:**
-   - Consider if the candidate has relevant industry experience
-   - Note if they're transitioning from a different industry
+   - A different industry background is NEUTRAL by default — many roles
+     transfer cleanly between sectors.
+   - Only flag industry as a warning when the target sector requires
+     domain-specific knowledge that genuinely cannot be picked up quickly
+     (e.g. medical device regulation, securities law, pharma GxP, aviation
+     safety standards). For most roles, industry transition is not a gap.
 
-5. **Generate Warnings:**
-   - CRITICAL: Gaps that are likely dealbreakers (e.g., job requires 10 years, candidate has 2)
-   - WARNING: Significant gaps that may need addressing (e.g., missing 2-3 key skills)
-   - INFO: Minor gaps or areas for growth (e.g., different industry background)
+5. **Generate Warnings (be sparing — only real gaps):**
+   - CRITICAL: Genuine dealbreakers — e.g. vacancy requires an active
+     professional license the candidate clearly lacks, or asks for 10 years
+     of senior leadership and the candidate has 2 years total experience.
+   - WARNING: Significant gaps that the candidate should address in their
+     application (e.g. 2-3 key must-have skills with no equivalent evidence).
+   - INFO: Minor gaps or areas for growth.
+   - Do NOT raise a warning purely because terminology differs between
+     profile and vacancy. That is a CV-writing problem, not a fit problem.
 
-6. **Identify Strengths:**
+6. **Identify Strengths (be generous — surface real value):**
    - What makes this candidate stand out?
-   - What transferable skills do they have?
+   - Which transferable skills, equivalent capabilities and senior
+     responsibilities should the recruiter notice?
    - Any overqualification in certain areas?
+   - For every must-have skill the candidate matches via equivalence or
+     implicit evidence, that is a strength worth naming explicitly — it
+     prevents the candidate from being unfairly screened out.
 
 7. **Overall Score:**
-   - 80-100: Excellent fit - strong match, minor gaps at most
-   - 60-79: Good fit - solid match with some gaps
-   - 40-59: Moderate fit - has potential but significant gaps
-   - 20-39: Challenging fit - major gaps, would need strong case
-   - 0-19: Unlikely fit - fundamental mismatches
+   Apply this rubric, AND apply this lift rule: if the candidate has clear
+   transferable experience and demonstrable seniority for the target role,
+   you may lift the score by one tier (e.g. moderate → good) — under-scoring
+   capable career-switchers is the failure mode we are explicitly avoiding.
+   - 80-100: Excellent fit — strong match, minor gaps at most
+   - 60-79: Good fit — solid match with some gaps; includes capable
+     candidates whose phrasing differs from the vacancy but whose evidence
+     clearly supports the role
+   - 40-59: Moderate fit — has potential but significant real gaps
+   - 20-39: Challenging fit — major real gaps, would need strong case
+   - 0-19: Unlikely fit — fundamental mismatch (e.g. graphic designer applying
+     for backend developer with no overlap)
 
 8. **Actionable Advice:**
    - What could the candidate do to strengthen their application?
-   - Are there skills they should highlight differently?
+   - Which existing experiences should they reframe in the vacancy's
+     vocabulary? (Be concrete: name the experience and the term.)
    - Should they consider additional certifications?
+   - If the main gap is linguistic rather than substantive, say so — the
+     candidate may already qualify and just needs to phrase it right.
 
-Be constructive but honest. The goal is to help the candidate understand their realistic chances and what they can do to improve them.`;
+Be constructive AND honest. Both directions matter: don't sugarcoat real
+mismatches, don't penalize real qualifications just because the words don't
+align. The goal is an accurate picture of the candidate's actual chances.`;
 }
 
 export interface AnalyzeFitResult {
