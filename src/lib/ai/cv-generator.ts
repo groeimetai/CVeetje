@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
 import { withRetry } from './retry';
+import { getCurrentDateContext } from './date-context';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -189,6 +190,8 @@ function buildPrompt(
   const langInstructions = languageInstructions[language];
 
   let prompt = `${langInstructions.intro}
+
+${getCurrentDateContext(language)}
 
 ${honestyRules}
 

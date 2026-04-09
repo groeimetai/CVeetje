@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
 import { withRetry } from './retry';
+import { getCurrentDateContext } from './date-context';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -73,6 +74,8 @@ function buildFitAnalysisPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy
     : 'Not specified';
 
   return `You are an expert HR analyst and career coach. Analyze how well a candidate matches a job vacancy.
+
+${getCurrentDateContext('nl')}
 
 ## SCORING PHILOSOPHY (READ FIRST)
 

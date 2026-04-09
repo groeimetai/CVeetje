@@ -6,6 +6,7 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 import { createAIProvider } from '@/lib/ai/providers';
 import { parseLinkedInProfile } from '@/lib/linkedin/parser';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { getCurrentDateContext } from '@/lib/ai/date-context';
 import type { ProfileInputSource, ParsedLinkedIn } from '@/types';
 
 // Schema for structured profile extraction via LLM
@@ -171,6 +172,8 @@ export async function POST(request: NextRequest) {
     }
 
     const extractionPrompt = `Extract all professional profile information from the provided sources.
+
+${getCurrentDateContext('en')}
 
 Sources overview:
 ${sourceDescriptions.map((d, i) => `${i + 1}. ${d}`).join('\n')}

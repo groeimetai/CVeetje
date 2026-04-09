@@ -2,6 +2,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
 import { withRetry } from './retry';
+import { getCurrentDateContext } from './date-context';
 import type { JobVacancy, LLMProvider, TokenUsage } from '@/types';
 
 // Schema for compensation/benefits
@@ -56,6 +57,8 @@ const jobVacancySchema = z.object({
 
 function buildParsePrompt(rawText: string): string {
   return `Je bent een expert in het analyseren van vacatureteksten. Analyseer de volgende vacaturetekst en extraheer de belangrijkste informatie.
+
+${getCurrentDateContext('nl')}
 
 ## Vacaturetekst:
 
