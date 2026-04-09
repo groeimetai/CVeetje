@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
         resolved.model,
         styleConfig,
         language,
-        designTokens?.experienceDescriptionFormat || 'bullets'
+        designTokens?.experienceDescriptionFormat || 'bullets',
+        fitAnalysis
       );
       content = result.content;
       usage = result.usage;

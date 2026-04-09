@@ -11,6 +11,7 @@ import type {
   CVStyleConfig,
   TokenUsage,
   OutputLanguage,
+  FitAnalysis,
 } from '@/types';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
@@ -160,12 +161,106 @@ Examples of Dutch CV language:
   },
 };
 
+/**
+ * Build a steering section from a pre-computed fit analysis.
+ *
+ * The fit analyzer already did the hard work of identifying which of
+ * the candidate's strengths map to this vacancy, which gaps the
+ * recruiter is likely to flag, and what actionable advice applies to
+ * this specific application. All of that is valuable input for the CV
+ * generator — we were throwing it away before.
+ *
+ * We surface it as four concrete buckets the CV writer should act on:
+ *   1. Confirmed strengths → emphasize prominently
+ *   2. Matched skills → keep exact vacancy wording
+ *   3. Warnings / gaps → address proactively via functional equivalents
+ *      and reframing, not by omission
+ *   4. Advice → follow verbatim where applicable
+ */
+function buildFitAnalysisSection(fitAnalysis?: FitAnalysis | null): string {
+  if (!fitAnalysis) return '';
+
+  const lines: string[] = ['## Fit-analysis findings (use these to steer the CV)'];
+  lines.push(
+    'A pre-computed fit analysis has already identified the strongest angles and the weakest gaps for this exact vacancy. Treat its findings as direct instructions for what to emphasize and what to work around.'
+  );
+
+  // Strengths — the things to lean into.
+  if (fitAnalysis.strengths && fitAnalysis.strengths.length > 0) {
+    lines.push('');
+    lines.push('### Confirmed strengths — EMPHASIZE these prominently');
+    for (const s of fitAnalysis.strengths) {
+      const detail = s.detail ? ` — ${s.detail}` : '';
+      lines.push(`- **[${s.category}]** ${s.message}${detail}`);
+    }
+    lines.push('These are the angles the recruiter is most likely to respond to. Surface them in the headline, summary, and top bullet points of the most relevant experiences.');
+  }
+
+  // Matched skills — use the vacancy's exact wording.
+  if (fitAnalysis.skillMatch?.matched && fitAnalysis.skillMatch.matched.length > 0) {
+    lines.push('');
+    lines.push('### Skills the analyzer already matched (use the EXACT wording below in the skills section)');
+    lines.push(fitAnalysis.skillMatch.matched.map((s) => `- ${s}`).join('\n'));
+  }
+
+  // Warnings — the things to work around.
+  if (fitAnalysis.warnings && fitAnalysis.warnings.length > 0) {
+    lines.push('');
+    lines.push('### Identified gaps — ADDRESS proactively, do not hide');
+    for (const w of fitAnalysis.warnings) {
+      const detail = w.detail ? ` — ${w.detail}` : '';
+      lines.push(`- **[${w.severity}/${w.category}]** ${w.message}${detail}`);
+    }
+    lines.push(
+      'For each gap above: look in the profile for functional equivalents, transferable experience, or implicit evidence that can be legitimately reframed in the vacancy\'s vocabulary. Do not invent experience. Do not omit real experience that could address the gap just because the original wording was different.'
+    );
+  }
+
+  // Missing skills — last resort, find equivalents or note for the motivation letter.
+  if (fitAnalysis.skillMatch?.missing && fitAnalysis.skillMatch.missing.length > 0) {
+    lines.push('');
+    lines.push('### Skills the analyzer could not find direct evidence for');
+    lines.push(fitAnalysis.skillMatch.missing.map((s) => `- ${s}`).join('\n'));
+    lines.push(
+      'For each of these, scan the profile ONE more time for functional equivalents or implicit evidence. If you find genuine equivalence (e.g. candidate has Kubernetes experience and the missing skill is "container orchestration"), list the skill using the vacancy\'s wording in the skills section and describe a relevant experience that demonstrates it. Only truly absent skills should remain missing.'
+    );
+  }
+
+  // Bonus skills — nice-to-haves to surface.
+  if (fitAnalysis.skillMatch?.bonus && fitAnalysis.skillMatch.bonus.length > 0) {
+    lines.push('');
+    lines.push('### Bonus skills the candidate has (nice-to-haves for this vacancy — surface them)');
+    lines.push(fitAnalysis.skillMatch.bonus.map((s) => `- ${s}`).join('\n'));
+  }
+
+  // Actionable advice — follow it.
+  if (fitAnalysis.advice) {
+    lines.push('');
+    lines.push('### Actionable advice for this application (follow verbatim where possible)');
+    lines.push(fitAnalysis.advice);
+  }
+
+  // Experience match context — so the CV doesn't overclaim or underclaim years.
+  if (fitAnalysis.experienceMatch) {
+    const em = fitAnalysis.experienceMatch;
+    lines.push('');
+    lines.push('### Experience match context');
+    lines.push(
+      `Analyzer estimated candidate has ${em.candidateYears} years of relevant experience vs ${em.requiredYears} required (level match: ${em.levelMatch ? 'yes' : 'no'}). Use these numbers as the TRUTH when phrasing the summary — do not contradict them. If the candidate meets or exceeds the required years, state that confidently; if they fall short, do not claim more years than they have but do emphasize the quality and transferability of what they do have.`
+    );
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
 function buildPrompt(
   linkedIn: ParsedLinkedIn,
   jobVacancy: JobVacancy | null,
   styleConfig?: CVStyleConfig,
   language: OutputLanguage = 'nl',
-  descriptionFormat: ExperienceDescriptionFormat = 'bullets'
+  descriptionFormat: ExperienceDescriptionFormat = 'bullets',
+  fitAnalysis?: FitAnalysis | null
 ): string {
   // Layout-aware instructions (single-column only now for reliable PDF)
   const isCompact = styleConfig?.layout.spacing === 'compact';
@@ -309,6 +404,8 @@ sector from the vacancy text itself: which terminology, metrics, certifications
 or seniority signals matter here? Use that vocabulary when describing the
 candidate's experience. Do NOT fall back to generic phrasing — every sector has
 its own language and the CV must speak it.` : ''}
+
+${buildFitAnalysisSection(fitAnalysis)}
 
 ## Strategic Matching Instructions:
 
@@ -521,12 +618,13 @@ export async function generateCV(
   model: string,
   styleConfig?: CVStyleConfig,
   language: OutputLanguage = 'nl',
-  descriptionFormat: ExperienceDescriptionFormat = 'bullets'
+  descriptionFormat: ExperienceDescriptionFormat = 'bullets',
+  fitAnalysis?: FitAnalysis | null
 ): Promise<GenerateCVResult> {
   const aiProvider = createAIProvider(provider, apiKey);
   const modelId = getModelId(provider, model);
 
-  const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language, descriptionFormat);
+  const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language, descriptionFormat, fitAnalysis);
 
   try {
     const { object, usage } = await withRetry(() =>

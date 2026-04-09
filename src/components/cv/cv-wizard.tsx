@@ -843,6 +843,7 @@ export function CVWizard() {
           onTokenUsage={(usage) => addTokenUsage('style', usage)}
           onCreditsRefresh={refreshCredits}
           onAnalysisComplete={setFitAnalysis}
+          initialAnalysis={fitAnalysis}
         />
       )}
 

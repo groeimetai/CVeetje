@@ -35,6 +35,14 @@ interface FitAnalysisCardProps {
   onTokenUsage?: (usage: TokenUsage) => void;
   onCreditsRefresh?: () => void;
   onAnalysisComplete?: (analysis: FitAnalysis) => void;
+  /**
+   * Pre-computed analysis to hydrate the card with on mount. Used when
+   * the user navigates back to this step after the analysis already ran —
+   * without it the card would show the empty "click to analyze" state
+   * and the user would either re-run (wasting a credit) or think the
+   * previous result was lost.
+   */
+  initialAnalysis?: FitAnalysis | null;
 }
 
 // Helper functions for colors and icons
@@ -138,11 +146,16 @@ export function FitAnalysisCard({
   onTokenUsage,
   onCreditsRefresh,
   onAnalysisComplete,
+  initialAnalysis,
 }: FitAnalysisCardProps) {
   const t = useTranslations('fitAnalysis');
   const { llmMode } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<FitAnalysis | null>(null);
+  // Hydrate from initialAnalysis when the user navigates back to this
+  // step after the analysis already ran. Without this the card would
+  // show the empty "click to analyze" state even though the wizard
+  // still has the result in its persisted draft.
+  const [analysis, setAnalysis] = useState<FitAnalysis | null>(initialAnalysis ?? null);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [confirmProceed, setConfirmProceed] = useState(false);
