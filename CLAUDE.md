@@ -287,7 +287,8 @@ Dit is een concrete index voor Claude Code. Voor elk concept vind je hier het ex
 | Route | Method | Wat |
 |---|---|---|
 | `models/route.ts` | GET | Lijst beschikbare AI-modellen |
-| `feedback/...` | * | User feedback flow |
+| `feedback/...` | * | User feedback flow — POST creëert auto GitHub issue in `groeimetai/CVeetje` en slaat `githubIssueNumber` op de feedback doc op |
+| `github/webhook/route.ts` | POST | GitHub webhook receiver — verifieert HMAC (`GITHUB_WEBHOOK_SECRET`) en syncct `issues.closed`/`issues.reopened` terug naar de feedback `status` (closed+completed → `resolved`, closed+not_planned → `declined`, reopened → `in_progress`) |
 
 ## Auth & Firebase (`src/lib/firebase/`, `src/lib/auth/`)
 
