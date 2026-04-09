@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,14 +14,10 @@ import {
   Star,
   Trash2,
   Briefcase,
-  Sparkles,
-  Linkedin,
-  Coins,
   FileText,
   User,
   FolderOpen,
   CheckCircle,
-  Eye,
 } from 'lucide-react';
 import type { SavedProfileSummary } from '@/types';
 
@@ -36,8 +31,6 @@ interface ProfileCardProps {
   onSetDefault?: (profileId: string) => void;
   onDelete?: (profileId: string) => void;
   onCreateCV?: (profileId: string) => void;
-  onEnrich?: (profileId: string) => void;
-  onLinkedInExport?: (profileId: string) => void;
   onView?: (profileId: string) => void;
   showActions?: boolean;
 }
@@ -50,8 +43,6 @@ export function ProfileCard({
   onSetDefault,
   onDelete,
   onCreateCV,
-  onEnrich,
-  onLinkedInExport,
   onView,
   showActions = true,
 }: ProfileCardProps) {
@@ -167,12 +158,6 @@ export function ProfileCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {onView && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(profile.id); }}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Bekijken
-                </DropdownMenuItem>
-              )}
               {!profile.isDefault && onSetDefault && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetDefault(profile.id); }}>
                   <Star className="h-4 w-4 mr-2" />
@@ -181,7 +166,7 @@ export function ProfileCard({
               )}
               {onDelete && (
                 <>
-                  <DropdownMenuSeparator />
+                  {!profile.isDefault && onSetDefault && <DropdownMenuSeparator />}
                   <DropdownMenuItem
                     className="text-destructive"
                     onClick={(e) => { e.stopPropagation(); onDelete(profile.id); }}
@@ -211,42 +196,18 @@ export function ProfileCard({
           </p>
         )}
 
-        {/* Actions */}
-        {showActions && (
+        {/* Actions — only CV Maken. Clicking the card itself opens the
+            detail/edit page via onView. Enrich and LinkedIn export live
+            on the detail page. */}
+        {showActions && onCreateCV && (
           <div className="flex flex-wrap gap-2 pt-2">
-            {onCreateCV && (
-              <Button
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); onCreateCV(profile.id); }}
-              >
-                <FileText className="h-4 w-4 mr-1" />
-                CV Maken
-              </Button>
-            )}
-            {onEnrich && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => { e.stopPropagation(); onEnrich(profile.id); }}
-                className="border-primary/50 text-primary"
-              >
-                <Sparkles className="h-4 w-4 mr-1" />
-                Verrijken
-              </Button>
-            )}
-            {onLinkedInExport && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => { e.stopPropagation(); onLinkedInExport(profile.id); }}
-                className="border-blue-500/50 text-blue-600"
-              >
-                <Linkedin className="h-4 w-4 mr-1" />
-                <Badge variant="secondary" className="ml-1 text-xs px-1">
-                  <Coins className="h-3 w-3" />
-                </Badge>
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onCreateCV(profile.id); }}
+            >
+              <FileText className="h-4 w-4 mr-1" />
+              CV Maken
+            </Button>
           </div>
         )}
 

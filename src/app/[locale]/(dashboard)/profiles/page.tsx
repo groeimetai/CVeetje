@@ -23,8 +23,6 @@ import {
 } from 'lucide-react';
 import { useProfiles } from '@/hooks/use-profiles';
 import { ProfileCard } from '@/components/profiles/profile-card';
-import { LinkedInExportDialog } from '@/components/profiles/linkedin-export-dialog';
-import { ProfileDetailDialog } from '@/components/profiles/profile-detail-dialog';
 
 export default function ProfilesPage() {
   const router = useRouter();
@@ -32,8 +30,6 @@ export default function ProfilesPage() {
   const { profiles, isLoading, error, deleteProfile, setDefaultProfile } = useProfiles();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [linkedInExportProfile, setLinkedInExportProfile] = useState<{id: string; name: string} | null>(null);
-  const [viewProfileId, setViewProfileId] = useState<string | null>(null);
 
   const handleDelete = async (profileId: string) => {
     setIsDeleting(true);
@@ -48,19 +44,10 @@ export default function ProfilesPage() {
     router.push(`/cv/new?profile=${profileId}`);
   };
 
-  const handleEnrich = (profileId: string) => {
-    router.push(`/cv/new?profile=${profileId}&enrich=true`);
-  };
-
-  const handleLinkedInExport = (profileId: string) => {
-    const profile = profiles.find(p => p.id === profileId);
-    if (profile) {
-      setLinkedInExportProfile({ id: profileId, name: profile.name });
-    }
-  };
-
-  const handleView = (profileId: string) => {
-    setViewProfileId(profileId);
+  // Opening a profile navigates to the dedicated edit page — that's where
+  // all manual editing, enrichment, and LinkedIn export now live.
+  const handleOpen = (profileId: string) => {
+    router.push(`/profiles/${profileId}`);
   };
 
   if (isLoading) {
@@ -117,9 +104,7 @@ export default function ProfilesPage() {
               onSetDefault={setDefaultProfile}
               onDelete={(id) => setDeleteConfirm(id)}
               onCreateCV={handleCreateCV}
-              onEnrich={handleEnrich}
-              onLinkedInExport={handleLinkedInExport}
-              onView={handleView}
+              onView={handleOpen}
             />
           ))}
         </div>
@@ -158,25 +143,6 @@ export default function ProfilesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* LinkedIn Export dialog */}
-      {linkedInExportProfile && (
-        <LinkedInExportDialog
-          profileId={linkedInExportProfile.id}
-          profileName={linkedInExportProfile.name}
-          open={!!linkedInExportProfile}
-          onOpenChange={(open) => !open && setLinkedInExportProfile(null)}
-        />
-      )}
-
-      {/* Profile detail dialog */}
-      <ProfileDetailDialog
-        profileId={viewProfileId}
-        open={!!viewProfileId}
-        onOpenChange={(open) => !open && setViewProfileId(null)}
-        onCreateCV={handleCreateCV}
-        onEnrich={handleEnrich}
-      />
     </div>
   );
 }
