@@ -22,7 +22,7 @@ import type {
   StyleCreativityLevel,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
-import { creativityConstraints, themeDefaults } from '@/lib/cv/templates/themes';
+import { creativityConstraints, themeDefaults, getIndustryStyleProfile } from '@/lib/cv/templates/themes';
 import { validateAndFixColorContrast } from '@/lib/cv/templates/color-utils';
 
 // ============ Zod Schema for Design Tokens ============
@@ -264,121 +264,115 @@ ${creativityLevel === 'balanced' ? `
 - headerGradient: 'none' or 'subtle' for a touch of elegance
 ` : ''}
 ${creativityLevel === 'creative' ? `
-*** CREATIVE MODE — DESIGNER-QUALITY, VISUALLY DISTINCTIVE ***
+*** CREATIVE MODE — EDITORIAL DESIGNER OUTPUT ***
 
-This CV should look like it was designed by a professional graphic designer, NOT a generic template.
-Every creative CV must look meaningfully different from a standard professional CV.
+This is NOT a "nicer professional CV". This is editorial design output.
+A creative CV must be VISIBLY different from a balanced CV at first glance.
+Same color, same font, same layout as balanced = wrong level.
 
-AVAILABLE OPTIONS — use the NEW options for maximum visual impact:
-- Themes: ${constraints.allowedThemes.join(', ')}
-- Fonts: all pairings available — PREFER display/serif fonts: 'oswald-source-sans' (condensed impact), 'dm-serif-dm-sans' (warm editorial), 'space-grotesk-work-sans' (techy), 'libre-baskerville-source-sans' (classic book)
-- Headers: simple, accented, banner, split, OR **asymmetric** (oversized name, right-aligned headline, vertical accent — very distinctive!)
-- Section styles: all available including **alternating** (colored band per section — editorial banding) and **magazine** (section titles as colored block labels — magazine editorial feel)
-- Skills: tags, list, compact, OR **bars** (infographic-style progress bars — very visual!)
-- Colors: VIBRANT colors inspired by the company's brand — make them pop!
-- showPhoto: ${hasPhoto ? 'true' : 'false'}
-- useIcons: true recommended for modern feel
-- decorations: 'moderate' recommended
-- contactLayout: any — single-row, double-row, single-column, double-column
+CONSTRAINED OPTIONS (these are the ONLY allowed values for this level):
 
-LAYOUT — USE SIDEBAR for distinctiveness:
-- 'sidebar-left' or 'sidebar-right' RECOMMENDED (not just single-column)
-- sidebarSections: ['skills', 'languages', 'certifications'] (NEVER put experience, summary, or education in sidebar)
+- **Themes**: ${constraints.allowedThemes.join(' | ')}
+- **Fonts**: ${constraints.allowedFontPairings.join(' | ')}
+  → Note: inter/roboto/lato are NOT in this list. They are balanced territory.
+  → Pick a display or editorial font that gives the CV typographic character.
+- **Headers**: ${constraints.allowedHeaderVariants.join(' | ')}
+  → Only 'banner' (full-width color block) and 'asymmetric' (oversized name +
+    vertical accent) are allowed. The plain headers (simple/accented/split)
+    are balanced territory and will be rejected.
+- **Section styles**: ${constraints.allowedSectionStyles.join(' | ')}
+  → No clean/underlined/boxed/accent-left — those belong to balanced.
+  → Only the editorial section styles: timeline, card, alternating, magazine.
+- **Layout**: ${constraints.allowedLayouts.join(' | ')}
+  → Sidebar required. Single-column is balanced territory.
+  → sidebarSections: ['skills', 'languages', 'certifications']
+  → NEVER put experience, summary, or education in the sidebar.
+- **Decorations**: ${constraints.allowedDecorations.join(' | ')} (default: ${constraints.defaultDecorations})
+- **Border radius**: ${constraints.allowedBorderRadius.join(' | ')}
+- **Accent style**: ${constraints.allowedAccentStyles.join(' | ')} — REQUIRED, no 'none'
+- **Name style**: ${constraints.allowedNameStyles.join(' | ')} — REQUIRED, no 'normal'
+- **Skill tag style**: ${constraints.allowedSkillTagStyles.join(' | ')} — REQUIRED, no 'filled'
+- **Skills display**: tags, list, compact, OR bars (bars = very visual)
+- **Colors**: VIBRANT, follow the industry color profile — never default to navy+gray
+- **showPhoto**: ${hasPhoto ? 'true' : 'false'}
+- **useIcons**: true
+- **headerGradient**: 'subtle' or 'radial' for visual depth
 
-EXTENDED STYLING (use these for variety!):
-- accentStyle: 'border-left', 'background', or 'quote' — NOT 'none'
-- borderRadius: 'medium' through 'pill' — experiment with rounding
-- nameStyle: 'uppercase' or 'extra-bold' — NOT 'normal'
-- skillTagStyle: 'outlined' or 'pill' — NOT 'filled'
-- pageBackground: optional very light tinted background (e.g. #faf8f5 for warm, #f0f4f8 for cool)
+The constraint set above is intentionally narrower than balanced. The whole
+point of "creative mode" is that the model can no longer fall back to safe
+options and call it a day. If you find yourself wanting to pick clean
+sections or a simple header, that's a sign the user should have selected
+balanced — not a sign that you should override creative.
 
-ANTI-BORING RULES:
-- FORBIDDEN: the combination of clean sections + simple header + inter-inter font. This is too plain for creative mode!
-- REQUIRED: at least 1 of accentStyle/nameStyle/skillTagStyle must NOT be its default value
-- MUST USE at least 1 of: banner/split header, card/accent-left/timeline sections, or a serif/display font pairing
+DECORATION THEME (required):
+Use the decorationTheme value from the industry style profile if one was
+provided. Otherwise pick from: geometric (tech/engineering), organic
+(healthcare/non-profit), minimal (finance/legal/consulting), tech (software/AI),
+creative (design/marketing), abstract (general).
 
-ENCOURAGE UNEXPECTED COMBINATIONS:
-- Serif heading + card sections + outlined skill tags
-- Split header + accent-left sections + uppercase name
-- Banner header + pill skill tags + quote accent style
-- Accented header + timeline sections + extra-bold name
-
-DECORATION THEME (Required for creative mode):
-Choose a decorationTheme that matches the target industry/job:
-- 'geometric': IT, Tech, Engineering — circuits, hexagons, grid patterns
-- 'organic': Healthcare, Pharma, Nature — soft curves, leaves, waves
-- 'minimal': Finance, Consulting, Legal — subtle lines, clean accents
-- 'tech': Software, Data, AI — code brackets, nodes, digital patterns
-- 'creative': Design, Marketing, Art — bold shapes, splashes
-- 'abstract': General use — balanced geometric patterns
+GOOD EXAMPLE COMBINATIONS for creative:
+- Asymmetric header + magazine sections + outlined pills + dm-serif font + sidebar-right
+- Banner header + alternating sections + pill tags + oswald font + sidebar-left
+- Asymmetric header + timeline sections + outlined tags + space-grotesk + sidebar-left
+- Banner header + card sections + pill tags + playfair font + sidebar-right
 ` : ''}
 ${creativityLevel === 'experimental' ? `
-*** EXPERIMENTAL MODE — MAKE SOMEONE SAY "I'VE NEVER SEEN A CV LIKE THIS" ***
+*** EXPERIMENTAL MODE — ART-DIRECTED VISUAL STATEMENT ***
 
-Your PRIMARY goal: create a CV that is RADICALLY different from anything conventional.
-This is NOT a "nicer template" — this is a visual statement. Think art direction, not templating.
+This is the most distinctive level. The CV should be RADICALLY different
+from anything a creative-mode CV would produce. Same headers, sections,
+and layouts as creative = wrong level. Experimental owns the boldest
+options exclusively.
 
-FULL CREATIVE FREEDOM with ALL options including NEW experimental variants:
+CONSTRAINED OPTIONS (these are the ONLY allowed values for this level):
 
-THEMES: any of ${constraints.allowedThemes.join(', ')} — prefer 'bold' or 'creative'!
+- **Themes**: ${constraints.allowedThemes.join(' | ')}
+  → Only 'creative' and 'bold'. Professional/modern/minimal are NOT allowed.
+- **Fonts**: ${constraints.allowedFontPairings.join(' | ')}
+  → 6 expressive fonts only. NO sans-serif workhorses (inter/roboto/lato).
+  → Always editorial / display / serif character.
+- **Headers**: ${constraints.allowedHeaderVariants.join(' | ')}
+  → ONLY 'asymmetric'. The single most distinctive option. Banner is creative
+    territory, all the plainer headers are balanced/conservative territory.
+- **Section styles**: ${constraints.allowedSectionStyles.join(' | ')}
+  → ONLY 'alternating' (colored bands per section) and 'magazine' (section
+    titles as colored block labels with editorial layout). These two
+    visually transform the page in a way no other style does.
+  → Card/timeline/accent-left are creative territory. Clean/underlined
+    are balanced/conservative.
+- **Layout**: ${constraints.allowedLayouts.join(' | ')}
+  → Sidebar required. Single-column is forbidden.
+- **Decorations**: ${constraints.allowedDecorations.join(' | ')} (default: ${constraints.defaultDecorations})
+  → Abundant background shapes. The page should feel alive.
+- **Border radius**: ${constraints.allowedBorderRadius.join(' | ')}
+  → Only 'large' or 'pill'. No subtle rounding.
+- **Accent style**: ${constraints.allowedAccentStyles.join(' | ')} — REQUIRED
+- **Name style**: ${constraints.allowedNameStyles.join(' | ')} — REQUIRED
+- **Skill tag style**: ${constraints.allowedSkillTagStyles.join(' | ')} — REQUIRED
+- **headerGradient**: 'subtle' or 'radial' — REQUIRED, never 'none'
+- **pageBackground**: tinted (very light, e.g. #faf8f5 / #f0f4f8 / #f5f0f5) — REQUIRED
+- **customDecorations**: 2-5 unique job-specific abstract shapes — REQUIRED
+- **showPhoto**: ${hasPhoto ? 'true' : 'false'}
+- **useIcons**: true
 
-FONTS: all 12 pairings — MUST use a display/serif font:
-  - 'oswald-source-sans': condensed, high-impact headings
-  - 'dm-serif-dm-sans': warm, editorial feel
-  - 'space-grotesk-work-sans': techy, modern startup vibe
-  - 'libre-baskerville-source-sans': classic, sophisticated
-  - 'playfair-inter': elegant serif contrast
-  FORBIDDEN: 'inter-inter', 'roboto-roboto', 'lato-lato' (too safe for experimental!)
+COLORS — never default to navy+gray. The whole point of experimental is
+unexpected color choices. Pick from terracotta, emerald, burgundy, indigo,
+plum, sage, deep teal, electric violet — driven by the industry style
+profile if one is provided. Even a finance CV in experimental mode should
+NOT be navy: try rich burgundy or deep emerald.
 
-HEADERS — including new options:
-  - 'asymmetric': oversized 40pt+ name, right-aligned italic headline, vertical accent line — the most distinctive option!
-  - 'banner': full-width color block — dramatic
-  - 'split': name left, contact right — modern
-  - 'accented': bold left border
-  - 'simple': FORBIDDEN for experimental (too boring)
+EXAMPLE EXPERIMENTAL COMBINATIONS:
+- Sidebar-right + asymmetric header + magazine sections + dm-serif-dm-sans
+  + berry-rich colors + tinted pink-tinged background + abundant decorations
+- Sidebar-left + asymmetric header + alternating sections + oswald-source-sans
+  + forest-natural colors + warm tinted background + abundant decorations
+- Sidebar-right + asymmetric header + magazine sections + space-grotesk-work-sans
+  + industrial-slate + cool tinted background + geometric abundant decorations
+- Sidebar-left + asymmetric header + alternating sections + playfair-inter
+  + luxe-dark colors + warm tinted background + abstract abundant decorations
 
-SECTION STYLES — including new options:
-  - 'alternating': colored bands alternating between sections — editorial banding effect
-  - 'magazine': section titles as colored block labels with editorial content layout
-  - 'card': sections as shadow cards
-  - 'accent-left': bold colored left borders
-  - 'timeline': vertical storytelling
-  - FORBIDDEN: 'clean' and 'underlined' (too plain for experimental)
-
-SKILLS DISPLAY:
-  - 'bars': infographic-style progress bars — the most visual option!
-  - 'tags' with 'pill' style: rounded pill tags
-  - 'list' or 'compact': only if bars don't fit the design concept
-
-LAYOUT: 'sidebar-left' or 'sidebar-right' REQUIRED (single-column is FORBIDDEN for experimental!)
-  - sidebarSections: ['skills', 'languages', 'certifications']
-
-MANDATORY RULES:
-- REQUIRED: accentStyle, nameStyle, AND skillTagStyle must ALL be non-default
-- REQUIRED: pageBackground must be tinted (not white) — match the color mood
-- REQUIRED: borderRadius must be 'large' or 'pill'
-- REQUIRED: headerGradient must be 'subtle' or 'radial'
-- FORBIDDEN: generic blue/gray color palette, single-column layout, inter-inter/roboto/lato font
-- REQUIRED: at least ONE of the new variants (asymmetric header, alternating/magazine sections, or bars skills)
-
-COLORS: NEVER use generic blue/gray!
-- Think: terracotta, emerald, burgundy, indigo, teal, coral, plum, sage
-- Use the company/industry as THEMATIC basis but express it through BOLD, unexpected colors
-- If the industry is "finance", don't use boring navy — try rich burgundy or deep emerald instead
-
-DECORATIONS: 'abundant' (bold background shapes)
-- decorationTheme: match the industry
-- customDecorations: 2-5 unique job-specific abstract shapes
-- showPhoto: ${hasPhoto ? 'true' : 'false'}
-- useIcons: true
-
-EXAMPLE COMBINATIONS (vary wildly from these!):
-1. Sidebar-right + asymmetric header + magazine sections + bars skills + dm-serif-dm-sans + berry-rich colors
-2. Sidebar-left + banner header + alternating sections + pill tags + oswald-source-sans + forest-natural colors
-3. Sidebar-right + accented header + card sections + bars skills + space-grotesk-work-sans + industrial-slate colors
-4. Sidebar-left + asymmetric header + magazine sections + outlined skills + playfair-inter + luxe-dark colors
-
-This CV should be BOLD, WILD, and absolutely UNFORGETTABLE!
+This is art direction, not templating. The result should be BOLD, WILD,
+unmistakably distinct from a creative-mode CV.
 ` : ''}
 
 SECTION ORDER GUIDELINES:
@@ -410,6 +404,30 @@ ${jobVacancy.industry ? `- Industry: ${jobVacancy.industry}` : ''}
 - Key requirements: ${jobVacancy.keywords.slice(0, 10).join(', ')}
 ${jobVacancy.description ? `- Job description excerpt: ${jobVacancy.description.slice(0, 500)}...` : ''}
 `;
+
+    // Inject concrete industry styling directives. Without this the
+    // model gets only the loose "industry is X" hint and defaults to
+    // generic blue/gray sans-serif regardless of the field.
+    const industryProfile = getIndustryStyleProfile(jobVacancy.industry);
+    if (industryProfile) {
+      prompt += `
+INDUSTRY STYLE PROFILE — **${industryProfile.label}**
+
+These are the visual conventions that work for this industry. Use them
+as STARTING POINTS within your creativity-level constraints, not as a
+straitjacket. The combination of these directives + your creativity
+level should produce a CV that feels native to this field.
+
+- **Color direction**: ${industryProfile.colorMood}
+- **Decoration theme**: ${industryProfile.decorationTheme} (use this as decorationTheme value if your level uses decorations)
+- **Font character**: ${industryProfile.fontCharacter}
+- **Preferred theme bases**: ${industryProfile.preferredThemes.join(', ')}
+
+Do NOT default to generic navy + inter. The whole point of these
+directives is to make a finance CV look like a finance CV, a creative
+agency CV look like an agency CV, and a tech CV look like a tech CV.
+`;
+    }
 
     // Company analysis varies by creativity level
     if (creativityLevel === 'conservative' || creativityLevel === 'balanced') {
@@ -677,20 +695,21 @@ function validateAndFixTokens(
     tokens.headerVariant = constraints.allowedHeaderVariants[0];
   }
 
-  // For experimental: force away from banner (the most generic/overused header)
-  if (creativityLevel === 'experimental' && tokens.headerVariant === 'banner') {
-    const distinctHeaders = ['asymmetric', 'split', 'accented'] as const;
-    tokens.headerVariant = distinctHeaders[Math.floor(Math.random() * distinctHeaders.length)];
-    console.log(`[Style Gen] Forced experimental header away from banner → ${tokens.headerVariant}`);
-  }
+  // For experimental: only 'asymmetric' is allowed by the new constraints,
+  // so the validation above already pinned it. No further forcing needed.
+  // (This used to randomize between asymmetric/split/accented but split and
+  // accented are now creative/balanced territory.)
 
-  // For creative: always randomize the header to ensure variety across generations
+  // For creative: rotate among the allowed creative headers (banner +
+  // asymmetric only, after the constraint tightening) for variety.
   if (creativityLevel === 'creative') {
-    const allCreativeHeaders = ['asymmetric', 'split', 'accented', 'banner', 'simple'] as const;
-    const randomHeader = allCreativeHeaders[Math.floor(Math.random() * allCreativeHeaders.length)];
-    if (randomHeader !== tokens.headerVariant) {
-      console.log(`[Style Gen] Creative header rotation: ${tokens.headerVariant} → ${randomHeader}`);
-      tokens.headerVariant = randomHeader;
+    const allowed = constraints.allowedHeaderVariants as readonly string[];
+    if (allowed.length > 1) {
+      const randomHeader = allowed[Math.floor(Math.random() * allowed.length)];
+      if (randomHeader !== tokens.headerVariant) {
+        console.log(`[Style Gen] Creative header rotation: ${tokens.headerVariant} → ${randomHeader}`);
+        tokens.headerVariant = randomHeader as CVDesignTokens['headerVariant'];
+      }
     }
   }
 
@@ -880,32 +899,22 @@ function validateAndFixTokens(
   // Ensure section order includes all standard sections
   tokens.sectionOrder = validateSectionOrder(tokens.sectionOrder);
 
-  // === Force visually distinct section styles for creative/experimental ===
-  if (creativityLevel === 'creative' && tokens.sectionStyle === 'clean') {
-    const options = ['accent-left', 'card', 'alternating', 'magazine'] as const;
-    tokens.sectionStyle = options[Math.floor(Math.random() * options.length)];
-    console.log(`[Style Gen] Upgraded clean → ${tokens.sectionStyle} for creative mode`);
-  } else if (creativityLevel === 'experimental' && ['clean', 'underlined'].includes(tokens.sectionStyle)) {
-    const impactful = ['card', 'accent-left', 'timeline', 'alternating', 'magazine'] as const;
-    tokens.sectionStyle = impactful[Math.floor(Math.random() * impactful.length)];
-    console.log(`[Style Gen] Upgraded section style → ${tokens.sectionStyle} for experimental mode`);
-  }
-
-  // === Force sidebar for experimental ===
-  if (creativityLevel === 'experimental' && (!tokens.layout || tokens.layout === 'single-column')) {
+  // === Force creative+ to also have a sidebar layout ===
+  // The constraint validation above already clamps invalid layouts to
+  // the first allowed value, but creative AND experimental both need a
+  // sidebar (since single-column is no longer in their allowed list).
+  if ((creativityLevel === 'creative' || creativityLevel === 'experimental') && (!tokens.layout || tokens.layout === 'single-column')) {
     tokens.layout = Math.random() > 0.5 ? 'sidebar-left' : 'sidebar-right';
     if (!tokens.sidebarSections) {
       tokens.sidebarSections = ['skills', 'languages', 'certifications'];
     }
-    console.log(`[Style Gen] Forced sidebar layout ${tokens.layout} for experimental mode`);
+    console.log(`[Style Gen] Forced sidebar layout ${tokens.layout} for ${creativityLevel} mode`);
   }
 
-  // === Force non-boring fonts for experimental ===
-  if (creativityLevel === 'experimental' && ['inter-inter', 'roboto-roboto', 'lato-lato'].includes(tokens.fontPairing)) {
-    const impactFonts = ['oswald-source-sans', 'dm-serif-dm-sans', 'space-grotesk-work-sans', 'playfair-inter', 'libre-baskerville-source-sans'] as const;
-    tokens.fontPairing = impactFonts[Math.floor(Math.random() * impactFonts.length)];
-    console.log(`[Style Gen] Upgraded font to ${tokens.fontPairing} for experimental mode`);
-  }
+  // Section style and font validation are now handled entirely by the
+  // tightened constraint check above — there are no longer any "boring"
+  // fallbacks within creative/experimental's allowed lists, so a separate
+  // anti-boring sweep is unnecessary.
 
   // === 2C: Anti-saai validation — ensure enough variety for creative/experimental ===
   if (creativityLevel === 'creative' || creativityLevel === 'experimental') {
@@ -1129,11 +1138,12 @@ function getFallbackTokens(
         text: '#1f2937',
         muted: '#6b7280',
       },
-      fontPairing: 'poppins-nunito',
+      // All values below match the tightened experimental constraints.
+      fontPairing: 'oswald-source-sans',
       scale: 'medium',
       spacing: 'comfortable',
-      headerVariant: 'banner',
-      sectionStyle: 'accent-left',
+      headerVariant: 'asymmetric',
+      sectionStyle: 'magazine',
       skillsDisplay: 'tags',
       experienceDescriptionFormat: 'bullets',
       contactLayout: 'double-column',
@@ -1141,15 +1151,17 @@ function getFallbackTokens(
       showPhoto: true,
       useIcons: true,
       roundedCorners: true,
-      headerFullBleed: true,
+      headerFullBleed: false,
       decorations: 'abundant',
       decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
       layout: 'sidebar-right',
+      sidebarSections: ['skills', 'languages', 'certifications'],
       borderRadius: 'pill',
       accentStyle: 'border-left',
       nameStyle: 'uppercase',
       skillTagStyle: 'pill',
+      pageBackground: '#faf8f5',
     };
   }
 
@@ -1172,7 +1184,8 @@ function getFallbackTokens(
       industryFit: industry || 'creative',
       themeBase: 'creative',
       colors: defaults.suggestedColors,
-      fontPairing: defaults.fontPairing,
+      // All values below match the tightened creative constraints.
+      fontPairing: 'poppins-nunito',
       scale: 'medium',
       spacing: 'comfortable',
       headerVariant: 'banner',
@@ -1184,12 +1197,15 @@ function getFallbackTokens(
       showPhoto: true,
       useIcons: true,
       roundedCorners: true,
-      headerFullBleed: true,
+      headerFullBleed: false,
       decorations: 'moderate',
       decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
+      layout: 'sidebar-left',
+      sidebarSections: ['skills', 'languages', 'certifications'],
       borderRadius: 'medium',
       accentStyle: 'background',
+      nameStyle: 'uppercase',
       skillTagStyle: 'outlined',
     };
   }
