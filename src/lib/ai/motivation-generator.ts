@@ -13,6 +13,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
 import { withRetry } from './retry';
+import { humanizeMotivationLetter } from './humanizer';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -441,6 +442,8 @@ export async function generateMotivationLetter(
   console.log(`[Motivation Gen] Generating letter in ${language} for ${jobVacancy.title}`);
 
   try {
+    // Pass 1 — structured generation. Builds the letter from profile,
+    // CV, vacancy, and personal motivation.
     const result = await withRetry(() =>
       generateObject({
         model: aiProvider(modelId),
@@ -451,13 +454,31 @@ export async function generateMotivationLetter(
       }),
     );
 
-    // Also strip sign-offs from the persisted closing section, not just
-    // from the rendered fullText, so downstream consumers (edit UI,
-    // copy-to-clipboard, DOCX export) never see a duplicate either.
-    const cleanedClosing = stripSignOff(result.object.closing, language);
+    // Pass 2 — humanizer. Rewrites the prose to remove the standard AI
+    // tells (significance inflation, copula avoidance, em dashes, "-ing"
+    // tail phrases, etc.) while preserving structure, facts, and language.
+    // Degrades gracefully: if the humanizer call fails it returns the
+    // original sections so the user still gets a letter.
+    const humanized = await humanizeMotivationLetter(
+      {
+        opening: result.object.opening,
+        whyCompany: result.object.whyCompany,
+        whyMe: result.object.whyMe,
+        motivation: result.object.motivation,
+        closing: result.object.closing,
+      },
+      provider,
+      apiKey,
+      model,
+      language,
+    );
+
+    // Strip any sign-off the model may still have added to the closing.
+    // Defense in depth: prompt + humanizer rules + this regex pass.
+    const cleanedClosing = stripSignOff(humanized.sections.closing, language);
 
     const fullText = formatFullLetter(
-      { ...result.object, closing: cleanedClosing },
+      { ...humanized.sections, closing: cleanedClosing },
       linkedInData.fullName,
       jobVacancy.title,
       jobVacancy.company,
@@ -465,21 +486,23 @@ export async function generateMotivationLetter(
     );
 
     const letter: GeneratedMotivationLetter = {
-      opening: result.object.opening,
-      whyCompany: result.object.whyCompany,
-      whyMe: result.object.whyMe,
-      motivation: result.object.motivation,
+      opening: humanized.sections.opening,
+      whyCompany: humanized.sections.whyCompany,
+      whyMe: humanized.sections.whyMe,
+      motivation: humanized.sections.motivation,
       closing: cleanedClosing,
       fullText,
     };
 
+    // Sum token usage across both passes so the credit accounting and
+    // the token-usage display include the humanizer cost.
     const usage: TokenUsage = {
-      promptTokens: result.usage?.inputTokens ?? 0,
-      completionTokens: result.usage?.outputTokens ?? 0,
+      promptTokens: (result.usage?.inputTokens ?? 0) + humanized.usage.promptTokens,
+      completionTokens: (result.usage?.outputTokens ?? 0) + humanized.usage.completionTokens,
     };
 
     console.log(
-      `[Motivation Gen] Generated letter: ${usage.promptTokens} input, ${usage.completionTokens} output tokens`,
+      `[Motivation Gen] Generated letter (incl. humanizer): ${usage.promptTokens} input, ${usage.completionTokens} output tokens total`,
     );
 
     return { letter, usage };
