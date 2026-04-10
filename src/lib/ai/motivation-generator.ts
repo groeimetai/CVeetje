@@ -318,60 +318,74 @@ Generate a compelling, personalized motivation letter that:
 }
 
 /**
- * Strip any trailing sign-off phrases the model may have added despite
- * being told not to. formatFullLetter appends its own "Met vriendelijke
- * groet, {name}" block — anything similar in the model's closing would
- * create a duplicate.
+ * Strip sign-off phrases and anything after them from the closing
+ * section. formatFullLetter appends its own "Met vriendelijke groet,
+ * {name}" block — anything similar in the model's closing creates a
+ * double sign-off in the rendered letter.
  *
- * This is the safety net. The first line of defense is the prompt
- * telling the model not to write sign-offs; this catches leakage.
+ * The earlier version only matched patterns anchored at the very END of
+ * the string (`$`). That missed the common case where the model writes:
+ *
+ *   "...call to action.\n\nMet vriendelijke groet,\n\nNiels van der Werf"
+ *
+ * Here the string ends with the candidate's name, not the greeting, so
+ * the anchored regex didn't match. The fix: scan for the FIRST
+ * occurrence of any sign-off phrase and truncate everything from that
+ * point onwards (including the name that follows).
  */
 function stripSignOff(closing: string, language: OutputLanguage): string {
   if (!closing) return closing;
 
-  // Order matters: longer phrases first so shorter ones don't eat them
-  // partially. Case-insensitive. Allow optional punctuation and trailing
-  // whitespace/newlines after the phrase.
-  const dutchPatterns = [
-    /met\s+vriendelijke\s+groeten?[\s,.\n]*$/i,
-    /hoogachtend[\s,.\n]*$/i,
-    /vriendelijke\s+groeten?[\s,.\n]*$/i,
-    /met\s+hartelijke\s+groeten?[\s,.\n]*$/i,
-    /hartelijke\s+groeten?[\s,.\n]*$/i,
-    /groet(en)?[\s,.\n]*$/i,
+  // Phrases that mark the start of a sign-off block. Everything from
+  // the match position to the end of the string is stripped.
+  // Ordered longest-first so shorter substrings don't eat part of a
+  // longer phrase. Case-insensitive.
+  const dutchPhrases = [
+    'met vriendelijke groeten',
+    'met vriendelijke groet',
+    'met hartelijke groeten',
+    'met hartelijke groet',
+    'vriendelijke groeten',
+    'vriendelijke groet',
+    'hartelijke groeten',
+    'hartelijke groet',
+    'hoogachtend',
   ];
 
-  const englishPatterns = [
-    /kind\s+regards[\s,.\n]*$/i,
-    /best\s+regards[\s,.\n]*$/i,
-    /warm\s+regards[\s,.\n]*$/i,
-    /yours\s+sincerely[\s,.\n]*$/i,
-    /yours\s+truly[\s,.\n]*$/i,
-    /yours\s+faithfully[\s,.\n]*$/i,
-    /sincerely[\s,.\n]*$/i,
-    /regards[\s,.\n]*$/i,
+  const englishPhrases = [
+    'yours sincerely',
+    'yours faithfully',
+    'yours truly',
+    'kind regards',
+    'best regards',
+    'warm regards',
+    'sincerely',
+    'regards',
   ];
 
-  const patterns = language === 'nl' ? [...dutchPatterns, ...englishPatterns] : [...englishPatterns, ...dutchPatterns];
+  const phrases = language === 'nl'
+    ? [...dutchPhrases, ...englishPhrases]
+    : [...englishPhrases, ...dutchPhrases];
 
   let cleaned = closing.trim();
 
-  // Apply patterns repeatedly until none match — catches edge cases
-  // like "Kind regards, Sincerely," (double sign-off from the model).
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const pattern of patterns) {
-      const next = cleaned.replace(pattern, '').trim();
-      if (next !== cleaned) {
-        cleaned = next;
-        changed = true;
-      }
+  // Find the earliest sign-off phrase and cut everything from there.
+  const lowerCleaned = cleaned.toLowerCase();
+  let earliestIndex = -1;
+
+  for (const phrase of phrases) {
+    const idx = lowerCleaned.indexOf(phrase);
+    if (idx !== -1 && (earliestIndex === -1 || idx < earliestIndex)) {
+      earliestIndex = idx;
     }
   }
 
-  // Also strip a trailing comma left behind by "..., Kind regards" style
-  return cleaned.replace(/[,;]\s*$/, '').trim();
+  if (earliestIndex !== -1) {
+    cleaned = cleaned.slice(0, earliestIndex).trim();
+  }
+
+  // Strip trailing punctuation left behind (comma, semicolon, newlines).
+  return cleaned.replace(/[,;:\s]+$/, '').trim();
 }
 
 // Generate complete formatted letter
