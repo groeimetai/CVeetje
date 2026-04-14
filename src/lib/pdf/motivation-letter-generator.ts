@@ -7,6 +7,68 @@ import { fontPairings, typeScales, spacingScales } from '@/lib/cv/templates/them
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
+/**
+ * Filter out sign-off paragraphs from the split fullText.
+ *
+ * fullText already contains the sign-off ("Met vriendelijke groet," +
+ * candidate name) because formatFullLetter appends it for the text-
+ * based preview. But the PDF and DOCX generators add their OWN styled
+ * sign-off block separately. If we don't strip the sign-off paragraphs
+ * from the content, the output has a double ending.
+ *
+ * This helper detects and removes the trailing sign-off paragraphs by
+ * scanning from the end for common greeting phrases and standalone
+ * name-like paragraphs (short, no period at the end).
+ */
+function stripSignOffParagraphs(paragraphs: string[], senderName: string): string[] {
+  if (paragraphs.length === 0) return paragraphs;
+
+  const signOffPhrases = [
+    'met vriendelijke groet',
+    'met hartelijke groet',
+    'vriendelijke groet',
+    'hartelijke groet',
+    'hoogachtend',
+    'kind regards',
+    'best regards',
+    'warm regards',
+    'yours sincerely',
+    'yours faithfully',
+    'sincerely',
+    'regards',
+  ];
+
+  // Walk backwards from the end and strip sign-off paragraphs.
+  // A paragraph is a sign-off paragraph if:
+  //   a) it matches one of the sign-off phrases (case-insensitive), or
+  //   b) it looks like a standalone name (short, similar to senderName)
+  // Stop as soon as we hit a "real" content paragraph.
+  const result = [...paragraphs];
+
+  while (result.length > 0) {
+    const last = result[result.length - 1].trim().toLowerCase().replace(/[,.\s]+$/, '');
+
+    // Check if it's a sign-off phrase
+    const isSignOff = signOffPhrases.some((phrase) => last.includes(phrase));
+
+    // Check if it's a standalone name (≤ 60 chars, similar to senderName)
+    const isName =
+      last.length <= 60 &&
+      !last.includes('.') &&
+      (last === senderName.toLowerCase() ||
+        senderName.toLowerCase().includes(last) ||
+        last.includes(senderName.toLowerCase()));
+
+    if (isSignOff || isName) {
+      result.pop();
+    } else {
+      break;
+    }
+  }
+
+  return result;
+}
+
 async function getBrowser() {
   if (isServerless) {
     return puppeteer.launch({
@@ -61,11 +123,16 @@ function generateMotivationLetterHTML(
     day: 'numeric',
   });
 
-  // Split text into paragraphs
-  const paragraphs = data.fullText
+  // Split text into paragraphs and strip the sign-off paragraphs.
+  // formatFullLetter already includes a "Met vriendelijke groet, /
+  // {name}" block in fullText (for the text preview), but THIS renderer
+  // adds its own styled sign-off below, so we filter the text-based one
+  // out to avoid a double ending.
+  const rawParagraphs = data.fullText
     .split('\n\n')
     .filter(p => p.trim())
     .map(p => p.trim());
+  const paragraphs = stripSignOffParagraphs(rawParagraphs, data.senderName);
 
   // Build Google Fonts links
   const fontLinks = [fontConfig.heading.googleUrl, fontConfig.body.googleUrl]
@@ -254,11 +321,13 @@ export async function generateMotivationLetterDOCX(
     day: 'numeric',
   });
 
-  // Split text into paragraphs
-  const paragraphs = data.fullText
+  // Split text into paragraphs and strip the sign-off (same reason as
+  // the PDF generator — fullText includes one, we add our own styled one).
+  const rawParagraphs = data.fullText
     .split('\n\n')
     .filter(p => p.trim())
     .map(p => p.trim());
+  const paragraphs = stripSignOffParagraphs(rawParagraphs, data.senderName);
 
   // Build document sections
   const children: Paragraph[] = [];

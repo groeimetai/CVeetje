@@ -51,6 +51,50 @@ const MOTIVATION_PLACEHOLDERS = {
   ],
 };
 
+/**
+ * Strip duplicate sign-off blocks from fullText for display.
+ *
+ * fullText may contain a sign-off from formatFullLetter (correct), but
+ * the humanizer or model might have also left one inside a section,
+ * resulting in a double. This helper finds the LAST sign-off block and
+ * removes any earlier duplicates. It preserves exactly one sign-off at
+ * the very end.
+ */
+function deduplicateSignOff(text: string): string {
+  const signOffPatterns = [
+    'Met vriendelijke groet',
+    'Met hartelijke groet',
+    'Hoogachtend',
+    'Kind regards',
+    'Best regards',
+    'Sincerely',
+  ];
+
+  // Find ALL positions where a sign-off phrase starts.
+  const positions: number[] = [];
+  const lower = text.toLowerCase();
+  for (const phrase of signOffPatterns) {
+    let idx = 0;
+    while (idx < lower.length) {
+      const found = lower.indexOf(phrase.toLowerCase(), idx);
+      if (found === -1) break;
+      positions.push(found);
+      idx = found + 1;
+    }
+  }
+
+  if (positions.length <= 1) return text; // 0 or 1 sign-off → no duplicate
+
+  // Keep only the LAST sign-off; strip all earlier ones plus anything
+  // between them.
+  positions.sort((a, b) => a - b);
+  const lastStart = positions[positions.length - 1];
+  const firstStart = positions[0];
+
+  // Cut out from the first sign-off up to the last one (keep the last).
+  return (text.slice(0, firstStart) + text.slice(lastStart)).replace(/\n{3,}/g, '\n\n').trim();
+}
+
 export function MotivationLetterSection({
   cvId,
   credits,
@@ -298,9 +342,10 @@ export function MotivationLetterSection({
                     ))}
                   </div>
                 </div>
-                {/* Letter content */}
+                {/* Letter content — deduplicate any double sign-offs
+                    that may have slipped through the generator/humanizer */}
                 <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed relative z-0 text-foreground">
-                  {letter.fullText}
+                  {deduplicateSignOff(letter.fullText)}
                 </pre>
               </div>
 
