@@ -17,6 +17,8 @@ import {
   Mail,
   Columns3,
   MessageSquarePlus,
+  Briefcase,
+  Send,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -43,6 +45,8 @@ const navigationItems = [
   { key: 'dashboard', href: '/dashboard', icon: Home },
   { key: 'profiles', href: '/profiles', icon: Users },
   { key: 'myCvs', href: '/cv', icon: FileText },
+  { key: 'jobs', href: '/jobs', icon: Briefcase },
+  { key: 'applications', href: '/applications', icon: Send },
   { key: 'templates', href: '/templates', icon: LayoutTemplate },
   { key: 'credits', href: '/credits', icon: CreditCard },
   { key: 'settings', href: '/settings', icon: Settings },

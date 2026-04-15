@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,9 @@ import type {
   FitAnalysis,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import type { ApplyQuestion } from '@/lib/jobs/providers/types';
+import { ApplyForm } from '@/components/jobs/apply-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { ModelInfo, ProviderInfo } from '@/lib/ai/models-registry';
 import { findModelInProviders } from '@/lib/ai/models-registry';
 import { PLATFORM_MODEL } from '@/lib/ai/platform-config';
@@ -50,6 +53,8 @@ const PLATFORM_MODEL_INFO: ModelInfo = {
 
 export function CVWizard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const jobIdParam = searchParams?.get('jobId') ?? null;
   const locale = useLocale();
   const t = useTranslations('cvWizard');
   const tCommon = useTranslations('common');
@@ -88,7 +93,16 @@ export function CVWizard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Jobs-board deeplink metadata (fetched once if ?jobId= present)
+  const [jobSourceMeta, setJobSourceMeta] = useState<{
+    slug: string;
+    supportsInAppApply: boolean;
+    applyQuestions: ApplyQuestion[];
+  } | null>(null);
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
 
   // Token usage tracking
   const [tokenHistory, setTokenHistory] = useState<StepTokenUsage[]>([]);
@@ -102,6 +116,68 @@ export function CVWizard() {
       setDraftChecked(true);
     }
   }, [isDraftLoading, hasDraft, draftChecked]);
+
+  // Prefill jobVacancy from ?jobId= deeplink (from the public /jobs board)
+  const [deeplinkAttempted, setDeeplinkAttempted] = useState(false);
+  useEffect(() => {
+    if (!draftChecked || deeplinkAttempted) return;
+    if (!jobIdParam) {
+      setDeeplinkAttempted(true);
+      return;
+    }
+    if (showResumeDialog) return;
+    if (jobVacancy) {
+      setDeeplinkAttempted(true);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/jobs/${encodeURIComponent(jobIdParam)}`);
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const cached = await res.json();
+        if (cancelled) return;
+
+        const vacancy: JobVacancy = {
+          title: cached.title,
+          company: cached.company ?? null,
+          description: cached.description ?? '',
+          requirements: [],
+          keywords: [],
+          industry: cached.industry ?? undefined,
+          location: cached.location ?? undefined,
+          employmentType: cached.employmentType ?? undefined,
+          rawText: cached.description ?? '',
+          compensation:
+            cached.salaryMin || cached.salaryMax
+              ? {
+                  salaryMin: cached.salaryMin ?? undefined,
+                  salaryMax: cached.salaryMax ?? undefined,
+                  salaryCurrency: cached.salaryCurrency ?? 'EUR',
+                  salaryPeriod: 'yearly',
+                }
+              : undefined,
+        };
+        setJobVacancy(vacancy);
+        setJobSourceMeta({
+          slug: jobIdParam,
+          supportsInAppApply: Boolean(cached.supportsInAppApply),
+          applyQuestions: Array.isArray(cached.applyQuestions)
+            ? (cached.applyQuestions as ApplyQuestion[])
+            : [],
+        });
+      } catch (err) {
+        console.warn('[wizard] failed to prefill from ?jobId=', err);
+      } finally {
+        if (!cancelled) setDeeplinkAttempted(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draftChecked, deeplinkAttempted, jobIdParam, showResumeDialog, jobVacancy]);
 
   // Save draft when relevant state changes
   const saveCurrentDraft = useCallback(() => {
@@ -578,6 +654,7 @@ export function CVWizard() {
 
       // Get the PDF blob
       const blob = await response.blob();
+      setPdfBlob(blob);
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -1040,6 +1117,30 @@ export function CVWizard() {
       )}
 
       {/* CV Preview - for AI-generated CVs */}
+      {currentStep === 'preview' && generatedContent && linkedInData && designTokens && !templatePdfBlob && jobSourceMeta?.supportsInAppApply && (
+        <div className="mb-4 rounded-lg border border-primary/40 bg-primary/5 p-4 flex flex-col md:flex-row md:items-center gap-3 justify-between">
+          <div>
+            <p className="font-semibold text-sm">
+              {jobVacancy?.company
+                ? `Klaar om te solliciteren bij ${jobVacancy.company}?`
+                : 'Klaar om te solliciteren?'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {pdfBlob
+                ? 'Verstuur je CV direct via CVeetje naar de werkgever.'
+                : 'Download eerst je CV, dan kun je hem direct versturen.'}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setApplyDialogOpen(true)}
+            disabled={!pdfBlob}
+          >
+            Solliciteer via CVeetje
+          </Button>
+        </div>
+      )}
+
       {currentStep === 'preview' && generatedContent && linkedInData && designTokens && !templatePdfBlob && (
         <CVPreview
           content={editedContent || generatedContent}
@@ -1076,6 +1177,35 @@ export function CVWizard() {
           onElementColorsChange={handleElementColorsChange}
           onTokensChange={handleTokensChange}
         />
+      )}
+
+      {jobSourceMeta && pdfBlob && (
+        <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {jobVacancy?.company
+                  ? `Solliciteer bij ${jobVacancy.company}`
+                  : 'Solliciteren via CVeetje'}
+              </DialogTitle>
+              <DialogDescription>{jobVacancy?.title}</DialogDescription>
+            </DialogHeader>
+            <ApplyForm
+              jobSlug={jobSourceMeta.slug}
+              cvPdfBlob={pdfBlob}
+              cvFileName={`cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'download'}.pdf`}
+              cvId={cvId}
+              questions={jobSourceMeta.applyQuestions}
+              defaults={{
+                firstName: linkedInData?.fullName?.split(' ')[0],
+                lastName: linkedInData?.fullName?.split(' ').slice(1).join(' '),
+                email: linkedInData?.email ?? userData?.email ?? undefined,
+                phone: linkedInData?.phone ?? undefined,
+                linkedinUrl: linkedInData?.linkedinUrl ?? undefined,
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

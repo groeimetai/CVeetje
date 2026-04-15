@@ -107,6 +107,32 @@ service cloud.firestore {
         }
       }
 
+      // ============ Applications Subcollection ============
+      // /users/{userId}/applications/{applicationId}
+      //
+      // Created via Admin SDK when a job application is sent to an ATS.
+      // Users can read and update their own applications (status, notes);
+      // creation and deletion of provider fields are locked to the Admin SDK.
+
+      match /applications/{applicationId} {
+        allow read: if isOwner(userId) || isAdmin();
+
+        // Creation only via Admin SDK (server records the ATS submission)
+        allow create: if false;
+
+        // Users can update status and notes on their own applications
+        allow update: if isOwner(userId) && isValidApplicationUpdate();
+
+        // Users can delete their own applications
+        allow delete: if isOwner(userId);
+
+        function isValidApplicationUpdate() {
+          let affected = request.resource.data.diff(resource.data).affectedKeys();
+          let allowed = ['status', 'notes', 'updatedAt'];
+          return affected.hasOnly(allowed);
+        }
+      }
+
       // ============ Profiles Subcollection ============
       // /users/{userId}/profiles/{profileId}
 
@@ -141,6 +167,17 @@ service cloud.firestore {
 
     match /globalTemplates/{templateId} {
       allow read: if isAuthenticated();
+      allow write: if false; // Only via Admin SDK
+    }
+
+    // ============ Jobs Collection ============
+    // /jobs/{jobSlug}
+    //
+    // Publicly readable cache of job vacancies fetched from external providers
+    // (Adzuna). Writes are restricted to the Admin SDK (server-side API routes).
+
+    match /jobs/{jobSlug} {
+      allow read: if true;
       allow write: if false; // Only via Admin SDK
     }
 

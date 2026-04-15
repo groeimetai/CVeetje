@@ -50,6 +50,8 @@
     "templates": "Templates",
     "accountSettings": "Account Instellingen",
     "signOut": "Uitloggen",
+    "jobs": "Vacatures",
+    "applications": "Mijn sollicitaties",
     "admin": "Admin",
     "userManagement": "Gebruikersbeheer",
     "adminSection": "Beheer",
@@ -1440,6 +1442,57 @@
     "aiTransparency": {
       "title": "AI Transparantie - Verantwoord Gebruik van AI",
       "description": "Lees hoe CVeetje AI gebruikt, welke modellen worden ingezet, en hoe wij zorgen voor transparantie en verantwoord AI-gebruik conform de EU AI Act."
+    },
+    "jobs": {
+      "title": "Vacatures | CVeetje",
+      "description": "Blader door actuele vacatures en genereer met één klik een op maat gemaakt CV voor elke baan die je interesseert."
+    }
+  },
+  "jobs": {
+    "listTitle": "Vacatures",
+    "listSubtitle": "Vind een vacature en laat CVeetje direct een passend CV voor je genereren.",
+    "search": {
+      "placeholder": "Functie of trefwoord",
+      "locationPlaceholder": "Locatie (bijv. Amsterdam)",
+      "submit": "Zoeken"
+    },
+    "resultCount": "{count, plural, =0 {Geen resultaten} one {# vacature gevonden} other {# vacatures gevonden}}",
+    "noResults": "Geen vacatures gevonden. Probeer een andere zoekopdracht.",
+    "error": "Vacatures konden niet worden geladen",
+    "backToList": "Terug naar vacatures",
+    "poweredBy": "Brede vacature-indexering via Adzuna, aangevuld met directe ATS-feeds (Greenhouse, Recruitee, Lever). Vacatures met het 1-klik-solliciteren badge versturen we direct namens jou; overige sturen je door naar de werkgever.",
+    "inAppApplyBadge": "1-klik solliciteren",
+    "externalApplyBadge": "Solliciteer op werkgever-site",
+    "apply": {
+      "heading": "Solliciteren via CVeetje",
+      "subheading": "We versturen je CV en motivatiebrief direct naar de werkgever.",
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
+      "email": "E-mailadres",
+      "phone": "Telefoonnummer",
+      "linkedinUrl": "LinkedIn profiel (optioneel)",
+      "cvAttachment": "CV (PDF)",
+      "coverLetterAttachment": "Motivatiebrief (PDF, optioneel)",
+      "noCvYet": "Je hebt nog geen CV voor deze vacature. Start eerst de wizard.",
+      "generateCvFirst": "Maak eerst een CV",
+      "submitting": "Versturen...",
+      "submit": "Verstuur sollicitatie",
+      "success": "Sollicitatie verzonden! Je vindt hem terug in \"Mijn sollicitaties\".",
+      "failed": "Sollicitatie kon niet worden verzonden",
+      "questionsHeading": "Vragen van de werkgever",
+      "required": "verplicht",
+      "requiredFieldsMissing": "Vul alle verplichte velden in"
+    },
+    "detail": {
+      "ctaHeading": "Direct een CV voor deze vacature",
+      "ctaSubheading": "Laat AI je CV en motivatiebrief op maat maken voor deze functie.",
+      "ctaSubheadingInApp": "Laat AI je CV op maat maken én solliciteer met één klik via CVeetje.",
+      "ctaSubheadingExternal": "Maak je CV met AI, daarna stuurt de werkgever je door naar hun eigen sollicitatie-formulier.",
+      "makeCV": "Maak CV voor deze vacature",
+      "applyExternal": "Solliciteer op werkgever-site",
+      "applyAt": "Solliciteer bij {company}",
+      "viewOnEmployer": "Bekijk bij werkgever",
+      "descriptionHeading": "Over de functie"
     }
   },
   "terms": {

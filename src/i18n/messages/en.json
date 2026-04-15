@@ -50,6 +50,8 @@
     "templates": "Templates",
     "accountSettings": "Account Settings",
     "signOut": "Sign Out",
+    "jobs": "Jobs",
+    "applications": "My applications",
     "admin": "Admin",
     "userManagement": "User Management",
     "adminSection": "Admin",
@@ -1440,6 +1442,57 @@
     "aiTransparency": {
       "title": "AI Transparency - Responsible Use of AI",
       "description": "Learn how CVeetje uses AI, which models are deployed, and how we ensure transparency and responsible AI use in compliance with the EU AI Act."
+    },
+    "jobs": {
+      "title": "Jobs | CVeetje",
+      "description": "Browse current job openings and generate a tailored CV for any role with a single click."
+    }
+  },
+  "jobs": {
+    "listTitle": "Jobs",
+    "listSubtitle": "Find a job and let CVeetje generate a tailored CV for it right away.",
+    "search": {
+      "placeholder": "Job title or keyword",
+      "locationPlaceholder": "Location (e.g. Amsterdam)",
+      "submit": "Search"
+    },
+    "resultCount": "{count, plural, =0 {No results} one {# job found} other {# jobs found}}",
+    "noResults": "No jobs found. Try a different search.",
+    "error": "Failed to load jobs",
+    "backToList": "Back to jobs",
+    "poweredBy": "Broad job indexing via Adzuna, complemented with direct ATS feeds (Greenhouse, Recruitee, Lever). Jobs tagged with the 1-click-apply badge are submitted on your behalf; others redirect to the employer site.",
+    "inAppApplyBadge": "1-click apply",
+    "externalApplyBadge": "Apply on employer site",
+    "apply": {
+      "heading": "Apply via CVeetje",
+      "subheading": "We send your CV and cover letter directly to the employer.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "linkedinUrl": "LinkedIn profile (optional)",
+      "cvAttachment": "CV (PDF)",
+      "coverLetterAttachment": "Cover letter (PDF, optional)",
+      "noCvYet": "You don't have a CV for this job yet. Start the wizard first.",
+      "generateCvFirst": "Create a CV first",
+      "submitting": "Submitting...",
+      "submit": "Send application",
+      "success": "Application sent! You can find it under \"My applications\".",
+      "failed": "Failed to send application",
+      "questionsHeading": "Questions from the employer",
+      "required": "required",
+      "requiredFieldsMissing": "Please fill in all required fields"
+    },
+    "detail": {
+      "ctaHeading": "Instantly craft a CV for this job",
+      "ctaSubheading": "Let AI tailor your CV and cover letter for this role.",
+      "ctaSubheadingInApp": "Let AI tailor your CV, then apply with one click via CVeetje.",
+      "ctaSubheadingExternal": "Create your CV with AI; the employer will redirect you to their own application form.",
+      "makeCV": "Create CV for this job",
+      "applyExternal": "Apply on employer site",
+      "applyAt": "Apply at {company}",
+      "viewOnEmployer": "View on employer site",
+      "descriptionHeading": "About the role"
     }
   },
   "terms": {
