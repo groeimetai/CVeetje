@@ -307,7 +307,7 @@ ${linkedIn.experience
 - **${exp.title}** at ${exp.company}
   ${exp.location ? `Location: ${exp.location}` : ''}
   ${exp.startDate} - ${exp.endDate || 'Present'}
-  ${exp.description || ''}
+  ${exp.description ? `Description: ${exp.description}` : '[No description provided — generate highlights ONLY from job title, company, and context. Do NOT fabricate specific achievements, metrics, or responsibilities.]'}
 `
   )
   .join('\n')}
@@ -330,11 +330,19 @@ ${linkedIn.skills.map((s) => s.name).join(', ')}
 ${linkedIn.languages.map((l) => `${l.language}${l.proficiency ? ` (${l.proficiency})` : ''}`).join(', ')}
 
 ### Certifications:
-${linkedIn.certifications.map((c) => `${c.name}${c.issuer ? ` - ${c.issuer}` : ''}`).join(', ')}
+${linkedIn.certifications.map((c) => `${c.name}${c.issuer ? ` - ${c.issuer}` : ''}${c.issueDate ? ` (${c.issueDate})` : ''}`).join(', ')}
 
 ### Projects:
 ${linkedIn.projects && linkedIn.projects.length > 0
-  ? linkedIn.projects.map((p) => `- **${p.title}**${p.description ? `: ${p.description}` : ''}${p.technologies.length > 0 ? ` [${p.technologies.join(', ')}]` : ''}${p.url ? ` (${p.url})` : ''}`).join('\n')
+  ? linkedIn.projects.map((p) => {
+      const parts = [`- **${p.title}**`];
+      if (p.role) parts.push(`Role: ${p.role}`);
+      if (p.startDate || p.endDate) parts.push(`Period: ${p.startDate || '?'} - ${p.endDate || 'Present'}`);
+      if (p.description) parts.push(p.description);
+      if (p.technologies.length > 0) parts.push(`Technologies: ${p.technologies.join(', ')}`);
+      if (p.url) parts.push(`URL: ${p.url}`);
+      return parts.join('\n  ');
+    }).join('\n')
   : 'No projects listed'}
 `;
 
