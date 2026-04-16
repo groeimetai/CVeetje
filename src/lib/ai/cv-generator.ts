@@ -254,6 +254,86 @@ function buildFitAnalysisSection(fitAnalysis?: FitAnalysis | null): string {
   return lines.join('\n');
 }
 
+/**
+ * Parse a date string like "Jan 2022", "2022", "Oct 2020" into a Date.
+ * Returns null if unparseable.
+ */
+function parseExperienceDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  const trimmed = dateStr.trim();
+  if (!trimmed) return null;
+
+  // "2022" → Jan 1 2022
+  const yearOnly = trimmed.match(/^(\d{4})$/);
+  if (yearOnly) return new Date(parseInt(yearOnly[1]), 0, 1);
+
+  // "Jan 2022", "October 2020", "mrt 2021", etc.
+  const parsed = new Date(trimmed + ' 1'); // "Jan 2022 1" → valid Date
+  if (!isNaN(parsed.getTime())) return parsed;
+
+  // Try Dutch month abbreviations
+  const dutchMonths: Record<string, number> = {
+    jan: 0, feb: 1, mrt: 2, apr: 3, mei: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, okt: 9, nov: 10, dec: 11,
+  };
+  const match = trimmed.match(/^(\w+)\s+(\d{4})$/i);
+  if (match) {
+    const monthIdx = dutchMonths[match[1].toLowerCase()];
+    if (monthIdx !== undefined) return new Date(parseInt(match[2]), monthIdx, 1);
+  }
+
+  return null;
+}
+
+/**
+ * Format a duration in months as "X years, Y months" or "X years" etc.
+ */
+function formatDuration(totalMonths: number, language: OutputLanguage = 'nl'): string {
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+
+  if (language === 'nl') {
+    if (years === 0) return `${months} maand${months !== 1 ? 'en' : ''}`;
+    if (months === 0) return `${years} jaar`;
+    return `${years} jaar, ${months} maand${months !== 1 ? 'en' : ''}`;
+  }
+  if (years === 0) return `${months} month${months !== 1 ? 's' : ''}`;
+  if (months === 0) return `${years} year${years !== 1 ? 's' : ''}`;
+  return `${years} year${years !== 1 ? 's' : ''}, ${months} month${months !== 1 ? 's' : ''}`;
+}
+
+/**
+ * Pre-compute duration for each experience entry and total career span.
+ * This prevents the AI from having to do date math (which it often gets wrong).
+ */
+function computeExperienceDurations(
+  experiences: ParsedLinkedIn['experience'],
+  language: OutputLanguage = 'nl'
+): { perRole: Map<number, string>; totalSummary: string } {
+  const now = new Date();
+  const perRole = new Map<number, string>();
+  let totalMonths = 0;
+
+  for (let i = 0; i < experiences.length; i++) {
+    const exp = experiences[i];
+    const start = parseExperienceDate(exp.startDate);
+    const end = exp.endDate ? parseExperienceDate(exp.endDate) : now;
+
+    if (start && end) {
+      const months = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()));
+      perRole.set(i, formatDuration(months, language));
+      totalMonths += months;
+    }
+  }
+
+  const totalFormatted = formatDuration(totalMonths, language);
+  const totalSummary = language === 'nl'
+    ? `Totale loopbaanduur (som van alle rollen): **${totalFormatted}** (berekend op ${now.toISOString().split('T')[0]})`
+    : `Total career duration (sum of all roles): **${totalFormatted}** (computed on ${now.toISOString().split('T')[0]})`;
+
+  return { perRole, totalSummary };
+}
+
 function buildPrompt(
   linkedIn: ParsedLinkedIn,
   jobVacancy: JobVacancy | null,
@@ -284,6 +364,9 @@ function buildPrompt(
 
   const langInstructions = languageInstructions[language];
 
+  // Pre-compute experience durations so the AI doesn't have to do date math
+  const { perRole, totalSummary } = computeExperienceDurations(linkedIn.experience, language);
+
   let prompt = `${langInstructions.intro}
 
 ${getCurrentDateContext(language)}
@@ -301,12 +384,14 @@ ${linkedIn.location ? `**Location:** ${linkedIn.location}` : ''}
 ${linkedIn.about ? `**About:** ${linkedIn.about}` : ''}
 
 ### Experience:
+${totalSummary}
+
 ${linkedIn.experience
   .map(
-    (exp) => `
+    (exp, i) => `
 - **${exp.title}** at ${exp.company}
   ${exp.location ? `Location: ${exp.location}` : ''}
-  ${exp.startDate} - ${exp.endDate || 'Present'}
+  ${exp.startDate} - ${exp.endDate || 'Present'}${perRole.has(i) ? ` (${perRole.get(i)})` : ''}
   ${exp.description ? `Description: ${exp.description}` : '[No description provided — generate highlights ONLY from job title, company, and context. Do NOT fabricate specific achievements, metrics, or responsibilities.]'}
 `
   )
@@ -540,8 +625,14 @@ For ALL roles:
 
 ## CV Writing Best Practices - MUST FOLLOW:
 
+### CRITICAL: Use Pre-Computed Durations
+The experience durations shown in parentheses (e.g. "4 years, 2 months") next to each role
+are pre-computed from the actual dates. Use THESE numbers — do NOT calculate durations
+yourself. When mentioning years of experience in the summary or elsewhere, use the total
+career duration provided above the experience list. Never estimate or round down.
+
 ### Professional Summary Rules:
-- Start with a strong positioning statement: "Results-driven [title]" or "Experienced [role] with [X years]"
+- Start with a strong positioning statement: "Results-driven [title]" or "Experienced [role] with [X years]" (use the pre-computed total duration!)
 - Include 2-3 key competencies that directly match the job requirements
 - End with a clear value proposition (what you bring to the employer)
 - Maximum 3 sentences - be impactful, not lengthy
