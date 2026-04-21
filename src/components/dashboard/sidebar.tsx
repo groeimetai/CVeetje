@@ -55,6 +55,7 @@ const navigationItems = [
 
 const adminNavigationItems = [
   { key: 'adminUsers', href: '/admin/users', icon: Users },
+  { key: 'adminProfiles', href: '/admin/profielen', icon: User },
   { key: 'adminCvs', href: '/admin/cvs', icon: FileText },
   { key: 'adminEmails', href: '/admin/emails', icon: Mail },
   { key: 'adminTemplates', href: '/admin/templates', icon: LayoutTemplate },

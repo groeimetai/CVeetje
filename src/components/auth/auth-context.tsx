@@ -96,6 +96,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setImpersonatedPurchasedCredits(breakdown.purchased);
   }, []);
 
+  // Clear any user-scoped client-side state that would otherwise leak between
+  // the admin and the impersonated user (or back). The wizard draft lives in a
+  // single global localStorage key, so admin-state would persist into the
+  // impersonated session if we don't wipe it here.
+  const clearUserScopedClientState = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem('cveetje_wizard_draft');
+    } catch {
+      // ignore — localStorage can throw in private mode
+    }
+  }, []);
+
+  // Detect locale from current URL so the redirect lands on the right path
+  const getLocalePath = useCallback((target: string) => {
+    if (typeof window === 'undefined') return target;
+    const match = window.location.pathname.match(/^\/(nl|en)(\/|$)/);
+    const locale = match?.[1] || 'nl';
+    return `/${locale}${target}`;
+  }, []);
+
   // Start impersonating a user
   const startImpersonation = useCallback(async (userId: string) => {
     const response = await fetch('/api/admin/impersonate', {
@@ -109,22 +130,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.error || 'Failed to start impersonation');
     }
 
-    setImpersonatedUserId(userId);
-    setImpersonating(true);
-    await loadImpersonatedUser(userId);
-  }, [loadImpersonatedUser]);
+    // Wipe local state and do a hard navigation so the dashboard re-mounts with
+    // a clean slate — this is the only reliable way for the admin to see
+    // EXACTLY what the user sees (no stale React state, no leftover wizard
+    // draft, no in-memory caches).
+    clearUserScopedClientState();
+    if (typeof window !== 'undefined') {
+      window.location.href = getLocalePath('/dashboard');
+    }
+  }, [clearUserScopedClientState, getLocalePath]);
 
   // Stop impersonating
   const stopImpersonation = useCallback(async () => {
     await fetch('/api/admin/impersonate', { method: 'DELETE' });
 
-    setImpersonating(false);
-    setImpersonatedUserId(null);
-    setImpersonatedUserData(null);
-    setImpersonatedCredits(0);
-    setImpersonatedFreeCredits(0);
-    setImpersonatedPurchasedCredits(0);
-  }, []);
+    // Hard navigation back to admin users — same reasoning as startImpersonation:
+    // we want the admin to see their own state cleanly, with no impersonated-user
+    // data leaking into their view.
+    clearUserScopedClientState();
+    if (typeof window !== 'undefined') {
+      window.location.href = getLocalePath('/admin/users');
+    }
+  }, [clearUserScopedClientState, getLocalePath]);
 
   const refreshCredits = async () => {
     if (firebaseUser) {

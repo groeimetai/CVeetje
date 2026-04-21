@@ -61,7 +61,8 @@
     "adminTemplates": "Templates",
     "adminKanban": "Kanban",
     "feedback": "Feedback",
-    "adminFeedback": "Feedback"
+    "adminFeedback": "Feedback",
+    "adminProfiles": "Profielen"
   },
   "auth": {
     "signIn": "Inloggen",

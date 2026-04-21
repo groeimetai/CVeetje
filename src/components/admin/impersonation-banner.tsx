@@ -4,18 +4,16 @@ import { useTranslations } from 'next-intl';
 import { Eye, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/auth-context';
-import { useRouter } from '@/i18n/navigation';
 
 export function ImpersonationBanner() {
   const { impersonating, userData, stopImpersonation } = useAuth();
   const t = useTranslations('admin.impersonation');
-  const router = useRouter();
 
   if (!impersonating) return null;
 
   const handleStop = async () => {
+    // stopImpersonation does a full page redirect back to /admin/users
     await stopImpersonation();
-    router.push('/admin/users');
   };
 
   return (

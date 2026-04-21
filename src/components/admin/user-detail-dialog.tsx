@@ -42,7 +42,6 @@ import {
   Eye,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-context';
-import { useRouter } from '@/i18n/navigation';
 import type { AdminUser } from '@/lib/firebase/admin-utils';
 import type { GlobalTemplate } from '@/types';
 
@@ -61,7 +60,6 @@ export function UserDetailDialog({
 }: UserDetailDialogProps) {
   const t = useTranslations('admin');
   const { firebaseUser, startImpersonation } = useAuth();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [impersonateLoading, setImpersonateLoading] = useState(false);
   const [creditsLoading, setCreditsLoading] = useState(false);
@@ -227,12 +225,11 @@ export function UserDetailDialog({
     if (!user) return;
     setImpersonateLoading(true);
     try {
+      // startImpersonation does a full page redirect to /dashboard, so no
+      // dialog cleanup or router.push is needed here.
       await startImpersonation(user.uid);
-      onOpenChange(false);
-      router.push('/dashboard');
     } catch (error) {
       console.error('Failed to impersonate:', error);
-    } finally {
       setImpersonateLoading(false);
     }
   };

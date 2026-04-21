@@ -1,6 +1,6 @@
 import { getAdminAuth, getAdminDb } from './admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import type { UserRole } from '@/types';
+import type { UserRole, ParsedLinkedIn } from '@/types';
 
 // Admin user list response type
 export interface AdminUser {
@@ -465,6 +465,199 @@ export async function deleteAdminCV(userId: string, cvId: string): Promise<void>
   const db = getAdminDb();
   await db.collection('users').doc(userId).collection('cvs').doc(cvId).delete();
   console.log(`[Admin] Deleted CV ${cvId} for user ${userId}`);
+}
+
+// ============ Admin Profile Inspection ============
+
+export interface AdminProfileSummary {
+  profileId: string;
+  userId: string;
+  userEmail: string;
+  userDisplayName: string | null;
+  name: string;
+  description: string | null;
+  headline: string | null;
+  experienceCount: number;
+  educationCount: number;
+  skillsCount: number;
+  // Quick data-quality indicators so admin can spot incomplete profiles
+  // straight from the list view.
+  missingFields: string[];
+  isDefault: boolean;
+  avatarUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AdminProfileListResponse {
+  profiles: AdminProfileSummary[];
+  total: number;
+}
+
+/**
+ * Inspect a parsed LinkedIn document and return a list of human-readable
+ * data-quality issues — the things admins typically need to debug ("why is
+ * this date missing on the CV?").
+ */
+export function detectProfileDataIssues(parsed: Partial<ParsedLinkedIn> | undefined): string[] {
+  if (!parsed) return ['no parsedData'];
+  const issues: string[] = [];
+
+  if (!parsed.fullName) issues.push('fullName');
+  if (!parsed.headline) issues.push('headline');
+  if (!parsed.location) issues.push('location');
+  if (!parsed.about) issues.push('about');
+  if (!parsed.email) issues.push('email');
+  if (!parsed.phone) issues.push('phone');
+
+  if (!parsed.experience || parsed.experience.length === 0) {
+    issues.push('no experience');
+  } else {
+    const missingEnd = parsed.experience.filter(e => !e.endDate && !e.isCurrentRole).length;
+    if (missingEnd > 0) issues.push(`${missingEnd}× experience.endDate`);
+    const missingStart = parsed.experience.filter(e => !e.startDate).length;
+    if (missingStart > 0) issues.push(`${missingStart}× experience.startDate`);
+  }
+
+  if (!parsed.education || parsed.education.length === 0) {
+    issues.push('no education');
+  } else {
+    const missingEnd = parsed.education.filter(e => !e.endYear).length;
+    if (missingEnd > 0) issues.push(`${missingEnd}× education.endYear`);
+    const missingStart = parsed.education.filter(e => !e.startYear).length;
+    if (missingStart > 0) issues.push(`${missingStart}× education.startYear`);
+    const missingDegree = parsed.education.filter(e => !e.degree).length;
+    if (missingDegree > 0) issues.push(`${missingDegree}× education.degree`);
+  }
+
+  if (!parsed.skills || parsed.skills.length === 0) issues.push('no skills');
+
+  return issues;
+}
+
+/**
+ * Get all saved profiles across all users (admin only).
+ * Iterates through users collection — same approach as getAllCVs.
+ */
+export async function getAllProfiles(
+  limit: number = 200,
+  userIdFilter?: string
+): Promise<AdminProfileListResponse> {
+  const auth = getAdminAuth();
+  const db = getAdminDb();
+
+  const allProfiles: AdminProfileSummary[] = [];
+
+  // Build list of user IDs to query
+  const userEntries: { uid: string; email: string; displayName: string | null }[] = [];
+
+  if (userIdFilter) {
+    const userRecord = await auth.getUser(userIdFilter).catch(() => null);
+    if (!userRecord) return { profiles: [], total: 0 };
+    userEntries.push({
+      uid: userIdFilter,
+      email: userRecord.email || 'Unknown',
+      displayName: userRecord.displayName || null,
+    });
+  } else {
+    const usersSnapshot = await db.collection('users').get();
+    const uids = usersSnapshot.docs.map(d => d.id);
+    const authMap = new Map<string, { email: string; displayName: string | null }>();
+
+    for (let i = 0; i < uids.length; i += 100) {
+      const batch = uids.slice(i, i + 100);
+      try {
+        const result = await auth.getUsers(batch.map(uid => ({ uid })));
+        for (const u of result.users) {
+          authMap.set(u.uid, { email: u.email || 'Unknown', displayName: u.displayName || null });
+        }
+      } catch {
+        for (const uid of batch) {
+          try {
+            const u = await auth.getUser(uid);
+            authMap.set(uid, { email: u.email || 'Unknown', displayName: u.displayName || null });
+          } catch {
+            authMap.set(uid, { email: 'Unknown', displayName: null });
+          }
+        }
+      }
+    }
+
+    for (const userDoc of usersSnapshot.docs) {
+      const info = authMap.get(userDoc.id) || { email: 'Unknown', displayName: null };
+      userEntries.push({ uid: userDoc.id, ...info });
+    }
+  }
+
+  for (const user of userEntries) {
+    try {
+      const snapshot = await db.collection('users').doc(user.uid).collection('profiles').get();
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const parsed = (data.parsedData || {}) as Partial<ParsedLinkedIn>;
+
+        allProfiles.push({
+          profileId: doc.id,
+          userId: user.uid,
+          userEmail: user.email,
+          userDisplayName: user.displayName,
+          name: data.name || '(unnamed)',
+          description: data.description || null,
+          headline: parsed.headline || null,
+          experienceCount: parsed.experience?.length || 0,
+          educationCount: parsed.education?.length || 0,
+          skillsCount: parsed.skills?.length || 0,
+          missingFields: detectProfileDataIssues(parsed),
+          isDefault: data.isDefault === true,
+          avatarUrl: data.avatarUrl || null,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        });
+      }
+    } catch (err) {
+      console.error(`[Admin] Failed to fetch profiles for user ${user.uid} (${user.email}):`, err);
+    }
+  }
+
+  allProfiles.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+  return {
+    profiles: allProfiles.slice(0, limit),
+    total: allProfiles.length,
+  };
+}
+
+/**
+ * Get a single saved profile with full ParsedLinkedIn data (admin only).
+ * Returns the raw stored document so admins can debug field-level issues.
+ */
+export async function getAdminProfileFull(
+  userId: string,
+  profileId: string
+): Promise<Record<string, unknown> | null> {
+  const db = getAdminDb();
+  const doc = await db.collection('users').doc(userId).collection('profiles').doc(profileId).get();
+
+  if (!doc.exists) return null;
+
+  const data = doc.data()!;
+
+  const convertTimestamps = (obj: Record<string, unknown>): Record<string, unknown> => {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value && typeof value === 'object' && 'toDate' in value && typeof (value as Timestamp).toDate === 'function') {
+        result[key] = (value as Timestamp).toDate().toISOString();
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        result[key] = convertTimestamps(value as Record<string, unknown>);
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  };
+
+  return { id: doc.id, ...convertTimestamps(data) };
 }
 
 /**
