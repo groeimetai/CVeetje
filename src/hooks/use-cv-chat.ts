@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import { CHAT_CHAR_LIMIT } from '@/lib/ai/platform-config';
 import type { CVChatContext, CVChatToolName } from '@/types/chat';
@@ -454,46 +454,77 @@ export function useCVChat({ context, onContentChange, onTokensChange }: UseCVCha
     addToolOutput,
   } = useChat({
     transport,
-    onToolCall: ({ toolCall }) => {
-      // Extract args from the tool call input
-      const args = (toolCall as { input?: ToolCallArgs }).input || {};
+    // Without this, AI SDK v6 stops after a client-side tool call emits
+    // (tools have no `execute` on the server), so the model never produces
+    // a follow-up message confirming the change. With it, the client auto-
+    // resubmits once all tool calls in the last assistant message have a
+    // result, so the model can generate its text reply.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    onToolCall: async ({ toolCall }) => {
+      // AI SDK v6: toolCall.input holds the parsed tool arguments.
+      const rawInput = (toolCall as { input?: unknown }).input;
+      const args = (rawInput && typeof rawInput === 'object' ? rawInput : {}) as ToolCallArgs;
       const toolName = toolCall.toolName as CVChatToolName;
+      const toolCallId = (toolCall as { toolCallId: string }).toolCallId;
+
+      // Diagnostic: log every tool call so we can see in DevTools exactly
+      // what the server emitted. This is the single most useful signal
+      // when debugging "chat didn't change anything".
+      if (typeof window !== 'undefined') {
+        console.log('[CV Chat] onToolCall', { toolName, args });
+      }
 
       let applied = false;
+      let failureReason: string | null = null;
 
-      // Check if this is a style tool
-      if (STYLE_TOOL_NAMES.includes(toolName) && contextRef.current.currentTokens) {
-        const updatedTokens = applyStyleToolCall(
-          toolName,
-          args,
-          contextRef.current.currentTokens
-        );
-        if (updatedTokens) {
-          onTokensChangeRef.current?.(updatedTokens);
-          applied = true;
+      if (STYLE_TOOL_NAMES.includes(toolName)) {
+        if (!contextRef.current.currentTokens) {
+          failureReason = 'No design tokens available in context';
+        } else {
+          const updatedTokens = applyStyleToolCall(
+            toolName,
+            args,
+            contextRef.current.currentTokens,
+          );
+          if (updatedTokens) {
+            onTokensChangeRef.current?.(updatedTokens);
+            applied = true;
+          } else {
+            failureReason = 'Tool arguments did not produce a token change';
+          }
         }
       } else {
-        // Content tool
         const updatedContent = applyToolCallToContent(
           toolName,
           args,
-          contextRef.current.currentContent
+          contextRef.current.currentContent,
         );
         if (updatedContent) {
           onContentChangeRef.current(updatedContent);
           applied = true;
+        } else {
+          failureReason = 'Tool arguments did not produce a content change';
         }
       }
 
-      // Mark the tool call as completed with output so the AI SDK includes
-      // a tool-result in subsequent messages (prevents MissingToolResultsError)
-      addToolOutputRef.current?.({
-        tool: toolCall.toolName,
-        toolCallId: (toolCall as { toolCallId: string }).toolCallId,
-        output: applied
-          ? `Applied ${toolCall.toolName} successfully`
-          : `No changes needed for ${toolCall.toolName}`,
-      });
+      if (typeof window !== 'undefined') {
+        console.log('[CV Chat] tool result', { toolName, applied, failureReason });
+      }
+
+      // Await so the tool-result is registered BEFORE sendAutomaticallyWhen
+      // evaluates — otherwise the auto-resubmit can fire without the result
+      // and the server will reject with MissingToolResultsError.
+      try {
+        await addToolOutputRef.current?.({
+          tool: toolName,
+          toolCallId,
+          output: applied
+            ? `Applied ${toolName} successfully`
+            : `Could not apply ${toolName}: ${failureReason || 'unknown reason'}`,
+        });
+      } catch (err) {
+        console.error('[CV Chat] addToolOutput failed:', err);
+      }
     },
   });
 
