@@ -239,27 +239,85 @@ const creativeTokensSchema = designTokensSchema.extend({
     .describe('Legacy sidebar field — IGNORE in creative mode.'),
 });
 
-// Extended schema for experimental mode - includes layout and custom decorations
-// Note: Anthropic API only supports minItems of 0 or 1, so we validate min count in code
+// ============ Bold schema (experimental mode) ============
+//
+// Experimental mode uses a completely separate render pipeline: the bold
+// renderer. The AI fills a compositional `bold` object with 8 orthogonal
+// primitives that map to Canva/Linear/Notion-style visual vocabulary.
+//
+// Decorations (floating SVG blobs) are deliberately DROPPED from this
+// schema — they were the source of the "blob over content" rendering bug.
+// Bold expression comes from STRUCTURAL color (sidebars, bands, badges),
+// not from floating shapes.
+
+const boldSchema = z.object({
+  headerLayout: z.enum(['hero-band', 'split-photo', 'tiled', 'asymmetric-burst']).describe(
+    `How the header is composed:
+    - hero-band: full-width gradient band at top, portrait optional on left
+    - split-photo: large photo block + colored name block side-by-side (strong Canva feel)
+    - tiled: header as a grid of colored tiles (name, photo, contact as separate blocks)
+    - asymmetric-burst: diagonal gradient block, content flows off it`,
+  ),
+  sidebarStyle: z.enum(['solid-color', 'gradient', 'photo-hero', 'transparent']).describe(
+    `How the sidebar is styled:
+    - solid-color: primary color fill (classic bold CV). Sidebar text is white.
+    - gradient: primary → accent gradient. Sidebar text is white.
+    - photo-hero: big photo at top of sidebar, colored block below. Sidebar text is white. ONLY pick if the candidate has a photo.
+    - transparent: very light tinted background (quietest option). Sidebar text stays dark.`,
+  ),
+  skillStyle: z.enum(['bars-gradient', 'dots-rating', 'icon-tagged', 'colored-pills']).describe(
+    `How skills are displayed in the sidebar:
+    - bars-gradient: progress bars with gradient fills (most visual)
+    - dots-rating: 5-dot rating per skill (● ● ● ○ ○)
+    - icon-tagged: each skill gets an icon (tech vs soft)
+    - colored-pills: solid colored pill tags`,
+  ),
+  photoTreatment: z.enum(['circle-halo', 'squircle', 'color-overlay', 'badge-framed']).describe(
+    `How the profile photo is framed:
+    - circle-halo: circle with a colored ring around it
+    - squircle: rounded-square with white border
+    - color-overlay: subtle primary-color tint over the photo
+    - badge-framed: photo sits inside a colored badge frame`,
+  ),
+  accentShape: z.enum(['diagonal-stripe', 'angled-corner', 'colored-badge', 'hex-pattern']).describe(
+    `Structural accent applied to sections:
+    - diagonal-stripe: diagonal accent stripe next to each section
+    - angled-corner: colored vertical bar next to each item (classic)
+    - colored-badge: company/institution rendered as a colored badge
+    - hex-pattern: subtle dotted/hex background in main column`,
+  ),
+  iconTreatment: z.enum(['solid-filled', 'duotone', 'line-with-accent']).describe(
+    `How contact icons are rendered:
+    - solid-filled: solid filled icons
+    - duotone: two-tone line icons with reduced opacity
+    - line-with-accent: line icons stroked in accent color`,
+  ),
+  headingStyle: z.enum(['oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed']).describe(
+    `How section titles are typeset:
+    - oversized-numbered: huge 01/02 numerals in accent color, title next to it
+    - kicker-bar: small accent bar above a big display title
+    - gradient-text: titles with gradient text fill (primary → accent)
+    - bracketed: titles wrapped in [ BRACKETS ] uppercase`,
+  ),
+  gradientDirection: z.enum(['none', 'linear-vertical', 'linear-diagonal', 'radial-burst']).describe(
+    `How gradients are applied to structural color blocks (header, sidebar):
+    - none: solid primary color only
+    - linear-vertical: primary → darker primary (top to bottom)
+    - linear-diagonal: primary → accent (45° — most expressive)
+    - radial-burst: radial gradient from a point (softer, luxurious)`,
+  ),
+});
+
 const experimentalTokensSchema = creativeTokensSchema.extend({
-  layout: z.enum(['single-column', 'sidebar-left', 'sidebar-right']).optional()
-    .describe('Page layout: single-column (classic), sidebar-left (sidebar on left with skills/languages/certs), sidebar-right (sidebar on right)'),
-  sidebarSections: z.array(z.string()).optional()
-    .describe('Which sections go in the sidebar (default: skills, languages, certifications). Only used with sidebar layouts.'),
-  customDecorations: z.array(z.object({
-    name: z.string().describe('Unique name for this decoration, e.g., "code-bracket", "data-node", "growth-arrow"'),
-    description: z.string().describe('Visual description: what shape/symbol this represents (e.g., "curly brace like { }", "connected dots forming a network node", "upward arrow with bar chart")'),
-    placement: z.enum(['corner', 'edge', 'scattered']).describe('Where to place: corner (corners of page), edge (along margins), scattered (random positions)'),
-    size: z.enum(['small', 'medium', 'large']).describe('Size of decoration elements'),
-    quantity: z.number().describe('How many of this decoration to place (1-5, will be clamped)'),
-  })).describe(`Custom decorations that reflect the job/industry. Create 2-5 unique decorations.
-Examples:
-- Software Developer: code brackets, terminal prompts, git branches
-- Data Scientist: scatter plot dots, neural network nodes, bar charts
-- Marketing: speech bubbles, trend arrows, target circles
-- Finance: growth arrows, pie chart segments, currency symbols
-- Healthcare: heartbeat lines, molecule shapes, plus signs
-Make them SUBTLE and PROFESSIONAL, not literal clipart!`),
+  bold: boldSchema.describe(
+    'Bold layout tokens. REQUIRED for experimental mode — these drive the Canva/Linear-style renderer.',
+  ),
+  editorial: z.undefined().optional().describe(
+    'Do NOT set `editorial` in experimental mode — it routes to the wrong renderer.',
+  ),
+  layout: z.enum(['sidebar-left', 'sidebar-right']).optional().describe(
+    'Which side the colored sidebar is on. Default: sidebar-left.',
+  ),
 });
 
 // ============ Temperature by Creativity Level ============
@@ -470,62 +528,91 @@ EXAMPLE COMBINATIONS (copy the reasoning, not the literal values):
 Again: vary. Never produce the same combination twice in a session.
 ` : ''}
 ${creativityLevel === 'experimental' ? `
-*** EXPERIMENTAL MODE — ART-DIRECTED VISUAL STATEMENT ***
+*** EXPERIMENTAL MODE — BOLD / CANVA-STYLE ***
 
-This is the most distinctive level. The CV should be RADICALLY different
-from anything a creative-mode CV would produce. Same headers, sections,
-and layouts as creative = wrong level. Experimental owns the boldest
-options exclusively.
+Think Linear.app launch pages, Notion, Stripe, Spotify artist pages,
+modern Canva resume templates. Saturated colors, gradients, iconography,
+progress bars, colored sidebars. Structural color (colored blocks and
+bands) instead of floating decorations.
 
-CONSTRAINED OPTIONS (these are the ONLY allowed values for this level):
+A dedicated bold renderer handles this level. You DO NOT pick from the
+generic headerVariant/sectionStyle options — instead you fill a \`bold\`
+object with compositional primitives.
 
-- **Themes**: ${constraints.allowedThemes.join(' | ')}
-  → Only 'creative' and 'bold'. Professional/modern/minimal are NOT allowed.
-- **Fonts**: ${constraints.allowedFontPairings.join(' | ')}
-  → 6 expressive fonts only. NO sans-serif workhorses (inter/roboto/lato).
-  → Always editorial / display / serif character.
-- **Headers**: ${constraints.allowedHeaderVariants.join(' | ')}
-  → ONLY 'asymmetric'. The single most distinctive option. Banner is creative
-    territory, all the plainer headers are balanced/conservative territory.
-- **Section styles**: ${constraints.allowedSectionStyles.join(' | ')}
-  → ONLY 'alternating' (colored bands per section) and 'magazine' (section
-    titles as colored block labels with editorial layout). These two
-    visually transform the page in a way no other style does.
-  → Card/timeline/accent-left are creative territory. Clean/underlined
-    are balanced/conservative.
-- **Layout**: ${constraints.allowedLayouts.join(' | ')}
-  → Sidebar required. Single-column is forbidden.
-- **Decorations**: ${constraints.allowedDecorations.join(' | ')} (default: ${constraints.defaultDecorations})
-  → Abundant background shapes. The page should feel alive.
-- **Border radius**: ${constraints.allowedBorderRadius.join(' | ')}
-  → Only 'large' or 'pill'. No subtle rounding.
-- **Accent style**: ${constraints.allowedAccentStyles.join(' | ')} — REQUIRED
-- **Name style**: ${constraints.allowedNameStyles.join(' | ')} — REQUIRED
-- **Skill tag style**: ${constraints.allowedSkillTagStyles.join(' | ')} — REQUIRED
-- **headerGradient**: 'subtle' or 'radial' — REQUIRED, never 'none'
-- **pageBackground**: tinted (very light, e.g. #faf8f5 / #f0f4f8 / #f5f0f5) — REQUIRED
-- **customDecorations**: 2-5 unique job-specific abstract shapes — REQUIRED
-- **showPhoto**: ${hasPhoto ? 'true' : 'false'}
-- **useIcons**: true
+THE BOLD PRIMITIVES (all REQUIRED):
 
-COLORS — never default to navy+gray. The whole point of experimental is
-unexpected color choices. Pick from terracotta, emerald, burgundy, indigo,
-plum, sage, deep teal, electric violet — driven by the industry style
-profile if one is provided. Even a finance CV in experimental mode should
-NOT be navy: try rich burgundy or deep emerald.
+- **headerLayout** — hero-band | split-photo | tiled | asymmetric-burst
+  'split-photo' is the most Canva-like (photo + colored block side-by-side).
+  'tiled' breaks the header into a grid of colored tiles. 'hero-band' is
+  a full-width gradient band. 'asymmetric-burst' has a diagonal gradient.
 
-EXAMPLE EXPERIMENTAL COMBINATIONS:
-- Sidebar-right + asymmetric header + magazine sections + dm-serif-dm-sans
-  + berry-rich colors + tinted pink-tinged background + abundant decorations
-- Sidebar-left + asymmetric header + alternating sections + oswald-source-sans
-  + forest-natural colors + warm tinted background + abundant decorations
-- Sidebar-right + asymmetric header + magazine sections + space-grotesk-work-sans
-  + industrial-slate + cool tinted background + geometric abundant decorations
-- Sidebar-left + asymmetric header + alternating sections + playfair-inter
-  + luxe-dark colors + warm tinted background + abstract abundant decorations
+- **sidebarStyle** — solid-color | gradient | photo-hero | transparent
+  The sidebar is ALWAYS present in bold mode. solid-color and gradient
+  give the strongest Canva feel. photo-hero ONLY works with a photo.
+  transparent is the quietest option.
 
-This is art direction, not templating. The result should be BOLD, WILD,
-unmistakably distinct from a creative-mode CV.
+- **skillStyle** — bars-gradient | dots-rating | icon-tagged | colored-pills
+  How skills appear in the sidebar. bars-gradient is the most visual
+  (progress bars with gradient fills). Dots-rating for a rating feel.
+
+- **photoTreatment** — circle-halo | squircle | color-overlay | badge-framed
+  Only matters when showPhoto is true. Match the overall vibe.
+
+- **accentShape** — diagonal-stripe | angled-corner | colored-badge | hex-pattern
+  Structural accent that reinforces hierarchy. hex-pattern adds a subtle
+  dotted/geometric background to the main column.
+
+- **iconTreatment** — solid-filled | duotone | line-with-accent
+  Contact icons in the sidebar. solid-filled is boldest.
+
+- **headingStyle** — oversized-numbered | kicker-bar | gradient-text | bracketed
+  Section titles. oversized-numbered is very Linear-like (big 01 02 03
+  numerals). gradient-text uses gradient text fill. bracketed uses
+  [ UPPERCASE ] formatting.
+
+- **gradientDirection** — none | linear-vertical | linear-diagonal | radial-burst
+  How gradients are applied to header/sidebar. linear-diagonal is the
+  most expressive (primary → accent 45°).
+
+REQUIRED BASE TOKENS:
+
+- **showPhoto**: ${hasPhoto ? 'true — bold treatments rely on photo presence' : 'false'}
+- **useIcons**: true (icons are part of the bold aesthetic)
+- **roundedCorners**: usually true (softer, more Canva)
+- **experienceDescriptionFormat**: 'bullets' works best with bold layouts
+- **themeBase**: 'bold' or 'creative'
+
+FONTS (pick from): ${constraints.allowedFontPairings.join(' | ')}
+
+COLORS — the whole point of experimental is saturated, unexpected color
+choices. Pick from terracotta, emerald, burgundy, indigo, plum, sage,
+deep teal, electric violet — or industry-specific brand-adjacent colors.
+Never default to muted navy + grey.
+
+EXAMPLE BOLD COMBINATIONS (copy the reasoning, vary the values):
+
+1. *Product designer for a startup* — split-photo header, gradient sidebar,
+   bars-gradient skills, squircle photo, colored-badge accent,
+   line-with-accent icons, oversized-numbered headings, linear-diagonal
+   gradient. Primary #4f46e5, accent #f59e0b.
+
+2. *Marketing lead* — hero-band header, solid-color sidebar, colored-pills
+   skills, circle-halo photo, hex-pattern accent, solid-filled icons,
+   bracketed headings, linear-diagonal gradient. Primary #be185d,
+   accent #fbbf24.
+
+3. *Engineering manager* — asymmetric-burst header, gradient sidebar,
+   icon-tagged skills, color-overlay photo, angled-corner accent,
+   duotone icons, gradient-text headings, radial-burst gradient.
+   Primary #0891b2, accent #10b981.
+
+4. *Creative director* — tiled header, photo-hero sidebar (if photo
+   available), dots-rating skills, badge-framed photo, diagonal-stripe
+   accent, solid-filled icons, kicker-bar headings, linear-vertical
+   gradient. Primary #7c2d12, accent #f97316.
+
+Vary your combinations — two experimental CVs in a row should not share
+the same headerLayout + sidebarStyle + headingStyle.
 ` : ''}
 
 SECTION ORDER GUIDELINES:
@@ -1094,18 +1181,19 @@ function validateAndFixTokens(
     }
   }
 
-  // === 2D: Editorial tokens for creative mode ===
-  // Creative mode routes through the editorial renderer, which needs a
-  // populated `editorial` object. If the AI forgot to fill it (or an
-  // individual field), we inject sensible defaults so the renderer never
-  // crashes. We also cross-check pullQuoteSource/dropCapSection against the
-  // chosen sectionTreatment.
+  // === 2D: Renderer-specific tokens per creativity level ===
+  // Each mode routes through its own renderer with its own compositional
+  // primitives. We fill missing fields with defaults so the renderer never
+  // crashes, and we make sure tokens from one mode don't leak into another.
   if (creativityLevel === 'creative') {
     tokens.editorial = validateAndFixEditorialTokens(tokens.editorial, tokens.fontPairing);
-  } else {
-    // Never let editorial leak into non-creative levels — they have their
-    // own renderer paths.
+    tokens.bold = undefined;
+  } else if (creativityLevel === 'experimental') {
+    tokens.bold = validateAndFixBoldTokens(tokens.bold, tokens.showPhoto);
     tokens.editorial = undefined;
+  } else {
+    tokens.editorial = undefined;
+    tokens.bold = undefined;
   }
 
   return tokens;
@@ -1223,6 +1311,75 @@ function validateAndFixEditorialTokens(
     sectionNumbering,
     pullQuoteSource,
     dropCapSection,
+  };
+}
+
+// ============ Bold Validation (experimental mode) ============
+
+const boldDefaultsPool = {
+  headerLayout: ['hero-band', 'split-photo', 'tiled', 'asymmetric-burst'] as const,
+  sidebarStyle: ['solid-color', 'gradient', 'photo-hero', 'transparent'] as const,
+  skillStyle: ['bars-gradient', 'dots-rating', 'icon-tagged', 'colored-pills'] as const,
+  photoTreatment: ['circle-halo', 'squircle', 'color-overlay', 'badge-framed'] as const,
+  accentShape: ['diagonal-stripe', 'angled-corner', 'colored-badge', 'hex-pattern'] as const,
+  iconTreatment: ['solid-filled', 'duotone', 'line-with-accent'] as const,
+  headingStyle: ['oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed'] as const,
+  gradientDirection: ['none', 'linear-vertical', 'linear-diagonal', 'radial-burst'] as const,
+};
+
+function validateAndFixBoldTokens(
+  raw: CVDesignTokens['bold'] | undefined,
+  showPhoto: boolean,
+): NonNullable<CVDesignTokens['bold']> {
+  const isValid = <T extends string>(val: unknown, allowed: readonly T[]): val is T =>
+    typeof val === 'string' && allowed.includes(val as T);
+
+  const headerLayout = isValid(raw?.headerLayout, boldDefaultsPool.headerLayout)
+    ? raw!.headerLayout
+    : pickFrom(boldDefaultsPool.headerLayout);
+
+  // photo-hero sidebar requires an actual photo — downgrade to solid-color
+  // if the candidate didn't upload one.
+  let sidebarStyle = isValid(raw?.sidebarStyle, boldDefaultsPool.sidebarStyle)
+    ? raw!.sidebarStyle
+    : pickFrom(boldDefaultsPool.sidebarStyle);
+  if (sidebarStyle === 'photo-hero' && !showPhoto) {
+    sidebarStyle = 'gradient';
+  }
+
+  const skillStyle = isValid(raw?.skillStyle, boldDefaultsPool.skillStyle)
+    ? raw!.skillStyle
+    : pickFrom(boldDefaultsPool.skillStyle);
+
+  const photoTreatment = isValid(raw?.photoTreatment, boldDefaultsPool.photoTreatment)
+    ? raw!.photoTreatment
+    : pickFrom(boldDefaultsPool.photoTreatment);
+
+  const accentShape = isValid(raw?.accentShape, boldDefaultsPool.accentShape)
+    ? raw!.accentShape
+    : pickFrom(boldDefaultsPool.accentShape);
+
+  const iconTreatment = isValid(raw?.iconTreatment, boldDefaultsPool.iconTreatment)
+    ? raw!.iconTreatment
+    : pickFrom(boldDefaultsPool.iconTreatment);
+
+  const headingStyle = isValid(raw?.headingStyle, boldDefaultsPool.headingStyle)
+    ? raw!.headingStyle
+    : pickFrom(boldDefaultsPool.headingStyle);
+
+  const gradientDirection = isValid(raw?.gradientDirection, boldDefaultsPool.gradientDirection)
+    ? raw!.gradientDirection
+    : pickFrom(boldDefaultsPool.gradientDirection);
+
+  return {
+    headerLayout,
+    sidebarStyle,
+    skillStyle,
+    photoTreatment,
+    accentShape,
+    iconTreatment,
+    headingStyle,
+    gradientDirection,
   };
 }
 
@@ -1448,16 +1605,26 @@ function getFallbackTokens(
       useIcons: true,
       roundedCorners: true,
       headerFullBleed: false,
-      decorations: 'abundant',
+      decorations: 'none',
       decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
-      layout: 'sidebar-right',
+      layout: 'sidebar-left',
       sidebarSections: ['skills', 'languages', 'certifications'],
       borderRadius: 'pill',
       accentStyle: 'border-left',
       nameStyle: 'uppercase',
       skillTagStyle: 'pill',
-      pageBackground: '#faf8f5',
+      pageBackground: '#ffffff',
+      bold: {
+        headerLayout: 'hero-band',
+        sidebarStyle: 'gradient',
+        skillStyle: 'bars-gradient',
+        photoTreatment: 'circle-halo',
+        accentShape: 'colored-badge',
+        iconTreatment: 'solid-filled',
+        headingStyle: 'oversized-numbered',
+        gradientDirection: 'linear-diagonal',
+      },
     };
   }
 

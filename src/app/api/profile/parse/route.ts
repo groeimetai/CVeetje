@@ -182,7 +182,15 @@ Instructions:
 - Combine information from ALL sources into a single comprehensive profile
 - If the same information appears in multiple sources, use the most complete version
 - Extract all available information including:
-  - Full name
+  - **Full name**: The candidate's actual personal name (first + last). This is a
+    HUMAN NAME — typically two or three words, first word is a given name.
+    CRITICAL: The following are NEVER valid names: "About", "Summary", "Profile",
+    "Contact", "Experience", "Education", "Skills", "Curriculum Vitae", "CV",
+    "Resume", "Over mij", "Samenvatting", "Personalia", "Profiel",
+    "Werkervaring", "Opleiding", or any other section header. If the actual
+    human name is not clearly visible in the document, return an empty string
+    rather than guessing. Do NOT pick up labels, headings, or the word under a
+    photo caption as the name.
   - Professional headline/title
   - Location
   - About/Summary section
@@ -258,9 +266,42 @@ Instructions:
       // Helper to convert empty strings to null for compatibility
       const emptyToNull = (val: string): string | null => val === '' ? null : val;
 
+      // Guard against the AI latching onto a section header / document label as
+      // the candidate's name — we've seen "About", "Summary", etc. come back
+      // when the source file has an unusual layout or the name isn't clearly
+      // separated from the section markers.
+      const SUSPECT_NAME_TOKENS = new Set([
+        'about', 'summary', 'profile', 'profiel', 'contact', 'contactgegevens',
+        'experience', 'werkervaring', 'education', 'opleiding', 'skills',
+        'vaardigheden', 'languages', 'talen', 'certifications',
+        'licenties en certificaten', 'projects', 'projecten',
+        'curriculum vitae', 'cv', 'resume', 'over mij', 'samenvatting',
+        'personalia', 'personal information',
+      ]);
+      const cleanedName = (object.fullName || '').trim();
+      const nameLower = cleanedName.toLowerCase();
+      if (SUSPECT_NAME_TOKENS.has(nameLower) || cleanedName.length < 2) {
+        // Refund credits if we charged for this call — the output is unusable.
+        try {
+          if (resolved.mode === 'platform') {
+            await refundPlatformCredits(userId, 'profile-parse');
+          }
+        } catch {
+          // Best-effort refund; don't block the error response
+        }
+        return NextResponse.json(
+          {
+            error: 'Could not identify the candidate name in the document. ' +
+              'Make sure the name is clearly visible at the top of your CV/profile. ' +
+              'Tip: include a LinkedIn export or add your name as plain text alongside the file.',
+          },
+          { status: 400 }
+        );
+      }
+
       // Convert to ParsedLinkedIn format
       const parsed: ParsedLinkedIn = {
-        fullName: object.fullName,
+        fullName: cleanedName,
         headline: object.headline,
         location: object.location,
         about: object.about,

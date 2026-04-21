@@ -135,6 +135,71 @@ export interface EditorialTokens {
   dropCapSection?: string;        // Section name to apply drop-cap (e.g. 'summary')
 }
 
+// ============ Bold Mode Primitives (experimental level) ============
+//
+// Compositional primitives for the bold renderer. Canva/Linear/Notion-
+// inspired: saturated colors, gradients, iconography, skill bars, colored
+// blocks. Orthogonal so any combination renders cleanly. Presence of
+// `tokens.bold` switches to the bold renderer pipeline.
+
+export type BoldHeaderLayout =
+  | 'hero-band'          // Full-width colored band with name/headline/contact
+  | 'split-photo'        // Large photo block + colored block side-by-side
+  | 'tiled'              // Header as a grid of colored tiles
+  | 'asymmetric-burst';  // Diagonal colored block with content flowing off it
+
+export type BoldSidebarStyle =
+  | 'solid-color'        // Primary-color fill
+  | 'gradient'           // Primary → accent gradient
+  | 'photo-hero'         // Photo-dominant sidebar
+  | 'transparent';       // Very light tinted bg
+
+export type BoldSkillStyle =
+  | 'bars-gradient'      // Progress bars with gradient fills
+  | 'dots-rating'        // 5-dot rating (● ● ● ○ ○)
+  | 'icon-tagged'        // Each skill with an icon
+  | 'colored-pills';     // Solid colored pill tags
+
+export type BoldPhotoTreatment =
+  | 'circle-halo'        // Circle with colored ring around it
+  | 'squircle'           // Rounded-square
+  | 'color-overlay'      // Photo with color tint overlay
+  | 'badge-framed';      // Photo in a colored badge frame
+
+export type BoldAccentShape =
+  | 'diagonal-stripe'    // Diagonal accent bands
+  | 'angled-corner'      // Angled colored corners on sections
+  | 'colored-badge'      // Small colored badges beside titles
+  | 'hex-pattern';       // Subtle hexagon background pattern
+
+export type BoldIconTreatment =
+  | 'solid-filled'       // Solid icons in accent color
+  | 'duotone'            // Two-color icons
+  | 'line-with-accent';  // Line icons with accent strokes
+
+export type BoldHeadingStyle =
+  | 'oversized-numbered' // Big number + small title
+  | 'kicker-bar'         // Kicker label on colored bar above title
+  | 'gradient-text'      // Gradient text fill on titles
+  | 'bracketed';         // [ SECTION ] brackets
+
+export type BoldGradientDirection =
+  | 'none'
+  | 'linear-vertical'    // Top → bottom
+  | 'linear-diagonal'    // 45° diagonal
+  | 'radial-burst';      // Radial from one point
+
+export interface BoldTokens {
+  headerLayout: BoldHeaderLayout;
+  sidebarStyle: BoldSidebarStyle;
+  skillStyle: BoldSkillStyle;
+  photoTreatment: BoldPhotoTreatment;
+  accentShape: BoldAccentShape;
+  iconTreatment: BoldIconTreatment;
+  headingStyle: BoldHeadingStyle;
+  gradientDirection: BoldGradientDirection;
+}
+
 // Custom decoration element (for experimental mode)
 export interface CustomDecoration {
   name: string;           // e.g., "code-bracket", "chart-bar", "lightbulb"
@@ -217,6 +282,11 @@ export interface CVDesignTokens {
   // layout pipeline. The AI fills this entire object for creative mode —
   // the fields are orthogonal so any combination renders cleanly.
   editorial?: EditorialTokens;
+
+  // === Bold Mode (experimental creativity level only) ===
+  // Presence of `bold` switches the renderer to the bold/Canva-style
+  // pipeline. The AI fills this entire object for experimental mode.
+  bold?: BoldTokens;
 }
 
 // ============ Style Generation Request ============

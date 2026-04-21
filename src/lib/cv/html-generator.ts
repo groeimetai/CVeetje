@@ -34,6 +34,7 @@ import {
 import { generateDecorationsHTML, decorationsCSS } from './templates/decorations';
 import { contactIcons, contactIconsCSS } from './templates/icons';
 import { generateEditorialHTML } from './renderers/editorial';
+import { generateBoldHTML } from './renderers/bold';
 
 // ============ Helper Functions ============
 
@@ -173,6 +174,20 @@ export function generateCVHTML(
   // object for the creative creativity level.
   if (tokens.editorial) {
     return generateEditorialHTML(
+      content,
+      tokens,
+      fullName,
+      avatarUrl,
+      headline,
+      overrides,
+      contactInfo,
+      options,
+    );
+  }
+
+  // Experimental-level CVs use the bold/Canva-style renderer.
+  if (tokens.bold) {
+    return generateBoldHTML(
       content,
       tokens,
       fullName,
