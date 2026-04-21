@@ -415,21 +415,52 @@ export default function SettingsPage() {
                     </span>
                   </div>
 
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">{t('aiMode.platformCostLabel')}</p>
-                    <div className="grid grid-cols-2 gap-1 text-xs">
-                      <span>{t('aiMode.platformCostTable.profileParse')}</span>
-                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
-                      <span>{t('aiMode.platformCostTable.jobParse')}</span>
-                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
-                      <span>{t('aiMode.platformCostTable.fitAnalysis')}</span>
-                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
-                      <span>{t('aiMode.platformCostTable.styleGenerate')}</span>
-                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
-                      <span>{t('aiMode.platformCostTable.cvGenerate')}</span>
-                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
-                      <span>{t('aiMode.platformCostTable.cvChat')}</span>
-                      <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                  <div className="p-3 bg-muted rounded-lg space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground">{t('aiMode.platformCostLabel')}</p>
+
+                    {/* AI actions — each costs 1 credit */}
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-1">{t('aiMode.platformCostTable.sectionAiActions')}</p>
+                      <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-xs">
+                        <span>{t('aiMode.platformCostTable.profileParse')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span>{t('aiMode.platformCostTable.jobParse')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span>{t('aiMode.platformCostTable.fitAnalysis')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span>{t('aiMode.platformCostTable.styleGenerate')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span>{t('aiMode.platformCostTable.cvGenerate')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span>{t('aiMode.platformCostTable.motivationGenerate')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span>{t('aiMode.platformCostTable.templateFill')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      </div>
+                    </div>
+
+                    {/* Export */}
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-1">{t('aiMode.platformCostTable.sectionExport')}</p>
+                      <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-xs">
+                        <span>{t('aiMode.platformCostTable.pdfDownload')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 italic">
+                        {t('aiMode.platformCostTable.pdfDownloadNote')}
+                      </p>
+                    </div>
+
+                    {/* Chat */}
+                    <div>
+                      <p className="text-xs font-semibold text-foreground mb-1">{t('aiMode.platformCostTable.sectionChat')}</p>
+                      <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-xs">
+                        <span>{t('aiMode.platformCostTable.cvChat')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 italic">
+                        {t('aiMode.platformCostTable.cvChatNote')}
+                      </p>
                     </div>
                   </div>
 
