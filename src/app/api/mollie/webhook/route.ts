@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHmac } from 'crypto';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { isPaymentPaid, getPaymentMetadata, CREDIT_PACKAGES } from '@/lib/mollie/client';
 import { FieldValue } from 'firebase-admin/firestore';
@@ -11,32 +10,9 @@ import {
 import { queueEmail } from '@/lib/email/send';
 import { renderPaymentConfirmationEmail } from '@/lib/email/templates/payment-confirmation';
 
-/**
- * Verify Mollie webhook signature
- * Mollie signs webhooks with HMAC-SHA256 using your webhook secret
- *
- * @see https://docs.mollie.com/docs/webhooks#validating-webhook-signatures
- */
-function verifyWebhookSignature(
-  body: string,
-  signature: string | null,
-  secret: string
-): boolean {
-  if (!signature) return false;
-
-  const expectedSignature = createHmac('sha256', secret)
-    .update(body)
-    .digest('hex');
-
-  // Constant-time comparison to prevent timing attacks
-  if (signature.length !== expectedSignature.length) return false;
-
-  let result = 0;
-  for (let i = 0; i < signature.length; i++) {
-    result |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
-  }
-  return result === 0;
-}
+// Mollie doesn't sign per-payment webhooks (only webhook subscriptions are signed).
+// Security comes from calling isPaymentPaid() against Mollie's API with our live key —
+// a spoofed payment ID won't authenticate there.
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,26 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get raw body for signature verification
     const bodyText = await request.text();
-
-    // Verify webhook signature if secret is configured
-    const webhookSecret = process.env.MOLLIE_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      const signature = request.headers.get('x-mollie-signature');
-
-      if (!verifyWebhookSignature(bodyText, signature, webhookSecret)) {
-        console.error('Invalid Mollie webhook signature');
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 401 }
-        );
-      }
-    } else {
-      // Log warning if signature verification is not configured
-      // In production, this should be set up for security
-      console.warn('MOLLIE_WEBHOOK_SECRET not configured - signature verification skipped');
-    }
 
     // Parse form data from body text
     const params = new URLSearchParams(bodyText);
@@ -163,8 +120,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
+    // Return 500 so Mollie retries. Idempotency is guaranteed by the
+    // molliePaymentId check on the transactions collection.
     console.error('Mollie webhook error:', error);
-    // Return 200 to prevent Mollie from retrying on application errors
-    return NextResponse.json({ received: true });
+    return NextResponse.json(
+      { error: 'Internal error' },
+      { status: 500 }
+    );
   }
 }
