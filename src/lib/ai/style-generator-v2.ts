@@ -127,8 +127,11 @@ const designTokensSchema = z.object({
 // for creative mode, which produced generic-looking output regardless of what
 // the AI picked.
 
+// Editorial fields are all optional — validator fills missing ones with
+// sensible random defaults. This keeps the schema lenient for structured-
+// output and prevents "response did not match schema" failures.
 const editorialSchema = z.object({
-  headerLayout: z.enum(['stacked', 'split', 'band', 'overlap']).describe(
+  headerLayout: z.enum(['stacked', 'split', 'band', 'overlap']).optional().describe(
     `Header composition:
     - stacked: vertical stack (name, headline, contact)
     - split: name/headline left, portrait + contact right-aligned
@@ -141,7 +144,7 @@ const editorialSchema = z.object({
     'uppercase-tracked',
     'mixed-italic',
     'condensed-impact',
-  ]).describe(
+  ]).optional().describe(
     `Name typography (this is the single biggest visual choice):
     - oversized-serif: hero serif display (elegant, editorial) — best with playfair, dm-serif, merriweather, libre-baskerville
     - oversized-sans: hero grotesk, tight tracking (modern, confident) — best with montserrat, poppins, raleway, space-grotesk
@@ -155,7 +158,7 @@ const editorialSchema = z.object({
     'marker-highlight',
     'ornament',
     'number-prefix',
-  ]).describe(
+  ]).optional().describe(
     `Small visual accent that marks the header as designed, not templated:
     - thin-rule: 1px hairlines above + accent-color rule below the name (classic magazine)
     - vertical-bar: 3px accent color bar left of the name block
@@ -169,7 +172,7 @@ const editorialSchema = z.object({
     'sidenote',
     'drop-cap',
     'pull-quote',
-  ]).describe(
+  ]).optional().describe(
     `How section titles are typeset:
     - numbered: large serif title + hairline underline (classic)
     - kicker: small uppercase label above a big display title (editorial)
@@ -183,7 +186,7 @@ const editorialSchema = z.object({
     'full-bleed',
     'manuscript',
     'three-column-intro',
-  ]).describe(
+  ]).optional().describe(
     `Page grid:
     - asymmetric-60-40: main content 60%, sidenotes 40% (balanced magazine spread)
     - asymmetric-70-30: main content 70%, narrow sidenotes 30%
@@ -197,7 +200,7 @@ const editorialSchema = z.object({
     'double-rule',
     'ornament',
     'whitespace-large',
-  ]).describe(
+  ]).optional().describe(
     `How sections are separated:
     - none: only whitespace
     - hairline: 1px rule between sections
@@ -205,13 +208,13 @@ const editorialSchema = z.object({
     - ornament: centered ✦ glyph between sections
     - whitespace-large: 2x vertical space (airy, hero feel)`,
   ),
-  typographyScale: z.enum(['modest', 'editorial', 'hero']).describe(
+  typographyScale: z.enum(['modest', 'editorial', 'hero']).optional().describe(
     `Overall type scale:
     - modest: restrained sizes, dense information (think resume)
     - editorial: clear hero/body contrast (default magazine feel)
     - hero: oversized display moments (name ~68pt, for impact CVs)`,
   ),
-  sectionNumbering: z.boolean().describe(
+  sectionNumbering: z.boolean().optional().describe(
     'Whether sections get 01/02/03 numerical prefixes. true = editorial feel, false = quieter.',
   ),
   pullQuoteSource: z.string().optional().describe(
@@ -227,8 +230,8 @@ const editorialSchema = z.object({
 // subtle page ornaments in the editorial renderer in a future pass; for now
 // they're ignored if set, which is fine).
 const creativeTokensSchema = designTokensSchema.extend({
-  editorial: editorialSchema.describe(
-    'Editorial layout tokens. REQUIRED for creative mode — these drive the magazine-style renderer.',
+  editorial: editorialSchema.optional().describe(
+    'Editorial layout tokens. Drive the magazine-style renderer. Fill all sub-fields if you can; the validator handles any you omit.',
   ),
   decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract']).optional().describe(
     'Industry decoration theme (optional in creative mode — the editorial renderer uses typography and grid, not background shapes).',
@@ -250,70 +253,46 @@ const creativeTokensSchema = designTokensSchema.extend({
 // Bold expression comes from STRUCTURAL color (sidebars, bands, badges),
 // not from floating shapes.
 
+// All bold fields are OPTIONAL. The AI should ideally fill all 8 but if it
+// skips any, the validator picks a sensible random value. This prevents
+// "response did not match schema" failures when Anthropic's structured
+// output trims fields — and it keeps the schema lean for the LLM.
 const boldSchema = z.object({
-  headerLayout: z.enum(['hero-band', 'split-photo', 'tiled', 'asymmetric-burst']).describe(
-    `How the header is composed:
-    - hero-band: full-width gradient band at top, portrait optional on left
-    - split-photo: large photo block + colored name block side-by-side (strong Canva feel)
-    - tiled: header as a grid of colored tiles (name, photo, contact as separate blocks)
-    - asymmetric-burst: diagonal gradient block, content flows off it`,
+  headerLayout: z.enum(['hero-band', 'split-photo', 'tiled', 'asymmetric-burst']).optional().describe(
+    'Header composition: hero-band (full-width gradient band) | split-photo (photo block + colored name block) | tiled (grid of colored tiles) | asymmetric-burst (diagonal gradient block)',
   ),
-  sidebarStyle: z.enum(['solid-color', 'gradient', 'photo-hero', 'transparent']).describe(
-    `How the sidebar is styled:
-    - solid-color: primary color fill (classic bold CV). Sidebar text is white.
-    - gradient: primary → accent gradient. Sidebar text is white.
-    - photo-hero: big photo at top of sidebar, colored block below. Sidebar text is white. ONLY pick if the candidate has a photo.
-    - transparent: very light tinted background (quietest option). Sidebar text stays dark.`,
+  sidebarStyle: z.enum(['solid-color', 'gradient', 'photo-hero', 'transparent']).optional().describe(
+    'Sidebar treatment: solid-color (primary fill, white text) | gradient (primary→accent, white text) | photo-hero (big photo on top — only when photo available) | transparent (quiet tinted bg)',
   ),
-  skillStyle: z.enum(['bars-gradient', 'dots-rating', 'icon-tagged', 'colored-pills']).describe(
-    `How skills are displayed in the sidebar:
-    - bars-gradient: progress bars with gradient fills (most visual)
-    - dots-rating: 5-dot rating per skill (● ● ● ○ ○)
-    - icon-tagged: each skill gets an icon (tech vs soft)
-    - colored-pills: solid colored pill tags`,
+  skillStyle: z.enum(['bars-gradient', 'dots-rating', 'icon-tagged', 'colored-pills']).optional().describe(
+    'Skill display in sidebar: bars-gradient (progress bars) | dots-rating (● ● ● ○ ○) | icon-tagged | colored-pills',
   ),
-  photoTreatment: z.enum(['circle-halo', 'squircle', 'color-overlay', 'badge-framed']).describe(
-    `How the profile photo is framed:
-    - circle-halo: circle with a colored ring around it
-    - squircle: rounded-square with white border
-    - color-overlay: subtle primary-color tint over the photo
-    - badge-framed: photo sits inside a colored badge frame`,
+  photoTreatment: z.enum(['circle-halo', 'squircle', 'color-overlay', 'badge-framed']).optional().describe(
+    'Photo frame: circle-halo (colored ring) | squircle (rounded square) | color-overlay (primary tint) | badge-framed (colored badge)',
   ),
-  accentShape: z.enum(['diagonal-stripe', 'angled-corner', 'colored-badge', 'hex-pattern']).describe(
-    `Structural accent applied to sections:
-    - diagonal-stripe: diagonal accent stripe next to each section
-    - angled-corner: colored vertical bar next to each item (classic)
-    - colored-badge: company/institution rendered as a colored badge
-    - hex-pattern: subtle dotted/hex background in main column`,
+  accentShape: z.enum(['diagonal-stripe', 'angled-corner', 'colored-badge', 'hex-pattern']).optional().describe(
+    'Structural accent: diagonal-stripe | angled-corner (colored vertical bar next to items) | colored-badge | hex-pattern (dotted bg)',
   ),
-  iconTreatment: z.enum(['solid-filled', 'duotone', 'line-with-accent']).describe(
-    `How contact icons are rendered:
-    - solid-filled: solid filled icons
-    - duotone: two-tone line icons with reduced opacity
-    - line-with-accent: line icons stroked in accent color`,
+  iconTreatment: z.enum(['solid-filled', 'duotone', 'line-with-accent']).optional().describe(
+    'Contact icons: solid-filled | duotone | line-with-accent',
   ),
-  headingStyle: z.enum(['oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed']).describe(
-    `How section titles are typeset:
-    - oversized-numbered: huge 01/02 numerals in accent color, title next to it
-    - kicker-bar: small accent bar above a big display title
-    - gradient-text: titles with gradient text fill (primary → accent)
-    - bracketed: titles wrapped in [ BRACKETS ] uppercase`,
+  headingStyle: z.enum(['oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed']).optional().describe(
+    'Section titles: oversized-numbered (01 02 03 Linear-style) | kicker-bar (accent bar above) | gradient-text (primary→accent fill) | bracketed ([ UPPER ])',
   ),
-  gradientDirection: z.enum(['none', 'linear-vertical', 'linear-diagonal', 'radial-burst']).describe(
-    `How gradients are applied to structural color blocks (header, sidebar):
-    - none: solid primary color only
-    - linear-vertical: primary → darker primary (top to bottom)
-    - linear-diagonal: primary → accent (45° — most expressive)
-    - radial-burst: radial gradient from a point (softer, luxurious)`,
+  gradientDirection: z.enum(['none', 'linear-vertical', 'linear-diagonal', 'radial-burst']).optional().describe(
+    'Gradient: none | linear-vertical | linear-diagonal (primary→accent 45°, most expressive) | radial-burst',
   ),
 });
 
-const experimentalTokensSchema = creativeTokensSchema.extend({
-  bold: boldSchema.describe(
-    'Bold layout tokens. REQUIRED for experimental mode — these drive the Canva/Linear-style renderer.',
+// Experimental extends the base schema (not creative) so it doesn't inherit
+// the required `editorial` field from creative. Bold and editorial are
+// mutually exclusive — each creativity level owns its own renderer primitives.
+const experimentalTokensSchema = designTokensSchema.extend({
+  bold: boldSchema.optional().describe(
+    'Bold layout tokens. Drive the Canva/Linear-style renderer. Fill all sub-fields if you can; the validator handles any you omit.',
   ),
-  editorial: z.undefined().optional().describe(
-    'Do NOT set `editorial` in experimental mode — it routes to the wrong renderer.',
+  decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract']).optional().describe(
+    'Industry decoration theme — optional hint, the bold renderer uses structural color not floating decorations.',
   ),
   layout: z.enum(['sidebar-left', 'sidebar-right']).optional().describe(
     'Which side the colored sidebar is on. Default: sidebar-left.',
@@ -351,35 +330,54 @@ const fontDirections = [
   { direction: 'humanist-warm', hint: 'Use a humanist typeface for warmth and approachability (lato, nunito, open-sans)' },
 ];
 
-function buildRandomSeed(creativityLevel: StyleCreativityLevel, constraints: { allowedHeaderVariants: readonly string[]; allowedSectionStyles: readonly string[]; allowedLayouts: readonly string[] }): string {
+// Bold/editorial primitive pools for the variation nudge. These are suggestions
+// only — the AI should override any that don't fit the job, since the job
+// context is the primary driver.
+const editorialHeaderPool = ['stacked', 'split', 'band', 'overlap'] as const;
+const editorialGridPool = ['asymmetric-60-40', 'asymmetric-70-30', 'full-bleed', 'manuscript', 'three-column-intro'] as const;
+const editorialSectionTreatmentPool = ['numbered', 'kicker', 'sidenote', 'drop-cap', 'pull-quote'] as const;
+const boldHeaderPool = ['hero-band', 'split-photo', 'tiled', 'asymmetric-burst'] as const;
+const boldSidebarPool = ['solid-color', 'gradient', 'transparent'] as const; // exclude photo-hero from random pick
+const boldHeadingPool = ['oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed'] as const;
+
+function buildRandomSeed(creativityLevel: StyleCreativityLevel): string {
   if (creativityLevel === 'conservative' || creativityLevel === 'balanced') return '';
 
   const pick = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
   const mood = pick(colorMoods);
   const fontDir = pick(fontDirections);
-  const headerVariant = pick(constraints.allowedHeaderVariants);
-  const sectionStyle = pick(constraints.allowedSectionStyles);
-  const layout = pick(constraints.allowedLayouts);
 
   if (creativityLevel === 'creative') {
     return `
-RANDOM VISUAL DIRECTION (combine with the company/industry context):
-- Color mood: "${mood.mood}" — ${mood.description}
-- Typography direction: ${fontDir.hint}
-- Consider header variant: "${headerVariant}"
-Use the company/industry as THEMATIC basis, but vary the VISUAL approach using these directions. Two CVs for the same company should look different!`;
+VARIATION NUDGE (use ONLY if the job/industry context doesn't already
+dictate a clearly better choice — otherwise ignore this nudge and follow
+the industry profile above):
+- Suggested color mood if the industry is neutral or unclear: "${mood.mood}" — ${mood.description}
+- Typography flavour suggestion: ${fontDir.hint}
+- Try editorial.headerLayout = "${pick(editorialHeaderPool)}"
+- Try editorial.grid = "${pick(editorialGridPool)}"
+- Try editorial.sectionTreatment = "${pick(editorialSectionTreatmentPool)}"
+
+The JOB CONTEXT and INDUSTRY STYLE PROFILE above are the PRIMARY drivers
+of your choices. This nudge exists only to prevent two creative CVs with
+the same job context from looking identical.`;
   }
 
-  // experimental
+  // experimental (bold renderer)
   return `
-MANDATORY RANDOM VISUAL DIRECTION (you MUST follow these as starting points, then adapt to the industry):
-- Color mood: "${mood.mood}" — ${mood.description}. DO NOT use generic blue/gray!
-- Typography: ${fontDir.hint}
-- Header variant: "${headerVariant}" — use this exact header variant
-- Section style: "${sectionStyle}" — use this exact section style
-- Layout: "${layout}" — use this layout
-Combine these with the industry/company context. The visual direction takes priority — adapt the company theme to fit these choices, not the other way around!`;
+VARIATION NUDGE (use ONLY if the job/industry context doesn't already
+dictate a clearly better choice — otherwise ignore this nudge and follow
+the industry profile above):
+- Suggested color mood if the industry is neutral or unclear: "${mood.mood}" — ${mood.description}
+- Typography flavour suggestion: ${fontDir.hint}
+- Try bold.headerLayout = "${pick(boldHeaderPool)}"
+- Try bold.sidebarStyle = "${pick(boldSidebarPool)}"
+- Try bold.headingStyle = "${pick(boldHeadingPool)}"
+
+The JOB CONTEXT and INDUSTRY STYLE PROFILE above are the PRIMARY drivers
+of your choices. This nudge exists only to prevent two experimental CVs
+with the same job context from looking identical.`;
 }
 
 // ============ System Prompt ============
@@ -700,11 +698,25 @@ Otherwise, create a striking palette that fits the industry vibe.
     } else {
       // experimental
       prompt += `
-DESIGN CONTEXT (for inspiration only — your creative choices take priority):
+INDUSTRY & COMPANY DRIVE THIS DESIGN:
 Industry: "${jobVacancy.industry || 'Unknown'}", Company: "${jobVacancy.company || 'Unknown'}".
-Use the industry/company only as loose inspiration for color direction and decoration themes.
-Your primary goal is to create something VISUALLY STRIKING and UNIQUE.
-Don't play it safe — make bold choices with layout, typography, and color.
+
+Experimental mode is NOT "random visual statement". It's "boldest version
+of what fits this specific role". A fintech role deserves a fintech-looking
+bold CV — saturated but restrained, geometric, trust-signaling. A creative
+agency role deserves a loud, expressive bold CV with daring color. A
+healthcare role deserves warm, human bold choices. The Industry Style
+Profile above tells you which direction to lean.
+
+If you're 100% CERTAIN about the company's brand colors (ING=orange,
+Bol.com=blue, Coolblue=blue+orange, etc.), incorporate them boldly into
+the header/sidebar colors — it makes the CV look like company marketing
+material.
+
+Use the BOLD primitives (headerLayout, sidebarStyle, headingStyle etc.)
+to translate the industry character into structural visual choices.
+Don't copy the same bold-template to every vacancy — match the choices
+to this specific job.
 `;
     }
   }
@@ -717,7 +729,7 @@ ${userPreferences}
   }
 
   // Inject random visual direction for creative/experimental
-  const randomSeed = buildRandomSeed(creativityLevel, creativityConstraints[creativityLevel]);
+  const randomSeed = buildRandomSeed(creativityLevel);
   if (randomSeed) {
     prompt += `\n${randomSeed}\n`;
   }
@@ -725,15 +737,24 @@ ${userPreferences}
   // Closing instructions vary by creativity level
   if (creativityLevel === 'experimental') {
     prompt += `
-Generate design tokens that:
-1. Look VISUALLY UNIQUE — this CV should stand out from every other CV
-2. Make BOLD choices: try sidebar layouts, unusual font pairings, striking colors
-3. Use the extended styling tokens (accentStyle, borderRadius, nameStyle, skillTagStyle, pageBackground) — don't leave them at defaults
-4. Will render well in both screen preview and PDF print
-5. Use colors that are VIBRANT and unexpected — avoid generic blue/gray
+Generate tokens for the BOLD RENDERER. The most important part is the
+\`bold\` object — fill it thoughtfully based on the job context.
 
-IMPORTANT: Prioritize visual impact and uniqueness over convention.
-This is experimental mode — the user WANTS something that looks different!`;
+Non-negotiables:
+1. Fill the \`bold\` object with ALL required fields.
+2. Match the bold choices to the JOB CONTEXT and INDUSTRY STYLE PROFILE
+   above — don't pick random primitives. A finance role and a creative
+   agency role should produce visibly different bold CVs.
+3. Use a bold, saturated color palette that fits THIS specific industry.
+   Brand colors if 100% certain; otherwise industry-driven (e.g. tech =
+   electric blue/cyan accent; creative = magenta/coral; finance =
+   deep-teal/gold; healthcare = emerald/violet).
+4. The base schema fields (headerVariant, sectionStyle, skillsDisplay,
+   contactLayout, accentStyle, etc.) are IGNORED by the bold renderer
+   but still required by the schema. Pick any valid value.
+
+IMPORTANT: think like an art director hired by THIS specific company
+for THIS specific role. Not "generic bold CV".`;
   } else if (creativityLevel === 'creative') {
     prompt += `
 Generate tokens for the EDITORIAL RENDERER. The most important part is the
