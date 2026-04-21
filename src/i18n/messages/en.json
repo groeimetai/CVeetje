@@ -257,7 +257,7 @@
         "badge": "Easiest",
         "title": "Platform AI",
         "description": "Start directly without configuration. We handle the AI for you.",
-        "model": "Claude Opus 4.6",
+        "model": "Claude Opus 4.7",
         "creditCost": "1 credit per AI action",
         "noSetup": "No configuration needed",
         "freeCredits": "10 free credits per month",
@@ -290,7 +290,7 @@
       },
       "whyCredits": {
         "title": "Why do Platform AI actions cost credits?",
-        "description": "With Platform AI, CVeetje runs the AI for you on our servers using Claude Opus 4.6. Every AI action (parsing your profile, generating a CV, etc.) costs us compute at Anthropic. Credits cover these costs fairly and transparently.",
+        "description": "With Platform AI, CVeetje runs the AI for you on our servers using Claude Opus 4.7. Every AI action (parsing your profile, generating a CV, etc.) costs us compute at Anthropic. Credits cover these costs fairly and transparently.",
         "ownKeyBenefit": "With your own API key, you pay AI costs directly to your provider (like OpenAI or Google) — often cheaper with regular use. CVeetje then only charges 1 credit for the PDF download.",
         "tip": "Tip: start free with 10 Platform AI credits. Like it? Add your own API key to save on costs."
       }
@@ -483,7 +483,7 @@
       "ownKey": "Own API Key",
       "ownKeyDescription": "Use your own API key from an AI provider. AI actions cost no credits, only PDF export (1 credit).",
       "platform": "Platform AI",
-      "platformModel": "Claude Opus 4.6",
+      "platformModel": "Claude Opus 4.7",
       "platformDescription": "Use our AI (Claude by Anthropic) without your own API key. Your data is processed by Anthropic (US). Each AI action costs credits.",
       "platformCostLabel": "Credit costs per action",
       "platformCostTable": {
@@ -1523,7 +1523,7 @@
       },
       "apiKeys": {
         "title": "5. API Keys and External Services",
-        "content": "The Service offers two ways to use AI features:\n\n1. Platform AI: Use our built-in AI (Claude Opus 4.6) without your own API key. Each AI action costs credits.\n2. Own API Key: Provide your own API key from a supported AI provider (such as OpenAI, Anthropic or Google). AI actions cost no credits.\n\nBy providing an API key:\n\n• You confirm that you are authorized to use the relevant API\n• You agree to the terms and conditions of the relevant AI provider\n• You understand that you are responsible for all costs arising from the use of your API key via our Service\n• You understand that the quality of AI-generated content depends on the chosen AI provider and model\n\nYour API key is stored encrypted and is only used to generate content on your behalf. We do not have access to the unencrypted key and cannot view it."
+        "content": "The Service offers two ways to use AI features:\n\n1. Platform AI: Use our built-in AI (Claude Opus 4.7) without your own API key. Each AI action costs credits.\n2. Own API Key: Provide your own API key from a supported AI provider (such as OpenAI, Anthropic or Google). AI actions cost no credits.\n\nBy providing an API key:\n\n• You confirm that you are authorized to use the relevant API\n• You agree to the terms and conditions of the relevant AI provider\n• You understand that you are responsible for all costs arising from the use of your API key via our Service\n• You understand that the quality of AI-generated content depends on the chosen AI provider and model\n\nYour API key is stored encrypted and is only used to generate content on your behalf. We do not have access to the unencrypted key and cannot view it."
       },
       "userContent": {
         "title": "6. User Content and Data",
@@ -1613,7 +1613,7 @@
         "subtitle2": "7.2 Mollie (Payments)",
         "content2": "We use Mollie for processing payments. When you purchase credits, your payment details are processed directly by Mollie. We only receive confirmation of payment, not your full payment details.\n\nMollie is based in the Netherlands and processes data in accordance with GDPR.\n\nMore information: https://www.mollie.com/en/privacy",
         "subtitle3": "7.3 AI Providers",
-        "content3": "For generating CV content, AI models are used in two ways:\n\n1. Platform AI (our built-in AI): We offer Claude by Anthropic (currently Claude Opus 4.6) as an AI service. When using Platform AI, CVeetje is the data controller and Anthropic is the data processor. We have a Data Processing Agreement (DPA) with Anthropic. Your profile data and job posting text are sent to Anthropic (US) for processing. Anthropic does not use this data for training AI models (in accordance with their API terms for commercial use).\n\n2. Own API key: You can bring your own API key from a supported provider, including OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), and more than 20 other providers. When using your own key, your data is sent directly to your chosen provider. This processing falls under the privacy policy and terms of the respective provider.\n\nFor more information about how we use AI, see our AI Transparency page."
+        "content3": "For generating CV content, AI models are used in two ways:\n\n1. Platform AI (our built-in AI): We offer Claude by Anthropic (currently Claude Opus 4.7) as an AI service. When using Platform AI, CVeetje is the data controller and Anthropic is the data processor. We have a Data Processing Agreement (DPA) with Anthropic. Your profile data and job posting text are sent to Anthropic (US) for processing. Anthropic does not use this data for training AI models (in accordance with their API terms for commercial use).\n\n2. Own API key: You can bring your own API key from a supported provider, including OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), and more than 20 other providers. When using your own key, your data is sent directly to your chosen provider. This processing falls under the privacy policy and terms of the respective provider.\n\nFor more information about how we use AI, see our AI Transparency page."
       },
       "cookies": {
         "title": "8. Cookies and Local Storage",
@@ -1664,7 +1664,7 @@
       },
       "models": {
         "title": "3. Which AI Models Are Used",
-        "content": "CVeetje offers two ways to use AI:\n\n• Platform AI: We offer Claude by Anthropic (currently Claude Opus 4.6) as a built-in AI option. No API key is required. Each AI action costs credits.\n\n• Own API Key: You can bring your own API key from a supported provider, including OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), and more than 20 other providers. In this case, AI actions are processed directly through your own account with the provider.\n\nWith Platform AI, Anthropic (based in the US) is the AI provider. Anthropic processes data in accordance with their privacy policy and terms of use. We have a data processing agreement with Anthropic for the processing of personal data."
+        "content": "CVeetje offers two ways to use AI:\n\n• Platform AI: We offer Claude by Anthropic (currently Claude Opus 4.7) as a built-in AI option. No API key is required. Each AI action costs credits.\n\n• Own API Key: You can bring your own API key from a supported provider, including OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), and more than 20 other providers. In this case, AI actions are processed directly through your own account with the provider.\n\nWith Platform AI, Anthropic (based in the US) is the AI provider. Anthropic processes data in accordance with their privacy policy and terms of use. We have a data processing agreement with Anthropic for the processing of personal data."
       },
       "dataFlow": {
         "title": "4. How Your Data Is Processed",

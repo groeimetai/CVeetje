@@ -2,13 +2,13 @@
  * Platform AI configuration
  *
  * When users don't have their own API key, they can use the platform's
- * Claude Opus 4.6 model. Each AI operation costs credits.
+ * Claude Opus 4.7 model. Each AI operation costs credits.
  */
 
 export const PLATFORM_MODEL = {
   provider: 'anthropic' as const,
-  modelId: 'claude-opus-4-6',
-  displayName: 'Claude Opus 4.6',
+  modelId: 'claude-opus-4-7',
+  displayName: 'Claude Opus 4.7',
 };
 
 /**
