@@ -8,6 +8,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { resolveTemperature } from './temperature';
 import type { LLMProvider, TokenUsage } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { validateAndFixColorContrast } from '@/lib/cv/templates/color-utils';
@@ -223,7 +224,7 @@ Be precise with colors - try to identify the exact hex values where possible.`,
           ],
         },
       ],
-      temperature: 0.3, // Lower temperature for more consistent analysis
+      temperature: resolveTemperature(provider, modelId, 0.3), // Lower temperature for more consistent analysis
     });
 
     console.log('[Template Style] AI analysis complete:', JSON.stringify(result.object, null, 2));

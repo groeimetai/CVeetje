@@ -12,6 +12,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { resolveTemperature } from './temperature';
 import { withRetry } from './retry';
 import { humanizeMotivationLetter } from './humanizer';
 import type {
@@ -464,7 +465,7 @@ export async function generateMotivationLetter(
         schema: motivationLetterSchema,
         system: systemPrompt,
         prompt: userPrompt,
-        temperature: 0.7,
+        temperature: resolveTemperature(provider, modelId, 0.7),
       }),
     );
 

@@ -13,6 +13,7 @@ import JSZip from 'jszip';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, type LLMProvider } from '@/lib/ai/providers';
+import { resolveTemperature } from '@/lib/ai/temperature';
 import { withRetry } from '@/lib/ai/retry';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
@@ -1462,7 +1463,7 @@ ${prompts.instructions}`;
         schema: indexedFillSchema,
         system: systemPrompt,
         prompt: userPrompt,
-        temperature: 0.5,
+        temperature: resolveTemperature(provider, model, 0.5),
       })
     );
 

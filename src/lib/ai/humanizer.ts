@@ -28,6 +28,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { resolveTemperature } from './temperature';
 import { withRetry } from './retry';
 import type { LLMProvider, TokenUsage, OutputLanguage } from '@/types';
 
@@ -272,7 +273,7 @@ Apply the humanizer rules from the system prompt to each section and return the 
         // Slightly lower temperature than original generation: the
         // humanizer should not invent things, it should rewrite. But
         // some variation is needed to break out of the AI rhythm.
-        temperature: 0.5,
+        temperature: resolveTemperature(provider, modelId, 0.5),
       }),
     );
 

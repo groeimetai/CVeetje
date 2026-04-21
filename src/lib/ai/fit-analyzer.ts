@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { resolveTemperature } from './temperature';
 import { withRetry } from './retry';
 import { getCurrentDateContext } from './date-context';
 import type {
@@ -273,7 +274,7 @@ export async function analyzeFit(
         model: aiProvider(modelId),
         schema: fitAnalysisSchema,
         prompt,
-        temperature: 0.3,
+        temperature: resolveTemperature(provider, modelId, 0.3),
       })
     );
 

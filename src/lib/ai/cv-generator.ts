@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { resolveTemperature } from './temperature';
 import { withRetry } from './retry';
 import { getCurrentDateContext } from './date-context';
 import type {
@@ -731,7 +732,7 @@ export async function generateCV(
         model: aiProvider(modelId),
         schema: cvContentSchema,
         prompt,
-        temperature: 0.5,
+        temperature: resolveTemperature(provider, modelId, 0.5),
       })
     );
 

@@ -11,6 +11,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, type LLMProvider } from './providers';
+import { resolveTemperature } from './temperature';
 import { withRetry } from './retry';
 
 // ==================== Schema ====================
@@ -101,7 +102,7 @@ Analyze this template and identify all sections and repeating blocks. Return the
       schema: templateBlueprintSchema,
       system: systemPrompt,
       prompt: userPrompt,
-      temperature: 0.1,
+      temperature: resolveTemperature(provider, model, 0.1),
     })
   );
 
@@ -162,7 +163,7 @@ ${isEn
       schema: combinedSchema,
       system: systemPrompt,
       prompt: userPrompt,
-      temperature: 0.5,
+      temperature: resolveTemperature(provider, model, 0.5),
     })
   );
 

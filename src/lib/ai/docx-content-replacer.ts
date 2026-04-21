@@ -12,6 +12,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, type LLMProvider } from './providers';
+import { resolveTemperature } from './temperature';
 import { withRetry } from './retry';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
@@ -107,7 +108,7 @@ ${isEn ? 'Fill all segments with the correct profile data. Return fills as { seg
         schema: segmentFillSchema,
         system: systemPrompt,
         prompt: userPrompt,
-        temperature: 0.5,
+        temperature: resolveTemperature(provider, model, 0.5),
       })
     );
 

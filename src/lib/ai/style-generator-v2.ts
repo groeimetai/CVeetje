@@ -24,6 +24,7 @@ import type {
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { creativityConstraints, themeDefaults, getIndustryStyleProfile } from '@/lib/cv/templates/themes';
 import { validateAndFixColorContrast } from '@/lib/cv/templates/color-utils';
+import { resolveTemperature } from './temperature';
 
 // ============ Zod Schema for Design Tokens ============
 
@@ -700,10 +701,15 @@ export async function generateDesignTokens(
   hasPhoto: boolean = false,
   styleHistory?: CVDesignTokens[],
 ): Promise<StyleGenerationV2Result> {
-  const temperature = temperatureMap[creativityLevel];
+  const preferredTemperature = temperatureMap[creativityLevel];
 
   const aiProvider = createAIProvider(provider, apiKey);
   const modelId = getModelId(provider, model);
+
+  // Some Claude models (Opus 4.7+) deprecate the temperature parameter.
+  // resolveTemperature returns undefined for those, in which case we omit
+  // it entirely from generateObject (the SDK then drops it from the request).
+  const temperature = resolveTemperature(provider, modelId, preferredTemperature);
 
   const systemPrompt = buildSystemPrompt(creativityLevel, hasPhoto);
   const userPrompt = buildUserPrompt(linkedInSummary, jobVacancy, userPreferences, creativityLevel);

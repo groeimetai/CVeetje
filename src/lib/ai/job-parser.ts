@@ -1,6 +1,7 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
+import { resolveTemperature } from './temperature';
 import { withRetry } from './retry';
 import { getCurrentDateContext } from './date-context';
 import type { JobVacancy, LLMProvider, TokenUsage } from '@/types';
@@ -173,7 +174,7 @@ export async function parseJobVacancy(
         model: aiProvider(modelId),
         schema: jobVacancySchema,
         prompt,
-        temperature: 0.3,
+        temperature: resolveTemperature(provider, modelId, 0.3),
       })
     );
 
