@@ -115,20 +115,127 @@ const designTokensSchema = z.object({
     .describe('Skill tag variant: filled (default bg), outlined (border only), pill (fully rounded)'),
 });
 
-// Extended schema for creative mode - includes decorationTheme, layout, sidebarSections
+// ============ Editorial schema (creative mode) ============
+//
+// Creative mode uses a completely separate render pipeline: the editorial
+// renderer. The AI is given a compositional set of primitives (headerLayout ×
+// nameTreatment × accentTreatment × sectionTreatment × grid × divider ×
+// typographyScale) that the renderer handles in any combination.
+//
+// This replaces the old "sidebar + magazine section + banner header" approach
+// for creative mode, which produced generic-looking output regardless of what
+// the AI picked.
+
+const editorialSchema = z.object({
+  headerLayout: z.enum(['stacked', 'split', 'band', 'overlap']).describe(
+    `Header composition:
+    - stacked: vertical stack (name, headline, contact)
+    - split: name/headline left, portrait + contact right-aligned
+    - band: full-width colored band behind the header (primary color)
+    - overlap: portrait left (120px), name/headline flowing right`,
+  ),
+  nameTreatment: z.enum([
+    'oversized-serif',
+    'oversized-sans',
+    'uppercase-tracked',
+    'mixed-italic',
+    'condensed-impact',
+  ]).describe(
+    `Name typography (this is the single biggest visual choice):
+    - oversized-serif: hero serif display (elegant, editorial) — best with playfair, dm-serif, merriweather, libre-baskerville
+    - oversized-sans: hero grotesk, tight tracking (modern, confident) — best with montserrat, poppins, raleway, space-grotesk
+    - uppercase-tracked: all caps, wide letter-spacing (Kinfolk / Zarina-style) — works with most fonts
+    - mixed-italic: first name in italic serif accent color, rest in regular heading font (literary)
+    - condensed-impact: condensed heavy weight (fashion-magazine) — best with oswald, montserrat`,
+  ),
+  accentTreatment: z.enum([
+    'thin-rule',
+    'vertical-bar',
+    'marker-highlight',
+    'ornament',
+    'number-prefix',
+  ]).describe(
+    `Small visual accent that marks the header as designed, not templated:
+    - thin-rule: 1px hairlines above + accent-color rule below the name (classic magazine)
+    - vertical-bar: 3px accent color bar left of the name block
+    - marker-highlight: subtle highlighter effect behind the name (editorial)
+    - ornament: small ✦ glyph after the name (decorative)
+    - number-prefix: "No. 01 —" kicker above the name (editorial numbering)`,
+  ),
+  sectionTreatment: z.enum([
+    'numbered',
+    'kicker',
+    'sidenote',
+    'drop-cap',
+    'pull-quote',
+  ]).describe(
+    `How section titles are typeset:
+    - numbered: large serif title + hairline underline (classic)
+    - kicker: small uppercase label above a big display title (editorial)
+    - sidenote: title pinned in left margin with vertical rule (manuscript style)
+    - drop-cap: italic section title, first paragraph uses drop-cap first letter
+    - pull-quote: title with accent-color underline, one highlight rendered as a big pull quote`,
+  ),
+  grid: z.enum([
+    'asymmetric-60-40',
+    'asymmetric-70-30',
+    'full-bleed',
+    'manuscript',
+    'three-column-intro',
+  ]).describe(
+    `Page grid:
+    - asymmetric-60-40: main content 60%, sidenotes 40% (balanced magazine spread)
+    - asymmetric-70-30: main content 70%, narrow sidenotes 30%
+    - full-bleed: single column, generous margins (hero feel)
+    - manuscript: classic book proportions (64ch max, centered) — best for text-heavy CVs
+    - three-column-intro: opens with a 3-column intro row (focus | core | statement), then single column`,
+  ),
+  divider: z.enum([
+    'none',
+    'hairline',
+    'double-rule',
+    'ornament',
+    'whitespace-large',
+  ]).describe(
+    `How sections are separated:
+    - none: only whitespace
+    - hairline: 1px rule between sections
+    - double-rule: 2 stacked hairlines (classic)
+    - ornament: centered ✦ glyph between sections
+    - whitespace-large: 2x vertical space (airy, hero feel)`,
+  ),
+  typographyScale: z.enum(['modest', 'editorial', 'hero']).describe(
+    `Overall type scale:
+    - modest: restrained sizes, dense information (think resume)
+    - editorial: clear hero/body contrast (default magazine feel)
+    - hero: oversized display moments (name ~68pt, for impact CVs)`,
+  ),
+  sectionNumbering: z.boolean().describe(
+    'Whether sections get 01/02/03 numerical prefixes. true = editorial feel, false = quieter.',
+  ),
+  pullQuoteSource: z.string().optional().describe(
+    'Section to source a pull quote from (only when sectionTreatment=pull-quote). Usually "experience". Leave empty otherwise.',
+  ),
+  dropCapSection: z.string().optional().describe(
+    'Section to apply a drop-cap to (only when sectionTreatment=drop-cap). Usually "summary". Leave empty otherwise.',
+  ),
+});
+
+// Extended schema for creative mode — editorial tokens are REQUIRED.
+// Industry decoration theme is still supported (decorations are rendered as
+// subtle page ornaments in the editorial renderer in a future pass; for now
+// they're ignored if set, which is fine).
 const creativeTokensSchema = designTokensSchema.extend({
-  decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract'])
-    .describe(`Industry-based decoration theme:
-    - geometric: IT/Tech/Engineering - circuits, hexagons, triangles, grid patterns
-    - organic: Healthcare/Pharma/Nature - soft curves, leaves, waves, natural shapes
-    - minimal: Finance/Consulting/Legal - subtle lines, corners, clean accents
-    - tech: Software/Data/AI - code brackets, nodes, digital patterns
-    - creative: Design/Marketing/Art - bold abstract shapes, splashes, dynamic forms
-    - abstract: General/Versatile - balanced mix of geometric patterns`),
+  editorial: editorialSchema.describe(
+    'Editorial layout tokens. REQUIRED for creative mode — these drive the magazine-style renderer.',
+  ),
+  decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract']).optional().describe(
+    'Industry decoration theme (optional in creative mode — the editorial renderer uses typography and grid, not background shapes).',
+  ),
   layout: z.enum(['single-column', 'sidebar-left', 'sidebar-right']).optional()
-    .describe('Page layout: single-column (classic), sidebar-left (sidebar on left with skills/languages/certs), sidebar-right (sidebar on right). Optional — use sidebar for extra visual impact.'),
+    .describe('Legacy layout field — IGNORE in creative mode. The editorial renderer uses its own `grid` token.'),
   sidebarSections: z.array(z.string()).optional()
-    .describe('Which sections go in the sidebar (default: skills, languages, certifications). Only used with sidebar layouts.'),
+    .describe('Legacy sidebar field — IGNORE in creative mode.'),
 });
 
 // Extended schema for experimental mode - includes layout and custom decorations
@@ -264,57 +371,102 @@ ${creativityLevel === 'balanced' ? `
 - headerGradient: 'none' or 'subtle' for a touch of elegance
 ` : ''}
 ${creativityLevel === 'creative' ? `
-*** CREATIVE MODE — EDITORIAL DESIGNER OUTPUT ***
+*** CREATIVE MODE — EDITORIAL / MAGAZINE OUTPUT ***
 
-This is NOT a "nicer professional CV". This is editorial design output.
-A creative CV must be VISIBLY different from a balanced CV at first glance.
-Same color, same font, same layout as balanced = wrong level.
+Think Kinfolk, Wallpaper*, The Gentlewoman, Apartamento. This is NOT a
+"nicer corporate CV" — this is an editorial layout with real typographic
+hierarchy, asymmetric grids, and print-quality proportions.
 
-CONSTRAINED OPTIONS (these are the ONLY allowed values for this level):
+A dedicated editorial renderer handles this level. You DO NOT pick from the
+generic headerVariant/sectionStyle options — instead you fill an \`editorial\`
+object with compositional primitives that the renderer combines freely.
 
-- **Themes**: ${constraints.allowedThemes.join(' | ')}
-- **Fonts**: ${constraints.allowedFontPairings.join(' | ')}
-  → Note: inter/roboto/lato are NOT in this list. They are balanced territory.
-  → Pick a display or editorial font that gives the CV typographic character.
-- **Headers**: ${constraints.allowedHeaderVariants.join(' | ')}
-  → Only 'banner' (full-width color block) and 'asymmetric' (oversized name +
-    vertical accent) are allowed. The plain headers (simple/accented/split)
-    are balanced territory and will be rejected.
-- **Section styles**: ${constraints.allowedSectionStyles.join(' | ')}
-  → No clean/underlined/boxed/accent-left — those belong to balanced.
-  → Only the editorial section styles: timeline, card, alternating, magazine.
-- **Layout**: ${constraints.allowedLayouts.join(' | ')}
-  → Sidebar required. Single-column is balanced territory.
-  → sidebarSections: ['skills', 'languages', 'certifications']
-  → NEVER put experience, summary, or education in the sidebar.
-- **Decorations**: ${constraints.allowedDecorations.join(' | ')} (default: ${constraints.defaultDecorations})
-- **Border radius**: ${constraints.allowedBorderRadius.join(' | ')}
-- **Accent style**: ${constraints.allowedAccentStyles.join(' | ')} — REQUIRED, no 'none'
-- **Name style**: ${constraints.allowedNameStyles.join(' | ')} — REQUIRED, no 'normal'
-- **Skill tag style**: ${constraints.allowedSkillTagStyles.join(' | ')} — REQUIRED, no 'filled'
-- **Skills display**: tags, list, compact, OR bars (bars = very visual)
-- **Colors**: VIBRANT, follow the industry color profile — never default to navy+gray
-- **showPhoto**: ${hasPhoto ? 'true' : 'false'}
-- **useIcons**: true
-- **headerGradient**: 'subtle' or 'radial' for visual depth
+YOUR JOB: compose the editorial object. Every field is independent. Pick the
+combination that matches the candidate's story and the target industry.
+Two creative CVs for the same industry should NOT look identical — vary
+your choices.
 
-The constraint set above is intentionally narrower than balanced. The whole
-point of "creative mode" is that the model can no longer fall back to safe
-options and call it a day. If you find yourself wanting to pick clean
-sections or a simple header, that's a sign the user should have selected
-balanced — not a sign that you should override creative.
+THE EDITORIAL PRIMITIVES (all REQUIRED except pullQuoteSource/dropCapSection):
 
-DECORATION THEME (required):
-Use the decorationTheme value from the industry style profile if one was
-provided. Otherwise pick from: geometric (tech/engineering), organic
-(healthcare/non-profit), minimal (finance/legal/consulting), tech (software/AI),
-creative (design/marketing), abstract (general).
+- **headerLayout** — stacked | split | band | overlap
+  How the hero block is composed. 'band' means a full-width colored header
+  (use the primary color); 'overlap' only makes sense with a portrait.
 
-GOOD EXAMPLE COMBINATIONS for creative:
-- Asymmetric header + magazine sections + outlined pills + dm-serif font + sidebar-right
-- Banner header + alternating sections + pill tags + oswald font + sidebar-left
-- Asymmetric header + timeline sections + outlined tags + space-grotesk + sidebar-left
-- Banner header + card sections + pill tags + playfair font + sidebar-right
+- **nameTreatment** — oversized-serif | oversized-sans | uppercase-tracked | mixed-italic | condensed-impact
+  This is your single biggest visual decision. Match to the font pairing:
+  serif fonts pair with oversized-serif / mixed-italic; grotesk fonts with
+  oversized-sans; condensed fonts (oswald) with condensed-impact.
+
+- **accentTreatment** — thin-rule | vertical-bar | marker-highlight | ornament | number-prefix
+  A small signal that tells the reader "this is designed". Pick ONE, keep it subtle.
+
+- **sectionTreatment** — numbered | kicker | sidenote | drop-cap | pull-quote
+  How every section title is presented.
+  - 'sidenote' produces the strongest magazine feel (titles float in the margin).
+  - 'pull-quote' additionally extracts one highlight as a big italic quote.
+  - 'drop-cap' drops the first letter of the summary.
+
+- **grid** — asymmetric-60-40 | asymmetric-70-30 | full-bleed | manuscript | three-column-intro
+  The page grid. 'three-column-intro' opens with a focus/core/statement row.
+  'manuscript' is a narrow book column — good for text-heavy candidates.
+
+- **divider** — none | hairline | double-rule | ornament | whitespace-large
+  How sections are separated. 'whitespace-large' for hero feel, 'double-rule'
+  for classic editorial, 'ornament' for decorative.
+
+- **typographyScale** — modest | editorial | hero
+  Overall size. 'hero' only when the name deserves a full-page moment.
+
+- **sectionNumbering** — true | false
+  Whether sections get 01/02/03 prefixes (editorial feel).
+
+- **pullQuoteSource** — set to "experience" ONLY when sectionTreatment is 'pull-quote'.
+- **dropCapSection** — set to "summary" ONLY when sectionTreatment is 'drop-cap'.
+
+FONTS (required from): ${constraints.allowedFontPairings.join(' | ')}
+Match the nameTreatment:
+- oversized-serif → playfair-inter, dm-serif-dm-sans, merriweather-source-sans, libre-baskerville-source-sans
+- oversized-sans → montserrat-open-sans, poppins-nunito, raleway-lato, space-grotesk-work-sans
+- mixed-italic → playfair-inter, libre-baskerville-source-sans, dm-serif-dm-sans
+- uppercase-tracked → any of the above
+- condensed-impact → oswald-source-sans (only)
+
+COLORS: restrained editorial palettes work best.
+- Primary: deep and confident (ink, burgundy, forest, navy, plum) — NOT bright
+- Accent: a single pop color (amber, terracotta, emerald, coral, marigold)
+- Secondary: paper-tinted (#faf8f4, #f5f2eb, #faf9f6)
+- Text: near-black (#1a1a1a to #2a2a2a)
+- Muted: warm grey (#6b6459, #7a7468)
+Avoid neon and saturated blues — those belong to the bold/experimental family.
+
+OTHER TOKENS (still required on the base schema):
+- themeBase: pick 'creative' or 'modern' (bold/professional/minimal feel wrong here)
+- headerVariant/sectionStyle/skillsDisplay: still needed on the schema but
+  IGNORED by the editorial renderer — set them to any allowed value, they
+  don't affect output.
+- showPhoto: ${hasPhoto ? 'true — the editorial renderer styles portraits with grace' : 'false'}
+- useIcons: false (icons break the editorial mood — let typography do the work)
+- pageBackground: optional tinted off-white like #faf8f4 or #f7f4ee
+
+EXAMPLE COMBINATIONS (copy the reasoning, not the literal values):
+
+1. *Elegant tech consultant* — playfair-inter, oversized-serif name, thin-rule
+   accent, numbered sections, asymmetric-60-40 grid, hairline dividers, editorial
+   scale, numbering on. Primary #1a2b3a, accent #c77757.
+
+2. *Fashion / marketing lead* — oswald-source-sans, condensed-impact name,
+   marker-highlight accent, kicker sections, full-bleed grid, whitespace-large
+   dividers, hero scale. Primary #1a1a1a, accent #c93d3d.
+
+3. *Editor / literary role* — libre-baskerville-source-sans, mixed-italic name,
+   ornament accent, sidenote sections, manuscript grid, ornament dividers,
+   modest scale. Primary #2a2418, accent #8a6d3a.
+
+4. *Strategy / consulting senior* — dm-serif-dm-sans, uppercase-tracked name,
+   number-prefix accent, numbered sections, three-column-intro grid,
+   double-rule dividers, editorial scale. Primary #1e2a44, accent #b8864a.
+
+Again: vary. Never produce the same combination twice in a session.
 ` : ''}
 ${creativityLevel === 'experimental' ? `
 *** EXPERIMENTAL MODE — ART-DIRECTED VISUAL STATEMENT ***
@@ -496,14 +648,23 @@ IMPORTANT: Prioritize visual impact and uniqueness over convention.
 This is experimental mode — the user WANTS something that looks different!`;
   } else if (creativityLevel === 'creative') {
     prompt += `
-Generate design tokens that:
-1. Are visually DISTINCTIVE — this CV should look noticeably different from a standard template
-2. Use creative combinations of header styles, section styles, and typography
-3. Consider using extended styling tokens (accentStyle, borderRadius, nameStyle, skillTagStyle) for extra personality
-4. Will render well in both screen preview and PDF print
-5. Use colors that pop and create visual interest
+Generate tokens for the EDITORIAL RENDERER. The most important part is the
+\`editorial\` object — fill it thoughtfully.
 
-IMPORTANT: Be creative! The user chose creative mode because they want something with personality.`;
+Non-negotiables:
+1. Fill the \`editorial\` object with ALL required fields. Match nameTreatment
+   to the fontPairing (see the system prompt for the pairing table).
+2. If sectionTreatment = 'pull-quote', set pullQuoteSource = "experience".
+   If sectionTreatment = 'drop-cap', set dropCapSection = "summary".
+3. Use an editorial color palette: deep primary + paper-tinted secondary +
+   single pop accent. Avoid saturated blues and bright greens.
+4. Vary your choices — two creative CVs in a row should NOT share the same
+   combination of grid + sectionTreatment + nameTreatment.
+5. The base schema fields (headerVariant, sectionStyle, skillsDisplay,
+   contactLayout, etc.) are IGNORED by the editorial renderer but still
+   required by the schema. Pick any valid value; don't overthink them.
+
+IMPORTANT: think like a magazine art director, not a resume-builder.`;
   } else {
     prompt += `
 Generate design tokens that:
@@ -927,7 +1088,136 @@ function validateAndFixTokens(
     }
   }
 
+  // === 2D: Editorial tokens for creative mode ===
+  // Creative mode routes through the editorial renderer, which needs a
+  // populated `editorial` object. If the AI forgot to fill it (or an
+  // individual field), we inject sensible defaults so the renderer never
+  // crashes. We also cross-check pullQuoteSource/dropCapSection against the
+  // chosen sectionTreatment.
+  if (creativityLevel === 'creative') {
+    tokens.editorial = validateAndFixEditorialTokens(tokens.editorial, tokens.fontPairing);
+  } else {
+    // Never let editorial leak into non-creative levels — they have their
+    // own renderer paths.
+    tokens.editorial = undefined;
+  }
+
   return tokens;
+}
+
+// ============ Editorial Validation ============
+
+const editorialDefaultsPool = {
+  headerLayout: ['stacked', 'split', 'band', 'overlap'] as const,
+  nameTreatment: [
+    'oversized-serif', 'oversized-sans', 'uppercase-tracked', 'mixed-italic', 'condensed-impact',
+  ] as const,
+  accentTreatment: [
+    'thin-rule', 'vertical-bar', 'marker-highlight', 'ornament', 'number-prefix',
+  ] as const,
+  sectionTreatment: ['numbered', 'kicker', 'sidenote', 'drop-cap', 'pull-quote'] as const,
+  grid: [
+    'asymmetric-60-40', 'asymmetric-70-30', 'full-bleed', 'manuscript', 'three-column-intro',
+  ] as const,
+  divider: ['hairline', 'double-rule', 'ornament', 'whitespace-large'] as const,
+  typographyScale: ['modest', 'editorial', 'hero'] as const,
+};
+
+// Font pairings that pair naturally with each name treatment. Used to
+// correct mismatches without forcing a single choice on the AI.
+const nameTreatmentFontPreference: Record<string, string[]> = {
+  'oversized-serif': ['playfair-inter', 'dm-serif-dm-sans', 'merriweather-source-sans', 'libre-baskerville-source-sans'],
+  'oversized-sans': ['montserrat-open-sans', 'poppins-nunito', 'raleway-lato', 'space-grotesk-work-sans'],
+  'mixed-italic': ['playfair-inter', 'libre-baskerville-source-sans', 'dm-serif-dm-sans'],
+  'uppercase-tracked': ['inter-inter', 'montserrat-open-sans', 'raleway-lato', 'space-grotesk-work-sans', 'playfair-inter'],
+  'condensed-impact': ['oswald-source-sans'],
+};
+
+function pickFrom<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function validateAndFixEditorialTokens(
+  raw: CVDesignTokens['editorial'] | undefined,
+  fontPairing: string,
+): NonNullable<CVDesignTokens['editorial']> {
+  const isValid = <T extends string>(val: unknown, allowed: readonly T[]): val is T =>
+    typeof val === 'string' && allowed.includes(val as T);
+
+  const headerLayout = isValid(raw?.headerLayout, editorialDefaultsPool.headerLayout)
+    ? raw!.headerLayout
+    : pickFrom(editorialDefaultsPool.headerLayout);
+
+  // Choose nameTreatment. If the AI's pick doesn't match the font pairing,
+  // prefer a treatment that does — it's better to override the treatment
+  // than the font (the font was chosen for the pairing context).
+  let nameTreatment = isValid(raw?.nameTreatment, editorialDefaultsPool.nameTreatment)
+    ? raw!.nameTreatment
+    : pickFrom(editorialDefaultsPool.nameTreatment);
+
+  const preferred = nameTreatmentFontPreference[nameTreatment];
+  if (preferred && !preferred.includes(fontPairing)) {
+    // Find a treatment whose preferred fonts include this pairing
+    const candidates = editorialDefaultsPool.nameTreatment.filter((t) => {
+      const prefs = nameTreatmentFontPreference[t];
+      return prefs?.includes(fontPairing);
+    });
+    if (candidates.length > 0) {
+      const better = pickFrom(candidates);
+      console.log(`[Style Gen] Editorial nameTreatment rotated ${nameTreatment} → ${better} to match font ${fontPairing}`);
+      nameTreatment = better;
+    }
+  }
+
+  const accentTreatment = isValid(raw?.accentTreatment, editorialDefaultsPool.accentTreatment)
+    ? raw!.accentTreatment
+    : pickFrom(editorialDefaultsPool.accentTreatment);
+
+  const sectionTreatment = isValid(raw?.sectionTreatment, editorialDefaultsPool.sectionTreatment)
+    ? raw!.sectionTreatment
+    : pickFrom(editorialDefaultsPool.sectionTreatment);
+
+  const grid = isValid(raw?.grid, editorialDefaultsPool.grid)
+    ? raw!.grid
+    : pickFrom(editorialDefaultsPool.grid);
+
+  const dividerAll = ['none', ...editorialDefaultsPool.divider] as const;
+  const divider = isValid(raw?.divider, dividerAll)
+    ? raw!.divider
+    : pickFrom(editorialDefaultsPool.divider);
+
+  const typographyScale = isValid(raw?.typographyScale, editorialDefaultsPool.typographyScale)
+    ? raw!.typographyScale
+    : 'editorial';
+
+  // Pull-quote source only meaningful when treatment is pull-quote
+  let pullQuoteSource: string | undefined;
+  if (sectionTreatment === 'pull-quote') {
+    pullQuoteSource = (raw?.pullQuoteSource || 'experience').toString();
+  }
+
+  // Drop-cap section only meaningful when treatment is drop-cap
+  let dropCapSection: string | undefined;
+  if (sectionTreatment === 'drop-cap') {
+    dropCapSection = (raw?.dropCapSection || 'summary').toString();
+  }
+
+  const sectionNumbering = typeof raw?.sectionNumbering === 'boolean'
+    ? raw!.sectionNumbering
+    : true;
+
+  return {
+    headerLayout,
+    nameTreatment,
+    accentTreatment,
+    sectionTreatment,
+    grid,
+    divider,
+    typographyScale,
+    sectionNumbering,
+    pullQuoteSource,
+    dropCapSection,
+  };
 }
 
 function getRelativeLuminance(hex: string): number {
@@ -1178,35 +1468,55 @@ function getFallbackTokens(
     };
     const decorationTheme = industryToTheme[industry || ''] || 'creative';
 
+    // Editorial-palette fallback (matches the new creative system prompt)
+    const editorialColors = {
+      primary: '#1f2233',
+      secondary: '#faf8f4',
+      accent: '#c77757',
+      text: '#1a1a1a',
+      muted: '#6b6459',
+    };
+
     return {
-      styleName: 'Creative Modern',
-      styleRationale: 'A creative design with visual impact.',
+      styleName: 'Editorial',
+      styleRationale: 'Magazine-style editorial layout with refined typography.',
       industryFit: industry || 'creative',
       themeBase: 'creative',
-      colors: defaults.suggestedColors,
-      // All values below match the tightened creative constraints.
-      fontPairing: 'poppins-nunito',
+      colors: editorialColors,
+      // These are ignored by the editorial renderer but still required by
+      // the base schema.
+      fontPairing: 'playfair-inter',
       scale: 'medium',
       spacing: 'comfortable',
-      headerVariant: 'banner',
-      sectionStyle: 'card',
-      skillsDisplay: 'tags',
-      experienceDescriptionFormat: 'bullets',
-      contactLayout: 'double-row',
-      headerGradient: 'subtle',
+      headerVariant: 'asymmetric',
+      sectionStyle: 'magazine',
+      skillsDisplay: 'compact',
+      experienceDescriptionFormat: 'paragraph',
+      contactLayout: 'single-row',
+      headerGradient: 'none',
       showPhoto: true,
-      useIcons: true,
-      roundedCorners: true,
+      useIcons: false,
+      roundedCorners: false,
       headerFullBleed: false,
-      decorations: 'moderate',
+      // Decorations are not rendered in editorial mode; keeping 'none' avoids
+      // the legacy decoration generator from running.
+      decorations: 'none',
       decorationTheme,
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
-      layout: 'sidebar-left',
-      sidebarSections: ['skills', 'languages', 'certifications'],
-      borderRadius: 'medium',
-      accentStyle: 'background',
-      nameStyle: 'uppercase',
-      skillTagStyle: 'outlined',
+      // The editorial renderer uses its own grid; these legacy fields are ignored.
+      layout: 'single-column',
+      // The actual editorial layout choices
+      editorial: {
+        headerLayout: 'stacked',
+        nameTreatment: 'oversized-serif',
+        accentTreatment: 'thin-rule',
+        sectionTreatment: 'numbered',
+        grid: 'asymmetric-60-40',
+        divider: 'hairline',
+        typographyScale: 'editorial',
+        sectionNumbering: true,
+      },
+      pageBackground: '#faf8f4',
     };
   }
 

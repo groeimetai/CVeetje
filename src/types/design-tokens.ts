@@ -79,6 +79,62 @@ export type DecorationTheme =
   | 'creative'    // Design/Marketing - abstract, bold shapes
   | 'abstract';   // General - versatile geometric patterns
 
+// ============ Editorial Mode Primitives (creative level) ============
+//
+// Compositional primitives for the editorial renderer. These are intentionally
+// orthogonal so the AI can combine them freely — the renderer handles every
+// combination. This replaces the old "pick one of 5 header variants" approach
+// for creative mode with a much richer design space.
+
+export type EditorialHeaderLayout = 'stacked' | 'split' | 'band' | 'overlap';
+export type EditorialNameTreatment =
+  | 'oversized-serif'      // Hero serif display, tight leading
+  | 'oversized-sans'       // Hero grotesk, tight tracking
+  | 'uppercase-tracked'    // All caps, wide letter-spacing
+  | 'mixed-italic'         // Mixed serif italic for first name
+  | 'condensed-impact';    // Tall condensed weight
+export type EditorialAccentTreatment =
+  | 'thin-rule'            // 1-2px horizontal rule above/below headline
+  | 'vertical-bar'         // Vertical accent bar next to name
+  | 'marker-highlight'     // Colored highlight under one word
+  | 'ornament'             // Small decorative glyph (•, —, *)
+  | 'number-prefix';       // "01 —" / "No. 01" numbering
+export type EditorialSectionTreatment =
+  | 'numbered'             // "01. Experience" big numerals
+  | 'kicker'               // Small uppercase kicker above big title
+  | 'sidenote'             // Section title floated to the left margin
+  | 'drop-cap'             // First paragraph uses drop-cap
+  | 'pull-quote';          // One item highlighted as pull quote
+export type EditorialGrid =
+  | 'asymmetric-60-40'     // Main content 60%, sidenotes 40%
+  | 'asymmetric-70-30'     // Main 70%, narrow sidenotes 30%
+  | 'full-bleed'           // Single column, large margins
+  | 'manuscript'           // Classic manuscript proportions
+  | 'three-column-intro';  // First section uses 3-col summary/meta
+export type EditorialDivider =
+  | 'none'
+  | 'hairline'             // 1px rule
+  | 'double-rule'          // 2 stacked rules
+  | 'ornament'             // Centered ✦ or —
+  | 'whitespace-large';    // 2x vertical space
+export type EditorialTypographyScale =
+  | 'modest'               // Restrained sizes, dense magazine
+  | 'editorial'            // Clear hero/body contrast
+  | 'hero';                // Oversized display moments
+
+export interface EditorialTokens {
+  headerLayout: EditorialHeaderLayout;
+  nameTreatment: EditorialNameTreatment;
+  accentTreatment: EditorialAccentTreatment;
+  sectionTreatment: EditorialSectionTreatment;
+  grid: EditorialGrid;
+  divider: EditorialDivider;
+  typographyScale: EditorialTypographyScale;
+  sectionNumbering: boolean;      // Prefix sections with 01, 02, 03
+  pullQuoteSource?: string;       // Section name to pull quote from (e.g. 'experience')
+  dropCapSection?: string;        // Section name to apply drop-cap (e.g. 'summary')
+}
+
 // Custom decoration element (for experimental mode)
 export interface CustomDecoration {
   name: string;           // e.g., "code-bracket", "chart-bar", "lightbulb"
@@ -155,6 +211,12 @@ export interface CVDesignTokens {
   pageBackground?: string;          // Page background color (hex), must be very light
   nameStyle?: NameStyle;            // Name styling: normal, uppercase, extra-bold
   skillTagStyle?: SkillTagStyle;    // Skill tag variant: filled, outlined, pill
+
+  // === Editorial Mode (creative creativity level only) ===
+  // Presence of `editorial` switches the renderer to the editorial/magazine
+  // layout pipeline. The AI fills this entire object for creative mode —
+  // the fields are orthogonal so any combination renders cleanly.
+  editorial?: EditorialTokens;
 }
 
 // ============ Style Generation Request ============

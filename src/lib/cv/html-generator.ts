@@ -33,6 +33,7 @@ import {
 } from './templates/themes';
 import { generateDecorationsHTML, decorationsCSS } from './templates/decorations';
 import { contactIcons, contactIconsCSS } from './templates/icons';
+import { generateEditorialHTML } from './renderers/editorial';
 
 // ============ Helper Functions ============
 
@@ -167,6 +168,22 @@ export function generateCVHTML(
   contactInfo?: CVContactInfo | null,
   options?: CVHTMLOptions
 ): string {
+  // Creative-level CVs use a fully separate editorial/magazine renderer.
+  // The presence of tokens.editorial is the signal — the AI only sets this
+  // object for the creative creativity level.
+  if (tokens.editorial) {
+    return generateEditorialHTML(
+      content,
+      tokens,
+      fullName,
+      avatarUrl,
+      headline,
+      overrides,
+      contactInfo,
+      options,
+    );
+  }
+
   const fontUrls = getFontUrls(tokens.fontPairing);
 
   // Generate decorations if enabled
