@@ -28,26 +28,29 @@ import { resolveTemperature } from './temperature';
 
 // ============ Zod Schema for Design Tokens ============
 
+// Every field is OPTIONAL at the schema level. Claude Opus 4.7 under
+// structured output sometimes returns only a subset of fields, which used
+// to cause a ZodError that bubbled past our retry layer. We now accept any
+// shape and rely on validateAndFixTokens() to fill every missing field
+// with an industry-aware default — the function's return type is
+// CVDesignTokens (fully populated), so downstream code sees no undefineds.
 const designTokensSchema = z.object({
   // Metadata
-  styleName: z.string().describe('A descriptive name for this style, e.g., "Executive Professional" or "Creative Tech"'),
-  styleRationale: z.string().describe('Brief explanation of why this style fits the profile and job (2-3 sentences)'),
-  industryFit: z.string().describe('The industry this style is optimized for, e.g., "technology", "finance", "healthcare", "creative"'),
+  styleName: z.string().optional().describe('A descriptive name for this style, e.g., "Executive Professional"'),
+  styleRationale: z.string().optional().describe('Brief explanation (2-3 sentences) of why this style fits.'),
+  industryFit: z.string().optional().describe('Industry this style is optimized for (e.g., "technology").'),
 
-  // Theme
-  themeBase: z.enum(['professional', 'modern', 'creative', 'minimal', 'bold'])
-    .describe('Base theme that determines overall aesthetic direction'),
+  themeBase: z.enum(['professional', 'modern', 'creative', 'minimal', 'bold']).optional()
+    .describe('Base theme direction'),
 
-  // Colors - ALL are required and will be used
   colors: z.object({
-    primary: z.string().describe('Primary color for name and headings (hex code like #1a365d). Should have good contrast on white.'),
-    secondary: z.string().describe('Secondary color for subtle backgrounds (hex code). Should be very light, almost white.'),
-    accent: z.string().describe('Accent color for highlights, links, and decorative elements (hex code). Should complement primary.'),
-    text: z.string().describe('Main body text color (hex code like #333333). Should be readable.'),
-    muted: z.string().describe('Muted text for dates, labels (hex code like #666666). Should be lighter than text.'),
-  }),
+    primary: z.string().optional().describe('Primary color, hex code (e.g. #1a365d). Dark enough for white text when used as a band background.'),
+    secondary: z.string().optional().describe('Secondary color, hex code — very light tinted neutral.'),
+    accent: z.string().optional().describe('Accent color, hex code — vibrant, complements primary.'),
+    text: z.string().optional().describe('Body text color, hex code (e.g. #333333).'),
+    muted: z.string().optional().describe('Muted text color, hex code (e.g. #666666).'),
+  }).optional(),
 
-  // Typography
   fontPairing: z.enum([
     'inter-inter',
     'playfair-inter',
@@ -61,47 +64,32 @@ const designTokensSchema = z.object({
     'dm-serif-dm-sans',
     'space-grotesk-work-sans',
     'libre-baskerville-source-sans',
-  ]).describe('Font combination: heading font + body font'),
+  ]).optional().describe('Font combination: heading font + body font'),
 
-  scale: z.enum(['small', 'medium', 'large'])
-    .describe('Typography scale: small for dense content, large for impact'),
+  scale: z.enum(['small', 'medium', 'large']).optional().describe('Typography scale'),
+  spacing: z.enum(['compact', 'comfortable', 'spacious']).optional().describe('Overall spacing density'),
 
-  // Layout
-  spacing: z.enum(['compact', 'comfortable', 'spacious'])
-    .describe('Overall spacing density'),
+  headerVariant: z.enum(['simple', 'accented', 'banner', 'split', 'asymmetric']).optional()
+    .describe('Header layout (ignored by editorial/bold renderers — they use their own primitives)'),
+  sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card', 'alternating', 'magazine']).optional()
+    .describe('Section styling (ignored by editorial/bold renderers)'),
+  skillsDisplay: z.enum(['tags', 'list', 'compact', 'bars']).optional()
+    .describe('Skills display style (ignored by editorial/bold renderers)'),
+  experienceDescriptionFormat: z.enum(['bullets', 'paragraph']).optional()
+    .describe('Experience format: bullets or paragraph'),
+  contactLayout: z.enum(['single-row', 'double-row', 'single-column', 'double-column']).optional()
+    .describe('Contact info layout'),
+  headerGradient: z.enum(['none', 'subtle', 'radial']).optional().describe('Header gradient effect'),
 
-  // Component variants
-  headerVariant: z.enum(['simple', 'accented', 'banner', 'split', 'asymmetric'])
-    .describe('Header layout: simple (clean), accented (left border), banner (full-width color), split (name left, contact right), asymmetric (oversized name with right-aligned headline and vertical accent)'),
+  showPhoto: z.boolean().optional(),
+  useIcons: z.boolean().optional(),
+  roundedCorners: z.boolean().optional(),
+  headerFullBleed: z.boolean().optional(),
 
-  sectionStyle: z.enum(['clean', 'underlined', 'boxed', 'timeline', 'accent-left', 'card', 'alternating', 'magazine'])
-    .describe('Section styling: clean (minimal), underlined (accent under title), boxed (background), timeline (vertical line), accent-left (colored left border), card (subtle shadow cards), alternating (even/odd colored bands), magazine (title as colored block label, editorial feel)'),
+  decorations: z.enum(['none', 'minimal', 'moderate', 'abundant']).optional(),
 
-  skillsDisplay: z.enum(['tags', 'list', 'compact', 'bars'])
-    .describe('How skills are displayed: tags (pills), list (bulleted columns), compact (inline with separators), bars (infographic-style progress bars)'),
-
-  experienceDescriptionFormat: z.enum(['bullets', 'paragraph'])
-    .describe('Experience format: bullets (opsommingstekens) or paragraph (doorlopende tekst)'),
-
-  contactLayout: z.enum(['single-row', 'double-row', 'single-column', 'double-column'])
-    .describe('Contact info layout: single-row (all inline with separators), double-row (split across 2 lines), single-column (vertical stack), double-column (2-column grid)'),
-
-  headerGradient: z.enum(['none', 'subtle', 'radial'])
-    .describe('Header background effect: none (solid color), subtle (elegant linear gradient), radial (luxurious radial glow)'),
-
-  // Feature flags
-  showPhoto: z.boolean().describe('Whether to show a profile photo if available'),
-  useIcons: z.boolean().describe('Whether to show icons in contact info and sections'),
-  roundedCorners: z.boolean().describe('Whether to use rounded corners on cards and tags'),
-  headerFullBleed: z.boolean().describe('Whether the header extends to page edges (full-bleed) - true for bold/impactful designs, false for classic margins'),
-
-  // Decorations - subtle background shapes
-  decorations: z.enum(['none', 'minimal', 'moderate', 'abundant'])
-    .describe('Background decorative shapes: none for professional/conservative, minimal-moderate for creative, abundant for experimental'),
-
-  // Section order
-  sectionOrder: z.array(z.string())
-    .describe('Order of CV sections. Use: summary, experience, projects, education, skills, languages, certifications'),
+  sectionOrder: z.array(z.string()).optional()
+    .describe('Section order. Use: summary, experience, projects, education, skills, languages, certifications'),
 
   // Extended styling tokens (optional)
   accentStyle: z.enum(['none', 'border-left', 'background', 'quote']).optional()
@@ -847,8 +835,14 @@ export async function generateDesignTokens(
 
     console.log(`[Style Gen] LLM returned:`, JSON.stringify(result.object, null, 2));
 
-    // Validate and fix the generated tokens
-    const tokens = validateAndFixTokens(result.object as CVDesignTokens, creativityLevel, styleHistory);
+    // Validate and fix the generated tokens. The AI's output can be partial
+    // (see schema comments); validateAndFixTokens merges with fallback first.
+    const tokens = validateAndFixTokens(
+      result.object as Partial<CVDesignTokens>,
+      creativityLevel,
+      styleHistory,
+      jobVacancy?.industry,
+    );
 
     console.log(`[Style Gen] After validation: theme=${tokens.themeBase}, header=${tokens.headerVariant}, photo=${tokens.showPhoto}, primary=${tokens.colors.primary}, decorationTheme=${tokens.decorationTheme || 'none'}, customDecorations=${tokens.customDecorations?.length || 0}`);
 
@@ -948,11 +942,27 @@ function pickLeastUsed(
 // ============ Validation & Fixing ============
 
 function validateAndFixTokens(
-  tokens: CVDesignTokens,
+  rawTokens: Partial<CVDesignTokens>,
   creativityLevel: StyleCreativityLevel,
   styleHistory?: CVDesignTokens[],
+  industry?: string,
 ): CVDesignTokens {
   const constraints = creativityConstraints[creativityLevel];
+
+  // The schema now accepts any partial output from the AI. First: layer the
+  // AI's (possibly sparse) output on top of a fully-populated fallback so
+  // every downstream field is defined. After this merge we still run all
+  // the specific validators below, which enforce creativity-level constraints.
+  const fallback = getFallbackTokens(creativityLevel, industry);
+  const aiColors = rawTokens.colors || {};
+  const tokens: CVDesignTokens = {
+    ...fallback,
+    ...rawTokens,
+    colors: {
+      ...fallback.colors,
+      ...aiColors,
+    },
+  };
 
   // Validate theme is allowed for creativity level
   if (!constraints.allowedThemes.includes(tokens.themeBase)) {
