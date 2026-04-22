@@ -747,10 +747,13 @@ export async function generateCV(
 
 // Normalize what the LLM returned into a fully-populated GeneratedCVContent.
 //
-// Claude Opus 4.7 structured-output has three failure modes we handle here:
+// Claude Opus 4.7 structured-output has four failure modes we handle here:
 //   1. {} — model returned nothing useful → throw a user-facing error
 //   2. {data: {...}} — model wrapped the payload in `data` → unwrap it
 //   3. missing `headline` or individual top-level arrays → fill from context
+//   4. The entire JSON response stuffed as a string into `summary` (seen in
+//      the wild — summary renders as raw `{ "headline": ..., "skills": ... }`
+//      text in the preview). Detect via parse + shape-check; unwrap or retry.
 function normalizeCVContent(
   rawInput: unknown,
   linkedIn: ParsedLinkedIn,
@@ -767,6 +770,46 @@ function normalizeCVContent(
     !raw.skills
   ) {
     raw = raw.data as RawShape;
+  }
+
+  // JSON-in-summary recovery: the model sometimes returns the entire CV as a
+  // stringified JSON stuffed into the `summary` field — the preview then
+  // renders `{ "headline": ..., "skills": ... }` as literal text. Detect by
+  // looking for leading `{` plus structural field names we'd only see when
+  // the full payload was serialized in there. Try to unwrap; if that fails,
+  // throw a schema error so the resilient wrapper retries.
+  if (typeof raw.summary === 'string') {
+    const s = raw.summary.trim();
+    const looksStringified =
+      (s.startsWith('{') || s.startsWith('[')) &&
+      /"(?:headline|summary|experience|skills|education)"\s*:/.test(s);
+
+    if (looksStringified) {
+      try {
+        const parsed = JSON.parse(s);
+        const looksLikeCV =
+          parsed &&
+          typeof parsed === 'object' &&
+          (
+            (typeof parsed.summary === 'string' && parsed.summary.length > 0 && !parsed.summary.trim().startsWith('{')) ||
+            (Array.isArray(parsed.experience) && parsed.experience.length > 0) ||
+            (parsed.skills && Array.isArray(parsed.skills.technical))
+          );
+        if (looksLikeCV) {
+          console.warn('[CV Gen] Recovered JSON-in-summary anti-pattern — unwrapping stringified payload');
+          raw = parsed as RawShape;
+        } else {
+          throw new Error('response did not match schema (summary looked stringified but parsed payload was not CV-shaped)');
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith('response did not match schema')) {
+          throw err;
+        }
+        // It LOOKED stringified (starts with { + has "summary":) but didn't
+        // parse. That's a broken generation — retry rather than render junk.
+        throw new Error('response did not match schema (summary field contains malformed JSON-like text)');
+      }
+    }
   }
 
   const hasContent =
