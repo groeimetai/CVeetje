@@ -35,25 +35,31 @@ const experienceRequiredSchema = z.object({
   isStrict: z.boolean().describe('Is de ervaring eis strikt vermeld (bijv. "minimaal 5 jaar vereist") of flexibel (bijv. "bij voorkeur ervaring met")?'),
 }).nullable();
 
-// Schema for parsed job vacancy
+// Schema for parsed job vacancy.
+//
+// Top-level fields are OPTIONAL for the same reason as cv-generator:
+// Claude Opus 4.7 structured output intermittently returns `{}` or wraps
+// the payload in `{data: ...}`. We parse leniently, then validate and fill
+// defaults in normalizeJobVacancy() so downstream code always sees a
+// fully-populated JobVacancy.
 const jobVacancySchema = z.object({
-  title: z.string().describe('De functietitel/job title'),
-  company: z.string().nullable().describe('Bedrijfsnaam indien vermeld, anders null'),
-  description: z.string().describe('Korte samenvatting van de functie in max 200 woorden'),
-  requirements: z.array(z.string()).describe('Belangrijkste vereisten en kwalificaties (max 10 items)'),
-  keywords: z.array(z.string()).describe('Relevante skills, technologieën en trefwoorden (max 15 items)'),
-  industry: z.string().nullable().describe('Sector/industrie indien af te leiden, anders null'),
-  location: z.string().nullable().describe('Werklocatie indien vermeld, anders null'),
-  employmentType: z.string().nullable().describe('Dienstverband type (fulltime/parttime/freelance) indien vermeld, anders null'),
-  compensation: compensationSchema.describe('Compensatie en secundaire arbeidsvoorwaarden indien vermeld in de vacature'),
-  salaryEstimate: salaryEstimateSchema.describe('AI-inschatting van het marktsalaris voor deze functie, gebaseerd op functie, locatie, industrie en ervaringsniveau'),
+  title: z.string().optional().describe('De functietitel/job title'),
+  company: z.string().nullable().optional().describe('Bedrijfsnaam indien vermeld, anders null'),
+  description: z.string().optional().describe('Korte samenvatting van de functie in max 200 woorden'),
+  requirements: z.array(z.string()).optional().describe('Belangrijkste vereisten en kwalificaties (max 10 items)'),
+  keywords: z.array(z.string()).optional().describe('Relevante skills, technologieën en trefwoorden (max 15 items)'),
+  industry: z.string().nullable().optional().describe('Sector/industrie indien af te leiden, anders null'),
+  location: z.string().nullable().optional().describe('Werklocatie indien vermeld, anders null'),
+  employmentType: z.string().nullable().optional().describe('Dienstverband type (fulltime/parttime/freelance) indien vermeld, anders null'),
+  compensation: compensationSchema.optional().describe('Compensatie en secundaire arbeidsvoorwaarden indien vermeld in de vacature'),
+  salaryEstimate: salaryEstimateSchema.optional().describe('AI-inschatting van het marktsalaris voor deze functie'),
 
-  // New fields for fit analysis
-  experienceRequired: experienceRequiredSchema.describe('Vereiste werkervaring: jaren en niveau. Analyseer zorgvuldig of er specifieke jaren ervaring gevraagd worden.'),
-  mustHaveSkills: z.array(z.string()).describe('Skills die EXPLICIET als vereist/must-have worden genoemd. Let op woorden als "vereist", "must have", "noodzakelijk", "je hebt". Max 10 items.'),
-  niceToHaveSkills: z.array(z.string()).describe('Skills die als "nice to have", "bonus", "pré", of "bij voorkeur" worden genoemd. Max 8 items.'),
-  requiredEducation: z.string().nullable().describe('Minimale opleiding indien expliciet vereist (bijv. "HBO", "WO", "Master"), anders null'),
-  requiredCertifications: z.array(z.string()).describe('Specifieke certificeringen die als vereist worden genoemd (bijv. "AWS Certified", "PMP", "CISSP"). Alleen vermelden als expliciet genoemd.'),
+  // Fields for fit analysis
+  experienceRequired: experienceRequiredSchema.optional().describe('Vereiste werkervaring: jaren en niveau'),
+  mustHaveSkills: z.array(z.string()).optional().describe('Skills die EXPLICIET als vereist/must-have worden genoemd (max 10)'),
+  niceToHaveSkills: z.array(z.string()).optional().describe('Skills die als "nice to have", "bonus", "pré" of "bij voorkeur" worden genoemd (max 8)'),
+  requiredEducation: z.string().nullable().optional().describe('Minimale opleiding indien expliciet vereist'),
+  requiredCertifications: z.array(z.string()).optional().describe('Specifieke certificeringen die als vereist worden genoemd'),
 });
 
 function buildParsePrompt(rawText: string): string {
@@ -178,11 +184,10 @@ export async function parseJobVacancy(
       })
     );
 
+    const vacancy = normalizeJobVacancy(object, rawText);
+
     return {
-      vacancy: {
-        ...object,
-        rawText, // Preserve original text
-      } as JobVacancy,
+      vacancy,
       usage: {
         promptTokens: usage?.inputTokens ?? 0,
         completionTokens: usage?.outputTokens ?? 0,
@@ -192,4 +197,52 @@ export async function parseJobVacancy(
     console.error('[Job Parser] Failed after retries:', error);
     throw error;
   }
+}
+
+// Normalize what the LLM returned into a fully-populated JobVacancy.
+// Mirrors the approach in cv-generator.ts — same intermittent Opus 4.7
+// structured-output failure modes ({}, {data: ...}, missing fields).
+function normalizeJobVacancy(rawInput: unknown, rawText: string): JobVacancy {
+  type RawShape = Partial<JobVacancy> & { data?: Partial<JobVacancy> };
+  let raw = (rawInput ?? {}) as RawShape;
+
+  if (
+    raw.data &&
+    typeof raw.data === 'object' &&
+    !raw.title &&
+    !raw.description &&
+    !raw.requirements
+  ) {
+    raw = raw.data as RawShape;
+  }
+
+  const hasContent =
+    (raw.title && raw.title.trim().length > 0) ||
+    (raw.description && raw.description.trim().length > 0) ||
+    (raw.requirements && raw.requirements.length > 0);
+
+  if (!hasContent) {
+    throw new Error(
+      'Het AI-model gaf een leeg antwoord terug bij het analyseren van de vacature. Probeer het opnieuw — dit gebeurt af en toe bij lange teksten. Je credit is niet afgeschreven.',
+    );
+  }
+
+  return {
+    title: raw.title ?? '',
+    company: raw.company ?? null,
+    description: raw.description ?? '',
+    requirements: raw.requirements ?? [],
+    keywords: raw.keywords ?? [],
+    industry: raw.industry ?? undefined,
+    location: raw.location ?? undefined,
+    employmentType: raw.employmentType ?? undefined,
+    compensation: raw.compensation ?? undefined,
+    salaryEstimate: raw.salaryEstimate ?? undefined,
+    experienceRequired: raw.experienceRequired ?? undefined,
+    mustHaveSkills: raw.mustHaveSkills ?? [],
+    niceToHaveSkills: raw.niceToHaveSkills ?? [],
+    requiredEducation: raw.requiredEducation ?? undefined,
+    requiredCertifications: raw.requiredCertifications ?? [],
+    rawText,
+  };
 }

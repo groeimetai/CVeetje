@@ -16,21 +16,26 @@ import type {
 } from '@/types';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 
-// Schema for structured CV output
+// Schema for structured CV output.
+//
+// Top-level fields are OPTIONAL because Claude Opus 4.7 under structured
+// output occasionally returns `{}` or drops fields (e.g. headline). Parse
+// leniently, then validate meaningfully in code: if the core fields are
+// empty we throw a user-facing error, otherwise we fill sensible defaults.
 const cvContentSchema = z.object({
-  headline: z.string().describe('A professional headline/title that positions the candidate for the TARGET JOB. This appears under the name. Examples: "Senior Software Engineer | Cloud & DevOps Specialist" or "Marketing Manager | Digital Strategy & Brand Development". Should bridge the candidates background WITH the target role - not just copy their current title!'),
-  summary: z.string().describe('A professional summary tailored to the target job, 2-3 sentences'),
+  headline: z.string().optional().describe('Professional headline bridging candidate background with the TARGET JOB. Example: "Senior Software Engineer | Cloud & DevOps Specialist". Must position them for the target role, not just copy their current title.'),
+  summary: z.string().optional().describe('Professional summary tailored to the target job, 2-3 sentences'),
   experience: z.array(
     z.object({
-      title: z.string().describe('Job title - MUST be adapted to align with target job. If target is "ServiceNow Developer" and original was "IT Consultant", use "ServiceNow Consultant" or "Technical Consultant (ServiceNow)". Always reframe titles to show relevance while staying truthful.'),
+      title: z.string().describe('Job title - reframed toward the target role when the described work supports it (see instructions).'),
       company: z.string(),
       location: z.string().nullable(),
       period: z.string().describe('Format: "Month Year - Month Year" or "Month Year - Present"'),
-      highlights: z.array(z.string()).describe('2-5 bullet points. More bullets (4-5) for highly relevant roles, fewer (2-3) for less relevant ones. Used when format is bullets.'),
-      description: z.string().optional().describe('2-3 sentences of flowing prose describing the role. Used when format is paragraph instead of bullets.'),
-      relevanceScore: z.number().describe('How relevant is this role to the target job? Use scale 1-5 where 5=highly relevant, 1=minimally relevant'),
+      highlights: z.array(z.string()).describe('2-5 bullet points. More bullets for highly relevant roles.'),
+      description: z.string().optional().describe('2-3 sentences of prose; used when format is paragraph instead of bullets.'),
+      relevanceScore: z.number().describe('1-5, where 5=highly relevant to the target job'),
     })
-  ).describe('Experiences ORDERED BY RELEVANCE to target job (most relevant first), not just chronologically'),
+  ).optional().describe('Experiences ORDERED BY RELEVANCE to the target job, not chronologically'),
   education: z.array(
     z.object({
       degree: z.string(),
@@ -38,28 +43,28 @@ const cvContentSchema = z.object({
       year: z.string(),
       details: z.string().nullable().describe('Optional: relevant coursework, honors, GPA'),
     })
-  ),
+  ).optional(),
   skills: z.object({
     technical: z.array(z.string()).describe('Technical/hard skills relevant to the job, ordered by relevance'),
     soft: z.array(z.string()).describe('Soft skills relevant to the job'),
-  }),
+  }).optional(),
   languages: z.array(
     z.object({
       language: z.string(),
       level: z.string().describe('Proficiency level: Native, Fluent, Professional, Conversational, Basic'),
     })
-  ),
-  certifications: z.array(z.string()).describe('Relevant certifications'),
+  ).optional(),
+  certifications: z.array(z.string()).optional().describe('Relevant certifications'),
   projects: z.array(
     z.object({
       title: z.string().describe('Project name, refined for relevance to target job'),
       description: z.string().describe('Tailored project description highlighting relevance to target job'),
-      technologies: z.array(z.string()).describe('Technologies/tools used, ordered by relevance to target job'),
+      technologies: z.array(z.string()).describe('Technologies/tools used, ordered by relevance'),
       url: z.string().nullable().describe('Link to project/repo if available from profile data'),
       period: z.string().describe('Date range or "Ongoing"'),
-      highlights: z.array(z.string()).describe('1-3 key achievements or results from the project'),
+      highlights: z.array(z.string()).describe('1-3 key achievements from the project'),
     })
-  ).describe('Projects ordered by relevance to target job. Include personal projects, open source, academic work.'),
+  ).optional().describe('Projects ordered by relevance. Include personal projects, open source, academic work.'),
 });
 
 // HONESTY RULES - Two clear blocks: what is forbidden, what is encouraged.
@@ -736,8 +741,10 @@ export async function generateCV(
       })
     );
 
+    const content = normalizeCVContent(object, linkedIn, jobVacancy);
+
     return {
-      content: object as GeneratedCVContent,
+      content,
       usage: {
         promptTokens: usage?.inputTokens ?? 0,
         completionTokens: usage?.outputTokens ?? 0,
@@ -747,4 +754,62 @@ export async function generateCV(
     console.error('[CV Gen] Failed after retries:', error);
     throw error;
   }
+}
+
+// Normalize what the LLM returned into a fully-populated GeneratedCVContent.
+//
+// Claude Opus 4.7 structured-output has three failure modes we handle here:
+//   1. {} — model returned nothing useful → throw a user-facing error
+//   2. {data: {...}} — model wrapped the payload in `data` → unwrap it
+//   3. missing `headline` or individual top-level arrays → fill from context
+function normalizeCVContent(
+  rawInput: unknown,
+  linkedIn: ParsedLinkedIn,
+  jobVacancy: JobVacancy | null,
+): GeneratedCVContent {
+  type RawShape = Partial<GeneratedCVContent> & { data?: Partial<GeneratedCVContent> };
+  let raw = (rawInput ?? {}) as RawShape;
+
+  if (
+    raw.data &&
+    typeof raw.data === 'object' &&
+    !raw.summary &&
+    !raw.experience &&
+    !raw.skills
+  ) {
+    raw = raw.data as RawShape;
+  }
+
+  const hasContent =
+    (raw.summary && raw.summary.trim().length > 0) ||
+    (raw.experience && raw.experience.length > 0) ||
+    (raw.skills?.technical && raw.skills.technical.length > 0);
+
+  if (!hasContent) {
+    throw new Error(
+      'Het AI-model gaf een leeg antwoord terug. Probeer het opnieuw — dit gebeurt af en toe bij lange prompts. Je credit is niet afgeschreven.',
+    );
+  }
+
+  if (!raw.headline || raw.headline.trim().length === 0) {
+    if (jobVacancy?.title) {
+      const topKeyword = jobVacancy.keywords?.find((k) => k && k.trim().length > 0);
+      raw.headline = topKeyword ? `${jobVacancy.title} | ${topKeyword}` : jobVacancy.title;
+    } else if (linkedIn.headline) {
+      raw.headline = linkedIn.headline;
+    } else {
+      raw.headline = '';
+    }
+  }
+
+  return {
+    headline: raw.headline ?? '',
+    summary: raw.summary ?? '',
+    experience: raw.experience ?? [],
+    education: raw.education ?? [],
+    skills: raw.skills ?? { technical: [], soft: [] },
+    languages: raw.languages ?? [],
+    certifications: raw.certifications ?? [],
+    projects: raw.projects ?? [],
+  } as GeneratedCVContent;
 }
