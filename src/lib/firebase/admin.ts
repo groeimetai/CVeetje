@@ -34,6 +34,10 @@ export function getAdminAuth(): Auth {
 export function getAdminDb(): Firestore {
   if (!adminDb) {
     adminDb = getFirestore(getAdminApp());
+    // Allow `undefined` in write payloads — the SDK strips those fields
+    // instead of throwing. Matches how our generators produce partial
+    // objects (optional Zod fields left as `undefined`).
+    adminDb.settings({ ignoreUndefinedProperties: true });
   }
   return adminDb;
 }
