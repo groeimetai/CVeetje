@@ -1,8 +1,6 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { createAIProvider, getModelId } from './providers';
 import { resolveTemperature } from './temperature';
-import { withRetry } from './retry';
+import { generateObjectResilient } from './generate-resilient';
 import { getCurrentDateContext } from './date-context';
 import type {
   ParsedLinkedIn,
@@ -15,41 +13,42 @@ import type {
   TokenUsage,
 } from '@/types';
 
-// Schema for AI-generated fit analysis
-// Note: Anthropic doesn't support min/max on numbers, so constraints are in descriptions
+// Schema for AI-generated fit analysis.
+// Top-level fields are OPTIONAL for robustness against Opus 4.7 structured
+// output flakes ({} or {data: ...}); normalizeFitAnalysis fills defaults.
 const fitAnalysisSchema = z.object({
-  overallScore: z.number().describe('Overall fit score from 0-100. Must be between 0 and 100. 80+ = excellent, 60-79 = good, 40-59 = moderate, 20-39 = challenging, <20 = unlikely'),
-  verdict: z.enum(['excellent', 'good', 'moderate', 'challenging', 'unlikely']).describe('Overall verdict on the fit'),
-  verdictExplanation: z.string().describe('Brief explanation of the verdict (1-2 sentences)'),
+  overallScore: z.number().optional().describe('Overall fit score from 0-100. 80+ = excellent, 60-79 = good, 40-59 = moderate, 20-39 = challenging, <20 = unlikely'),
+  verdict: z.enum(['excellent', 'good', 'moderate', 'challenging', 'unlikely']).optional().describe('Overall verdict on the fit'),
+  verdictExplanation: z.string().optional().describe('Brief explanation of the verdict (1-2 sentences)'),
 
   warnings: z.array(z.object({
     severity: z.enum(['info', 'warning', 'critical']).describe('info = minor gap, warning = significant gap, critical = likely dealbreaker'),
     category: z.enum(['experience', 'skills', 'education', 'industry', 'certification']),
     message: z.string().describe('Short message (max 10 words)'),
     detail: z.string().describe('Detailed explanation (1-2 sentences)'),
-  })).describe('List of warnings/gaps identified'),
+  })).optional().describe('List of warnings/gaps identified'),
 
   strengths: z.array(z.object({
     category: z.enum(['experience', 'skills', 'education', 'industry', 'certification', 'general']),
     message: z.string().describe('Short strength description (max 10 words)'),
     detail: z.string().describe('Why this is a strength (1-2 sentences)'),
-  })).describe('List of strengths/matches identified'),
+  })).optional().describe('List of strengths/matches identified'),
 
   skillMatch: z.object({
-    matched: z.array(z.string()).describe('Skills the candidate has that match job requirements — INCLUDING functional equivalents (e.g. list "container orchestration" as matched if the candidate has Kubernetes experience, even if the word "Kubernetes" is what appears in their profile)'),
-    missing: z.array(z.string()).describe('Skills the job requires for which the candidate has neither direct nor functional-equivalent experience nor any reasonable claim via transferable background. Be strict here: a skill only counts as "missing" if there is genuinely nothing in the profile that demonstrates it, not merely if the exact word does not appear.'),
+    matched: z.array(z.string()).describe('Skills the candidate has that match job requirements — INCLUDING functional equivalents'),
+    missing: z.array(z.string()).describe('Skills the job requires for which the candidate has no direct or equivalent experience'),
     bonus: z.array(z.string()).describe('Nice-to-have skills the candidate has (direct or equivalent)'),
-    matchPercentage: z.number().describe('Percentage of must-have skills matched, counting functional equivalents and transferable experience as matches (0-100)'),
-  }),
+    matchPercentage: z.number().describe('Percentage of must-have skills matched (0-100)'),
+  }).optional(),
 
   experienceMatch: z.object({
-    candidateYears: z.number().describe('Estimated years of RELEVANT experience — including transferable experience from adjacent roles, not only experience with the literal job title'),
+    candidateYears: z.number().describe('Estimated years of RELEVANT experience including transferable work'),
     requiredYears: z.number().describe('Years of experience required by the job'),
-    gap: z.number().describe('Difference: candidateYears - requiredYears. Compute candidateYears generously (transferable counts), so a senior professional switching domains should not show a deep negative gap purely because their previous title was different.'),
-    levelMatch: z.boolean().describe('Does candidate experience level (junior/medior/senior/lead) match the required level? Judge by seniority of responsibilities, not by the literal job title.'),
-  }),
+    gap: z.number().describe('candidateYears - requiredYears'),
+    levelMatch: z.boolean().describe('Does candidate experience level match required level?'),
+  }).optional(),
 
-  advice: z.string().describe('Actionable advice for the candidate (2-3 sentences). Be constructive and specific.'),
+  advice: z.string().optional().describe('Actionable advice for the candidate (2-3 sentences)'),
 });
 
 function buildFitAnalysisPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy): string {
@@ -263,32 +262,75 @@ export async function analyzeFit(
   apiKey: string,
   model: string
 ): Promise<AnalyzeFitResult> {
-  const aiProvider = createAIProvider(provider, apiKey);
-  const modelId = getModelId(provider, model);
-
   const prompt = buildFitAnalysisPrompt(linkedIn, jobVacancy);
 
   try {
-    const { object, usage } = await withRetry(() =>
-      generateObject({
-        model: aiProvider(modelId),
-        schema: fitAnalysisSchema,
-        prompt,
-        temperature: resolveTemperature(provider, modelId, 0.3),
-      })
-    );
+    const { value, usage } = await generateObjectResilient({
+      provider,
+      apiKey,
+      model,
+      schema: fitAnalysisSchema,
+      prompt,
+      temperature: resolveTemperature(provider, model, 0.3),
+      normalize: normalizeFitAnalysis,
+      logTag: 'Fit Analyzer',
+    });
 
-    return {
-      analysis: object as FitAnalysis,
-      usage: {
-        promptTokens: usage?.inputTokens ?? 0,
-        completionTokens: usage?.outputTokens ?? 0,
-      },
-    };
+    return { analysis: value, usage };
   } catch (error) {
-    console.error('[Fit Analyzer] Failed after retries:', error);
+    console.error('[Fit Analyzer] Failed after all attempts:', error);
     throw error;
   }
+}
+
+// Normalize what the LLM returned into a fully-populated FitAnalysis.
+// Same failure modes as cv-generator / job-parser — {} or {data: ...}.
+function normalizeFitAnalysis(rawInput: unknown): FitAnalysis {
+  type RawShape = Partial<FitAnalysis> & { data?: Partial<FitAnalysis> };
+  let raw = (rawInput ?? {}) as RawShape;
+
+  if (
+    raw.data &&
+    typeof raw.data === 'object' &&
+    raw.overallScore === undefined &&
+    !raw.verdict &&
+    !raw.skillMatch
+  ) {
+    raw = raw.data as RawShape;
+  }
+
+  const hasContent =
+    typeof raw.overallScore === 'number' ||
+    !!raw.verdict ||
+    !!raw.skillMatch ||
+    !!raw.experienceMatch;
+
+  if (!hasContent) {
+    throw new Error(
+      'Het AI-model gaf een leeg antwoord terug bij de fit-analyse. Probeer het opnieuw — dit gebeurt af en toe bij lange prompts. Je credit is niet afgeschreven.',
+    );
+  }
+
+  return {
+    overallScore: typeof raw.overallScore === 'number' ? raw.overallScore : 50,
+    verdict: (raw.verdict as FitVerdict) ?? 'moderate',
+    verdictExplanation: raw.verdictExplanation ?? '',
+    warnings: (raw.warnings ?? []) as FitWarning[],
+    strengths: (raw.strengths ?? []) as FitStrength[],
+    skillMatch: raw.skillMatch ?? {
+      matched: [],
+      missing: [],
+      bonus: [],
+      matchPercentage: 0,
+    },
+    experienceMatch: raw.experienceMatch ?? {
+      candidateYears: 0,
+      requiredYears: 0,
+      gap: 0,
+      levelMatch: false,
+    },
+    advice: raw.advice ?? '',
+  };
 }
 
 // Helper function to get verdict color (for UI)

@@ -1,8 +1,6 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { createAIProvider, getModelId } from './providers';
 import { resolveTemperature } from './temperature';
-import { withRetry } from './retry';
+import { generateObjectResilient } from './generate-resilient';
 import { getCurrentDateContext } from './date-context';
 import type { JobVacancy, LLMProvider, TokenUsage } from '@/types';
 
@@ -169,32 +167,23 @@ export async function parseJobVacancy(
   apiKey: string,
   model: string
 ): Promise<ParseJobResult> {
-  const aiProvider = createAIProvider(provider, apiKey);
-  const modelId = getModelId(provider, model);
-
   const prompt = buildParsePrompt(rawText);
 
   try {
-    const { object, usage } = await withRetry(() =>
-      generateObject({
-        model: aiProvider(modelId),
-        schema: jobVacancySchema,
-        prompt,
-        temperature: resolveTemperature(provider, modelId, 0.3),
-      })
-    );
+    const { value, usage } = await generateObjectResilient({
+      provider,
+      apiKey,
+      model,
+      schema: jobVacancySchema,
+      prompt,
+      temperature: resolveTemperature(provider, model, 0.3),
+      normalize: (raw) => normalizeJobVacancy(raw, rawText),
+      logTag: 'Job Parser',
+    });
 
-    const vacancy = normalizeJobVacancy(object, rawText);
-
-    return {
-      vacancy,
-      usage: {
-        promptTokens: usage?.inputTokens ?? 0,
-        completionTokens: usage?.outputTokens ?? 0,
-      },
-    };
+    return { vacancy: value, usage };
   } catch (error) {
-    console.error('[Job Parser] Failed after retries:', error);
+    console.error('[Job Parser] Failed after all attempts:', error);
     throw error;
   }
 }

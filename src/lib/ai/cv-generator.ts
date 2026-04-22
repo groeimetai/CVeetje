@@ -1,8 +1,6 @@
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { createAIProvider, getModelId } from './providers';
 import { resolveTemperature } from './temperature';
-import { withRetry } from './retry';
+import { generateObjectResilient } from './generate-resilient';
 import { getCurrentDateContext } from './date-context';
 import type {
   ParsedLinkedIn,
@@ -726,32 +724,23 @@ export async function generateCV(
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
   fitAnalysis?: FitAnalysis | null
 ): Promise<GenerateCVResult> {
-  const aiProvider = createAIProvider(provider, apiKey);
-  const modelId = getModelId(provider, model);
-
   const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language, descriptionFormat, fitAnalysis);
 
   try {
-    const { object, usage } = await withRetry(() =>
-      generateObject({
-        model: aiProvider(modelId),
-        schema: cvContentSchema,
-        prompt,
-        temperature: resolveTemperature(provider, modelId, 0.5),
-      })
-    );
+    const { value, usage } = await generateObjectResilient({
+      provider,
+      apiKey,
+      model,
+      schema: cvContentSchema,
+      prompt,
+      temperature: resolveTemperature(provider, model, 0.5),
+      normalize: (raw) => normalizeCVContent(raw, linkedIn, jobVacancy),
+      logTag: 'CV Gen',
+    });
 
-    const content = normalizeCVContent(object, linkedIn, jobVacancy);
-
-    return {
-      content,
-      usage: {
-        promptTokens: usage?.inputTokens ?? 0,
-        completionTokens: usage?.outputTokens ?? 0,
-      },
-    };
+    return { content: value, usage };
   } catch (error) {
-    console.error('[CV Gen] Failed after retries:', error);
+    console.error('[CV Gen] Failed after all attempts:', error);
     throw error;
   }
 }
