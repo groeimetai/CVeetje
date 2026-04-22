@@ -5,8 +5,8 @@
  * the payload in `{data: ...}`, causing "response did not match schema" /
  * empty-content failures. That error is intermittent, not deterministic —
  * a fresh request with the same prompt often succeeds. For Anthropic
- * specifically we also keep Sonnet 4.6 as a last-ditch fallback, since its
- * structured-output is noticeably more stable on long prompts.
+ * specifically we also keep Opus 4.6 as a last-ditch fallback, since its
+ * structured-output is more stable while staying in the same model family.
  *
  * This helper tries a sequence of attempts and considers an attempt
  * "successful" only when the normalize function accepts the result. The
@@ -18,7 +18,7 @@ import type { z } from 'zod';
 import { createAIProvider, getModelId } from './providers';
 import type { LLMProvider, TokenUsage } from '@/types';
 
-const ANTHROPIC_FALLBACK_MODEL = 'claude-sonnet-4-6';
+const ANTHROPIC_FALLBACK_MODEL = 'claude-opus-4-6';
 
 export interface ResilientGenerateOptions<TSchema extends z.ZodTypeAny, TResult> {
   provider: LLMProvider;
@@ -63,12 +63,13 @@ export async function generateObjectResilient<TSchema extends z.ZodTypeAny, TRes
   const primaryModelId = getModelId(provider, model);
 
   // Build attempt chain. We always try the primary model twice (catches
-  // genuine flakes). For Anthropic we add one Sonnet 4.6 attempt at the end
-  // as a model-level escape hatch — Sonnet handles long structured prompts
-  // significantly better than Opus 4.7.
+  // genuine flakes). For Anthropic we add one Opus 4.6 attempt at the end
+  // as a model-level escape hatch — 4.6 stays in the same family but has
+  // less aggressive structured-output behavior than 4.7.
   const modelChain: string[] = [primaryModelId, primaryModelId];
-  if (provider === 'anthropic' && !primaryModelId.includes('sonnet')) {
-    modelChain.push(getModelId('anthropic', ANTHROPIC_FALLBACK_MODEL));
+  const fallbackModelId = getModelId('anthropic', ANTHROPIC_FALLBACK_MODEL);
+  if (provider === 'anthropic' && primaryModelId !== fallbackModelId) {
+    modelChain.push(fallbackModelId);
   }
 
   let lastError: unknown;
