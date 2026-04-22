@@ -20,6 +20,7 @@ import {
   Briefcase,
   Send,
   Scale,
+  Cpu,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -63,6 +64,7 @@ const adminNavigationItems = [
   { key: 'adminTemplates', href: '/admin/templates', icon: LayoutTemplate },
   { key: 'adminKanban', href: '/admin/kanban', icon: Columns3 },
   { key: 'adminFeedback', href: '/admin/feedback', icon: MessageSquarePlus },
+  { key: 'adminPlatform', href: '/admin/platform', icon: Cpu },
 ];
 
 // Sidebar content component (shared between desktop and mobile)

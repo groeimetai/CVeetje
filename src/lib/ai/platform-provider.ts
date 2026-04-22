@@ -19,6 +19,7 @@ import {
   PLATFORM_CREDIT_COSTS,
   type PlatformOperation,
 } from '@/lib/ai/platform-config';
+import { getPlatformModelFor } from '@/lib/ai/platform-config-reader';
 import type { LLMMode } from '@/types';
 import { queueEmail } from '@/lib/email/send';
 import { renderCreditsLowEmail } from '@/lib/email/templates/credits-low';
@@ -127,13 +128,20 @@ async function resolvePlatformProvider(
     await deductPlatformCredits(userId, userData, cost, operation);
   }
 
+  // Per-operation model from Firestore config (`config/platform`), with a
+  // 5-min in-process cache. Falls back to PLATFORM_MODEL.modelId when the
+  // doc is missing or the operation hasn't been overridden.
+  const modelId = operation
+    ? await getPlatformModelFor(operation)
+    : PLATFORM_MODEL.modelId;
+
   const provider = createAIProvider(PLATFORM_MODEL.provider, platformApiKey);
 
   return {
     provider,
     apiKey: platformApiKey,
     providerName: PLATFORM_MODEL.provider,
-    model: PLATFORM_MODEL.modelId,
+    model: modelId,
     mode: 'platform',
     userId,
   };

@@ -63,7 +63,8 @@
     "feedback": "Feedback",
     "adminFeedback": "Feedback",
     "adminProfiles": "Profielen",
-    "adminDisputes": "Disputes"
+    "adminDisputes": "Disputes",
+    "adminPlatform": "Platform AI"
   },
   "auth": {
     "signIn": "Inloggen",
