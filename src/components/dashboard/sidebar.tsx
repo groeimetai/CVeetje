@@ -19,6 +19,7 @@ import {
   MessageSquarePlus,
   Briefcase,
   Send,
+  Scale,
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -57,6 +58,7 @@ const adminNavigationItems = [
   { key: 'adminUsers', href: '/admin/users', icon: Users },
   { key: 'adminProfiles', href: '/admin/profielen', icon: User },
   { key: 'adminCvs', href: '/admin/cvs', icon: FileText },
+  { key: 'adminDisputes', href: '/admin/disputes', icon: Scale },
   { key: 'adminEmails', href: '/admin/emails', icon: Mail },
   { key: 'adminTemplates', href: '/admin/templates', icon: LayoutTemplate },
   { key: 'adminKanban', href: '/admin/kanban', icon: Columns3 },

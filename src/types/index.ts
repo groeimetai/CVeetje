@@ -801,8 +801,46 @@ export interface CV {
   fitAnalysis?: FitAnalysis | null;
   motivationLetter?: GeneratedMotivationLetter | null;
   language?: OutputLanguage;
+  // Dispute system state — a user can request up to 3 reviews when they
+  // believe the AI got something wrong. Attempts 1 and 2 go through an AI
+  // gatekeeper; attempt 3 escalates to human admin review.
+  disputeCount?: number;                        // 0-3
+  creativityLevel?: StyleCreativityLevel;       // Current level (changes after approved dispute)
+  creativityLevelHistory?: StyleCreativityLevel[]; // All levels the CV has been through
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+// ============ Dispute System ============
+
+export type DisputeStatus =
+  | 'pending-ai'        // Gatekeeper is evaluating
+  | 'approved'          // Gatekeeper or admin agreed — CV was regenerated in a new style
+  | 'rejected'          // Gatekeeper / admin rejected — CV stays as-is
+  | 'needs-human';      // Third attempt — waiting for admin review
+
+export interface CVDispute {
+  id?: string;
+  cvId: string;
+  userId: string;
+  userEmail?: string;
+  // What the user said was wrong. Minimum length enforced by the API (20 chars).
+  reason: string;
+  // Where we came from / where we went to. requestedLevel is the user's pick.
+  previousLevel: StyleCreativityLevel;
+  requestedLevel: StyleCreativityLevel;
+  // Gatekeeper outcome (absent when status is needs-human and not yet resolved).
+  aiVerdict?: 'approved' | 'rejected';
+  aiRationale?: string;
+  // Admin outcome (only set when status was needs-human).
+  adminVerdict?: 'approved' | 'rejected';
+  adminRationale?: string;
+  adminUserId?: string;
+  status: DisputeStatus;
+  // Attempt number within this CV's dispute lifecycle (1-3).
+  attempt: number;
+  createdAt: Timestamp;
+  resolvedAt?: Timestamp;
 }
 
 // ============ Generated CV Content (Structured Output) ============

@@ -29,6 +29,7 @@ import type {
   CVContactInfo,
   OutputLanguage,
   FitAnalysis,
+  StyleCreativityLevel,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { ApplyQuestion } from '@/lib/jobs/providers/types';
@@ -72,6 +73,11 @@ export function CVWizard() {
   const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
   const [styleConfig, setStyleConfig] = useState<CVStyleConfig | null>(null);
   const [designTokens, setDesignTokens] = useState<CVDesignTokens | null>(null);
+  // Tracked so the dispute dialog knows what "current" level to exclude
+  // from the user's alternatives. Updated when the style is (re)generated
+  // and kept in sync via the creativityLevel field stored on the CV doc.
+  const [selectedCreativityLevel, setSelectedCreativityLevel] = useState<StyleCreativityLevel>('balanced');
+  const [disputeCount] = useState<number>(0);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<GeneratedCVContent | null>(null);
   const [editedContent, setEditedContent] = useState<GeneratedCVContent | null>(null);
@@ -476,9 +482,12 @@ export function CVWizard() {
     setCurrentStep('job');
   };
 
-  const handleStyleGenerated = async (config: CVStyleConfig, tokens: CVDesignTokens) => {
+  const handleStyleGenerated = async (config: CVStyleConfig, tokens: CVDesignTokens, creativityLevel?: StyleCreativityLevel) => {
     setStyleConfig(config);
     setDesignTokens(tokens);
+    if (creativityLevel) {
+      setSelectedCreativityLevel(creativityLevel);
+    }
 
     if (!hasApiKey) {
       setError('Please configure your API key in Settings before generating a CV.');
@@ -502,6 +511,7 @@ export function CVWizard() {
           avatarUrl,
           language: outputLanguage,
           fitAnalysis,
+          creativityLevel: creativityLevel || selectedCreativityLevel,
         }),
       });
 
@@ -1176,6 +1186,8 @@ export function CVWizard() {
           onColorsChange={handleColorsChange}
           onElementColorsChange={handleElementColorsChange}
           onTokensChange={handleTokensChange}
+          currentCreativityLevel={selectedCreativityLevel}
+          disputeCount={disputeCount}
         />
       )}
 

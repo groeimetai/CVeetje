@@ -132,7 +132,7 @@ interface DynamicStylePickerProps {
   linkedInData: ParsedLinkedIn;
   jobVacancy: JobVacancy | null;
   avatarUrl?: string | null;
-  onStyleGenerated: (styleConfig: CVStyleConfig, tokens: CVDesignTokens) => void;
+  onStyleGenerated: (styleConfig: CVStyleConfig, tokens: CVDesignTokens, creativityLevel: StyleCreativityLevel) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
   onCreditsRefresh?: () => void;
   initialStyleConfig?: CVStyleConfig | null;
@@ -337,7 +337,7 @@ export function DynamicStylePicker({
     if (tokens) {
       // Rebuild styleConfig from tokens to ensure they're always in sync
       const syncedStyleConfig = tokensToStyleConfig(tokens);
-      onStyleGenerated(syncedStyleConfig, tokens);
+      onStyleGenerated(syncedStyleConfig, tokens, creativityLevel);
     }
   };
 

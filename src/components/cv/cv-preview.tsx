@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, RefreshCw, FileText, Coins, Sparkles, Maximize2, Minimize2, Pencil, ChevronDown, Briefcase, User, Building2, TrendingUp, Palette, Target, DollarSign, MapPin, Clock, Award, Lightbulb, MessageSquare } from 'lucide-react';
+import { Download, RefreshCw, FileText, Coins, Sparkles, Maximize2, Minimize2, Pencil, ChevronDown, Briefcase, User, Building2, TrendingUp, Palette, Target, DollarSign, MapPin, Clock, Award, Lightbulb, MessageSquare, Scale } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -25,6 +25,7 @@ import { generateCVHTML } from '@/lib/cv/html-generator';
 import { fontPairings, typeScales, spacingScales, themeDefaults } from '@/lib/cv/templates/themes';
 import { CVContentEditor, type ElementColorOverrides } from './cv-content-editor';
 import { CVChatPanel } from './cv-chat-panel';
+import { CVDisputeDialog } from './cv-dispute-dialog';
 import { MotivationLetterSection } from './motivation-letter-section';
 import type { OutputLanguage, TokenUsage } from '@/types';
 
@@ -64,6 +65,9 @@ interface CVPreviewProps {
   onColorsChange?: (colors: CVDesignTokens['colors']) => void;
   onElementColorsChange?: (elementColors: ElementColorOverrides) => void;
   onTokensChange?: (tokens: CVDesignTokens) => void;
+  // Dispute system state
+  disputeCount?: number;
+  currentCreativityLevel?: 'conservative' | 'balanced' | 'creative' | 'experimental';
 }
 
 /**
@@ -102,11 +106,14 @@ export function CVPreview({
   onColorsChange,
   onElementColorsChange,
   onTokensChange,
+  disputeCount = 0,
+  currentCreativityLevel = 'balanced',
 }: CVPreviewProps) {
   const { llmMode } = useAuth();
   const [activeTab, setActiveTab] = useState('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isDisputeOpen, setIsDisputeOpen] = useState(false);
   const [localOverrides, setLocalOverrides] = useState<CVElementOverrides>(
     initialOverrides || { overrides: [], lastModified: new Date() }
   );
@@ -277,6 +284,16 @@ export function CVPreview({
             </Badge>
           </div>
           <div className="flex items-center gap-2">
+            {cvId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsDisputeOpen(true)}
+                title="Klopt deze CV niet? Vraag een heroverweging aan."
+              >
+                <Scale className="h-4 w-4" />
+              </Button>
+            )}
             {linkedInData && (
               <Button
                 variant={isChatOpen ? 'secondary' : 'ghost'}
@@ -809,6 +826,17 @@ export function CVPreview({
           language={language}
           onContentChange={handleContentChange}
           onTokensChange={onTokensChange}
+        />
+      )}
+
+      {/* Dispute Dialog */}
+      {cvId && (
+        <CVDisputeDialog
+          cvId={cvId}
+          open={isDisputeOpen}
+          onOpenChange={setIsDisputeOpen}
+          currentLevel={currentCreativityLevel}
+          disputeCount={disputeCount}
         />
       )}
     </div>

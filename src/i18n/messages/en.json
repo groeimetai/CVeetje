@@ -62,7 +62,8 @@
     "adminKanban": "Kanban",
     "feedback": "Feedback",
     "adminFeedback": "Feedback",
-    "adminProfiles": "Profiles"
+    "adminProfiles": "Profiles",
+    "adminDisputes": "Disputes"
   },
   "auth": {
     "signIn": "Sign In",

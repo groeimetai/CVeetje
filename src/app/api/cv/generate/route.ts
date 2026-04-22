@@ -14,6 +14,7 @@ import type {
   CVStyleConfig,
   OutputLanguage,
   FitAnalysis,
+  StyleCreativityLevel,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
       avatarUrl,
       language = 'nl',
       fitAnalysis,
+      creativityLevel,
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
       avatarUrl?: string | null;
       language?: OutputLanguage;
       fitAnalysis?: FitAnalysis | null;
+      creativityLevel?: StyleCreativityLevel;
     };
 
     // Validate input
@@ -154,6 +157,11 @@ export async function POST(request: NextRequest) {
       llmModel: resolved.model,
       fitAnalysis: fitAnalysis || null,
       language: language || 'nl',
+      // Dispute system: capture the creativity level the user picked so
+      // disputes can reason about which level to move to.
+      creativityLevel: creativityLevel || 'balanced',
+      creativityLevelHistory: [creativityLevel || 'balanced'],
+      disputeCount: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
