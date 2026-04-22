@@ -181,13 +181,28 @@ export type BoldHeadingStyle =
   | 'oversized-numbered' // Big number + small title
   | 'kicker-bar'         // Kicker label on colored bar above title
   | 'gradient-text'      // Gradient text fill on titles
-  | 'bracketed';         // [ SECTION ] brackets
+  | 'bracketed'          // [ SECTION ] brackets
+  | 'stacked-caps'       // Title stacked vertically, ENORMOUS caps (Peter Saville)
+  | 'overlap-block';     // Title set against a colored block that bleeds past it
 
 export type BoldGradientDirection =
   | 'none'
   | 'linear-vertical'    // Top → bottom
   | 'linear-diagonal'    // 45° diagonal
-  | 'radial-burst';      // Radial from one point
+  | 'radial-burst'       // Radial from one point
+  | 'duotone-split'      // Hard split between two colors (riso-style)
+  | 'offset-clash';      // Slightly offset contrasting color band
+
+// Art-directed surface texture — layered on top of headers / sidebars /
+// main to lift the design out of "clean SaaS" land and into "printed /
+// designed / made by someone" territory. All variants are print-safe:
+// implemented with SVG data-URLs and repeating gradients, no CSS filter.
+export type BoldSurfaceTexture =
+  | 'none'
+  | 'halftone'           // Screen-printed dot pattern overlay
+  | 'riso-grain'         // Subtle noise dots — riso-print feel
+  | 'screen-print'       // Slight mis-registered color offset
+  | 'stripe-texture';    // Fine repeating diagonal lines
 
 export interface BoldTokens {
   headerLayout: BoldHeaderLayout;
@@ -198,6 +213,9 @@ export interface BoldTokens {
   iconTreatment: BoldIconTreatment;
   headingStyle: BoldHeadingStyle;
   gradientDirection: BoldGradientDirection;
+  // Optional so existing documents without it still render cleanly; the
+  // renderer treats absence as 'none'. New experimental CVs always fill it.
+  surfaceTexture?: BoldSurfaceTexture;
 }
 
 // Custom decoration element (for experimental mode)

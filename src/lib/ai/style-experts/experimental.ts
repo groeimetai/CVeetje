@@ -1,11 +1,14 @@
 /**
- * Experimental expert — bold / Canva-style CVs.
+ * Experimental expert — avant-garde / gallery-style CVs.
  *
- * Uses a dedicated schema extension (`bold` object with 8 orthogonal
- * primitives) that maps to the bold renderer. THE VARIATION FIX lives here:
- * the rotation logic now targets `bold.*` primitives (not the base
- * headerVariant/sectionStyle, which the bold renderer ignores). That was the
- * root cause of "experimental always looks the same" in the wild.
+ * References: MSCHF, Toilet Paper magazine, David Carson, Peter Saville,
+ * Barbara Kruger, Aries Moross, modern museum identities (Stedelijk,
+ * Centre Pompidou, MoMA PS1). The goal is "made by someone with a voice",
+ * not "made by a SaaS template wizard".
+ *
+ * Uses a dedicated `bold` object with orthogonal primitives that map to the
+ * bold renderer. Variation rotation targets those primitives directly so
+ * the level doesn't converge on the same look.
  */
 
 import { z } from 'zod';
@@ -24,8 +27,6 @@ import {
   industryToDecorationTheme,
 } from './shared/normalize-base';
 import { pickFrom, rotateLeastUsed } from './shared/variation';
-import { colorMoods } from './shared/color-moods';
-import { fontDirections } from './shared/font-directions';
 
 const LOG_TAG = 'Style Gen [experimental]';
 
@@ -33,10 +34,10 @@ const LOG_TAG = 'Style Gen [experimental]';
 
 const boldSchema = z.object({
   headerLayout: z.enum(['hero-band', 'split-photo', 'tiled', 'asymmetric-burst']).optional().describe(
-    'Header: hero-band (gradient band) | split-photo (photo + colored block) | tiled (colored tiles grid) | asymmetric-burst (diagonal gradient)',
+    'Header composition: hero-band (full-width gradient/color band) | split-photo (photo block + colored block) | tiled (colored tiles grid) | asymmetric-burst (diagonal gradient)',
   ),
   sidebarStyle: z.enum(['solid-color', 'gradient', 'photo-hero', 'transparent']).optional().describe(
-    'Sidebar: solid-color | gradient (primary→accent) | photo-hero (only if photo available) | transparent (quiet)',
+    'Sidebar treatment: solid-color | gradient | photo-hero (only if photo available) | transparent',
   ),
   skillStyle: z.enum(['bars-gradient', 'dots-rating', 'icon-tagged', 'colored-pills']).optional().describe(
     'Skills in sidebar: bars-gradient | dots-rating | icon-tagged | colored-pills',
@@ -47,26 +48,47 @@ const boldSchema = z.object({
   accentShape: z.enum(['diagonal-stripe', 'angled-corner', 'colored-badge', 'hex-pattern']).optional().describe(
     'Structural accent applied to sections.',
   ),
-  iconTreatment: z.enum(['solid-filled', 'duotone', 'line-with-accent']).optional().describe('Contact icons style.'),
-  headingStyle: z.enum(['oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed']).optional().describe(
-    'Section titles: oversized-numbered (Linear-style) | kicker-bar | gradient-text | bracketed',
+  iconTreatment: z.enum(['solid-filled', 'duotone', 'line-with-accent']).optional().describe(
+    'Contact icons style.',
   ),
-  gradientDirection: z.enum(['none', 'linear-vertical', 'linear-diagonal', 'radial-burst']).optional().describe(
-    'Gradient: none | linear-vertical | linear-diagonal (most expressive) | radial-burst',
+  headingStyle: z.enum([
+    'oversized-numbered',
+    'kicker-bar',
+    'gradient-text',
+    'bracketed',
+    'stacked-caps',
+    'overlap-block',
+  ]).optional().describe(
+    `Section titles:
+    - oversized-numbered: big 01/02/03 numerals
+    - kicker-bar: small colored bar over big title
+    - gradient-text: gradient fill on title
+    - bracketed: [ SECTION ] wrapped uppercase
+    - stacked-caps: title stacked vertically in ENORMOUS caps (Peter Saville)
+    - overlap-block: title set against a colored block that bleeds past it`,
+  ),
+  gradientDirection: z.enum([
+    'none', 'linear-vertical', 'linear-diagonal', 'radial-burst', 'duotone-split', 'offset-clash',
+  ]).optional().describe(
+    `Gradient mode: none | linear-vertical | linear-diagonal | radial-burst | duotone-split (riso-style hard split) | offset-clash (two contrasting color bands)`,
+  ),
+  surfaceTexture: z.enum(['none', 'halftone', 'riso-grain', 'screen-print', 'stripe-texture']).optional().describe(
+    `Overlay texture on colored surfaces (header, sidebar):
+    - none: flat color
+    - halftone: screen-printed dot pattern
+    - riso-grain: subtle riso-print noise
+    - screen-print: slight mis-registered color offset (Peter Saville)
+    - stripe-texture: fine repeating diagonal lines`,
   ),
 });
 
 const experimentalSchema = baseDesignTokensSchema.extend({
-  bold: boldSchema.optional().describe('Bold layout tokens — drive the Canva/Linear-style renderer.'),
+  bold: boldSchema.optional().describe('Bold layout tokens — drive the avant-garde renderer.'),
   decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract']).optional(),
   layout: z.enum(['sidebar-left', 'sidebar-right']).optional(),
 });
 
 // ============ Bold pools ============
-//
-// These are the pools the variation-rotator works on. Every primitive the
-// bold renderer cares about appears here — so when history has over-used
-// one value, we pick the least-used alternative.
 
 const BOLD_POOLS = {
   headerLayout: ['hero-band', 'split-photo', 'tiled', 'asymmetric-burst'] as const,
@@ -75,12 +97,92 @@ const BOLD_POOLS = {
   photoTreatment: ['circle-halo', 'squircle', 'color-overlay', 'badge-framed'] as const,
   accentShape: ['diagonal-stripe', 'angled-corner', 'colored-badge', 'hex-pattern'] as const,
   iconTreatment: ['solid-filled', 'duotone', 'line-with-accent'] as const,
-  headingStyle: ['oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed'] as const,
-  gradientDirection: ['none', 'linear-vertical', 'linear-diagonal', 'radial-burst'] as const,
+  headingStyle: [
+    'oversized-numbered', 'kicker-bar', 'gradient-text', 'bracketed', 'stacked-caps', 'overlap-block',
+  ] as const,
+  gradientDirection: [
+    'none', 'linear-vertical', 'linear-diagonal', 'radial-burst', 'duotone-split', 'offset-clash',
+  ] as const,
+  surfaceTexture: ['none', 'halftone', 'riso-grain', 'screen-print', 'stripe-texture'] as const,
 };
 
-// For the variation nudge we exclude photo-hero when there's no photo;
-// handled at prompt-build time.
+// ============ Avant-garde color palettes ============
+//
+// These REPLACE the generic color-moods pool for experimental. Each is a
+// deliberate clash — the kind that makes a CV look art-directed instead of
+// Tailwind-defaulted. Hex codes are suggestions only; the AI is expected
+// to riff on them, not copy verbatim.
+interface AvantPalette {
+  name: string;
+  description: string;
+  primary: string;
+  accent: string;
+}
+
+const avantGardePalettes: AvantPalette[] = [
+  {
+    name: 'riso-red-teal',
+    description: 'Riso-print red + teal. Bright hot red + turquoise, clashing in the best way. Toilet Paper magazine energy.',
+    primary: '#d73838',
+    accent: '#1d8a99',
+  },
+  {
+    name: 'hot-pink-forest',
+    description: 'Hot pink primary + deep forest green accent. Aries Moross poster vibe — unapologetic, confident.',
+    primary: '#e91e63',
+    accent: '#1b5e20',
+  },
+  {
+    name: 'mustard-plum',
+    description: 'Mustard yellow + aubergine plum. Mid-century avant-garde, Bauhaus reprint.',
+    primary: '#5a2442',
+    accent: '#d4a21a',
+  },
+  {
+    name: 'electric-violet-olive',
+    description: 'Electric violet primary + dusty olive accent. Museum identity feel (MoMA PS1, Stedelijk).',
+    primary: '#6b21a8',
+    accent: '#6e7e3c',
+  },
+  {
+    name: 'sage-hot-coral',
+    description: 'Sage green primary + hot coral accent. Unexpected warm-cool split. Apartamento/Cereal hybrid.',
+    primary: '#5b7a5c',
+    accent: '#f96958',
+  },
+  {
+    name: 'paper-bone-black-red',
+    description: 'Bone white page, carbon black primary, single screaming red accent. Barbara Kruger / Vignelli.',
+    primary: '#0f0f0f',
+    accent: '#d9322b',
+  },
+  {
+    name: 'navy-mustard-pink',
+    description: 'Deep navy primary + mustard accent, slight dusty-pink highlights. 1970s art-book feel.',
+    primary: '#1e2847',
+    accent: '#d6a42b',
+  },
+  {
+    name: 'terracotta-teal',
+    description: 'Warm terracotta primary + deep teal accent. Centre Pompidou ceramic-show palette.',
+    primary: '#b8613b',
+    accent: '#155e63',
+  },
+  {
+    name: 'riso-pink-blue',
+    description: 'Hot pink + electric blue — classic riso duotone. Print-zine energy.',
+    primary: '#ff3d7f',
+    accent: '#2d5fff',
+  },
+  {
+    name: 'black-neon-yellow',
+    description: 'Pure black primary with one single neon-yellow accent. Modern gallery poster (Kunsthalle Basel style).',
+    primary: '#0a0a0a',
+    accent: '#e8fc4a',
+  },
+];
+
+// ============ Bold validator ============
 
 function validateAndFixBoldTokens(
   raw: CVDesignTokens['bold'] | undefined,
@@ -106,8 +208,21 @@ function validateAndFixBoldTokens(
   const gradientDirection = isValid(raw?.gradientDirection, BOLD_POOLS.gradientDirection)
     ? raw!.gradientDirection
     : pickFrom(BOLD_POOLS.gradientDirection);
+  const surfaceTexture = isValid(raw?.surfaceTexture, BOLD_POOLS.surfaceTexture)
+    ? raw!.surfaceTexture
+    : pickFrom(BOLD_POOLS.surfaceTexture);
 
-  return { headerLayout, sidebarStyle, skillStyle, photoTreatment, accentShape, iconTreatment, headingStyle, gradientDirection };
+  return {
+    headerLayout,
+    sidebarStyle,
+    skillStyle,
+    photoTreatment,
+    accentShape,
+    iconTreatment,
+    headingStyle,
+    gradientDirection,
+    surfaceTexture,
+  };
 }
 
 // ============ Prompts ============
@@ -116,53 +231,125 @@ function buildSystemPrompt(hasPhoto: boolean): string {
   const constraints = creativityConstraints.experimental;
   return `${commonSystemHeader(hasPhoto)}
 
-*** EXPERIMENTAL MODE — BOLD / CANVA-STYLE ***
+*** EXPERIMENTAL MODE — AVANT-GARDE / GALLERY ***
 
-Think Linear.app launch pages, Notion, Stripe, Spotify artist pages, modern
-Canva resume templates. Saturated colors, gradients, iconography, progress
-bars, colored sidebars. Structural color (blocks and bands), not floating
-decorations.
+Reference points: MSCHF, Toilet Paper magazine, Barbara Kruger, David Carson,
+Peter Saville, Aries Moross, Stedelijk Museum identity, Centre Pompidou
+posters. The goal is "made by a designer with a voice and an opinion", NOT
+"made by a SaaS template".
 
-A dedicated bold renderer handles this level. Fill the \`bold\` object with
-8 compositional primitives.
+What this means concretely:
+- Colors that CLASH deliberately (hot pink + forest green, red + teal,
+  mustard + plum). Not safe Tailwind complements.
+- Typography as a statement, not a label. Section titles can be ENORMOUS.
+  Stacked uppercase, overlapping blocks, gradient fills — all allowed.
+- Flat areas of saturated color PLUS texture (halftone dots, riso-print
+  grain, mis-registered offset) so surfaces feel printed / made, not SaaS-flat.
+- Compositional tension: asymmetric, off-kilter, blocks that aren't aligned
+  to a grid. Intentional imbalance.
+- NOT "Canva nor Linear nor Notion nor Stripe". That family is creative
+  territory (editorial). Experimental is galleries, zines, museum shops.
+
+A dedicated bold renderer handles this level. Fill the \`bold\` object:
 
 THE BOLD PRIMITIVES:
 
 - **headerLayout** — hero-band | split-photo | tiled | asymmetric-burst
-  split-photo is most Canva-like. tiled = grid of colored tiles. hero-band =
-  full-width gradient. asymmetric-burst = diagonal gradient.
+  tiled is strongest for avant-garde (grid of clashing color blocks).
+  asymmetric-burst also works (diagonal color field bleeding off the edge).
+
 - **sidebarStyle** — solid-color | gradient | photo-hero | transparent
-  Sidebar is ALWAYS present in bold. photo-hero needs a photo. transparent = quietest.
+  Sidebar is always present. For avant-garde, solid-color in the accent
+  (not primary) makes a stronger clash; gradient with duotone-split is
+  another strong move.
+
 - **skillStyle** — bars-gradient | dots-rating | icon-tagged | colored-pills
-  bars-gradient is most visual. dots-rating = rating feel.
+  colored-pills in a clashing accent feels most zine-like; bars-gradient
+  is the loudest.
+
 - **photoTreatment** — circle-halo | squircle | color-overlay | badge-framed
+  color-overlay with a saturated tint is the most art-directed look.
+
 - **accentShape** — diagonal-stripe | angled-corner | colored-badge | hex-pattern
+  diagonal-stripe for screen-printed feel, hex-pattern for riso background.
+
 - **iconTreatment** — solid-filled | duotone | line-with-accent
-- **headingStyle** — oversized-numbered (Linear) | kicker-bar | gradient-text | bracketed
-- **gradientDirection** — none | linear-vertical | linear-diagonal | radial-burst
-  linear-diagonal = most expressive (primary→accent 45°).
+
+- **headingStyle** — oversized-numbered | kicker-bar | gradient-text | bracketed | stacked-caps | overlap-block
+  For avant-garde: stacked-caps (title vertical, ENORMOUS — Peter Saville)
+  and overlap-block (title set against a colored block that extends past
+  it — Kruger) are the strongest. oversized-numbered also still works.
+
+- **gradientDirection** — none | linear-vertical | linear-diagonal | radial-burst | duotone-split | offset-clash
+  duotone-split creates a hard edge between two colors (riso energy).
+  offset-clash puts two color bands next to each other without blending.
+
+- **surfaceTexture** — none | halftone | riso-grain | screen-print | stripe-texture
+  DO NOT leave at 'none' for this level. Texture is what lifts the design
+  out of the "SaaS flat" look. halftone = dots, riso-grain = noise,
+  screen-print = slight offset misregistration, stripe-texture = fine lines.
 
 REQUIRED BASE TOKENS:
 - showPhoto: ${hasPhoto ? 'true' : 'false'}
 - useIcons: true
-- roundedCorners: usually true
+- roundedCorners: often false for avant-garde (sharp corners feel more gallery)
 - experienceDescriptionFormat: 'bullets'
 - themeBase: 'bold' or 'creative'
 
 FONTS (pick from): ${constraints.allowedFontPairings.join(' | ')}
+- oswald-source-sans = condensed impact (David Carson / concert posters)
+- dm-serif-dm-sans = sharp editorial serif
+- playfair-inter = literary with contrast
+- space-grotesk-work-sans = techno-gallery (Kunsthalle)
+- montserrat-open-sans = geometric assertive
 
-COLORS: saturated, unexpected color choices driven by the industry.
-- Tech: electric blue/cyan accent
-- Creative: magenta/coral
-- Finance: deep-teal/gold
-- Healthcare: emerald/violet
-Never default to muted navy + grey.
+COLORS: the whole reason you're in experimental is to USE COLOR AS A
+STATEMENT. The AI-picked color-palette MUST be unexpected. Copy the
+reasoning from the examples below, then override with something ELSE that
+still clashes — don't just reuse the same palette twice in a row.
 
-EXAMPLES:
-1. Product designer / startup — split-photo header, gradient sidebar, bars-gradient skills, squircle photo, colored-badge accent, line-with-accent icons, oversized-numbered headings, linear-diagonal. Primary #4f46e5 accent #f59e0b.
-2. Marketing lead — hero-band, solid-color sidebar, colored-pills, circle-halo, hex-pattern, solid-filled icons, bracketed headings, linear-diagonal. Primary #be185d accent #fbbf24.
-3. Engineering manager — asymmetric-burst, gradient sidebar, icon-tagged, color-overlay, angled-corner, duotone, gradient-text, radial-burst. Primary #0891b2 accent #10b981.
-4. Creative director — tiled, photo-hero (if photo), dots-rating, badge-framed, diagonal-stripe, solid-filled, kicker-bar, linear-vertical. Primary #7c2d12 accent #f97316.
+Do NOT reach for Tailwind defaults (#0891b2, #be185d, #4f46e5, #f59e0b).
+Those feel like a SaaS dashboard. Reach for off-key combinations:
+- hot-pink + forest-green
+- red + teal (riso-print)
+- mustard + aubergine plum
+- electric-violet + dusty-olive
+- sage-green + hot-coral
+- bone-white + pure-black + one screaming red
+- navy + mustard + dusty-pink
+- terracotta + deep-teal
+- black + single neon-yellow accent
+
+EXAMPLE COMBINATIONS (copy the energy, vary the specifics):
+
+1. *Gallery curator* — tiled header, solid-color sidebar, colored-pills
+   skills, color-overlay photo, diagonal-stripe accent, solid-filled icons,
+   stacked-caps headings, duotone-split gradient, halftone texture.
+   Primary #0f0f0f, accent #d9322b. Font: oswald-source-sans.
+
+2. *Art director / publisher* — asymmetric-burst header, gradient sidebar,
+   bars-gradient skills, squircle photo, colored-badge accent,
+   line-with-accent icons, overlap-block headings, offset-clash gradient,
+   screen-print texture. Primary #1e2847, accent #d6a42b. Font: dm-serif-dm-sans.
+
+3. *Independent designer / zine editor* — tiled header, solid-color sidebar
+   (in the accent), dots-rating skills, color-overlay photo, hex-pattern
+   accent, duotone icons, oversized-numbered headings, duotone-split
+   gradient, riso-grain texture. Primary #d73838, accent #1d8a99. Font:
+   space-grotesk-work-sans.
+
+4. *Creative technologist* — hero-band header, gradient sidebar,
+   icon-tagged skills, badge-framed photo, angled-corner accent, solid-filled
+   icons, gradient-text headings, linear-diagonal gradient, stripe-texture.
+   Primary #6b21a8, accent #6e7e3c. Font: montserrat-open-sans.
+
+5. *Fashion / cultural role* — split-photo header, solid-color sidebar,
+   colored-pills skills, badge-framed photo, colored-badge accent,
+   solid-filled icons, overlap-block headings, none gradient, halftone
+   texture. Primary #e91e63, accent #1b5e20. Font: playfair-inter.
+
+Vary aggressively. Two experimental CVs for the same industry should share
+NO primitives in common.
 ${commonSectionOrderFooter}`;
 }
 
@@ -171,73 +358,91 @@ function buildUserPrompt(ctx: PromptContext): string {
 
   if (ctx.jobVacancy) {
     prompt += `
-INDUSTRY & COMPANY DRIVE THIS DESIGN:
+INDUSTRY AS STARTING POINT, NOT CONSTRAINT:
 Industry: "${ctx.jobVacancy.industry || 'Unknown'}", Company: "${ctx.jobVacancy.company || 'Unknown'}".
 
-Experimental mode is "boldest version of what fits this specific role". A
-fintech role = saturated but restrained, geometric, trust-signaling. A creative
-agency = loud, expressive color. A healthcare role = warm, human bold choices.
+Experimental mode is art-directed — the industry tells you WHICH avant-garde
+language to speak, not whether to speak one.
 
-If you're 100% CERTAIN about brand colors (ING=orange, Bol.com=blue,
-Coolblue=blue+orange), incorporate them boldly. Otherwise translate the
-industry character into structural visual choices via the bold primitives.
+- Tech / creative tech → riso-print energy (red+teal, pink+blue). Halftone
+  or riso-grain. space-grotesk or oswald.
+- Finance / consulting → gallery-restrained avant-garde (navy+mustard,
+  black+neon-yellow, terracotta+teal). Screen-print texture. dm-serif.
+- Creative / agency / fashion → full Toilet-Paper / Aries-Moross
+  (hot-pink+forest, mustard+plum, electric-violet+olive). Halftone.
+  playfair or oswald.
+- Healthcare / academic → museum-poster restrained (sage-green+coral,
+  terracotta+teal, bone+black+red). Riso-grain. playfair or dm-serif.
+- Industrial / engineering → Bauhaus-reprint (mustard+plum, black+yellow,
+  navy+mustard). Stripe-texture. space-grotesk or oswald.
+
+If you're 100% CERTAIN about brand colors, you may incorporate them — but
+only as ONE half of a clashing pair, not the whole palette. The other half
+should come from the avant-garde family.
 `;
   }
 
   // Variation nudge — pick concrete bold primitives to try this round.
-  // Exclude photo-hero from the nudge when there's no photo.
   const sidebarPool = ctx.hasPhoto
     ? BOLD_POOLS.sidebarStyle
     : BOLD_POOLS.sidebarStyle.filter(s => s !== 'photo-hero');
-  const mood = pickFrom(colorMoods);
-  const fontDir = pickFrom(fontDirections);
+  const palette = pickFrom(avantGardePalettes);
   prompt += `
-VARIATION NUDGE (diversity signal — pick these unless the job context clearly
-prefers something else):
-- Suggested color mood: "${mood.mood}" — ${mood.description}
-- Typography flavour: ${fontDir.hint}
+VARIATION NUDGE — pick a concrete avant-garde palette + primitives:
+- Suggested palette: "${palette.name}" — ${palette.description} (primary suggestion ${palette.primary}, accent ${palette.accent})
 - Try bold.headerLayout = "${pickFrom(BOLD_POOLS.headerLayout)}"
 - Try bold.sidebarStyle = "${pickFrom(sidebarPool)}"
 - Try bold.headingStyle = "${pickFrom(BOLD_POOLS.headingStyle)}"
-- Try bold.skillStyle = "${pickFrom(BOLD_POOLS.skillStyle)}"
 - Try bold.gradientDirection = "${pickFrom(BOLD_POOLS.gradientDirection)}"
+- Try bold.surfaceTexture = "${pickFrom(BOLD_POOLS.surfaceTexture.filter(t => t !== 'none'))}"
+- Try bold.skillStyle = "${pickFrom(BOLD_POOLS.skillStyle)}"
+
+You MAY override these if the job context strongly pulls elsewhere, but
+DO use an avant-garde palette (not a Tailwind default).
 `;
 
   prompt += `
-Generate tokens for the BOLD RENDERER. The most important part is the
-\`bold\` object — fill all 8 fields.
+Generate tokens for the AVANT-GARDE BOLD RENDERER. The most important part
+is the \`bold\` object — fill all 9 fields INCLUDING surfaceTexture.
 
 Non-negotiables:
-1. Fill the \`bold\` object with ALL fields.
-2. Match bold choices to the JOB CONTEXT — a finance role and a creative
-   agency role should produce visibly different bold CVs.
-3. Use a bold, saturated palette that fits THIS industry.
-4. Base schema fields (headerVariant, sectionStyle, etc.) are IGNORED by
-   the bold renderer but required by schema. Pick any valid value.
+1. Fill every field in \`bold\`. Do NOT set surfaceTexture = 'none' — pick
+   at least a subtle texture (riso-grain if unsure).
+2. Use an avant-garde palette (see examples). Tailwind-default saturated
+   blues/cyans/magentas are NOT allowed as the whole palette.
+3. Vary from previous CVs — this is experimental, repetition is the
+   enemy. If history shows a primitive was used, pick a different one.
 
-IMPORTANT: think like an art director hired by THIS company for THIS role.`;
+IMPORTANT: think like a museum exhibition designer or a zine art director
+commissioned for this specific role. NOT a Canva template picker.`;
 
   return prompt;
 }
 
 function getFallback(industry?: string): CVDesignTokens {
-  const industryColors: Record<string, { primary: string; secondary: string; accent: string }> = {
-    technology: { primary: '#0891b2', secondary: '#ecfeff', accent: '#f59e0b' },
-    finance: { primary: '#1e3a5f', secondary: '#f0f9ff', accent: '#10b981' },
-    creative: { primary: '#be185d', secondary: '#fdf2f8', accent: '#06b6d4' },
-    healthcare: { primary: '#059669', secondary: '#ecfdf5', accent: '#8b5cf6' },
-    consulting: { primary: '#4338ca', secondary: '#eef2ff', accent: '#f59e0b' },
-    default: { primary: '#dc2626', secondary: '#fef2f2', accent: '#0891b2' },
+  // Industry → curated avant-garde palette (NOT Tailwind-pop colors).
+  const industryPalettes: Record<string, AvantPalette> = {
+    technology: avantGardePalettes.find(p => p.name === 'riso-red-teal')!,
+    finance: avantGardePalettes.find(p => p.name === 'navy-mustard-pink')!,
+    creative: avantGardePalettes.find(p => p.name === 'hot-pink-forest')!,
+    healthcare: avantGardePalettes.find(p => p.name === 'sage-hot-coral')!,
+    consulting: avantGardePalettes.find(p => p.name === 'terracotta-teal')!,
   };
-  const colors = industryColors[industry || ''] || industryColors.default;
+  const palette = industryPalettes[industry || ''] || avantGardePalettes[0];
   const decorationTheme = industryToDecorationTheme(industry, 'abstract');
 
   return {
-    styleName: 'Bold Experimental',
-    styleRationale: 'A bold, colorful design that stands out.',
-    industryFit: industry || 'technology',
+    styleName: 'Avant-garde',
+    styleRationale: 'Art-directed, unexpected colors, gallery-poster sensibility.',
+    industryFit: industry || 'creative',
     themeBase: 'bold',
-    colors: { ...colors, text: '#1f2937', muted: '#6b7280' },
+    colors: {
+      primary: palette.primary,
+      secondary: '#faf7f2',
+      accent: palette.accent,
+      text: '#1a1a1a',
+      muted: '#5a5a5a',
+    },
     fontPairing: 'oswald-source-sans',
     scale: 'medium',
     spacing: 'comfortable',
@@ -245,31 +450,32 @@ function getFallback(industry?: string): CVDesignTokens {
     sectionStyle: 'magazine',
     skillsDisplay: 'tags',
     experienceDescriptionFormat: 'bullets',
-    contactLayout: 'double-column',
-    headerGradient: 'radial',
+    contactLayout: 'single-column',
+    headerGradient: 'none',
     showPhoto: true,
     useIcons: true,
-    roundedCorners: true,
+    roundedCorners: false,
     headerFullBleed: false,
     decorations: 'none',
     decorationTheme,
     sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
     layout: 'sidebar-left',
     sidebarSections: ['skills', 'languages', 'certifications'],
-    borderRadius: 'pill',
+    borderRadius: 'none',
     accentStyle: 'border-left',
     nameStyle: 'uppercase',
-    skillTagStyle: 'pill',
-    pageBackground: '#ffffff',
+    skillTagStyle: 'outlined',
+    pageBackground: '#faf7f2',
     bold: {
-      headerLayout: 'hero-band',
-      sidebarStyle: 'gradient',
-      skillStyle: 'bars-gradient',
-      photoTreatment: 'circle-halo',
-      accentShape: 'colored-badge',
+      headerLayout: 'tiled',
+      sidebarStyle: 'solid-color',
+      skillStyle: 'colored-pills',
+      photoTreatment: 'color-overlay',
+      accentShape: 'diagonal-stripe',
       iconTreatment: 'solid-filled',
-      headingStyle: 'oversized-numbered',
-      gradientDirection: 'linear-diagonal',
+      headingStyle: 'stacked-caps',
+      gradientDirection: 'duotone-split',
+      surfaceTexture: 'halftone',
     },
   };
 }
@@ -288,7 +494,7 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
   if (!constraints.allowedThemes.includes(tokens.themeBase)) tokens.themeBase = constraints.allowedThemes[0];
   if (!constraints.allowedFontPairings.includes(tokens.fontPairing)) tokens.fontPairing = constraints.allowedFontPairings[0];
 
-  // Bold always has a sidebar — force a valid layout
+  // Bold always has a sidebar
   if (tokens.layout !== 'sidebar-left' && tokens.layout !== 'sidebar-right') {
     tokens.layout = Math.random() > 0.5 ? 'sidebar-left' : 'sidebar-right';
   }
@@ -296,15 +502,12 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
     tokens.sidebarSections = ['skills', 'languages', 'certifications'];
   }
 
-  // Resolve bold sub-tokens with photo awareness
   tokens.bold = validateAndFixBoldTokens(tokens.bold, !!tokens.showPhoto);
 
   applyBaseValidations(tokens, LOG_TAG);
   clearOtherRendererTokens(tokens, 'bold');
 
-  // THE ACTUAL FIX: rotate the bold primitives across history, not the base
-  // headerVariant/sectionStyle fields which the bold renderer ignores.
-  // This is what was missing and why experimental "always looked the same".
+  // Rotate the bold primitives across history — THE variation fix.
   rotateLeastUsed(
     tokens,
     ctx.styleHistory,
@@ -318,14 +521,14 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
       'bold.gradientDirection': BOLD_POOLS.gradientDirection,
       'bold.accentShape': BOLD_POOLS.accentShape,
       'bold.photoTreatment': BOLD_POOLS.photoTreatment,
+      'bold.surfaceTexture': BOLD_POOLS.surfaceTexture,
       fontPairing: constraints.allowedFontPairings,
       layout: ['sidebar-left', 'sidebar-right'],
     },
     LOG_TAG,
   );
 
-  // Final pass: make sure bold is still valid after rotation (e.g. if
-  // sidebarStyle got rotated to photo-hero but user has no photo).
+  // Final pass after rotation
   tokens.bold = validateAndFixBoldTokens(tokens.bold, !!tokens.showPhoto);
 
   return tokens;

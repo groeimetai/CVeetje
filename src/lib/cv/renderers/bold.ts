@@ -182,6 +182,9 @@ function generateBoldCSS(
     /* ================= Header variants ================= */
     ${getHeaderCSS(b, colors)}
 
+    /* ================= Surface texture overlay ================= */
+    ${getSurfaceTextureCSS(b.surfaceTexture, colors)}
+
     /* ================= Body split ================= */
 
     .bold-body {
@@ -1254,6 +1257,69 @@ function getHeadingCSS(style: BoldHeadingStyle, colors: CVDesignTokens['colors']
           margin-left: 4px;
         }
       `;
+    case 'stacked-caps':
+      // Peter Saville / Barbara Kruger — title stacked vertically in
+      // massive uppercase. Print-safe: no transforms, just writing-mode +
+      // text-orientation, which Puppeteer supports.
+      return `${base}
+        .bold-section-title {
+          font-size: 34pt;
+          font-weight: 900;
+          color: var(--b-primary);
+          text-transform: uppercase;
+          letter-spacing: -0.02em;
+          line-height: 0.88;
+          gap: 18px;
+          align-items: flex-start;
+        }
+        .bold-section-title .section-number {
+          font-family: var(--b-font-heading);
+          font-size: 22pt;
+          font-weight: 900;
+          color: var(--b-accent);
+          line-height: 1;
+          letter-spacing: -0.02em;
+          align-self: flex-start;
+          padding-top: 6px;
+        }
+        .bold-section-title .section-title-text {
+          max-width: 7ch;
+          word-break: break-word;
+        }
+      `;
+    case 'overlap-block':
+      // Title set against a colored block that bleeds past it (Kruger).
+      return `${base}
+        .bold-section-title {
+          font-size: 22pt;
+          font-weight: 900;
+          color: #fff;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+          background: ${colors.primary};
+          padding: 10px 14px 8px;
+          margin-right: -24px;
+          margin-left: -14px;
+          display: inline-flex;
+          position: relative;
+          z-index: 1;
+        }
+        .bold-section-title::after {
+          content: '';
+          position: absolute;
+          right: -12px;
+          bottom: -8px;
+          width: 28px;
+          height: 14px;
+          background: ${colors.accent};
+          z-index: -1;
+        }
+        .bold-section-title .section-number {
+          color: ${colors.accent};
+          font-size: 14pt;
+          margin-right: 6px;
+        }
+      `;
   }
 }
 
@@ -1362,6 +1428,123 @@ function buildGradient(direction: BoldTokens['gradientDirection'], colors: CVDes
       return `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`;
     case 'radial-burst':
       return `radial-gradient(circle at 20% 20%, ${lighten(colors.primary, 10)} 0%, ${colors.primary} 60%, ${darken(colors.primary, 10)} 100%)`;
+    case 'duotone-split':
+      // Hard riso-style split: left half primary, right half accent, no blend.
+      return `linear-gradient(90deg, ${colors.primary} 0%, ${colors.primary} 50%, ${colors.accent} 50%, ${colors.accent} 100%)`;
+    case 'offset-clash':
+      // Two contrasting bands with a narrow gap — unexpected, zine-ish.
+      return `linear-gradient(110deg, ${colors.primary} 0%, ${colors.primary} 62%, ${colors.accent} 62%, ${colors.accent} 100%)`;
+  }
+}
+
+// ============ Surface texture ============
+//
+// Avant-garde CVs need a layer of "made, not typed" — halftone dots, riso
+// grain, offset print-registration wobble, or screened stripes. All variants
+// are print-safe: no CSS filter, no blend modes that Puppeteer can't render.
+// We overlay on the header and sidebar via a ::after pseudo-element with
+// pointer-events:none, so actual content stays clickable in preview.
+
+function getSurfaceTextureCSS(
+  texture: BoldTokens['surfaceTexture'] | undefined,
+  _colors: CVDesignTokens['colors'],
+): string {
+  if (!texture || texture === 'none') return '';
+
+  // Target both the full-bleed header and the sidebar (the two saturated
+  // surfaces in this renderer). Use ::after so we don't fight with the
+  // gradient on ::before / the base background.
+  const surfaces = '.bold-header, .bold-sidebar-style-solid-color .bold-sidebar, .bold-sidebar-style-gradient .bold-sidebar';
+
+  switch (texture) {
+    case 'halftone':
+      // Screen-print dot pattern — small semi-transparent black dots on a
+      // tight grid. Offset pattern gives the dots a printed feel.
+      return `
+        ${surfaces} {
+          position: relative;
+          isolation: isolate;
+        }
+        ${surfaces}::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image:
+            radial-gradient(circle, rgba(0,0,0,0.18) 0.8px, transparent 1.2px);
+          background-size: 4px 4px;
+          background-position: 0 0;
+          mix-blend-mode: multiply;
+          z-index: 0;
+        }
+        ${surfaces} > * { position: relative; z-index: 1; }
+      `;
+
+    case 'riso-grain':
+      // Subtle noisy dot pattern — finer + more transparent than halftone,
+      // and offset so it doesn't look mechanical.
+      return `
+        ${surfaces} {
+          position: relative;
+          isolation: isolate;
+        }
+        ${surfaces}::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image:
+            radial-gradient(circle, rgba(255,255,255,0.14) 0.5px, transparent 0.9px),
+            radial-gradient(circle, rgba(0,0,0,0.10) 0.4px, transparent 0.9px);
+          background-size: 3px 3px, 2.5px 2.5px;
+          background-position: 0 0, 1px 1px;
+          mix-blend-mode: overlay;
+          z-index: 0;
+        }
+        ${surfaces} > * { position: relative; z-index: 1; }
+      `;
+
+    case 'screen-print':
+      // Mis-registered color offset — tiny ghost-edge of accent color
+      // slightly above-right of the surface. Feels like a screen-printed
+      // poster where the layers didn't land perfectly.
+      return `
+        ${surfaces} {
+          position: relative;
+          isolation: isolate;
+        }
+        ${surfaces}::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: inherit;
+          transform: translate(2px, -2px);
+          opacity: 0.18;
+          mix-blend-mode: screen;
+          z-index: 0;
+        }
+        ${surfaces} > * { position: relative; z-index: 1; }
+      `;
+
+    case 'stripe-texture':
+      // Fine repeating diagonal lines — silkscreen feel.
+      return `
+        ${surfaces} {
+          position: relative;
+          isolation: isolate;
+        }
+        ${surfaces}::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image:
+            repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 5px);
+          z-index: 0;
+        }
+        ${surfaces} > * { position: relative; z-index: 1; }
+      `;
   }
 }
 
