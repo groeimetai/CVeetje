@@ -304,12 +304,21 @@ function generateBoldCSS(
       gap: 12px;
       margin-bottom: 4px;
     }
+    /* Let the title/subtitle column shrink properly so a long job title
+       doesn't push the period chip to the next line. min-width:0 is the
+       flexbox-specific incantation for "allow children to shrink below
+       their intrinsic minimum content size". */
+    .bold-item-header > div:first-child {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
     .bold-item-title {
       font-family: var(--b-font-heading);
       font-size: 12pt;
       font-weight: 700;
       color: var(--b-text);
       margin: 0;
+      overflow-wrap: anywhere;
     }
     .bold-item-subtitle {
       font-family: var(--b-font-body);
@@ -325,6 +334,7 @@ function generateBoldCSS(
       font-weight: 500;
       letter-spacing: 0.04em;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .bold-item-body {
       margin-top: 4px;
@@ -431,6 +441,12 @@ function getHeaderCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
           grid-template-columns: 240px 1fr;
           min-height: 180px;
         }
+        /* When the header has no photo to show, collapse to single column
+           so the text block spans the full width instead of leaving an
+           empty colored block on the left. */
+        .bold-header.layout-split-photo.no-photo {
+          display: block;
+        }
         .bold-header.layout-split-photo .header-photo-block {
           background: var(--b-accent);
           display: flex;
@@ -521,7 +537,11 @@ function generateBoldHeader(
 
   const nameStyle = getOverrideStyle(getOverride(overrides, 'header-name'));
   const headlineStyle = getOverrideStyle(getOverride(overrides, 'header-headline'));
-  const showPhoto = tokens.showPhoto && !!avatarUrl;
+
+  // When the sidebar is photo-hero, the sidebar OWNS the portrait — suppressing
+  // it in the header prevents the double-photo bug.
+  const sidebarOwnsPhoto = b.sidebarStyle === 'photo-hero';
+  const showPhoto = tokens.showPhoto && !!avatarUrl && !sidebarOwnsPhoto;
 
   const nameHtml = `<h1 class="name" data-id="header-name" style="${nameStyle}">${escapeHtml(fullName)}</h1>`;
   const headlineHtml = headline
@@ -544,10 +564,25 @@ function generateBoldHeader(
       `;
 
     case 'split-photo':
+      // Fallback when there's no photo to show (user didn't upload, or the
+      // photo-hero sidebar has claimed it): skip the photo block entirely
+      // and let the text block span the full header. Otherwise we'd render
+      // an ugly placeholder circle filling half the header.
+      if (!showPhoto) {
+        return `
+          <header class="bold-header layout-split-photo no-photo">
+            <div class="header-text-block">
+              ${nameHtml}
+              ${headlineHtml}
+              ${contactHtml}
+            </div>
+          </header>
+        `;
+      }
       return `
         <header class="bold-header layout-split-photo">
           <div class="header-photo-block">
-            ${showPhoto ? portraitHtml : `<div class="photo-placeholder"></div>`}
+            ${portraitHtml}
           </div>
           <div class="header-text-block">
             ${nameHtml}
@@ -1258,58 +1293,66 @@ function getHeadingCSS(style: BoldHeadingStyle, colors: CVDesignTokens['colors']
         }
       `;
     case 'stacked-caps':
-      // Peter Saville / Barbara Kruger — title stacked vertically in
-      // massive uppercase. Print-safe: no transforms, just writing-mode +
-      // text-orientation, which Puppeteer supports.
+      // Peter Saville energy — massive uppercase title. The original
+      // implementation had max-width:7ch + break-word which sliced
+      // "Experience" → "Experie" + "nce". Drop both and just let the
+      // title flow naturally at 30pt with tight leading — still a
+      // statement, no broken words.
       return `${base}
         .bold-section-title {
-          font-size: 34pt;
+          font-size: 30pt;
           font-weight: 900;
           color: var(--b-primary);
           text-transform: uppercase;
-          letter-spacing: -0.02em;
-          line-height: 0.88;
-          gap: 18px;
+          letter-spacing: -0.015em;
+          line-height: 0.95;
+          gap: 16px;
           align-items: flex-start;
+          flex-wrap: wrap;
         }
         .bold-section-title .section-number {
           font-family: var(--b-font-heading);
-          font-size: 22pt;
+          font-size: 20pt;
           font-weight: 900;
           color: var(--b-accent);
           line-height: 1;
           letter-spacing: -0.02em;
-          align-self: flex-start;
-          padding-top: 6px;
+          flex-shrink: 0;
+          padding-top: 4px;
         }
         .bold-section-title .section-title-text {
-          max-width: 7ch;
-          word-break: break-word;
+          word-break: normal;
+          overflow-wrap: normal;
         }
       `;
     case 'overlap-block':
-      // Title set against a colored block that bleeds past it (Kruger).
+      // Title set against a colored block with an accent tab peeking out
+      // behind it (Kruger). Kept as an inline-block so the block sizes to
+      // the text (no clipping) and doesn't use negative margins that
+      // collided with neighboring content.
       return `${base}
         .bold-section-title {
+          display: block;
+          margin-bottom: 22px;
+        }
+        .bold-section-title .section-title-text {
           font-size: 22pt;
           font-weight: 900;
           color: #fff;
           text-transform: uppercase;
           letter-spacing: 0.02em;
           background: ${colors.primary};
-          padding: 10px 14px 8px;
-          margin-right: -24px;
-          margin-left: -14px;
-          display: inline-flex;
+          padding: 8px 16px 6px;
+          display: inline-block;
           position: relative;
-          z-index: 1;
+          line-height: 1.15;
         }
-        .bold-section-title::after {
+        .bold-section-title .section-title-text::before {
           content: '';
           position: absolute;
-          right: -12px;
+          right: -10px;
           bottom: -8px;
-          width: 28px;
+          width: 32px;
           height: 14px;
           background: ${colors.accent};
           z-index: -1;
@@ -1317,7 +1360,9 @@ function getHeadingCSS(style: BoldHeadingStyle, colors: CVDesignTokens['colors']
         .bold-section-title .section-number {
           color: ${colors.accent};
           font-size: 14pt;
+          font-weight: 900;
           margin-right: 6px;
+          vertical-align: baseline;
         }
       `;
   }
