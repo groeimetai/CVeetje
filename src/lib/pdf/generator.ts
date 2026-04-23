@@ -74,6 +74,11 @@ export async function generatePDF(
   const zeroMargin = { top: '0', right: '0', bottom: '0', left: '0' };
 
   if (pageMode === 'single-page') {
+    // Single-page export should behave like a tall screenshot of the preview,
+    // not like a print stylesheet. The creative/editorial renderer has
+    // print-specific A4 rules that introduce pagination and whitespace.
+    await page.emulateMediaType('screen');
+
     // Single-page mode: size the PDF to the actual CV root instead of the
     // whole document. Measuring body/html caused pathological page heights,
     // which PDF viewers then rendered as a tiny CV floating in a massive page.
@@ -109,6 +114,8 @@ export async function generatePDF(
       margin: zeroMargin,
     });
   } else {
+    await page.emulateMediaType('print');
+
     // Multi-page mode: standard A4 pages
     pdf = await page.pdf({
       format: 'A4',

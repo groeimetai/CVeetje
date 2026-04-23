@@ -316,7 +316,7 @@ function computeExperienceDurations(
 ): { perRole: Map<number, string>; totalSummary: string } {
   const now = new Date();
   const perRole = new Map<number, string>();
-  let totalMonths = 0;
+  const intervals: Array<{ startMonth: number; endMonth: number }> = [];
 
   for (let i = 0; i < experiences.length; i++) {
     const exp = experiences[i];
@@ -324,18 +324,106 @@ function computeExperienceDurations(
     const end = exp.endDate ? parseExperienceDate(exp.endDate) : now;
 
     if (start && end) {
-      const months = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()));
+      const startMonth = start.getFullYear() * 12 + start.getMonth();
+      const endMonth = end.getFullYear() * 12 + end.getMonth();
+      const normalizedEnd = Math.max(startMonth + 1, endMonth);
+      const months = Math.max(1, normalizedEnd - startMonth);
+
       perRole.set(i, formatDuration(months, language));
-      totalMonths += months;
+      intervals.push({ startMonth, endMonth: normalizedEnd });
     }
   }
 
+  const merged = intervals
+    .sort((a, b) => a.startMonth - b.startMonth)
+    .reduce<Array<{ startMonth: number; endMonth: number }>>((acc, current) => {
+      const last = acc[acc.length - 1];
+      if (!last) {
+        acc.push({ ...current });
+        return acc;
+      }
+
+      if (current.startMonth <= last.endMonth) {
+        last.endMonth = Math.max(last.endMonth, current.endMonth);
+      } else {
+        acc.push({ ...current });
+      }
+      return acc;
+    }, []);
+
+  const totalMonths = merged.reduce((sum, interval) => sum + (interval.endMonth - interval.startMonth), 0);
   const totalFormatted = formatDuration(totalMonths, language);
   const totalSummary = language === 'nl'
-    ? `Totale loopbaanduur (som van alle rollen): **${totalFormatted}** (berekend op ${now.toISOString().split('T')[0]})`
-    : `Total career duration (sum of all roles): **${totalFormatted}** (computed on ${now.toISOString().split('T')[0]})`;
+    ? `Totale unieke loopbaanduur (overlappende rollen niet dubbel geteld): **${totalFormatted}** (berekend op ${now.toISOString().split('T')[0]})`
+    : `Total unique career duration (overlapping roles not double-counted): **${totalFormatted}** (computed on ${now.toISOString().split('T')[0]})`;
 
   return { perRole, totalSummary };
+}
+
+function computeUniqueCareerMonths(experiences: ParsedLinkedIn['experience']): number {
+  const now = new Date();
+  const intervals: Array<{ startMonth: number; endMonth: number }> = [];
+
+  for (const exp of experiences) {
+    const start = parseExperienceDate(exp.startDate);
+    const end = exp.endDate ? parseExperienceDate(exp.endDate) : now;
+    if (!start || !end) continue;
+
+    const startMonth = start.getFullYear() * 12 + start.getMonth();
+    const endMonth = end.getFullYear() * 12 + end.getMonth();
+    intervals.push({
+      startMonth,
+      endMonth: Math.max(startMonth + 1, endMonth),
+    });
+  }
+
+  const merged = intervals
+    .sort((a, b) => a.startMonth - b.startMonth)
+    .reduce<Array<{ startMonth: number; endMonth: number }>>((acc, current) => {
+      const last = acc[acc.length - 1];
+      if (!last) {
+        acc.push({ ...current });
+        return acc;
+      }
+      if (current.startMonth <= last.endMonth) {
+        last.endMonth = Math.max(last.endMonth, current.endMonth);
+      } else {
+        acc.push({ ...current });
+      }
+      return acc;
+    }, []);
+
+  return merged.reduce((sum, interval) => sum + (interval.endMonth - interval.startMonth), 0);
+}
+
+function stripUnsupportedYearClaims(
+  text: string,
+  maxYears: number,
+  removeAll = false,
+): string {
+  let result = text;
+  const patterns = [
+    /\bwith\s+\d{1,2}\+?\s*(?:years?|yrs?)\s+of\s+[A-Za-z -]+/gi,
+    /\bmet\s+\d{1,2}\+?\s+jaar(?:\s+ervaring)?\s+in\s+[A-Za-zÀ-ÿ -]+/gi,
+    /\b\d{1,2}\+?\s*(?:years?|yrs?)\s+of\s+(?:professional\s+)?experience\b/gi,
+    /\b\d{1,2}\+?\s+jaar(?:\s+professionele)?\s+ervaring\b/gi,
+  ];
+
+  for (const pattern of patterns) {
+    result = result.replace(pattern, '');
+  }
+
+  result = result.replace(/\s{2,}/g, ' ').replace(/\s+\|/g, ' |').replace(/\|\s+\|/g, '|').trim();
+
+  if (removeAll) return result.replace(/^[|,\-:\s]+|[|,\-:\s]+$/g, '').trim();
+
+  const yearClaimRegex = /\b(\d{1,2})(\+)?\s*(years?|yrs?|jaar)\b/gi;
+  result = result.replace(yearClaimRegex, (match, yearsStr) => {
+    const years = parseInt(yearsStr, 10);
+    return years > maxYears ? '' : match;
+  });
+
+  return result.replace(/\s{2,}/g, ' ').replace(/^[|,\-:\s]+|[|,\-:\s]+$/g, '').trim();
 }
 
 function buildPrompt(
@@ -575,6 +663,7 @@ Create a headline that BRIDGES the candidate's experience WITH the target role:
 - DO NOT just copy the candidate's current LinkedIn headline!
 - The headline should position them AS a potential "${jobVacancy.title}"
 - Format: "[Role/Expertise] | [Specialization relevant to job]"
+- NEVER mention years of experience in the headline
 - Examples of GOOD headlines for this job:
   - If applying for "Backend Developer": "Software Engineer | Backend Development & API Architecture"
   - If applying for "Product Manager": "Product Lead | Tech Product Strategy & Agile Delivery"
@@ -618,6 +707,7 @@ For ALL roles:
    - Format: "[Primary Role] | [Key Specialization]"
    - Example: "Software Engineer | Full-Stack Development & Cloud Architecture"
    - Should highlight their strongest professional identity
+   - NEVER mention years of experience in the headline
 2. Create a general professional CV highlighting the candidate's strengths
 3. Write compelling experience highlights that demonstrate achievements
 4. Create a strong professional summary
@@ -633,10 +723,12 @@ For ALL roles:
 The experience durations shown in parentheses (e.g. "4 years, 2 months") next to each role
 are pre-computed from the actual dates. Use THESE numbers — do NOT calculate durations
 yourself. When mentioning years of experience in the summary or elsewhere, use the total
-career duration provided above the experience list. Never estimate or round down.
+unique career duration provided above the experience list. Never estimate, inflate, or
+infer extra years from overlapping roles, side projects, or adjacent experience.
 
 ### Professional Summary Rules:
-- Start with a strong positioning statement: "Results-driven [title]" or "Experienced [role] with [X years]" (use the pre-computed total duration!)
+- Start with a strong positioning statement: "Results-driven [title]" or a similarly grounded role statement
+- ONLY mention "[X years]" when that number is directly supported by the pre-computed unique career duration above
 - Include 2-3 key competencies that directly match the job requirements
 - End with a clear value proposition (what you bring to the employer)
 - Maximum 3 sentences - be impactful, not lengthy
@@ -832,6 +924,16 @@ function normalizeCVContent(
     } else {
       raw.headline = '';
     }
+  }
+
+  const uniqueCareerMonths = computeUniqueCareerMonths(linkedIn.experience);
+  const maxWholeYears = Math.floor(uniqueCareerMonths / 12);
+
+  if (typeof raw.headline === 'string' && raw.headline.length > 0) {
+    raw.headline = stripUnsupportedYearClaims(raw.headline, maxWholeYears, true);
+  }
+  if (typeof raw.summary === 'string' && raw.summary.length > 0) {
+    raw.summary = stripUnsupportedYearClaims(raw.summary, maxWholeYears, false);
   }
 
   return {
