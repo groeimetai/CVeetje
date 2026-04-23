@@ -96,6 +96,118 @@ const nameTreatmentFontPreference: Record<string, string[]> = {
   'condensed-impact': ['oswald-source-sans'],
 };
 
+function readContextSignals(ctx: PromptContext) {
+  const industry = (ctx.jobVacancy?.industry || '').toLowerCase();
+  const prefs = (ctx.userPreferences || '').toLowerCase();
+  const title = (ctx.jobVacancy?.title || '').toLowerCase();
+  const combined = `${industry} ${title} ${prefs}`;
+
+  return {
+    industry,
+    wantsTwoColumn: /\b(two column|2 column|two-column|2-column|twee kolom|twee kolommen|sidebar|compact)\b/.test(combined),
+    wantsMinimal: /\b(minimal|minimalistisch|strak|clean|cleaner|subtle|subtiel)\b/.test(combined),
+    wantsLoud: /\b(bold|edgy|opvallend|statement|expressive|editorial|magazine)\b/.test(combined),
+    isCorporate: /\b(finance|bank|consult|consulting|legal|jurid|account|strategy|enterprise|b2b)\b/.test(combined),
+    isCreativeRole: /\b(creative|design|designer|marketing|brand|art|fashion|agency|copy|content)\b/.test(combined),
+  };
+}
+
+function getContextualFallback(ctx: PromptContext): CVDesignTokens {
+  const signals = readContextSignals(ctx);
+  const base = getFallback(ctx.jobVacancy?.industry);
+
+  if (signals.isCorporate) {
+    return {
+      ...base,
+      styleName: 'Editorial Executive',
+      styleRationale: 'Editorial restraint with clearer structure for corporate and strategy roles.',
+      industryFit: ctx.jobVacancy?.industry || 'finance',
+      fontPairing: 'dm-serif-dm-sans',
+      colors: {
+        primary: '#1f2233',
+        secondary: '#f6f1e8',
+        accent: '#9a6b45',
+        text: '#1d1d1d',
+        muted: '#6c655b',
+      },
+      editorial: {
+        headerLayout: 'split',
+        nameTreatment: 'uppercase-tracked',
+        accentTreatment: 'thin-rule',
+        sectionTreatment: 'numbered',
+        grid: 'asymmetric-70-30',
+        divider: 'hairline',
+        typographyScale: 'modest',
+        sectionNumbering: true,
+      },
+      layout: 'sidebar-right',
+      sidebarSections: ['skills', 'languages', 'certifications'],
+    };
+  }
+
+  if (signals.isCreativeRole || signals.wantsLoud) {
+    return {
+      ...base,
+      styleName: 'Editorial Feature',
+      styleRationale: 'More expressive magazine direction for creative, brand and culture roles.',
+      industryFit: ctx.jobVacancy?.industry || 'creative',
+      fontPairing: 'oswald-source-sans',
+      colors: {
+        primary: '#26213a',
+        secondary: '#faf5ee',
+        accent: '#d86d43',
+        text: '#171717',
+        muted: '#6d655e',
+      },
+      editorial: {
+        headerLayout: 'band',
+        nameTreatment: 'condensed-impact',
+        accentTreatment: 'marker-highlight',
+        sectionTreatment: 'kicker',
+        grid: 'asymmetric-60-40',
+        divider: 'whitespace-large',
+        typographyScale: 'hero',
+        sectionNumbering: true,
+      },
+      layout: 'sidebar-left',
+      sidebarSections: ['skills', 'projects', 'languages', 'certifications'],
+    };
+  }
+
+  if (signals.wantsMinimal) {
+    return {
+      ...base,
+      fontPairing: 'libre-baskerville-source-sans',
+      editorial: {
+        headerLayout: 'stacked',
+        nameTreatment: 'oversized-serif',
+        accentTreatment: 'thin-rule',
+        sectionTreatment: 'numbered',
+        grid: 'manuscript',
+        divider: 'hairline',
+        typographyScale: 'modest',
+        sectionNumbering: true,
+      },
+      layout: 'single-column',
+      sidebarSections: ['skills', 'languages', 'certifications'],
+    };
+  }
+
+  if (signals.wantsTwoColumn) {
+    return {
+      ...base,
+      editorial: {
+        ...base.editorial!,
+        grid: 'asymmetric-60-40',
+      },
+      layout: 'sidebar-right',
+      sidebarSections: ['skills', 'languages', 'certifications'],
+    };
+  }
+
+  return base;
+}
+
 function validateAndFixEditorialTokens(
   raw: CVDesignTokens['editorial'] | undefined,
   fontPairing: string,
@@ -297,7 +409,7 @@ function getFallback(industry?: string): CVDesignTokens {
 
 function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
   const constraints = creativityConstraints.creative;
-  const fallback = getFallback(ctx.jobVacancy?.industry);
+  const fallback = getContextualFallback(ctx);
   const rawPartial = (raw ?? {}) as Partial<CVDesignTokens>;
   const aiColors = rawPartial.colors || {};
   const tokens: CVDesignTokens = {
@@ -309,8 +421,29 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
   if (!constraints.allowedThemes.includes(tokens.themeBase)) tokens.themeBase = constraints.allowedThemes[0];
   if (!constraints.allowedFontPairings.includes(tokens.fontPairing)) tokens.fontPairing = constraints.allowedFontPairings[0];
 
+  if (typeof rawPartial.showPhoto !== 'boolean') {
+    tokens.showPhoto = ctx.hasPhoto;
+  }
+
+  const signals = readContextSignals(ctx);
+  if (!rawPartial.layout) {
+    tokens.layout = signals.wantsTwoColumn || signals.isCorporate ? 'sidebar-right' : fallback.layout;
+  }
+  if (!rawPartial.sidebarSections || rawPartial.sidebarSections.length === 0) {
+    tokens.sidebarSections = fallback.sidebarSections || ['skills', 'languages', 'certifications'];
+  }
+
   // Resolve editorial sub-tokens (fills missing fields, font-pair fix-up)
   tokens.editorial = validateAndFixEditorialTokens(tokens.editorial, tokens.fontPairing);
+
+  // Keep corporate / compact requests in a true multi-column grid unless the
+  // AI explicitly chose the manuscript layout.
+  if (
+    tokens.editorial.grid === 'three-column-intro' ||
+    ((signals.wantsTwoColumn || signals.isCorporate) && !rawPartial.editorial?.grid && tokens.editorial.grid === 'full-bleed')
+  ) {
+    tokens.editorial.grid = signals.isCorporate ? 'asymmetric-70-30' : 'asymmetric-60-40';
+  }
 
   applyBaseValidations(tokens, LOG_TAG);
   clearOtherRendererTokens(tokens, 'editorial');
@@ -327,6 +460,7 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
       'editorial.grid': EDITORIAL_POOLS.grid,
       'editorial.divider': EDITORIAL_POOLS.divider,
       'editorial.accentTreatment': EDITORIAL_POOLS.accentTreatment,
+      'editorial.typographyScale': EDITORIAL_POOLS.typographyScale,
       fontPairing: constraints.allowedFontPairings,
     },
     LOG_TAG,

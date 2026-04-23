@@ -97,7 +97,7 @@ function getFallback(industry?: string): CVDesignTokens {
     experienceDescriptionFormat: 'bullets',
     contactLayout: 'single-row',
     headerGradient: 'none',
-    showPhoto: false,
+    showPhoto: true,
     useIcons: defaults.useIcons,
     roundedCorners: defaults.roundedCorners,
     headerFullBleed: false,
@@ -116,6 +116,12 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
     ...rawPartial,
     colors: { ...fallback.colors, ...aiColors },
   };
+
+  // Balanced should show a portrait whenever one is available unless the AI
+  // explicitly opted out. The fallback previously hard-disabled photos.
+  if (typeof rawPartial.showPhoto !== 'boolean') {
+    tokens.showPhoto = ctx.hasPhoto;
+  }
 
   if (!constraints.allowedThemes.includes(tokens.themeBase)) tokens.themeBase = constraints.allowedThemes[0];
   if (!constraints.allowedFontPairings.includes(tokens.fontPairing)) tokens.fontPairing = constraints.allowedFontPairings[0];

@@ -119,6 +119,21 @@ interface AvantPalette {
   accent: string;
 }
 
+function readContextSignals(ctx: PromptContext) {
+  const industry = (ctx.jobVacancy?.industry || '').toLowerCase();
+  const prefs = (ctx.userPreferences || '').toLowerCase();
+  const title = (ctx.jobVacancy?.title || '').toLowerCase();
+  const combined = `${industry} ${title} ${prefs}`;
+
+  return {
+    industry,
+    wantsMinimal: /\b(minimal|minimalistisch|clean|strak|subtle|subtiel|restrained|ingetogen)\b/.test(combined),
+    wantsLoud: /\b(bold|avant|avant-garde|edgy|opvallend|statement|experimental|poster)\b/.test(combined),
+    isCorporate: /\b(finance|bank|consult|consulting|legal|account|strategy|enterprise)\b/.test(combined),
+    isCreativeRole: /\b(creative|design|designer|marketing|brand|art|fashion|agency|content)\b/.test(combined),
+  };
+}
+
 const avantGardePalettes: AvantPalette[] = [
   {
     name: 'riso-red-teal',
@@ -414,7 +429,12 @@ Non-negotiables:
    enemy. If history shows a primitive was used, pick a different one.
 
 IMPORTANT: think like a museum exhibition designer or a zine art director
-commissioned for this specific role. NOT a Canva template picker.`;
+commissioned for this specific role. NOT a Canva template picker.
+
+Priority order:
+1. Respect the target vacancy and company context
+2. Respect explicit user style instructions
+3. Then use avant-garde references/examples only as a language, never as a fixed template`;
 
   return prompt;
 }
@@ -480,9 +500,72 @@ function getFallback(industry?: string): CVDesignTokens {
   };
 }
 
+function getContextualFallback(ctx: PromptContext): CVDesignTokens {
+  const signals = readContextSignals(ctx);
+  const base = getFallback(ctx.jobVacancy?.industry);
+
+  if (signals.isCorporate || signals.wantsMinimal) {
+    return {
+      ...base,
+      styleName: 'Gallery Corporate',
+      styleRationale: 'Restrained gallery poster energy suited to finance, consulting and strategy roles.',
+      industryFit: ctx.jobVacancy?.industry || 'finance',
+      fontPairing: 'dm-serif-dm-sans',
+      colors: {
+        primary: '#1e2847',
+        secondary: '#f7f2ea',
+        accent: '#d6a42b',
+        text: '#171717',
+        muted: '#5d5d5d',
+      },
+      bold: {
+        headerLayout: 'asymmetric-burst',
+        sidebarStyle: 'gradient',
+        skillStyle: 'dots-rating',
+        photoTreatment: 'badge-framed',
+        accentShape: 'angled-corner',
+        iconTreatment: 'line-with-accent',
+        headingStyle: 'overlap-block',
+        gradientDirection: 'offset-clash',
+        surfaceTexture: 'screen-print',
+      },
+    };
+  }
+
+  if (signals.isCreativeRole || signals.wantsLoud) {
+    return {
+      ...base,
+      styleName: 'Poster Experimental',
+      styleRationale: 'High-contrast poster language for creative, brand and culture roles.',
+      industryFit: ctx.jobVacancy?.industry || 'creative',
+      fontPairing: 'oswald-source-sans',
+      colors: {
+        primary: '#e91e63',
+        secondary: '#faf7f2',
+        accent: '#1b5e20',
+        text: '#151515',
+        muted: '#595959',
+      },
+      bold: {
+        headerLayout: 'tiled',
+        sidebarStyle: 'solid-color',
+        skillStyle: 'colored-pills',
+        photoTreatment: 'color-overlay',
+        accentShape: 'diagonal-stripe',
+        iconTreatment: 'solid-filled',
+        headingStyle: 'stacked-caps',
+        gradientDirection: 'duotone-split',
+        surfaceTexture: 'halftone',
+      },
+    };
+  }
+
+  return base;
+}
+
 function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
   const constraints = creativityConstraints.experimental;
-  const fallback = getFallback(ctx.jobVacancy?.industry);
+  const fallback = getContextualFallback(ctx);
   const rawPartial = (raw ?? {}) as Partial<CVDesignTokens>;
   const aiColors = rawPartial.colors || {};
   const tokens: CVDesignTokens = {
@@ -493,6 +576,10 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
 
   if (!constraints.allowedThemes.includes(tokens.themeBase)) tokens.themeBase = constraints.allowedThemes[0];
   if (!constraints.allowedFontPairings.includes(tokens.fontPairing)) tokens.fontPairing = constraints.allowedFontPairings[0];
+
+  if (typeof rawPartial.showPhoto !== 'boolean') {
+    tokens.showPhoto = ctx.hasPhoto;
+  }
 
   // Bold always has a sidebar
   if (tokens.layout !== 'sidebar-left' && tokens.layout !== 'sidebar-right') {

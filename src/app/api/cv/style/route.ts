@@ -83,9 +83,10 @@ export async function POST(request: NextRequest) {
 
     const db = getAdminDb();
 
-    // Fetch recent style history for variety rotation (creative/experimental)
+    // Fetch recent style history for variety rotation. Balanced benefits too:
+    // without history it tends to converge on the same clean-modern combo.
     let styleHistory: CVDesignTokens[] = [];
-    if (creativityLevel === 'creative' || creativityLevel === 'experimental') {
+    if (creativityLevel === 'balanced' || creativityLevel === 'creative' || creativityLevel === 'experimental') {
       try {
         const recentCvs = await db.collection('users').doc(userId).collection('cvs')
           .orderBy('createdAt', 'desc')

@@ -446,6 +446,7 @@ function generateEditorialCSS(
     .editorial-grid-asymmetric-70-30 .editorial-body {
       display: grid;
       gap: 40px;
+      align-items: start;
     }
     .editorial-grid-asymmetric-60-40 .editorial-body {
       grid-template-columns: 3fr 2fr;
@@ -461,6 +462,15 @@ function generateEditorialCSS(
     }
     .editorial-grid-full-bleed .editorial-body {
       max-width: none;
+    }
+    .editorial-rail {
+      align-self: start;
+    }
+    .editorial-rail .editorial-section:first-child {
+      margin-top: 32px;
+    }
+    .editorial-rail .editorial-section {
+      margin-top: 28px;
     }
     .editorial-grid-three-column-intro .editorial-body {
       display: block;
@@ -503,14 +513,21 @@ function generateEditorialCSS(
         background: var(--e-page-bg);
       }
       .editorial-cv {
+        width: 210mm;
+        max-width: 210mm;
+        margin: 0;
         padding: 32px 40px 40px;
-        max-width: none;
+        min-height: auto;
       }
       .editorial-header.layout-band {
         margin: -32px -40px 32px;
         padding: 32px 40px 28px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+      }
+      .editorial-grid-asymmetric-60-40 .editorial-body,
+      .editorial-grid-asymmetric-70-30 .editorial-body {
+        gap: 28px;
       }
       .editorial-section,
       .editorial-section .item {
@@ -695,8 +712,19 @@ function generateEditorialBody(
     projects: () => renderProjects(content.projects, e, overrides),
   };
 
+  const supportsRail = e.grid === 'asymmetric-60-40' || e.grid === 'asymmetric-70-30';
+  const requestedRailSections = tokens.sidebarSections?.length
+    ? tokens.sidebarSections
+    : ['skills', 'languages', 'certifications'];
+  const railSections = supportsRail
+    ? requestedRailSections.filter(name => tokens.sectionOrder.includes(name))
+    : [];
+  const mainSections = supportsRail
+    ? tokens.sectionOrder.filter(name => !railSections.includes(name))
+    : tokens.sectionOrder;
+
   let sectionIndex = 0;
-  const sections = tokens.sectionOrder
+  const renderSections = (sectionNames: string[]) => sectionNames
     .map((name) => {
       const render = sectionRenderers[name];
       if (!render) return '';
@@ -708,10 +736,14 @@ function generateEditorialBody(
     .filter(Boolean)
     .join('\n');
 
+  const mainHtml = renderSections(mainSections);
+  const railHtml = railSections.length > 0 ? renderSections(railSections) : '';
+
   return `
     <div class="editorial-body">
       ${introRow}
-      <main class="editorial-main">${sections}</main>
+      <main class="editorial-main">${mainHtml}</main>
+      ${railHtml ? `<aside class="editorial-rail">${railHtml}</aside>` : ''}
     </div>
   `;
 }

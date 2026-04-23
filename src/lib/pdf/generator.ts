@@ -26,6 +26,10 @@ async function getBrowser() {
   });
 }
 
+function pxToMm(px: number): number {
+  return px * 0.264583;
+}
+
 export type PDFPageMode = 'multi-page' | 'single-page';
 
 /**
@@ -70,27 +74,37 @@ export async function generatePDF(
   const zeroMargin = { top: '0', right: '0', bottom: '0', left: '0' };
 
   if (pageMode === 'single-page') {
-    // Single-page mode: measure content and create one tall page
-    const contentHeight = await page.evaluate(() => {
-      const body = document.body;
-      const html = document.documentElement;
-      return Math.max(
-        body.scrollHeight,
-        body.offsetHeight,
-        html.clientHeight,
-        html.scrollHeight,
-        html.offsetHeight
-      );
+    // Single-page mode: size the PDF to the actual CV root instead of the
+    // whole document. Measuring body/html caused pathological page heights,
+    // which PDF viewers then rendered as a tiny CV floating in a massive page.
+    const contentSize = await page.evaluate(() => {
+      const root =
+        document.querySelector('.bold-cv, .editorial-cv, .cv-container') as HTMLElement | null;
+      const target = root || document.body;
+      const rect = target.getBoundingClientRect();
+
+      return {
+        width: Math.max(
+          rect.width,
+          target.scrollWidth,
+          target.offsetWidth,
+        ),
+        height: Math.max(
+          rect.height,
+          target.scrollHeight,
+          target.offsetHeight,
+        ),
+      };
     });
 
-    // A4 width in pixels at 96 DPI is ~794px, we use mm for consistency
-    const a4WidthMm = 210;
-    // Convert content height to mm (assuming 96 DPI: 1px ≈ 0.264583mm)
-    const contentHeightMm = Math.ceil(contentHeight * 0.264583) + 20; // Add some padding
+    const contentWidthMm = Math.ceil(pxToMm(contentSize.width));
+    const contentHeightMm = Math.ceil(pxToMm(contentSize.height));
+    const widthMm = Math.max(160, Math.min(210, contentWidthMm));
+    const heightMm = Math.max(80, contentHeightMm + 4);
 
     pdf = await page.pdf({
-      width: `${a4WidthMm}mm`,
-      height: `${contentHeightMm}mm`,
+      width: `${widthMm}mm`,
+      height: `${heightMm}mm`,
       printBackground: true,
       margin: zeroMargin,
     });

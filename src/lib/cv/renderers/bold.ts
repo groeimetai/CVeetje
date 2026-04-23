@@ -115,6 +115,7 @@ function resolveBoldTokens(tokens: CVDesignTokens): BoldTokens {
     iconTreatment: b?.iconTreatment ?? 'solid-filled',
     headingStyle: b?.headingStyle ?? 'oversized-numbered',
     gradientDirection: b?.gradientDirection ?? 'linear-diagonal',
+    surfaceTexture: b?.surfaceTexture ?? 'none',
   };
 }
 
@@ -379,7 +380,16 @@ function generateBoldCSS(
       margin: 0;
     }
     @media print {
-      .bold-cv { min-height: 100vh; }
+      html, body {
+        background: var(--b-page-bg);
+      }
+      .bold-cv {
+        width: 210mm;
+        max-width: 210mm;
+        margin: 0;
+        min-height: auto;
+        overflow: visible;
+      }
       .bold-section, .bold-item { break-inside: avoid; }
     }
   `;
