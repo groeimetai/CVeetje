@@ -9,11 +9,9 @@
  * - Address the vacancy's explicit must-have and nice-to-have skills
  */
 
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { createAIProvider, getModelId } from './providers';
 import { resolveTemperature } from './temperature';
-import { withRetry } from './retry';
+import { generateObjectResilient } from './generate-resilient';
 import { humanizeMotivationLetter } from './humanizer';
 import type {
   ParsedLinkedIn,
@@ -27,27 +25,79 @@ import type {
 
 // Schema for structured motivation letter output.
 //
+// Fields are OPTIONAL at the schema level to survive Claude Opus 4.7
+// structured-output quirks ({} or {data: ...}); normalizeMotivationSections
+// enforces that the core content exists and throws for the resilient
+// helper to retry when the response is unusable.
+//
 // Note the closing section explicitly bans sign-offs: formatFullLetter
 // appends "Met vriendelijke groet, {name}" itself, and any sign-off in
-// the model output would double it up. We also strip sign-offs in code
-// as a safety net — belt and suspenders.
+// the model output would double it up.
 const motivationLetterSchema = z.object({
-  opening: z.string().describe(
+  opening: z.string().optional().describe(
     'Opening paragraph: a compelling hook that grabs attention and immediately shows understanding of the company/role. Reference something specific — a product, a mission statement, a value, a recent development. 2-3 sentences. Never start with "Ik schrijf u" / "I am writing to apply".'
   ),
-  whyCompany: z.string().describe(
+  whyCompany: z.string().optional().describe(
     'Why this company/role: show genuine research. Reference what the company does, what they value, and what drew you specifically to THIS role (not just the title). Draw a line from something the company cares about to something the candidate cares about. 2-3 sentences.'
   ),
-  whyMe: z.string().describe(
+  whyMe: z.string().optional().describe(
     'Why I am a good fit: address the vacancy\'s most important must-have skills one by one, each backed by a concrete experience from the CV. Use the SAME terminology the CV uses — the CV has already been tailored to this vacancy, so the letter must mirror its framing (no new paraphrases). 4-6 sentences.'
   ),
-  motivation: z.string().describe(
+  motivation: z.string().optional().describe(
     'Personal motivation and enthusiasm: what drives the candidate, why this role fits their trajectory. Mine the profile\'s about, projects, and certifications for genuine interest signals and connect them to the company\'s domain. If personal motivation text was provided, weave it in naturally. 2-3 sentences.'
   ),
-  closing: z.string().describe(
+  closing: z.string().optional().describe(
     'Final call to action paragraph: express enthusiasm and availability for an interview. 1-2 sentences. CRITICAL: do NOT include any sign-off greeting ("Met vriendelijke groet", "Hoogachtend", "Kind regards", "Sincerely", "Best regards"). Do NOT include the candidate name. Just the call-to-action sentences — the sign-off and name are appended automatically afterwards.'
   ),
 });
+
+type MotivationSections = Required<{
+  opening: string;
+  whyCompany: string;
+  whyMe: string;
+  motivation: string;
+  closing: string;
+}>;
+
+// Normalize what the LLM returned into a complete set of sections. If the
+// output is unusable (wrapped in {data:...} or largely empty), throws so
+// the resilient helper retries the call (eventually with the Opus 4.6
+// fallback model).
+function normalizeMotivationSections(rawInput: unknown): MotivationSections {
+  type RawShape = Partial<MotivationSections> & { data?: Partial<MotivationSections> };
+  let raw = (rawInput ?? {}) as RawShape;
+
+  if (
+    raw.data &&
+    typeof raw.data === 'object' &&
+    !raw.opening &&
+    !raw.whyMe &&
+    !raw.motivation
+  ) {
+    raw = raw.data as RawShape;
+  }
+
+  const filledSections = (['opening', 'whyCompany', 'whyMe', 'motivation', 'closing'] as const).filter(
+    (key) => typeof raw[key] === 'string' && (raw[key] as string).trim().length > 20,
+  );
+
+  // A usable letter needs at least the opening, whyMe and motivation —
+  // those carry the meat. If fewer than 3 meaningful sections came back,
+  // treat it as an empty response and trigger retry.
+  if (filledSections.length < 3) {
+    throw new Error(
+      'Het AI-model gaf een onvolledig antwoord terug voor de motivatiebrief. Probeer het opnieuw.',
+    );
+  }
+
+  return {
+    opening: raw.opening?.trim() ?? '',
+    whyCompany: raw.whyCompany?.trim() ?? '',
+    whyMe: raw.whyMe?.trim() ?? '',
+    motivation: raw.motivation?.trim() ?? '',
+    closing: raw.closing?.trim() ?? '',
+  };
+}
 
 // Build the system prompt for motivation letter generation
 function buildSystemPrompt(language: OutputLanguage): string {
@@ -391,7 +441,7 @@ function stripSignOff(closing: string, language: OutputLanguage): string {
 
 // Generate complete formatted letter
 function formatFullLetter(
-  sections: z.infer<typeof motivationLetterSchema>,
+  sections: MotivationSections,
   fullName: string,
   jobTitle: string,
   companyName: string | null,
@@ -448,26 +498,27 @@ export async function generateMotivationLetter(
   language: OutputLanguage = 'nl',
   personalMotivation?: string,
 ): Promise<MotivationGenerationResult> {
-  const aiProvider = createAIProvider(provider, apiKey);
-  const modelId = getModelId(provider, model);
-
   const systemPrompt = buildSystemPrompt(language);
   const userPrompt = buildUserPrompt(linkedInData, jobVacancy, cvContent, personalMotivation);
 
   console.log(`[Motivation Gen] Generating letter in ${language} for ${jobVacancy.title}`);
 
   try {
-    // Pass 1 — structured generation. Builds the letter from profile,
-    // CV, vacancy, and personal motivation.
-    const result = await withRetry(() =>
-      generateObject({
-        model: aiProvider(modelId),
-        schema: motivationLetterSchema,
-        system: systemPrompt,
-        prompt: userPrompt,
-        temperature: resolveTemperature(provider, modelId, 0.7),
-      }),
-    );
+    // Pass 1 — structured generation. Resilient helper retries the same
+    // model twice and falls back to claude-opus-4-6 for Anthropic if the
+    // primary keeps returning empty/partial output.
+    const genResult = await generateObjectResilient({
+      provider,
+      apiKey,
+      model,
+      schema: motivationLetterSchema,
+      prompt: userPrompt,
+      system: systemPrompt,
+      temperature: resolveTemperature(provider, model, 0.7),
+      normalize: normalizeMotivationSections,
+      logTag: 'Motivation Gen',
+    });
+    const result = { object: genResult.value, usage: { inputTokens: genResult.usage.promptTokens, outputTokens: genResult.usage.completionTokens } };
 
     // Pass 2 — humanizer. Rewrites the prose to remove the standard AI
     // tells (significance inflation, copula avoidance, em dashes, "-ing"
