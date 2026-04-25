@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getFirestore, initializeFirestore, Firestore, FirestoreSettings } from 'firebase-admin/firestore';
 import { getStorage, Storage } from 'firebase-admin/storage';
 
 let adminApp: App;
@@ -18,6 +18,15 @@ function getAdminApp(): App {
       }),
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
+    // Configure Firestore once, tied to the app. initializeFirestore() is
+    // idempotent for identical settings, so it survives Next.js HMR / Cloud
+    // Run warm reuse (which previously broke `.settings()` on the singleton).
+    // ignoreUndefinedProperties is passed through to @google-cloud/firestore
+    // but isn't on firebase-admin's narrowed FirestoreSettings type.
+    initializeFirestore(
+      adminApp,
+      { ignoreUndefinedProperties: true } as unknown as FirestoreSettings,
+    );
   } else {
     adminApp = getApps()[0];
   }
@@ -34,10 +43,6 @@ export function getAdminAuth(): Auth {
 export function getAdminDb(): Firestore {
   if (!adminDb) {
     adminDb = getFirestore(getAdminApp());
-    // Allow `undefined` in write payloads — the SDK strips those fields
-    // instead of throwing. Matches how our generators produce partial
-    // objects (optional Zod fields left as `undefined`).
-    adminDb.settings({ ignoreUndefinedProperties: true });
   }
   return adminDb;
 }
