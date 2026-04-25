@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -350,16 +350,16 @@ export default function CVDetailPage() {
     }
   };
 
-  useEffect(() => {
-    async function fetchCV() {
-      if (effectiveUserId && cvId) {
-        const cvData = await getCV(effectiveUserId, cvId);
-        setCV(cvData as CV & { tokens?: CVDesignTokens });
-        setLoading(false);
-      }
-    }
-    fetchCV();
+  const fetchCV = useCallback(async () => {
+    if (!effectiveUserId || !cvId) return;
+    const cvData = await getCV(effectiveUserId, cvId);
+    setCV(cvData as CV & { tokens?: CVDesignTokens });
+    setLoading(false);
   }, [effectiveUserId, cvId]);
+
+  useEffect(() => {
+    fetchCV();
+  }, [fetchCV]);
 
   const pdfDownloaded = cv?.status === 'pdf_ready';
 
@@ -518,6 +518,7 @@ export default function CVDetailPage() {
           pdfDownloaded={pdfDownloaded}
           elementOverrides={cv.elementOverrides}
           onUpdateOverrides={handleUpdateOverrides}
+          onDisputeApproved={fetchCV}
         />
       ) : (
         <Card>

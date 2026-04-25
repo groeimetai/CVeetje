@@ -224,14 +224,17 @@ export async function POST(
     await disputeRef.set(disputeDoc);
 
     // Apply regenerated content to the CV
+    const hadPaidPdf = cvData.status === 'pdf_ready';
     await cvRef.update({
       generatedContent: regenResult.content,
       designTokens: regenResult.tokens,
       creativityLevel: newLevel,
       creativityLevelHistory: FieldValue.arrayUnion(newLevel),
       disputeCount: FieldValue.increment(1),
-      // Clear PDF state — user must re-download after regeneration
-      status: 'generated',
+      // Disputes are free. If this CV had already been paid/downloaded once,
+      // preserve that entitlement so the regenerated version can be downloaded
+      // again without charging the user a second time.
+      status: hadPaidPdf ? 'pdf_ready' : 'generated',
       pdfUrl: null,
       // Reset element overrides from the old CV — they won't match the new content
       elementOverrides: FieldValue.delete(),

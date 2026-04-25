@@ -68,6 +68,7 @@ interface CVPreviewProps {
   // Dispute system state
   disputeCount?: number;
   currentCreativityLevel?: 'conservative' | 'balanced' | 'creative' | 'experimental';
+  onDisputeApproved?: () => void;
 }
 
 /**
@@ -108,6 +109,7 @@ export function CVPreview({
   onTokensChange,
   disputeCount = 0,
   currentCreativityLevel = 'balanced',
+  onDisputeApproved,
 }: CVPreviewProps) {
   const { llmMode } = useAuth();
   const [activeTab, setActiveTab] = useState('preview');
@@ -837,6 +839,7 @@ export function CVPreview({
           onOpenChange={setIsDisputeOpen}
           currentLevel={currentCreativityLevel}
           disputeCount={disputeCount}
+          onApproved={onDisputeApproved}
         />
       )}
     </div>

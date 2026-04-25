@@ -100,7 +100,6 @@ export async function GET(request: NextRequest) {
     const snapshot = await db
       .collection('feedback')
       .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
       .limit(50)
       .get();
 
@@ -112,7 +111,7 @@ export async function GET(request: NextRequest) {
         createdAt: data.createdAt?.toDate?.() || new Date(),
         updatedAt: data.updatedAt?.toDate?.() || new Date(),
       };
-    });
+    }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return NextResponse.json({ success: true, feedback });
   } catch (error) {

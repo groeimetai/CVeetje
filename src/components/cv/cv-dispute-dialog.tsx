@@ -287,7 +287,7 @@ export function CVDisputeDialog({
 
             <DialogFooter>
               {state.status === 'approved' ? (
-                <Button onClick={() => { window.location.reload(); }}>
+                <Button onClick={() => handleClose(false)}>
                   Bekijk nieuwe CV
                 </Button>
               ) : (

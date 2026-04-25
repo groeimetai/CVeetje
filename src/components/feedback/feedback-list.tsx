@@ -23,20 +23,27 @@ export function FeedbackList({ refreshKey }: FeedbackListProps) {
   const t = useTranslations('feedback');
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchFeedback = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch('/api/feedback');
-      if (res.ok) {
-        const data = await res.json();
-        setItems(data.feedback);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t('form.submitError'));
       }
+      const data = await res.json();
+      setItems(data.feedback || []);
+    } catch (err) {
+      setItems([]);
+      setError(err instanceof Error ? err.message : t('form.submitError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchFeedback();
@@ -60,6 +67,8 @@ export function FeedbackList({ refreshKey }: FeedbackListProps) {
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full size-6 border-b-2 border-primary" />
           </div>
+        ) : error ? (
+          <p className="py-8 text-center text-sm text-destructive">{error}</p>
         ) : items.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">{t('noFeedback')}</p>
         ) : (
