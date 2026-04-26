@@ -439,6 +439,28 @@ function stripSignOff(closing: string, language: OutputLanguage): string {
   return cleaned.replace(/[,;:\s]+$/, '').trim();
 }
 
+// Heuristic language detection on the AI-generated body. Used as a defense
+// when the `language` flag passed in disagrees with what the model actually
+// wrote — e.g. user picked NL but the CV was already English so the model
+// mirrored that, or older CVs that never stored a `language` field.
+function detectLetterLanguage(text: string): OutputLanguage {
+  const lower = ` ${text.toLowerCase()} `;
+  // Tokens chosen for low collision: function words and common openers.
+  const dutchMarkers = [
+    ' ik ', ' het ', ' uw ', ' mijn ', ' graag ', ' bij ', ' om ', ' van ',
+    ' deze ', ' niet ', ' goed ', ' werk', ' ervaring', ' jaar ', ' zou ',
+  ];
+  const englishMarkers = [
+    ' i ', ' the ', ' your ', ' my ', ' glad ', ' would ', ' have ', ' with ',
+    ' this ', ' not ', ' good ', ' work', ' experience', ' years ', ' team ',
+  ];
+  let nl = 0;
+  let en = 0;
+  for (const m of dutchMarkers) if (lower.includes(m)) nl += 1;
+  for (const m of englishMarkers) if (lower.includes(m)) en += 1;
+  return en > nl ? 'en' : 'nl';
+}
+
 // Generate complete formatted letter
 function formatFullLetter(
   sections: MotivationSections,
@@ -447,23 +469,34 @@ function formatFullLetter(
   companyName: string | null,
   language: OutputLanguage,
 ): string {
-  const date = new Date().toLocaleDateString(language === 'nl' ? 'nl-NL' : 'en-US', {
+  // The model may ignore the `language` instruction when the CV it mirrors is
+  // in another language. Cross-check against the actual prose so the signoff
+  // and chrome match what the reader sees.
+  const bodySample = [
+    sections.opening, sections.whyCompany, sections.whyMe,
+    sections.motivation, sections.closing,
+  ].filter(Boolean).join(' ');
+  const detected = detectLetterLanguage(bodySample);
+  const effectiveLanguage: OutputLanguage = detected !== language ? detected : language;
+
+  const date = new Date().toLocaleDateString(effectiveLanguage === 'nl' ? 'nl-NL' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
-  const greeting = language === 'nl' ? 'Geachte heer/mevrouw,' : 'Dear Hiring Manager,';
+  const greeting = effectiveLanguage === 'nl' ? 'Geachte heer/mevrouw,' : 'Dear Hiring Manager,';
 
-  const signOff = language === 'nl' ? 'Met vriendelijke groet,' : 'Kind regards,';
+  const signOff = effectiveLanguage === 'nl' ? 'Met vriendelijke groet,' : 'Kind regards,';
 
   // Defensive strip of any sign-off the model included despite the
-  // prompt telling it not to.
-  const cleanedClosing = stripSignOff(sections.closing, language);
+  // prompt telling it not to. Use the detected language so we strip both
+  // NL and EN signoffs regardless of the original flag.
+  const cleanedClosing = stripSignOff(sections.closing, effectiveLanguage);
 
   return `${date}
 
-${language === 'nl' ? 'Betreft' : 'Re'}: ${language === 'nl' ? 'Sollicitatie' : 'Application'} ${jobTitle}${companyName ? ` - ${companyName}` : ''}
+${effectiveLanguage === 'nl' ? 'Betreft' : 'Re'}: ${effectiveLanguage === 'nl' ? 'Sollicitatie' : 'Application'} ${jobTitle}${companyName ? ` - ${companyName}` : ''}
 
 ${greeting}
 
