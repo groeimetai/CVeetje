@@ -65,7 +65,7 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
   }, [feedback]);
 
   const fetchComments = useCallback(async () => {
-    if (!feedback?.githubIssueNumber) return;
+    if (!feedback?.id) return;
     setLoadingComments(true);
     try {
       const res = await fetch(`/api/admin/feedback/${feedback.id}/comments`);
@@ -76,13 +76,13 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
     } finally {
       setLoadingComments(false);
     }
-  }, [feedback?.id, feedback?.githubIssueNumber]);
+  }, [feedback?.id]);
 
   useEffect(() => {
-    if (open && feedback?.githubIssueNumber) {
+    if (open && feedback?.id) {
       fetchComments();
     }
-  }, [open, fetchComments, feedback?.githubIssueNumber]);
+  }, [open, fetchComments, feedback?.id]);
 
   if (!feedback) return null;
 
@@ -124,6 +124,9 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
       if (res.ok) {
         setNewComment('');
         fetchComments();
+        // First comment may have lazy-created the GitHub issue; refresh
+        // the parent list so the new issueNumber/url propagate.
+        if (!feedback.githubIssueNumber) onUpdate();
       }
     } finally {
       setPostingComment(false);
@@ -261,13 +264,19 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
             </div>
           )}
 
-          {/* GitHub Comments */}
-          {feedback.githubIssueNumber && (
-            <div className="border-t pt-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="size-4 text-muted-foreground" />
-                <Label>GitHub Comments</Label>
-              </div>
+          {/* GitHub Comments — always shown so admin can comment even on
+              feedback whose original issue creation failed (we lazy-create
+              the issue in the POST handler). */}
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="size-4 text-muted-foreground" />
+              <Label>GitHub Comments</Label>
+              {!feedback.githubIssueNumber && (
+                <span className="text-xs text-muted-foreground">
+                  (issue wordt aangemaakt bij eerste comment)
+                </span>
+              )}
+            </div>
 
               {loadingComments ? (
                 <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
@@ -323,7 +332,6 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
                 </Button>
               </div>
             </div>
-          )}
 
           {/* Admin controls */}
           <div className="border-t pt-4 space-y-3">

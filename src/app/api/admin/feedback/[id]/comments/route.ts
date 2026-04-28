@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminRequest } from '@/lib/firebase/admin-utils';
 import { getAdminDb } from '@/lib/firebase/admin';
-
-const GITHUB_REPO = 'groeimetai/CVeetje';
+import { createFeedbackGitHubIssue, GITHUB_REPO } from '@/lib/github/feedback-issue';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -103,15 +102,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const data = feedbackDoc.data()!;
-    const issueNumber = data.githubIssueNumber;
-
-    if (!issueNumber) {
-      return NextResponse.json({ error: 'No linked GitHub issue' }, { status: 400 });
-    }
+    let issueNumber = data.githubIssueNumber as number | undefined;
 
     const githubToken = process.env.GITHUB_TOKEN;
     if (!githubToken) {
       return NextResponse.json({ error: 'GitHub token not configured' }, { status: 500 });
+    }
+
+    // Lazy-create the GitHub issue if the original creation failed
+    // (token expired, rate limited, network blip). Recovers older feedback
+    // docs that have no issue number so the admin can still comment on them.
+    if (!issueNumber) {
+      // Fields are spread directly onto the doc by POST /api/feedback, so we
+      // can pass `data` itself as the fields bag — buildIssueBody picks
+      // only the keys it knows about per type.
+      const created = await createFeedbackGitHubIssue({
+        type: data.type as string,
+        title: data.title as string,
+        fields: data as Record<string, unknown>,
+        imageUrls: Array.isArray(data.imageUrls) ? (data.imageUrls as string[]) : [],
+        userEmail: (data.userEmail as string) || '',
+      });
+      if (!created) {
+        return NextResponse.json(
+          { error: 'Failed to create linked GitHub issue' },
+          { status: 502 },
+        );
+      }
+      issueNumber = created.number;
+      await feedbackDoc.ref.update({
+        githubIssueNumber: created.number,
+        githubIssueUrl: created.url,
+      });
     }
 
     const res = await fetch(
