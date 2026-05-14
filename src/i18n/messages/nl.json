@@ -64,7 +64,10 @@
     "adminFeedback": "Feedback",
     "adminProfiles": "Profielen",
     "adminDisputes": "Disputes",
-    "adminPlatform": "Platform AI"
+    "adminPlatform": "Platform AI",
+    "new": "Nieuw",
+    "edit": "Bewerken",
+    "preview": "Voorbeeld"
   },
   "auth": {
     "signIn": "Inloggen",

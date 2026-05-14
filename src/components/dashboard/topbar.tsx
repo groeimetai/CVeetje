@@ -9,6 +9,9 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { Link } from '@/i18n/navigation';
 import { CommandPalette } from '@/components/dashboard/command-palette';
 
+/** Maps a URL segment to the navigation-namespace key. Only segments listed
+ *  here go through translation; anything else (CV id, etc.) falls back to a
+ *  capitalized segment name. */
 const SEGMENT_KEYS: Record<string, string> = {
   dashboard: 'dashboard',
   cv: 'myCvs',
@@ -21,7 +24,14 @@ const SEGMENT_KEYS: Record<string, string> = {
   feedback: 'feedback',
   admin: 'adminSection',
   new: 'new',
+  edit: 'edit',
+  preview: 'preview',
 };
+
+function titleCase(s: string): string {
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 function getPageKey(pathname: string): { crumbRoot: string; pageKey: string | null } {
   const segments = pathname.split('/').filter(Boolean);
@@ -69,19 +79,13 @@ export function DashTopbar() {
   if (crumbRoot === 'dashboard') {
     pageLabel = tDashboard('overview');
   } else if (pageKey && SEGMENT_KEYS[pageKey]) {
-    try {
-      pageLabel = t(SEGMENT_KEYS[pageKey]);
-    } catch {
-      pageLabel = SEGMENT_KEYS[pageKey];
-    }
+    pageLabel = t(SEGMENT_KEYS[pageKey]);
+  } else if (pageKey) {
+    pageLabel = titleCase(pageKey);
   } else if (SEGMENT_KEYS[crumbRoot]) {
-    try {
-      pageLabel = t(SEGMENT_KEYS[crumbRoot]);
-    } catch {
-      pageLabel = crumbRoot;
-    }
+    pageLabel = t(SEGMENT_KEYS[crumbRoot]);
   } else {
-    pageLabel = crumbRoot;
+    pageLabel = titleCase(crumbRoot);
   }
 
   return (
