@@ -34,9 +34,24 @@ interface JobInputProps {
   onTokenUsage?: (usage: TokenUsage) => void;
   onCreditsRefresh?: () => void;
   initialData?: JobVacancy | null;
+  /**
+   * Optional hint about how the prefilled job arrived. For Adzuna deeplinks the
+   * description is a short snippet and the user benefits from pasting the full
+   * vacancy text from the employer site.
+   */
+  sourceHint?: {
+    provider: 'adzuna';
+    externalUrl: string;
+  } | null;
 }
 
-export function JobInput({ onSubmit, onTokenUsage, onCreditsRefresh, initialData }: JobInputProps) {
+export function JobInput({
+  onSubmit,
+  onTokenUsage,
+  onCreditsRefresh,
+  initialData,
+  sourceHint,
+}: JobInputProps) {
   const t = useTranslations('jobInput');
   const { llmMode } = useAuth();
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
@@ -331,6 +346,39 @@ export function JobInput({ onSubmit, onTokenUsage, onCreditsRefresh, initialData
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {sourceHint?.provider === 'adzuna' &&
+            (parsedJob.description?.length ?? 0) < 600 && (
+              <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-900/20">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="space-y-2">
+                  <p className="text-sm font-medium">
+                    Adzuna geeft maar een korte preview van deze vacature
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    De AI maakt een veel scherper CV met de volledige
+                    vacaturetekst. Open de werkgever-site, kopieer de hele
+                    advertentie en plak hem hieronder.
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {sourceHint.externalUrl && (
+                      <Button asChild size="sm" variant="outline">
+                        <a
+                          href={sourceHint.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open vacature-site
+                        </a>
+                      </Button>
+                    )}
+                    <Button size="sm" onClick={() => setMode('input')}>
+                      Volledige tekst plakken
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
           {/* Main info */}
           <div className="rounded-lg border p-4 space-y-3">
             <div>

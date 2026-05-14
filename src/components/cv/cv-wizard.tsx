@@ -104,6 +104,8 @@ export function CVWizard() {
     slug: string;
     supportsInAppApply: boolean;
     applyQuestions: ApplyQuestion[];
+    sourceProvider: 'adzuna' | 'greenhouse' | 'lever' | 'recruitee';
+    externalUrl: string;
   } | null>(null);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
 
@@ -169,6 +171,12 @@ export function CVWizard() {
           applyQuestions: Array.isArray(cached.applyQuestions)
             ? (cached.applyQuestions as ApplyQuestion[])
             : [],
+          sourceProvider: (cached.sourceProvider ?? 'adzuna') as
+            | 'adzuna'
+            | 'greenhouse'
+            | 'lever'
+            | 'recruitee',
+          externalUrl: typeof cached.url === 'string' ? cached.url : '',
         });
       } catch (err) {
         console.warn('[wizard] failed to prefill from ?jobId=', err);
@@ -825,6 +833,14 @@ export function CVWizard() {
           onTokenUsage={(usage) => addTokenUsage('job', usage)}
           onCreditsRefresh={refreshCredits}
           initialData={jobVacancy}
+          sourceHint={
+            jobSourceMeta && jobSourceMeta.sourceProvider === 'adzuna'
+              ? {
+                  provider: 'adzuna',
+                  externalUrl: jobSourceMeta.externalUrl,
+                }
+              : null
+          }
         />
       )}
 
