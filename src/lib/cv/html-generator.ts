@@ -35,6 +35,7 @@ import { generateDecorationsHTML, decorationsCSS } from './templates/decorations
 import { contactIcons, contactIconsCSS } from './templates/icons';
 import { generateEditorialHTML } from './renderers/editorial';
 import { generateBoldHTML } from './renderers/bold';
+import { splitInterest } from './interest-format';
 
 // ============ Helper Functions ============
 
@@ -1065,9 +1066,14 @@ function generateInterests(
     const itemOverride = getOverride(overrides, `interest-${index}`);
     if (itemOverride?.hidden) return '';
 
+    const { name, framing } = splitInterest(interest);
+    const framingHtml = framing
+      ? `<span class="interest-context"> — ${escapeHtml(framing)}</span>`
+      : '';
+
     return `
       <li class="interest-item" data-id="interest-${index}" style="${getOverrideStyle(itemOverride)}">
-        <span class="interest-name">${escapeHtml(interest)}</span>
+        <span class="interest-name">${escapeHtml(name)}</span>${framingHtml}
       </li>`;
   }).filter(Boolean).join('');
 

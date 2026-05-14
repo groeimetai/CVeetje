@@ -33,6 +33,7 @@ import type {
   BoldSkillStyle,
 } from '@/types/design-tokens';
 import { getFontUrls, fontPairings } from '../templates/themes';
+import { splitInterest } from '../interest-format';
 
 // ============ Public API ============
 
@@ -234,6 +235,10 @@ function generateBoldCSS(
       padding: 0;
     }
     .bold-sidebar ul li { margin: 4px 0; }
+    .bold-sidebar .interest-context {
+      opacity: 0.7;
+      font-size: 0.92em;
+    }
 
     /* Contact block in sidebar */
     .bold-sidebar .contact-list li {
@@ -848,7 +853,11 @@ function generateBoldSidebar(
     if (!getOverride(overrides, 'section-interests')?.hidden) {
       const items = content.interests.map((interest, i) => {
         if (getOverride(overrides, `interest-${i}`)?.hidden) return '';
-        return `<li data-id="interest-${i}">${escapeHtml(interest)}</li>`;
+        const { name, framing } = splitInterest(interest);
+        const framingHtml = framing
+          ? `<span class="interest-context"> — ${escapeHtml(framing)}</span>`
+          : '';
+        return `<li data-id="interest-${i}"><span class="interest-name">${escapeHtml(name)}</span>${framingHtml}</li>`;
       }).filter(Boolean).join('');
       sections.push(`
         <div class="sidebar-section" data-section="interests">

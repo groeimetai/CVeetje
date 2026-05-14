@@ -16,6 +16,7 @@
  */
 
 import type { ParsedLinkedIn, GeneratedCVContent } from '@/types';
+import { splitInterest } from '@/lib/cv/interest-format';
 
 // Common stopwords across NL + EN. Keep small — too many false stopwords kills
 // matching for short skill names like "AI" or "PM".
@@ -203,16 +204,20 @@ export function validateLanguages<T extends { language: string }>(
 }
 
 /**
- * Interests/hobbies are validated strictly against the profile's interests set.
- * No permissive matching — if the user listed "fotografie" in their profile
- * and the model returned "photography", we strip it. Interests are short free
- * strings; reframing creates fabrication risk without any upside.
+ * Interests are validated against the profile's interest set. Each item may be
+ * a bare hobby name ("Schaken") or a hobby with a short vacancy-relevant
+ * framing the model added ("Schaken — strategisch denken"). We strip the
+ * framing before matching: the *name* must exist on the profile, the framing
+ * is the model's contribution and is allowed through. If the name doesn't
+ * match, we also try the whole string as a fallback (hobby names may legitimately
+ * contain a separator-like substring).
  */
 export function validateInterests(interests: string[], evidence: ProfileEvidence): ValidationResult<string> {
   return partition(interests, (i) => {
-    const normalized = normalizeText(i);
-    if (!normalized) return false;
-    return evidence.interestSet.has(normalized);
+    if (!i) return false;
+    const { name } = splitInterest(i);
+    if (evidence.interestSet.has(normalizeText(name))) return true;
+    return evidence.interestSet.has(normalizeText(i));
   });
 }
 

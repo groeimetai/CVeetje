@@ -968,6 +968,16 @@ export const certificationStyles = `
   }
 `;
 
+// ============ Interests Section ============
+
+export const interestStyles = `
+  .interest-context {
+    color: var(--color-muted);
+    font-size: var(--size-small);
+    font-weight: 400;
+  }
+`;
+
 export const projectStyles = `
   .project-tech {
     font-size: var(--size-small);
@@ -1001,6 +1011,7 @@ export function getBaseCSS(): string {
     summaryStyles,
     languageStyles,
     certificationStyles,
+    interestStyles,
     projectStyles,
   ].join('\n');
 }

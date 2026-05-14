@@ -61,7 +61,7 @@ export interface GeneratedCVContent {
   languages: GeneratedCVLanguage[];
   certifications: string[];
   projects?: GeneratedCVProject[];
-  interests?: string[]; // Personal interests/hobbies — verbatim from profile, optional on CV
+  interests?: string[]; // Personal interests/hobbies. Each item is either a bare hobby name ("Schaken") or a hobby with a short vacancy-relevant framing the AI added ("Schaken — strategisch denken"). Names always come from the source profile; the framing (after " — ") is the AI's contribution. See src/lib/cv/interest-format.ts.
 }
 
 // ============ Element Override Types (Interactive Preview Editing) ============

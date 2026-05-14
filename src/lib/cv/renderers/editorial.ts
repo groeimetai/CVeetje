@@ -26,6 +26,7 @@ import type {
 } from '@/types/design-tokens';
 import { getFontUrls } from '../templates/themes';
 import { fontPairings } from '../templates/themes';
+import { splitInterest } from '../interest-format';
 
 // ============ Public API ============
 
@@ -439,6 +440,10 @@ function generateEditorialCSS(
       color: var(--e-muted);
       font-size: var(--e-small);
       margin-left: 6px;
+    }
+    .editorial-inline-list li .interest-context {
+      color: var(--e-muted);
+      font-size: var(--e-small);
     }
 
     /* Manuscript grid: left sidenotes */
@@ -949,7 +954,11 @@ function renderInterests(
   const items = interests
     .map((interest, i) => {
       if (getOverride(overrides, `interest-${i}`)?.hidden) return '';
-      return `<li data-id="interest-${i}">${escapeHtml(interest)}</li>`;
+      const { name, framing } = splitInterest(interest);
+      const framingHtml = framing
+        ? `<span class="interest-context"> — ${escapeHtml(framing)}</span>`
+        : '';
+      return `<li data-id="interest-${i}"><span class="interest-name">${escapeHtml(name)}</span>${framingHtml}</li>`;
     })
     .filter(Boolean)
     .join('');

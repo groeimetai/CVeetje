@@ -3,6 +3,7 @@ import { resolveTemperature } from './temperature';
 import { generateObjectResilient } from './generate-resilient';
 import { getCurrentDateContext } from './date-context';
 import { validateCVContent } from './validators/claim-validator';
+import { splitInterest, INTEREST_FRAMING_SEPARATOR } from '@/lib/cv/interest-format';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -63,7 +64,7 @@ const cvContentSchema = z.object({
       highlights: z.array(z.string()).describe('1-3 key achievements from the project'),
     })
   ).optional().describe('Projects ordered by relevance. Include personal projects, open source, academic work.'),
-  interests: z.array(z.string()).optional().describe('Personal interests/hobbies — verbatim from profile.interests. Empty array if profile has none or if interests should be omitted.'),
+  interests: z.array(z.string()).optional().describe('Personal interests/hobbies tailored to the target vacancy. Each item is either "Hobby" (bare name from profile.interests) or "Hobby — short framing" where framing is 2-5 words tying the hobby to the role. Order by relevance to the vacancy. Names MUST come from profile.interests — never invent hobbies. Empty array if profile has none or interests should be omitted.'),
 });
 
 // HONESTY RULES - Two clear blocks: what is forbidden, what is encouraged.
@@ -559,10 +560,35 @@ ${linkedIn.projects && linkedIn.projects.length > 0
 ### Interests/Hobbies:
 ${linkedIn.interests && linkedIn.interests.length > 0 ? linkedIn.interests.join(', ') : 'None listed in profile'}
 
-${includeInterests
-  ? `**Interests output rule:** Include the interests listed above VERBATIM in the output \`interests\` array. Do not rephrase, translate, or add new ones. If the profile has no interests, return an empty array.`
-  : `**Interests output rule:** Return an EMPTY \`interests\` array. The user opted out of showing hobbies on this CV — do not include any, regardless of what the profile lists.`
-}
+${(() => {
+  if (!includeInterests) {
+    return `**Interests output rule:** Return an EMPTY \`interests\` array. The user opted out of showing hobbies on this CV — do not include any, regardless of what the profile lists.`;
+  }
+  if (!jobVacancy) {
+    return `**Interests output rule (no vacancy context):** Include the interests listed above in the output \`interests\` array, names verbatim. You may reorder them, but do not invent new ones and do not add framing — there is no target role to frame against.`;
+  }
+  return `**Interests output rule — TAILOR THESE TO THE VACANCY (see target job below):**
+
+The candidate's hobbies should reinforce the fit for THIS specific vacancy, just like the rest of the CV does. Don't just list them — make them work for the application.
+
+For each hobby from the profile list above, decide:
+1. **Keep it?** Pick the ones a recruiter for this role would find relevant or culturally aligned. Drop hobbies that feel off-topic or risk distracting. You decide how many to keep — could be all of them, could be a tight subset. Aim for quality over quantity; if 3 hobbies clearly fit, 3 is better than 7 padded ones.
+2. **Order:** Most relevant to the vacancy first.
+3. **Framing (optional, encouraged when there is a clear link):** Add a brief 2-5 word framing that ties the hobby to the role or company culture, using the format \`"Hobby — short framing"\` with an em-dash and spaces on both sides. The framing is your honest INFERENCE about why this hobby matters for this role — not new facts about the candidate.
+
+Examples (illustrative — do NOT copy verbatim; tailor to the actual hobby + vacancy):
+- For a strategy/consulting role + hobby "Schaken": \`"Schaken — strategisch denken onder tijdsdruk"\`
+- For an endurance-relevant role + hobby "Hardlopen": \`"Hardlopen — doorzettingsvermogen op de lange termijn"\`
+- For a coordinator role + hobby "Voetbalcoach": \`"Voetbalcoach — coördinatie en teamleiding"\`
+- When a hobby has no clear link to the vacancy, keep it bare: \`"Koken"\`
+
+❌ FORBIDDEN:
+- Extending or rewriting the hobby NAME. The text before " — " must be the profile's exact wording. \`"Hardlopen"\` → keep as \`"Hardlopen"\`, NOT \`"Marathonlopen"\` or \`"Hardlopen op recreatief niveau"\`.
+- Inventing new facts in the framing ("10 jaar competitief schaakniveau" if the profile says nothing about competition or duration)
+- Generic filler ("leuke hobby", "ontspanning na werk")
+
+✅ The NAME (before " — ") must match the profile entry exactly. The FRAMING (after " — ") is your honest inference about why this hobby matters for this role — short, specific, no new facts. Use the CV's output language for the framing.`;
+})()}
 `;
 
   if (jobVacancy) {
@@ -1019,13 +1045,33 @@ function normalizeCVContent(
   }
 
   // Interests gating: if the user opted out at the wizard, force an empty
-  // array regardless of what the model returned. If opted in, intersect with
-  // the profile's interests so we never surface a hallucinated hobby.
+  // array. If opted in, validate each item — the *name* part (before the
+  // optional " — framing") must come from the profile so we never surface a
+  // hallucinated hobby, but the framing the model added is allowed through.
+  // We render the profile's original-case name (the user wrote it) and
+  // normalize the separator to the canonical em-dash on the way out.
   let interests: string[] = [];
   if (includeInterests && linkedIn.interests && linkedIn.interests.length > 0) {
-    const profileInterestsLower = new Set(linkedIn.interests.map((i) => i.trim().toLowerCase()).filter(Boolean));
-    interests = (raw.interests ?? []).filter((i) => i && profileInterestsLower.has(i.trim().toLowerCase()));
-    // If the model silently dropped them, fall back to the profile list verbatim.
+    // Lowercase → profile original-case lookup, so case stays consistent on the CV.
+    const profileByLower = new Map<string, string>();
+    for (const i of linkedIn.interests) {
+      const trimmed = i?.trim();
+      if (trimmed) profileByLower.set(trimmed.toLowerCase(), trimmed);
+    }
+    interests = (raw.interests ?? [])
+      .filter((i): i is string => typeof i === 'string' && i.trim().length > 0)
+      .map((rawItem) => {
+        const { name, framing } = splitInterest(rawItem);
+        const canonical = profileByLower.get(name.toLowerCase())
+          // Edge case: hobby name itself contains a separator-like substring —
+          // fall back to matching the whole string as the name.
+          ?? profileByLower.get(rawItem.trim().toLowerCase());
+        if (!canonical) return null;
+        return framing ? `${canonical}${INTEREST_FRAMING_SEPARATOR}${framing}` : canonical;
+      })
+      .filter((i): i is string => i !== null);
+    // If the model returned nothing usable, fall back to the bare profile list
+    // so we never silently drop the section due to a transient model failure.
     if (interests.length === 0) {
       interests = linkedIn.interests.filter((i) => i && i.trim().length > 0);
     }
