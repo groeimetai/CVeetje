@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/components/auth/auth-context';
 import { getUserCVs } from '@/lib/firebase/firestore';
@@ -119,13 +120,17 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [jobResults, setJobResults] = useState<JobSearchResult[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
 
-  // Reset query on open + focus input
+  // Reset query on open + focus input + lock body scroll
   useEffect(() => {
     if (open) {
       setQuery('');
       setHighlight(0);
       setRecentJobs(getRecentJobs());
       requestAnimationFrame(() => inputRef.current?.focus());
+
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
     }
   }, [open]);
 
@@ -212,6 +217,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   }, [open, entries, highlight, onClose, router]);
 
   if (!open) return null;
+  if (typeof document === 'undefined') return null;
 
   const grouped: Record<string, PaletteEntry[]> = {};
   for (const entry of entries) {
@@ -219,7 +225,8 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     grouped[entry.group].push(entry);
   }
 
-  return (
+  // Portal to <body> so we escape sticky/backdrop-filter containing blocks in the topbar.
+  return createPortal(
     <div className="cmdk-backdrop" onClick={onClose} role="presentation">
       <div className="cmdk" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Zoeken">
         <div className="cmdk__head">
@@ -272,6 +279,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           <span><kbd>esc</kbd> sluiten</span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
