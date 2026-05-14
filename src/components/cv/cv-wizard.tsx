@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useLocale, useTranslations } from 'next-intl';
-import { Progress } from '@/components/ui/progress';
+import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Loader2, AlertTriangle, Key, RefreshCw, Trash2, Coins } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { ProfileInput } from './profile-input';
 import { JobInput } from './job-input';
 import { FitAnalysisCard } from './fit-analysis-card';
@@ -15,14 +13,16 @@ import { DynamicStylePicker } from './dynamic-style-picker';
 import { TemplateStylePicker } from './template-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
 import { TemplatePreview } from './template-preview';
-import { TokenUsageDisplay } from './token-usage-display';
+import { LanguageSelector } from './wizard/language-selector';
+import { ResumeDraftDialog } from './wizard/resume-draft-dialog';
+import { NoApiKeyAlert } from './wizard/no-api-key-alert';
+import { WizardProgress } from './wizard/wizard-progress';
 import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
 import { useAuth } from '@/components/auth/auth-context';
-import { useWizardPersistence, formatTimeAgo, type WizardStep } from '@/hooks/use-wizard-persistence';
+import { useWizardPersistence, type WizardStep } from '@/hooks/use-wizard-persistence';
 import type {
   ParsedLinkedIn,
   JobVacancy,
-  CVStyleConfig,
   GeneratedCVContent,
   TokenUsage,
   StepTokenUsage,
@@ -38,7 +38,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import type { ModelInfo, ProviderInfo } from '@/lib/ai/models-registry';
 import { findModelInProviders } from '@/lib/ai/models-registry';
 import { PLATFORM_MODEL } from '@/lib/ai/platform-config';
-import Link from 'next/link';
 
 const PLATFORM_MODEL_INFO: ModelInfo = {
   id: PLATFORM_MODEL.modelId,
@@ -53,12 +52,9 @@ const PLATFORM_MODEL_INFO: ModelInfo = {
 };
 
 export function CVWizard() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const jobIdParam = searchParams?.get('jobId') ?? null;
-  const locale = useLocale();
   const t = useTranslations('cvWizard');
-  const tCommon = useTranslations('common');
   const { userData, credits, refreshCredits, hasAIAccess, llmMode } = useAuth();
 
   // Draft persistence
@@ -71,7 +67,6 @@ export function CVWizard() {
   const [linkedInData, setLinkedInData] = useState<ParsedLinkedIn | null>(null);
   const [jobVacancy, setJobVacancy] = useState<JobVacancy | null>(null);
   const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
-  const [styleConfig, setStyleConfig] = useState<CVStyleConfig | null>(null);
   const [designTokens, setDesignTokens] = useState<CVDesignTokens | null>(null);
   // Tracked so the dispute dialog knows what "current" level to exclude
   // from the user's alternatives. Updated when the style is (re)generated
@@ -193,20 +188,19 @@ export function CVWizard() {
         linkedInData,
         jobVacancy,
         fitAnalysis,
-        styleConfig,
         designTokens,
         avatarUrl,
         outputLanguage,
       });
     }
-  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, styleConfig, designTokens, avatarUrl, outputLanguage, saveDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, saveDraft]);
 
   // Auto-save draft on state changes (debounced by the effect dependencies)
   useEffect(() => {
     if (draftChecked && !showResumeDialog && currentStep !== 'generating' && currentStep !== 'preview') {
       saveCurrentDraft();
     }
-  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, styleConfig, designTokens, avatarUrl, outputLanguage, draftChecked, showResumeDialog, saveCurrentDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, draftChecked, showResumeDialog, saveCurrentDraft]);
 
   // Resume from draft
   const handleResumeDraft = () => {
@@ -215,7 +209,6 @@ export function CVWizard() {
       setLinkedInData(draft.linkedInData);
       setJobVacancy(draft.jobVacancy);
       setFitAnalysis(draft.fitAnalysis);
-      setStyleConfig(draft.styleConfig);
       setDesignTokens(draft.designTokens);
       setAvatarUrl(draft.avatarUrl);
       setOutputLanguage(draft.outputLanguage);
@@ -329,9 +322,6 @@ export function CVWizard() {
     { id: 'generating', label: t('steps.generating') },
     { id: 'preview', label: t('steps.preview') },
   ];
-
-  const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
-  const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
   // Check if user has AI access (own key or platform mode)
   const hasApiKey = hasAIAccess;
@@ -482,8 +472,7 @@ export function CVWizard() {
     setCurrentStep('job');
   };
 
-  const handleStyleGenerated = async (config: CVStyleConfig, tokens: CVDesignTokens, creativityLevel?: StyleCreativityLevel) => {
-    setStyleConfig(config);
+  const handleStyleGenerated = async (tokens: CVDesignTokens, creativityLevel?: StyleCreativityLevel) => {
     setDesignTokens(tokens);
     if (creativityLevel) {
       setSelectedCreativityLevel(creativityLevel);
@@ -506,7 +495,6 @@ export function CVWizard() {
         body: JSON.stringify({
           linkedInData,
           jobVacancy,
-          styleConfig: config,
           designTokens: tokens,
           avatarUrl,
           language: outputLanguage,
@@ -542,7 +530,7 @@ export function CVWizard() {
   };
 
   const handleRegenerate = async () => {
-    if (!hasApiKey || !linkedInData || !styleConfig) return;
+    if (!hasApiKey || !linkedInData || !designTokens) return;
 
     setIsGenerating(true);
     setError(null);
@@ -554,7 +542,6 @@ export function CVWizard() {
         body: JSON.stringify({
           linkedInData,
           jobVacancy,
-          styleConfig,
           designTokens,
           avatarUrl,
           language: outputLanguage,
@@ -714,7 +701,6 @@ export function CVWizard() {
     // Reset job, style, and content - but keep profile data (linkedInData, avatarUrl)
     setJobVacancy(null);
     setFitAnalysis(null);
-    setStyleConfig(null);
     setDesignTokens(null);
     setGeneratedContent(null);
     setEditedContent(null);
@@ -739,92 +725,17 @@ export function CVWizard() {
 
   // Show AI access warning if not configured
   if (!hasApiKey && currentStep === 'linkedin' && !showResumeDialog) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Alert>
-          <Key className="h-4 w-4" />
-          <div className="ml-2">
-            <p className="font-medium">{t('noApiKey.title')}</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t('noApiKey.description')}
-            </p>
-            <Link href="/settings">
-              <Button className="mt-3" size="sm">
-                {t('noApiKey.button')}
-              </Button>
-            </Link>
-          </div>
-        </Alert>
-      </div>
-    );
+    return <NoApiKeyAlert />;
   }
 
   // Show resume dialog if there's a saved draft
   if (showResumeDialog && draft) {
-    const stepLabels: Record<WizardStep, string> = {
-      linkedin: t('steps.profile'),
-      job: t('steps.job'),
-      'fit-analysis': t('steps.fitAnalysis'),
-      'style-choice': t('steps.styleChoice'),
-      style: t('steps.style'),
-      'template-style': t('steps.templateStyle'),
-      template: t('steps.template'),
-      generating: t('steps.generating'),
-      preview: t('steps.preview'),
-    };
-
     return (
-      <div className="max-w-lg mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-primary" />
-              {t('resumeDraft.title')}
-            </CardTitle>
-            <CardDescription>
-              {t('resumeDraft.description')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Draft info */}
-            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t('resumeDraft.profile')}:</span>
-                <span className="font-medium">{draft.linkedInData?.fullName || '-'}</span>
-              </div>
-              {draft.jobVacancy && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t('resumeDraft.vacancy')}:</span>
-                  <span className="font-medium truncate max-w-[200px]">
-                    {draft.jobVacancy.title}
-                    {draft.jobVacancy.company && ` @ ${draft.jobVacancy.company}`}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t('resumeDraft.step')}:</span>
-                <span className="font-medium">{stepLabels[draft.currentStep]}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t('resumeDraft.saved')}:</span>
-                <span className="font-medium">{formatTimeAgo(draft.savedAt, locale)}</span>
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={handleResumeDraft} className="flex-1">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {t('resumeDraft.resume')}
-              </Button>
-              <Button variant="outline" onClick={handleDiscardDraft} className="flex-1">
-                <Trash2 className="mr-2 h-4 w-4" />
-                {t('resumeDraft.startNew')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ResumeDraftDialog
+        draft={draft}
+        onResume={handleResumeDraft}
+        onDiscard={handleDiscardDraft}
+      />
     );
   }
 
@@ -839,56 +750,15 @@ export function CVWizard() {
 
   return (
     <div className="space-y-6">
-      {/* Progress bar with token counter */}
-      <div className="space-y-3">
-        <div className="hidden sm:flex justify-between text-sm">
-          {steps.map((step, index) => (
-            <span
-              key={step.id}
-              className={
-                index <= currentStepIndex
-                  ? 'text-primary font-medium'
-                  : 'text-muted-foreground'
-              }
-            >
-              {step.label}
-            </span>
-          ))}
-        </div>
-        <span className="sm:hidden text-sm font-medium text-primary">
-          {steps[currentStepIndex].label} ({currentStepIndex + 1}/{steps.length})
-        </span>
-        <Progress value={progress} className="h-2" />
-
-        {/* Token counter integrated below progress bar */}
-        <div className="flex items-center justify-between">
-          <div>
-            {/* Back button */}
-            {currentStep !== 'linkedin' && currentStep !== 'generating' && (
-              <Button variant="ghost" size="sm" onClick={goBack} className="-ml-2">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {tCommon('back')}
-              </Button>
-            )}
-          </div>
-          {llmMode !== 'platform' && (
-            <TokenUsageDisplay history={tokenHistory} modelName={modelInfo?.name} />
-          )}
-        </div>
-
-        {/* Platform AI credit indicator */}
-        {llmMode === 'platform' && currentStep !== 'preview' && currentStep !== 'generating' && (
-          <div className="flex items-center justify-between rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-sm">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-              <Coins className="h-4 w-4 shrink-0" />
-              <span>{t('platformCredits.balance', { credits: credits ?? 0 })}</span>
-            </div>
-            <Link href="/settings" className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0 ml-2">
-              {t('platformCredits.saveTip')}
-            </Link>
-          </div>
-        )}
-      </div>
+      <WizardProgress
+        steps={steps}
+        currentStep={currentStep}
+        tokenHistory={tokenHistory}
+        modelName={modelInfo?.name}
+        llmMode={llmMode}
+        credits={credits}
+        onBack={goBack}
+      />
 
       {/* Error display */}
       {error && (
@@ -944,39 +814,7 @@ export function CVWizard() {
 
       {currentStep === 'template-style' && linkedInData && (
         <div className="space-y-6">
-          {/* Language Selection */}
-          <div className="rounded-lg border p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <p className="font-medium text-sm">{t('languageSelection.title')}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t('languageSelection.description')}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setOutputLanguage('nl')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    outputLanguage === 'nl'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  🇳🇱 {t('languageSelection.dutch')}
-                </button>
-                <button
-                  onClick={() => setOutputLanguage('en')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    outputLanguage === 'en'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  🇬🇧 {t('languageSelection.english')}
-                </button>
-              </div>
-            </div>
-          </div>
+          <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
 
           <TemplateStylePicker
             linkedInData={linkedInData}
@@ -991,39 +829,7 @@ export function CVWizard() {
 
       {currentStep === 'style' && linkedInData && (
         <div className="space-y-6">
-          {/* Language Selection */}
-          <div className="rounded-lg border p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <p className="font-medium text-sm">{t('languageSelection.title')}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t('languageSelection.description')}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setOutputLanguage('nl')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    outputLanguage === 'nl'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  🇳🇱 {t('languageSelection.dutch')}
-                </button>
-                <button
-                  onClick={() => setOutputLanguage('en')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    outputLanguage === 'en'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  🇬🇧 {t('languageSelection.english')}
-                </button>
-              </div>
-            </div>
-          </div>
+          <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
 
           <DynamicStylePicker
             linkedInData={linkedInData}
@@ -1032,7 +838,6 @@ export function CVWizard() {
             onStyleGenerated={handleStyleGenerated}
             onTokenUsage={(usage) => addTokenUsage('style', usage)}
             onCreditsRefresh={refreshCredits}
-            initialStyleConfig={styleConfig}
             initialTokens={designTokens}
           />
         </div>
@@ -1040,39 +845,7 @@ export function CVWizard() {
 
       {currentStep === 'template' && linkedInData && (
         <div className="space-y-6">
-          {/* Language Selection */}
-          <div className="rounded-lg border p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <p className="font-medium text-sm">{t('languageSelection.title')}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t('languageSelection.description')}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setOutputLanguage('nl')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    outputLanguage === 'nl'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  🇳🇱 {t('languageSelection.dutch')}
-                </button>
-                <button
-                  onClick={() => setOutputLanguage('en')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    outputLanguage === 'en'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
-                >
-                  🇬🇧 {t('languageSelection.english')}
-                </button>
-              </div>
-            </div>
-          </div>
+          <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
 
           <TemplateSelector
             profileData={linkedInData}

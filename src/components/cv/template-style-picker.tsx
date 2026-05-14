@@ -26,18 +26,16 @@ import {
 import { useAuth } from '@/components/auth/auth-context';
 import { cn } from '@/lib/utils';
 import type {
-  CVStyleConfig,
   ParsedLinkedIn,
   JobVacancy,
   TokenUsage,
 } from '@/types';
 import type { CVDesignTokens, DecorationIntensity } from '@/types/design-tokens';
-import { tokensToStyleConfig } from '@/lib/cv/templates/adapter';
 
 interface TemplateStylePickerProps {
   linkedInData: ParsedLinkedIn;
   jobVacancy?: JobVacancy | null;
-  onStyleSelected: (styleConfig: CVStyleConfig, tokens: CVDesignTokens) => void;
+  onStyleSelected: (tokens: CVDesignTokens) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
   onCreditsRefresh?: () => void;
   onBack: () => void;
@@ -157,8 +155,7 @@ export function TemplateStylePicker({
   // Handle continue with selected style
   const handleContinue = () => {
     if (tokens) {
-      const styleConfig = tokensToStyleConfig(tokens);
-      onStyleSelected(styleConfig, tokens);
+      onStyleSelected(tokens);
     }
   };
 

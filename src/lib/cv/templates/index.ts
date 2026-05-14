@@ -38,11 +38,8 @@ export {
   getBorderRadiusCSS,
 } from './themes';
 
-// Adapter for legacy compatibility
-export {
-  tokensToStyleConfig,
-  styleConfigToTokens,
-} from './adapter';
+// Adapter for legacy compatibility (read-only: convert old CVStyleConfig docs to tokens)
+export { styleConfigToTokens } from './adapter';
 
 // Types re-exported for convenience
 export type { CreativityLevel } from './themes';

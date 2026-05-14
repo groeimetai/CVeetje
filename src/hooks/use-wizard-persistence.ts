@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import type {
   ParsedLinkedIn,
   JobVacancy,
-  CVStyleConfig,
   OutputLanguage,
   FitAnalysis,
 } from '@/types';
@@ -20,7 +19,6 @@ export interface WizardDraft {
   linkedInData: ParsedLinkedIn | null;
   jobVacancy: JobVacancy | null;
   fitAnalysis: FitAnalysis | null;
-  styleConfig: CVStyleConfig | null;
   designTokens: CVDesignTokens | null;
   avatarUrl: string | null;
   outputLanguage: OutputLanguage;

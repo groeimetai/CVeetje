@@ -65,6 +65,19 @@ function buildParsePrompt(rawText: string): string {
 
 ${getCurrentDateContext('nl')}
 
+## KERNREGEL — LEES EERST
+
+**Verzin niets.** Extraheer ALLEEN wat letterlijk in de vacaturetekst staat.
+
+- Als een skill, eis, opleiding of certificering niet expliciet wordt genoemd, neem hem NIET op. Punt.
+- Beter een lege array dan een verzonnen item. \`mustHaveSkills: []\` is een geldig en vaak correct antwoord.
+- Leid GEEN must-haves af uit context. "We werken in een Agile team" betekent NIET dat Agile een must-have skill is — het beschrijft de werkcultuur, niet een eis aan de kandidaat.
+- "We gebruiken Slack/Jira/Confluence" → werktool, GEEN must-have skill.
+- "Kennis van X is een pré/bonus/wenselijk" → nice-to-have, NIET must-have.
+- "Bij voorkeur ervaring met..." → nice-to-have, NIET must-have.
+
+De meest gemaakte fout is het opblazen van vacature-eisen. Wees daar bewust van.
+
 ## Vacaturetekst:
 
 ${rawText}
@@ -80,17 +93,17 @@ ${rawText}
    - De belangrijkste verantwoordelijkheden
    - De context/afdeling
 
-4. **Vereisten**: Lijst de belangrijkste kwalificaties en vereisten:
-   - Vereiste jaren ervaring
-   - Diploma's/opleidingen
-   - Harde eisen vs. "nice to haves"
-   - Selecteer de 8-10 belangrijkste
+4. **Vereisten** (\`requirements\`): Letterlijk genoemde kwalificaties en eisen.
+   - Neem ALLEEN op wat de vacature expliciet als eis of kwalificatie noemt
+   - Geen verzonnen items om de lijst te vullen
+   - Als de vacature kort is en weinig eisen noemt, mag de lijst kort zijn (3 items prima)
+   - Maximum 10 items, geen minimum
 
-5. **Keywords**: Identificeer relevante technische skills, tools, en soft skills:
-   - Programmeertalen, frameworks, tools
-   - Methodieken (Agile, Scrum, etc.)
+5. **Keywords**: Identificeer relevante technische skills, tools, en soft skills die LETTERLIJK in de vacature staan:
+   - Programmeertalen, frameworks, tools (alleen genoemd)
+   - Methodieken (Agile, Scrum, etc.) alleen als ze expliciet vermeld worden
    - Soft skills die genoemd worden
-   - Max 15 keywords
+   - Max 15 keywords, geen minimum
 
 6. **Industrie**: Leid af in welke sector het bedrijf opereert (tech, finance, healthcare, retail, etc.)
 
@@ -138,22 +151,42 @@ ${rawText}
    - Let op sleutelwoorden: "starter", "ervaren", "senior", "expert", "lead", "principal"
    - Markeer of de eis strikt is ("vereist", "minimaal") of flexibel ("bij voorkeur", "liefst")
 
-12. **Must-Have Skills (Fit Analyse)**: Identificeer ABSOLUUT VEREISTE skills:
-   - Let op: "vereist", "must have", "noodzakelijk", "je hebt", "je beschikt over"
-   - Dit zijn skills waar de kandidaat NIET zonder kan
-   - Wees selectief: alleen expliciete must-haves, niet alle genoemde skills
-   - Max 10 items
+12. **Must-Have Skills** — STRIKT:
 
-13. **Nice-to-Have Skills (Fit Analyse)**: Identificeer BONUS skills:
-   - Let op: "nice to have", "pré", "bonus", "bij voorkeur", "ervaring met X is een plus"
-   - Dit zijn skills die de kandidaat sterker maken, maar niet vereist zijn
-   - Max 8 items
+    Een skill mag ALLEEN als must-have als de vacaturetekst hem koppelt aan een van deze signaalwoorden:
+    - "vereist", "must have", "noodzakelijk", "essentieel"
+    - "je hebt minimaal X jaar ervaring met..."
+    - "je beschikt over...", "je hebt aantoonbare ervaring met..."
+    - "wij verwachten dat je..."
+    - Genoemd onder kop "Eisen", "Wat wij vragen", "Functie-eisen"
 
-14. **Opleiding & Certificeringen (Fit Analyse)**:
-   - requiredEducation: Alleen invullen als expliciet een minimaal niveau vereist is (HBO, WO, Master)
-   - requiredCertifications: Specifieke certificeringen die als vereist genoemd worden
+    Dit zijn NIET must-haves (ook niet als de skill ergens in de tekst staat):
+    - "Pré", "bonus", "plus", "wenselijk", "bij voorkeur" → nice-to-have
+    - "Kennis van X is een voordeel" → nice-to-have
+    - "We werken met X" / "Ons team gebruikt X" → werktool, GEEN must-have skill
+    - "Ervaring met X is een plus" → nice-to-have
+    - Genoemd in "Wat bieden wij" of "Over het team" sectie → meestal geen eis
 
-Wees accuraat en baseer alles op de tekst. Als informatie niet duidelijk is, geef null terug voor optionele velden.`;
+    Bij twijfel: GEEN must-have. Liever lege array dan verzonnen items.
+    Max 10 items, geen minimum.
+
+13. **Nice-to-Have Skills**: Bonus-skills die de tekst expliciet als optioneel/wenselijk markeert.
+    - Signaalwoorden: "pré", "bonus", "bij voorkeur", "wenselijk", "ervaring met X is een plus", "kennis van Y is een voordeel"
+    - Max 8 items, geen minimum
+
+14. **Opleiding & Certificeringen**:
+    - requiredEducation: ALLEEN invullen als de tekst expliciet zegt "HBO vereist" / "WO-niveau" / "Master in X". Niet bij "bij voorkeur HBO".
+    - requiredCertifications: Alleen wat expliciet als vereist (niet wenselijk/pré) genoemd wordt.
+
+## Anti-hallucinatie checklist
+
+Voor elk item dat je in mustHaveSkills, niceToHaveSkills, requiredCertifications of requirements zet, vraag jezelf af:
+- Staat dit LETTERLIJK in de vacaturetekst? (Niet afgeleid, niet aangenomen.)
+- Welk signaalwoord uit de tekst koppelt dit aan deze categorie?
+
+Als je het signaalwoord niet kunt aanwijzen, hoort het item daar niet. Liever leeg dan vol.
+
+Wees accuraat en baseer alles op de letterlijke tekst. Geef null terug voor optionele velden waarvoor de tekst geen evidence heeft.`;
 }
 
 export interface ParseJobResult {

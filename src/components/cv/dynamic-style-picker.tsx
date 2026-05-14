@@ -25,10 +25,8 @@ import {
 import { useAuth } from '@/components/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { generateCVHTML } from '@/lib/cv/html-generator';
-import { tokensToStyleConfig } from '@/lib/cv/templates/adapter';
 import { typeScales } from '@/lib/cv/templates/themes';
 import type {
-  CVStyleConfig,
   ParsedLinkedIn,
   JobVacancy,
   TokenUsage,
@@ -132,10 +130,9 @@ interface DynamicStylePickerProps {
   linkedInData: ParsedLinkedIn;
   jobVacancy: JobVacancy | null;
   avatarUrl?: string | null;
-  onStyleGenerated: (styleConfig: CVStyleConfig, tokens: CVDesignTokens, creativityLevel: StyleCreativityLevel) => void;
+  onStyleGenerated: (tokens: CVDesignTokens, creativityLevel: StyleCreativityLevel) => void;
   onTokenUsage?: (usage: TokenUsage) => void;
   onCreditsRefresh?: () => void;
-  initialStyleConfig?: CVStyleConfig | null;
   initialTokens?: CVDesignTokens | null;
 }
 
@@ -146,37 +143,22 @@ export function DynamicStylePicker({
   onStyleGenerated,
   onTokenUsage,
   onCreditsRefresh,
-  initialStyleConfig,
   initialTokens,
 }: DynamicStylePickerProps) {
   const { llmMode } = useAuth();
   const [userPreferences, setUserPreferences] = useState('');
   const [creativityLevel, setCreativityLevel] = useState<StyleCreativityLevel>('balanced');
-  const [styleConfig, setStyleConfig] = useState<CVStyleConfig | null>(initialStyleConfig || null);
   const [tokens, setTokens] = useState<CVDesignTokens | null>(initialTokens || null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generationMessage, setGenerationMessage] = useState('');
 
-  // Track previous initialStyleConfig to detect when it changes to null (new vacancy)
-  const prevInitialStyleConfigRef = useRef<CVStyleConfig | null | undefined>(initialStyleConfig);
+  // Reset tokens when initialTokens changes from a value to null (new vacancy)
   const prevInitialTokensRef = useRef<CVDesignTokens | null | undefined>(initialTokens);
-
-  // Reset state only when initialStyleConfig/initialTokens CHANGE to null (new vacancy started)
   useEffect(() => {
-    // Only reset if initialStyleConfig changed FROM a non-null value TO null
-    if (prevInitialStyleConfigRef.current !== null && initialStyleConfig === null) {
-      console.log('[Style Picker] Resetting state - new vacancy detected');
-      setStyleConfig(null);
-      setError(null);
-    }
-    prevInitialStyleConfigRef.current = initialStyleConfig;
-  }, [initialStyleConfig]);
-
-  useEffect(() => {
-    // Only reset if initialTokens changed FROM a non-null value TO null
     if (prevInitialTokensRef.current !== null && initialTokens === null) {
       setTokens(null);
+      setError(null);
     }
     prevInitialTokensRef.current = initialTokens;
   }, [initialTokens]);
@@ -213,7 +195,6 @@ export function DynamicStylePicker({
     setIsGenerating(true);
     setError(null);
     setGenerationMessage('Initialiseren...');
-    setStyleConfig(null);
     setTokens(null);
 
     try {
@@ -260,9 +241,8 @@ export function DynamicStylePicker({
                 try {
                   const data = JSON.parse(line.slice(6));
                   console.log('[Style Picker] Final SSE event:', data.type || 'unknown');
-                  if (data.type === 'complete' && data.styleConfig && data.tokens) {
-                    console.log('[Style Picker] Complete from final buffer! Style:', data.styleConfig.styleName);
-                    setStyleConfig(data.styleConfig);
+                  if (data.type === 'complete' && data.tokens) {
+                    console.log('[Style Picker] Complete from final buffer! Theme:', data.tokens.themeBase);
                     setTokens(data.tokens);
                     if (data.usage && onTokenUsage) {
                       onTokenUsage(data.usage);
@@ -298,9 +278,8 @@ export function DynamicStylePicker({
               }
 
               // Handle completion
-              if (data.type === 'complete' && data.styleConfig && data.tokens) {
-                console.log('[Style Picker] Complete! Style:', data.styleConfig.styleName);
-                setStyleConfig(data.styleConfig);
+              if (data.type === 'complete' && data.tokens) {
+                console.log('[Style Picker] Complete! Theme:', data.tokens.themeBase);
                 setTokens(data.tokens);
                 setGenerationMessage('');
                 if (data.usage && onTokenUsage) {
@@ -335,9 +314,7 @@ export function DynamicStylePicker({
 
   const handleContinue = () => {
     if (tokens) {
-      // Rebuild styleConfig from tokens to ensure they're always in sync
-      const syncedStyleConfig = tokensToStyleConfig(tokens);
-      onStyleGenerated(syncedStyleConfig, tokens, creativityLevel);
+      onStyleGenerated(tokens, creativityLevel);
     }
   };
 

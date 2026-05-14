@@ -107,46 +107,79 @@ function buildSystemPrompt(): string {
 heeft gevraagd om een CV opnieuw te laten genereren omdat er volgens hen iets
 mis is. Jouw taak is om objectief te beoordelen of de klacht terecht is.
 
-BEOORDELINGSCRITERIA:
+## Klachtcategorieën — koppel de klacht aan één of meer hieronder
 
-Approve (dispute TERECHT) als:
-- De klacht wijst op een concrete, verifieerbare fout in de CV (datum ontbreekt,
-  bedrijfsnaam verkeerd, skill staat er niet in terwijl die in het profiel zit,
-  ervaring mist, samenvatting bevat hallucinatie, etc.)
-- De klacht wijst op een mismatch tussen de CV en de vacature (belangrijke
-  vacature-eis wordt niet benoemd, verkeerde toon voor de branche, etc.)
-- De klacht wijst op een duidelijke fout in de structuur/weergave
-- Een andere stijl zou aantoonbaar beter passen bij de vacature dan de huidige
-- Je twijfelt: approve (we kiezen voor de gebruiker, regeneratie is gratis)
+**A. Hallucinatie in CV** — gebruiker meldt iets dat in de CV staat maar NIET in het bronprofiel.
+→ Check: staat dat element echt in de CV? Staat het echt NIET in het bronprofiel?
+→ Beide ja → APPROVE (terecht, CV moet opnieuw zonder die hallucinatie).
+→ Eén van beide nee → REJECT (geen daadwerkelijke hallucinatie).
 
-Reject (dispute NIET TERECHT) als:
-- De klacht is puur subjectief zonder specifieke onderbouwing
-  ("ik vind hem niet mooi", "ik heb er niks mee")
-- De klacht wijst op iets wat EIGENLIJK GOED is in de CV
-- De klacht probeert iets toe te voegen wat niet in het bronprofiel staat
-  (zou hallucinatie veroorzaken in de nieuwe versie)
-- De klacht is onduidelijk/onverstaanbaar
+**B. Ontbrekend element** — gebruiker meldt dat iets ontbreekt in de CV dat WEL in het bronprofiel staat.
+→ Check: staat het in het bronprofiel? Ontbreekt het echt in de CV?
+→ Beide ja → APPROVE.
+→ Element staat niet in profiel → REJECT (zou hallucinatie veroorzaken bij regeneratie).
+→ Staat wel in CV, gebruiker zag het over het hoofd → REJECT (met vriendelijke verwijzing).
 
-Stijl-keuze van de gebruiker:
-- De gebruiker kiest zelf welk creativity level ze willen bij regeneratie.
-  Dit is HUN keuze — jij beoordeelt niet of die keuze verstandig is, alleen
-  of de KLACHT terecht is.
+**C. Mismatch met vacature** — gebruiker meldt dat de CV niet aansluit op de vacature.
+→ Check: noemt de vacature dit aspect echt? Mist de CV het daadwerkelijk?
+→ Concrete mismatch op vacature-eis → APPROVE.
+→ Vage smaakklacht zonder verband met vacature → REJECT.
 
-Rationale:
-- Houd het kort (1-3 zinnen). Wees specifiek: noem het element waar je naar
-  kijkt. Schrijf in dezelfde taal als de klacht zelf.
-- Bij reject: leg uit WAAROM de CV volgens jou wél klopt, zodat de gebruiker
-  begrijpt waarom de dispute is afgewezen.`;
+**D. Verkeerde toon / stijl** — gebruiker wil andere uitstraling.
+→ De gebruiker kiest het nieuwe creativity-level zelf — dat is HUN keuze. Beoordeel niet of die keuze verstandig is.
+→ Zolang de klacht enige onderbouwing heeft ("te conservatief voor een creatief bureau", "te zakelijk voor een startup"), is APPROVE prima.
+→ Puur "ik vind hem niet mooi" zonder enige onderbouwing → REJECT.
+
+**E. Feitelijke fout** — datum verkeerd, bedrijfsnaam fout, opleiding verkeerd weergegeven.
+→ Check: klopt de klacht echt? Vergelijk CV met bronprofiel.
+→ Klopt → APPROVE.
+→ Klopt niet → REJECT.
+
+## Algemene principes
+
+- **Bij echte twijfel: APPROVE.** Een terechte regen kost niets extra; een afgekeurde terechte klacht frustreert de gebruiker. Wees pro-user.
+- **MAAR**: een afkeer-klacht zonder enige onderbouwing rechtvaardigt geen credit-kostende regen. Reject die.
+- **Een dispute mag niet leiden tot een grotere hallucinatie.** Als de gebruiker vraagt om iets toe te voegen dat niet in het profiel staat, is REJECT correct — anders maak je de CV juist erger.
+
+## Rationale — schrijfregels
+
+- 1–3 zinnen, in dezelfde taal als de klacht.
+- Wees concreet: noem het element. "Je opmerking over X klopt: in je profiel staat Y, maar in de CV is dat als Z weergegeven."
+- Bij REJECT: leg vriendelijk uit waarom de CV volgens jou wél klopt of waarom de klacht niet bij een terechte regen past. Niet betuttelend.
+- Bij APPROVE: kort bevestigen wat verbeterd gaat worden.
+- Natuurlijk Nederlands, formele "u" of "je" — match wat de gebruiker zelf gebruikte in de klacht.`;
 }
 
 function buildUserPrompt(input: GatekeeperInput): string {
   const { userReason, currentLevel, requestedLevel, content, profile, jobVacancy } = input;
 
+  // Full profile context (no slicing). The gatekeeper needs the full picture
+  // to verify hallucination/missing-element claims accurately.
+  const experienceLines = profile.experience.map((exp) => {
+    const period = `${exp.startDate}${exp.endDate ? ` – ${exp.endDate}` : ' – heden'}`;
+    const desc = exp.description ? `\n      ${exp.description}` : '';
+    return `  - **${exp.title}** at ${exp.company} (${period})${desc}`;
+  }).join('\n');
+
+  const educationLines = profile.education.length > 0
+    ? profile.education.map(e => `  - ${e.degree || ''}${e.fieldOfStudy ? ` ${e.fieldOfStudy}` : ''} @ ${e.school} (${e.startYear || ''}${e.endYear ? ` – ${e.endYear}` : ''})`).join('\n')
+    : '  (geen opleidingen in profiel)';
+
   const profileSummary = `
 Naam: ${profile.fullName}
 Headline: ${profile.headline || '—'}
-${profile.experience.length} werkervaringen, ${profile.education.length} opleidingen
-Skills uit profiel: ${profile.skills.slice(0, 15).map(s => s.name).join(', ')}
+${profile.about ? `About: ${profile.about}` : ''}
+
+Werkervaringen (${profile.experience.length}):
+${experienceLines}
+
+Opleidingen (${profile.education.length}):
+${educationLines}
+
+Skills uit profiel: ${profile.skills.map(s => s.name).join(', ') || '(geen)'}
+Certificeringen: ${profile.certifications.map(c => c.name).join(', ') || '(geen)'}
+Talen: ${profile.languages.map(l => l.language).join(', ') || '(geen)'}
+${profile.projects && profile.projects.length > 0 ? `Projecten: ${profile.projects.map(p => p.title).join(', ')}` : ''}
 `.trim();
 
   const jobSummary = jobVacancy
@@ -154,19 +187,39 @@ Skills uit profiel: ${profile.skills.slice(0, 15).map(s => s.name).join(', ')}
 Functietitel: ${jobVacancy.title}
 Bedrijf: ${jobVacancy.company || '—'}
 Industrie: ${jobVacancy.industry || '—'}
-Keywords: ${jobVacancy.keywords.slice(0, 10).join(', ')}
-Must-have skills: ${jobVacancy.requirements.slice(0, 5).join(', ')}
+${jobVacancy.description ? `Omschrijving: ${jobVacancy.description}` : ''}
+Must-have skills: ${jobVacancy.mustHaveSkills?.join(', ') || '(geen)'}
+Nice-to-have skills: ${jobVacancy.niceToHaveSkills?.join(', ') || '(geen)'}
+Keywords: ${jobVacancy.keywords.join(', ') || '(geen)'}
 `.trim()
     : 'Geen vacature gekoppeld.';
 
+  // Full CV content (no slicing). User complaints often reference specific
+  // bullets that would otherwise be missed.
+  const cvExperienceLines = content.experience.map((e, i) => {
+    const bullets = e.highlights && e.highlights.length > 0
+      ? '\n' + e.highlights.map(h => `        • ${h}`).join('\n')
+      : (e.description ? `\n        ${e.description}` : '');
+    return `  ${i + 1}. ${e.title} @ ${e.company} (${e.period})${bullets}`;
+  }).join('\n');
+
   const cvSummary = `
-Samenvatting: ${content.summary.slice(0, 400)}
+Headline: ${content.headline}
+Samenvatting: ${content.summary}
+
 Ervaringen (${content.experience.length}):
-${content.experience.slice(0, 4).map((e, i) =>
-  `  ${i + 1}. ${e.title} @ ${e.company} (${e.period}) — ${e.highlights?.slice(0, 2).join(' | ') || e.description?.slice(0, 120) || ''}`
-).join('\n')}
-Skills in CV: technical=${content.skills.technical.slice(0, 10).join(', ')}; soft=${content.skills.soft.slice(0, 6).join(', ')}
-Opleidingen: ${content.education.map(e => `${e.degree} @ ${e.institution} (${e.year})`).join('; ')}
+${cvExperienceLines}
+
+Skills in CV:
+  Technical: ${content.skills.technical.join(', ')}
+  Soft: ${content.skills.soft.join(', ')}
+
+Opleidingen in CV:
+${content.education.length > 0 ? content.education.map(e => `  - ${e.degree} @ ${e.institution} (${e.year})`).join('\n') : '  (geen)'}
+
+Certificeringen in CV: ${content.certifications.join(', ') || '(geen)'}
+Talen in CV: ${content.languages.map(l => `${l.language} (${l.level})`).join(', ') || '(geen)'}
+${content.projects && content.projects.length > 0 ? `Projecten in CV: ${content.projects.map(p => p.title).join(', ')}` : ''}
 `.trim();
 
   return `De gebruiker heeft een dispute ingediend over hun CV.
@@ -178,15 +231,16 @@ Opleidingen: ${content.education.map(e => `${e.degree} @ ${e.institution} (${e.y
 - Huidige stijl-niveau: ${currentLevel}
 - Aangevraagd nieuw stijl-niveau: ${requestedLevel}
 
-## Bronprofiel
+## Bronprofiel (de waarheid — alles wat hierin staat is "echt")
 ${profileSummary}
 
 ## Doelvacature
 ${jobSummary}
 
-## Huidige CV-inhoud
+## Huidige CV-inhoud (wat de gebruiker nu ziet)
 ${cvSummary}
 
-Beoordeel of de klacht terecht is. Geef je verdict ('approved' of 'rejected')
-en een korte rationale voor de gebruiker.`;
+Beoordeel de klacht via de categorieën uit het systeembericht (A t/m E).
+Vergelijk waar nodig CV met bronprofiel om hallucinatie- of missing-claims te verifiëren.
+Geef je verdict ('approved' of 'rejected') en een korte, concrete rationale voor de gebruiker.`;
 }

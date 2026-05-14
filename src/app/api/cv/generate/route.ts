@@ -11,7 +11,6 @@ import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/
 import type {
   ParsedLinkedIn,
   JobVacancy,
-  CVStyleConfig,
   OutputLanguage,
   FitAnalysis,
   StyleCreativityLevel,
@@ -68,7 +67,6 @@ export async function POST(request: NextRequest) {
     const {
       linkedInData,
       jobVacancy,
-      styleConfig,
       designTokens,
       avatarUrl,
       language = 'nl',
@@ -77,8 +75,7 @@ export async function POST(request: NextRequest) {
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
-      styleConfig: CVStyleConfig;
-      designTokens?: CVDesignTokens;
+      designTokens: CVDesignTokens;
       avatarUrl?: string | null;
       language?: OutputLanguage;
       fitAnalysis?: FitAnalysis | null;
@@ -93,9 +90,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!styleConfig) {
+    if (!designTokens) {
       return NextResponse.json(
-        { error: 'Style configuration is required' },
+        { error: 'Design tokens are required' },
         { status: 400 }
       );
     }
@@ -121,9 +118,9 @@ export async function POST(request: NextRequest) {
         resolved.providerName,
         resolved.apiKey,
         resolved.model,
-        styleConfig,
+        designTokens,
         language,
-        designTokens?.experienceDescriptionFormat || 'bullets',
+        designTokens.experienceDescriptionFormat || 'bullets',
         fitAnalysis
       );
       content = result.content;
@@ -141,14 +138,16 @@ export async function POST(request: NextRequest) {
       linkedInData,
       jobVacancy,
       template: 'dynamic',  // Mark as dynamic style CV
-      colorScheme: {        // Extract basic colors for compatibility
-        primary: styleConfig.colors.primary,
-        secondary: styleConfig.colors.secondary,
-        accent: styleConfig.colors.accent,
+      colorScheme: {        // Extract basic colors for backwards compatibility
+        primary: designTokens.colors.primary,
+        secondary: designTokens.colors.secondary,
+        accent: designTokens.colors.accent,
       },
       brandStyle: null,
-      styleConfig,
-      designTokens: designTokens || null,
+      // styleConfig stays null for new CVs — legacy field kept on the CV type
+      // for backwards-compatible reads of older Firestore docs.
+      styleConfig: null,
+      designTokens,
       avatarUrl: avatarUrl || null,
       generatedContent: content,
       pdfUrl: null,

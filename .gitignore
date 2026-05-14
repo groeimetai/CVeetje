@@ -45,11 +45,7 @@ pdf-example-templates/
 doc-outputs/
 
 # local test/debug scripts
-compare-outputs.js
-inspect-docx.js
-inspect-docx2.js
-test-detection.js
-test-local-template.js
+scripts/local/
 
 # social media posts
 /posts/

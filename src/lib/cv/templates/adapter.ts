@@ -1,17 +1,18 @@
 /**
- * Adapter between CVDesignTokens and legacy CVStyleConfig
+ * Adapter for legacy CVStyleConfig.
  *
- * Provides bidirectional conversion for backward compatibility during migration.
- * Eventually the legacy format can be deprecated.
+ * Producers (wizard, style API, generate API) no longer emit CVStyleConfig — they
+ * write CVDesignTokens directly. The reverse direction (styleConfigToTokens) is
+ * kept as a read-fallback for older Firestore CV documents that only have a
+ * styleConfig field.
  */
 
 import type { CVStyleConfig, FontFamily } from '@/types';
 import type { CVDesignTokens, FontPairing } from '@/types/design-tokens';
-import { themeDefaults, typeScales } from './themes';
 
-// ============ Font Pairing to Legacy Fonts ============
-
-const fontPairingToLegacy: Record<FontPairing, { heading: FontFamily; body: FontFamily }> = {
+// Reverse lookup: which font pairing matches a given heading+body combination.
+// Used by styleConfigToTokens to convert legacy CV docs to the token system.
+const fontPairingByLegacyFonts: Record<FontPairing, { heading: FontFamily; body: FontFamily }> = {
   'inter-inter': { heading: 'inter', body: 'inter' },
   'playfair-inter': { heading: 'playfair', body: 'inter' },
   'montserrat-open-sans': { heading: 'montserrat', body: 'open-sans' },
@@ -20,124 +21,11 @@ const fontPairingToLegacy: Record<FontPairing, { heading: FontFamily; body: Font
   'roboto-roboto': { heading: 'roboto', body: 'roboto' },
   'lato-lato': { heading: 'lato', body: 'lato' },
   'merriweather-source-sans': { heading: 'merriweather', body: 'source-sans' },
-  // New font pairings mapped to closest legacy equivalents
   'oswald-source-sans': { heading: 'montserrat', body: 'source-sans' },
   'dm-serif-dm-sans': { heading: 'playfair', body: 'inter' },
   'space-grotesk-work-sans': { heading: 'inter', body: 'inter' },
   'libre-baskerville-source-sans': { heading: 'merriweather', body: 'source-sans' },
 };
-
-// ============ Header Variant Mapping ============
-
-const headerVariantToLegacy: Record<string, CVStyleConfig['layout']['headerStyle']> = {
-  'simple': 'left-aligned',
-  'accented': 'left-aligned',
-  'banner': 'banner',
-  'split': 'split',
-};
-
-// ============ Section Style Mapping ============
-
-const sectionStyleToLegacy: Record<string, CVStyleConfig['layout']['sectionDivider']> = {
-  'clean': 'line',
-  'underlined': 'accent-bar',
-  'boxed': 'none',
-  'timeline': 'line',
-  'accent-left': 'accent-bar',
-  'card': 'none',
-};
-
-// ============ Skills Display Mapping ============
-
-const skillsDisplayToLegacy: Record<string, CVStyleConfig['layout']['skillDisplay']> = {
-  'tags': 'tags',
-  'list': 'list',
-  'compact': 'list',
-};
-
-// ============ Spacing Mapping ============
-
-const spacingToLegacy: Record<string, CVStyleConfig['layout']['spacing']> = {
-  'compact': 'compact',
-  'comfortable': 'normal',
-  'spacious': 'spacious',
-};
-
-// ============ Convert CVDesignTokens to CVStyleConfig ============
-
-export function tokensToStyleConfig(tokens: CVDesignTokens): CVStyleConfig {
-  const fonts = fontPairingToLegacy[tokens.fontPairing];
-  const typeScale = typeScales[tokens.scale];
-
-  // Map borderRadius to legacy cornerStyle
-  const resolvedCornerStyle = tokens.borderRadius
-    ? (tokens.borderRadius === 'none' ? 'sharp' : tokens.borderRadius === 'pill' ? 'pill' : 'rounded')
-    : (tokens.roundedCorners ? 'rounded' : 'sharp');
-
-  // Map sectionStyle including new variants to legacy
-  const sectionDivider = sectionStyleToLegacy[tokens.sectionStyle] || 'line';
-
-  return {
-    styleName: tokens.styleName,
-    styleRationale: tokens.styleRationale,
-    industryFit: tokens.industryFit,
-    formalityLevel: tokens.themeBase === 'creative' || tokens.themeBase === 'bold'
-      ? 'casual'
-      : 'professional',
-
-    colors: {
-      primary: tokens.colors.primary,
-      secondary: tokens.colors.secondary,
-      accent: tokens.colors.accent,
-      text: tokens.colors.text,
-      muted: tokens.colors.muted,
-    },
-
-    typography: {
-      headingFont: fonts.heading,
-      bodyFont: fonts.body,
-      nameSizePt: typeScale.name,
-      headingSizePt: typeScale.heading,
-      bodySizePt: typeScale.body,
-      lineHeight: typeScale.lineHeight,
-    },
-
-    layout: {
-      style: 'single-column',
-      headerStyle: headerVariantToLegacy[tokens.headerVariant] || 'left-aligned',
-      sectionOrder: tokens.sectionOrder,
-      sectionDivider,
-      skillDisplay: skillsDisplayToLegacy[tokens.skillsDisplay] || 'tags',
-      spacing: spacingToLegacy[tokens.spacing] || 'normal',
-      showPhoto: tokens.showPhoto,
-    },
-
-    decorations: {
-      intensity: tokens.themeBase === 'bold' ? 'bold' : 'moderate',
-      useBorders: tokens.sectionStyle === 'boxed' || tokens.sectionStyle === 'card',
-      useBackgrounds: tokens.sectionStyle === 'boxed',
-      iconStyle: tokens.useIcons ? 'minimal' : 'none',
-      cornerStyle: resolvedCornerStyle,
-      itemStyle: tokens.sectionStyle === 'timeline' ? 'timeline' : 'card-subtle',
-      headerAccent: tokens.headerVariant === 'accented' ? 'side-bar' : 'none',
-    },
-
-    header: {
-      headerAlignment: tokens.headerVariant === 'split' ? 'left' : 'left',
-      nameWeight: tokens.nameStyle === 'extra-bold' ? 'extrabold' : 'bold',
-      showHeadline: true,
-      headlineStyle: 'muted',
-      contactInHeader: true,
-      contactStyle: tokens.headerVariant === 'split' ? 'stacked' : 'inline',
-    },
-
-    skills: {
-      skillDisplay: skillsDisplayToLegacy[tokens.skillsDisplay] || 'tags',
-      skillTagVariant: tokens.skillTagStyle === 'pill' ? 'filled' : (tokens.skillTagStyle || 'filled'),
-      skillColumns: 'auto',
-    },
-  };
-}
 
 // ============ Convert CVStyleConfig to CVDesignTokens ============
 
@@ -199,7 +87,7 @@ export function styleConfigToTokens(config: CVStyleConfig): CVDesignTokens {
 
 function determineFontPairing(heading: FontFamily, body: FontFamily): FontPairing {
   // Try to find exact match
-  for (const [pairing, fonts] of Object.entries(fontPairingToLegacy)) {
+  for (const [pairing, fonts] of Object.entries(fontPairingByLegacyFonts)) {
     if (fonts.heading === heading && fonts.body === body) {
       return pairing as FontPairing;
     }

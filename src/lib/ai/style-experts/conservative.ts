@@ -15,6 +15,8 @@ import {
   commonSystemHeader,
   commonSectionOrderFooter,
   buildCommonUserPreamble,
+  buildCompanyAnalysisBlock,
+  buildClosingDirectives,
 } from './shared/prompt-fragments';
 import {
   applyBaseValidations,
@@ -44,42 +46,11 @@ ${commonSectionOrderFooter}`;
 }
 
 function buildUserPrompt(ctx: PromptContext): string {
-  let prompt = buildCommonUserPreamble(ctx.linkedInSummary, ctx.jobVacancy, ctx.userPreferences);
-
-  if (ctx.jobVacancy) {
-    prompt += `
-COMPANY ANALYSIS TASK:
-Based on the company name "${ctx.jobVacancy.company || 'Unknown'}" and industry "${ctx.jobVacancy.industry || 'Unknown'}":
-1. Consider what type of company this is (startup, corporate, consulting, tech, finance, creative, government, etc.)
-2. Think about their likely brand values and culture
-3. Consider what style of CV would impress their hiring managers
-4. If you're 100% CERTAIN about the company's brand colors, use them to make the CV look like company marketing material
-
-Style guidance by company type:
-- Big Tech (Google, Amazon, Microsoft, etc.): Modern, clean, innovative feel
-- Consulting/Professional Services: Conservative, executive, structured
-- Startups/Scale-ups: Dynamic, bold, shows personality
-- Banks/Finance: Traditional, trustworthy, professional
-- Healthcare/Pharma: Clean, professional, approachable
-- Creative/Marketing/Design agencies: Show design sense, stand out
-- Government/Public sector: Conservative, accessible, clear
-- Manufacturing/Industrial: Professional, structured, reliable
-`;
-  }
-
-  prompt += `
-Generate design tokens that:
-1. Match what this specific company and industry would appreciate
-2. Reflect the company's likely culture and values
-3. Would impress a hiring manager at this organization
-4. Are visually appealing and professional
-5. Will render well in both screen preview and PDF print
-6. Use colors that work well together and have proper contrast
-
-IMPORTANT: Adapt the style specifically for "${ctx.jobVacancy?.company || 'the target company'}"!
-Think about what kind of candidate they want to see - and design accordingly.`;
-
-  return prompt;
+  return [
+    buildCommonUserPreamble(ctx.linkedInSummary, ctx.jobVacancy, ctx.userPreferences),
+    buildCompanyAnalysisBlock(ctx.jobVacancy),
+    buildClosingDirectives(ctx.jobVacancy?.company),
+  ].filter(Boolean).join('\n');
 }
 
 function getFallback(industry?: string): CVDesignTokens {

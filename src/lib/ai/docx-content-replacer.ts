@@ -108,7 +108,10 @@ ${isEn ? 'Fill all segments with the correct profile data. Return fills as { seg
         schema: segmentFillSchema,
         system: systemPrompt,
         prompt: userPrompt,
-        temperature: resolveTemperature(provider, model, 0.5),
+        // Low temperature: template segment filling is mechanical mapping, not creative
+        // generation. High temperature here causes the model to "improve" cells by adding
+        // marketing flair (verzonnen achievements, embellished tasks).
+        temperature: resolveTemperature(provider, model, 0.2),
       })
     );
 
@@ -154,12 +157,23 @@ ${isEn ? 'Fill all segments with the correct profile data. Return fills as { seg
 function buildSystemPromptEN(): string {
   return `You are a CV filling specialist. You receive a structural template map showing all text segments with their IDs and positions.
 
-CRITICAL RULES:
-- Use ONLY exact data from the profile. NEVER invent experiences, education, or years.
-- FILL ALL work experience and education entries - skip NOTHING!
-- If there are more profile entries than template slots, fill available slots with the most recent/relevant
-- Each repeating block instance should contain a DIFFERENT entry (experience 1, experience 2, etc.)
-- NEVER fill two slots with the same experience or education!
+═══════════════════════════════════════════════
+ANTI-HALLUCINATIE — STRICT
+═══════════════════════════════════════════════
+
+- Use ONLY exact data from the profile. NEVER invent experiences, education, dates, companies, job titles, or skills.
+- If the template has MORE slots than profile entries, leave excess slots EMPTY (empty-string value, or skip in fills array). NEVER duplicate an entry. NEVER fabricate a fake entry.
+- If a profile field is missing (no email, no phone, no address, no date of birth), leave that segment EMPTY. Do not invent a value.
+- If a segment asks for something not in the profile (e.g. hobbies, references) and the profile has none, leave EMPTY.
+- An empty cell is honest. An invented cell is a CV-killer.
+
+═══════════════════════════════════════════════
+FILL RULES
+═══════════════════════════════════════════════
+
+- FILL all real work experience and education entries from the profile — skip nothing the profile contains.
+- If there are MORE profile entries than template slots, fill available slots with the most recent/relevant entries (others get omitted).
+- Each repeating block instance must contain a DIFFERENT entry (experience 1, experience 2, etc.). Never duplicate.
 
 SEGMENT IDs:
 - Segments are identified like "s0", "s1", etc.
@@ -167,12 +181,12 @@ SEGMENT IDs:
 - Only include segments that need to be CHANGED
 
 SECTION RULES:
-- personal_info: ONLY name, address, phone, email, date of birth, nationality
-- work_experience: ONLY company names, job titles, tasks, work periods
-- education: ONLY schools, degrees, fields of study, education periods
-- skills: ONLY technical/soft skills, certifications
-- languages: ONLY languages and proficiency levels
-- special_notes: ONLY availability, transport, driver's license. FORBIDDEN: job titles, company names, work periods, career summaries!
+- personal_info: ONLY name, address, phone, email, date of birth, nationality from the profile
+- work_experience: ONLY company names, job titles, tasks, work periods from the profile
+- education: ONLY schools, degrees, fields of study, education periods from the profile
+- skills: ONLY technical/soft skills from the profile's skill list
+- languages: ONLY languages and proficiency from the profile
+- special_notes: ONLY availability, transport, driver's license — and ONLY if those are explicitly in the profile. FORBIDDEN: job titles, company names, work periods, career summaries!
 - NEVER mix content between sections!
 
 TABLE CELLS:
@@ -183,7 +197,7 @@ TABLE CELLS:
 TAB-SEPARATED LAYOUTS:
 - Some templates use [TAB] markers to separate labels from values within a paragraph
 - Segments BEFORE [TAB] are labels (e.g., "Name", "Date of birth") — do NOT change these
-- Segments AFTER [TAB] are value fields — fill these with the corresponding profile data
+- Segments AFTER [TAB] are value fields — fill these with the corresponding profile data (or leave empty if no data)
 - Example: [s1] "Name" [TAB] [s2] ": " [TAB] [s3] " " → only fill s3 with the person's name, leave s1 and s2 unchanged
 
 ORDER: Fill in reverse chronological order (most recent first).
@@ -195,25 +209,36 @@ IMPORTANT: Do NOT modify section header segments. Leave them unchanged.`;
 function buildSystemPromptNL(): string {
   return `Je bent een CV invul-specialist. Je krijgt een structurele template map met alle tekst-segmenten, hun IDs en posities.
 
-KRITIEKE REGELS:
-- Gebruik ALLEEN exacte data uit het profiel. VERZIN NOOIT ervaringen, opleidingen of jaren.
-- VUL ALLE werkervaring en opleidingen in - sla NIETS over!
-- Als er meer profielentries zijn dan template slots, vul de beschikbare slots met de meest recente/relevante
-- Elke herhalend blok instantie moet een ANDERE entry bevatten (ervaring 1, ervaring 2, etc.)
-- Vul NOOIT twee slots met dezelfde ervaring of opleiding!
+═══════════════════════════════════════════════
+ANTI-HALLUCINATIE — STRIKT
+═══════════════════════════════════════════════
+
+- Gebruik ALLEEN letterlijke data uit het profiel. VERZIN NOOIT ervaringen, opleidingen, datums, bedrijfsnamen, functietitels of skills.
+- Heeft het template MEER slots dan het profiel entries heeft? Laat de overtollige slots LEEG (lege string als value, of niet in fills opnemen). Dupliceer NOOIT een entry. Verzin NOOIT een nepervaring.
+- Ontbreekt een veld in het profiel (geen email, geen telefoon, geen adres, geen geboortedatum)? Laat dat segment LEEG. Verzin geen waarde.
+- Vraagt een segment om iets wat niet in het profiel staat (bv. hobby's, referenties) en het profiel heeft die niet? Laat LEEG.
+- Een lege cel is eerlijk. Een verzonnen cel is een CV-killer.
+
+═══════════════════════════════════════════════
+INVULREGELS
+═══════════════════════════════════════════════
+
+- Vul ALLE echte werkervaring en opleidingen uit het profiel in — sla geen echte entries over.
+- Heeft het profiel MEER entries dan het template slots? Vul beschikbare slots met de meest recente/relevante.
+- Elke herhalend-blok-instantie moet een ANDERE entry bevatten (ervaring 1, ervaring 2, etc.). Dupliceer nooit.
 
 SEGMENT IDs:
-- Segmenten worden geidentificeerd als "s0", "s1", etc.
+- Segmenten worden geïdentificeerd als "s0", "s1", etc.
 - Gebruik bij het invullen het exacte segment ID als segmentId
 - Neem alleen segmenten op die GEWIJZIGD moeten worden
 
-SECTIE REGELS:
-- personal_info: ALLEEN naam, adres, telefoon, email, geboortedatum, nationaliteit
-- work_experience: ALLEEN bedrijfsnamen, functies, werkzaamheden, werkperiodes
-- education: ALLEEN scholen, diploma's, studierichtingen, studieperiodes
-- skills: ALLEEN technische/soft skills, certificaten
-- languages: ALLEEN talen en taalniveaus
-- special_notes: ALLEEN beschikbaarheid, vervoer, rijbewijs. VERBODEN: functietitels, bedrijfsnamen, werkperiodes, carriere-samenvattingen!
+SECTIEREGELS:
+- personal_info: ALLEEN naam, adres, telefoon, email, geboortedatum, nationaliteit uit het profiel
+- work_experience: ALLEEN bedrijfsnamen, functies, werkzaamheden, werkperiodes uit het profiel
+- education: ALLEEN scholen, diploma's, studierichtingen, studieperiodes uit het profiel
+- skills: ALLEEN technische/soft skills uit de skills-lijst van het profiel
+- languages: ALLEEN talen en niveaus uit het profiel
+- special_notes: ALLEEN beschikbaarheid, vervoer, rijbewijs — en ALLEEN als die expliciet in het profiel staan. VERBODEN: functietitels, bedrijfsnamen, werkperiodes, carriere-samenvattingen!
 - MIX NOOIT content tussen secties!
 
 TABEL CELLEN:
@@ -224,7 +249,7 @@ TABEL CELLEN:
 TAB-GESCHEIDEN LAYOUTS:
 - Sommige templates gebruiken [TAB] markers om labels van waarden te scheiden binnen een paragraaf
 - Segmenten VOOR [TAB] zijn labels (bijv. "Naam", "Geboortedatum") — wijzig deze NIET
-- Segmenten NA [TAB] zijn waarde-velden — vul deze met de bijbehorende profieldata
+- Segmenten NA [TAB] zijn waarde-velden — vul deze met de bijbehorende profieldata (of laat leeg als geen data)
 - Voorbeeld: [s1] "Naam" [TAB] [s2] ": " [TAB] [s3] " " → vul alleen s3 in met de naam, laat s1 en s2 ongewijzigd
 
 VOLGORDE: Vul in omgekeerd chronologische volgorde (meest recent eerst).

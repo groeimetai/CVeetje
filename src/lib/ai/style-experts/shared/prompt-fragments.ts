@@ -22,13 +22,61 @@ IMPORTANT COLOR RULES:
 6. Text and muted colors should be readable (dark grays work well)
 
 COLOR SELECTION STRATEGY:
-- The CV should look like it could be company marketing material - matching their brand style
-- ONLY use brand colors if you are 100% CERTAIN about them (ING=orange, Rabobank=blue/orange, KPN=green, PostNL=orange, Coolblue=blue, etc.)
-- If you're NOT CERTAIN about a company's brand colors: DO NOT GUESS! Create a professional palette that fits the industry instead
-- When uncertain, pick colors based on industry conventions and create something unique
-- Always ensure colors work well together with good contrast
+- Default: build a palette from the industry style profile (provided in the user prompt). That profile encodes which color mood fits the sector.
+- Brand colors: only use a specific company brand color if it is COMMON KNOWLEDGE and you are highly confident it is current. Brand identities change — when in doubt, do NOT guess a specific brand color. Build a palette from the industry profile instead.
+- Never invent a brand color claim ("company X uses purple") and then build the palette around it. If you're not sure, fall back to the industry profile.
+- Always check the final palette: good contrast, no clashing hues, primary + secondary + accent form a coherent set.
+
+STYLE RATIONALE RULES:
+- The styleRationale field describes WHY you chose these tokens. It must match the tokens you actually chose — don't describe a "bold creative" style if you picked a conservative theme.
+- Keep it specific: name the theme, font character, and color mood. Avoid generic marketing copy like "modern and professional design that balances elegance with functionality".
+- One or two short sentences is enough.
 
 PHOTO AVAILABILITY: ${hasPhoto ? 'User HAS uploaded a photo - you SHOULD set showPhoto to true' : 'No photo available - set showPhoto to false'}`;
+}
+
+/**
+ * Company-and-industry analysis block — used by every expert's user prompt
+ * to ground style choices in the target company's likely culture. Returns
+ * empty string when no job vacancy is set.
+ */
+export function buildCompanyAnalysisBlock(jobVacancy: import('@/types').JobVacancy | null): string {
+  if (!jobVacancy) return '';
+
+  return `
+COMPANY ANALYSIS TASK:
+Based on the company name "${jobVacancy.company || 'Unknown'}" and industry "${jobVacancy.industry || 'Unknown'}":
+1. Consider what type of company this is (startup, corporate, consulting, tech, finance, creative, government, etc.)
+2. Think about their likely brand values and culture from the vacancy text itself — not from outside assumptions
+3. Consider what style of CV would impress their hiring managers
+4. Only use specific brand colors if they are common knowledge and current — otherwise build a palette from the industry profile
+
+Style guidance by company type (as starting points, not rules):
+- Big Tech: modern, clean, innovative feel
+- Consulting/Professional Services: conservative, executive, structured
+- Startups/Scale-ups: dynamic, shows personality
+- Banks/Finance: traditional, trustworthy
+- Healthcare/Pharma: clean, professional, approachable
+- Creative/Marketing/Design agencies: show design sense
+- Government/Public sector: conservative, accessible
+- Manufacturing/Industrial: professional, structured
+`;
+}
+
+/**
+ * Closing block for the user prompt — what the generated tokens must achieve.
+ */
+export function buildClosingDirectives(companyName: string | null | undefined): string {
+  return `
+Generate design tokens that:
+1. Match what this specific company and industry would appreciate
+2. Reflect the company's likely culture and values (as inferred from the vacancy text)
+3. Would impress a hiring manager at this organization
+4. Are visually appealing and professional
+5. Render well in both screen preview and PDF print
+6. Use colors with good contrast and a coherent palette
+
+Adapt the style specifically for "${companyName || 'the target company'}". Think about what kind of candidate they want to see — and design accordingly.`;
 }
 
 /** Common footer appearing at the end of every expert's system prompt. */

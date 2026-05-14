@@ -178,37 +178,49 @@ ${getCurrentDateContext('en')}
 Sources overview:
 ${sourceDescriptions.map((d, i) => `${i + 1}. ${d}`).join('\n')}
 
-Instructions:
+═══════════════════════════════════════════════
+ANTI-HALLUCINATIE — STRICT
+═══════════════════════════════════════════════
+
+EXTRACTION ONLY — NEVER INVENT. This is a pure extraction task. You are reading a CV/profile and pulling out facts. You are NOT writing a CV.
+
+- If you don't see it in the source, it doesn't exist. Use empty string / null / empty array.
+- NEVER invent: emails ("firstname@example.com"), phone numbers, websites, LinkedIn URLs, GitHub URLs, dates of birth.
+- NEVER invent skills, certifications, languages, or projects that aren't explicitly listed.
+- NEVER fabricate job descriptions. If the source shows a title and company but no description, return an empty description — don't write a generic one based on the title.
+- NEVER infer education from "looks like he/she would have studied X". If the source doesn't show an education entry, return an empty education array.
+- NEVER invent dates. If the source shows "2020-present" return that. Don't guess at start months.
+
+The user's CV depends on this extraction being TRUTHFUL. An empty field is the correct answer when the source is silent. A fabricated field is a CV-killer downstream.
+
+═══════════════════════════════════════════════
+EXTRACTION RULES
+═══════════════════════════════════════════════
+
 - Combine information from ALL sources into a single comprehensive profile
 - If the same information appears in multiple sources, use the most complete version
-- Extract all available information including:
-  - **Full name**: The candidate's actual personal name (first + last). This is a
-    HUMAN NAME — typically two or three words, first word is a given name.
-    CRITICAL: The following are NEVER valid names: "About", "Summary", "Profile",
-    "Contact", "Experience", "Education", "Skills", "Curriculum Vitae", "CV",
-    "Resume", "Over mij", "Samenvatting", "Personalia", "Profiel",
-    "Werkervaring", "Opleiding", or any other section header. If the actual
-    human name is not clearly visible in the document, return an empty string
-    rather than guessing. Do NOT pick up labels, headings, or the word under a
-    photo caption as the name.
-  - Professional headline/title
-  - Location
-  - About/Summary section
-  - **CONTACT & PERSONAL INFORMATION** (IMPORTANT - look carefully for these):
-    - Email address (look in header, contact sections, footer, or anywhere visible)
-    - Phone number (look in header, contact sections, or anywhere visible)
-    - LinkedIn URL (often in format linkedin.com/in/username)
-    - Personal website or portfolio URL
-    - GitHub profile URL
-    - Date of birth (often labeled "Geboortedatum", "Date of birth", "Born", "DOB" — common on Dutch/European CVs). Normalize to DD-MM-YYYY format. Leave empty if not visible.
-  - ALL work experience entries with dates and descriptions
-  - Education history
-  - Skills (technical and soft skills)
-  - Languages and proficiency levels
-  - Certifications
-- Be thorough and extract as much information as possible
-- If a field is not visible or available in any source, set it to null
-- Merge duplicates intelligently (same job at same company = one entry)`;
+- Merge duplicates intelligently (same job at same company = one entry)
+
+Fields to extract (only when visible in source):
+
+- **Full name**: The candidate's actual personal name (first + last). This is a HUMAN NAME — typically two or three words, first word is a given name. CRITICAL: The following are NEVER valid names: "About", "Summary", "Profile", "Contact", "Experience", "Education", "Skills", "Curriculum Vitae", "CV", "Resume", "Over mij", "Samenvatting", "Personalia", "Profiel", "Werkervaring", "Opleiding", or any other section header. If the actual human name is not clearly visible in the document, return an empty string rather than guessing. Do NOT pick up labels, headings, or the word under a photo caption as the name.
+- Professional headline/title
+- Location
+- About/Summary section (verbatim from source, not a re-summarization)
+- **CONTACT & PERSONAL INFORMATION** — look carefully but only return what's literally there:
+  - Email address (look in header, contact sections, footer)
+  - Phone number (look in header, contact sections)
+  - LinkedIn URL (format linkedin.com/in/username)
+  - Personal website or portfolio URL
+  - GitHub profile URL
+  - Date of birth (often labeled "Geboortedatum", "Date of birth", "Born", "DOB"). Normalize to DD-MM-YYYY format. Leave empty if not visible.
+- ALL work experience entries with dates and descriptions
+- Education history (only entries actually listed in source)
+- Skills — only skills literally listed in source (don't infer from job titles)
+- Languages and proficiency levels — only languages actually mentioned
+- Certifications — only certifications actually listed
+
+Be thorough about extracting what IS there. Be empty/null about what ISN'T there.`;
 
     try {
       // Build content array for the message
@@ -261,6 +273,10 @@ Instructions:
             content: messageContent,
           },
         ],
+        // Low temperature: extraction is mechanical reading, not creative writing.
+        // High temperature encourages "helpful" embellishments which here means
+        // inventing fields that aren't actually in the source.
+        temperature: 0.1,
       });
 
       // Helper to convert empty strings to null for compatibility

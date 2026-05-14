@@ -2,17 +2,17 @@ import { z } from 'zod';
 import { resolveTemperature } from './temperature';
 import { generateObjectResilient } from './generate-resilient';
 import { getCurrentDateContext } from './date-context';
+import { validateCVContent } from './validators/claim-validator';
 import type {
   ParsedLinkedIn,
   JobVacancy,
   GeneratedCVContent,
   LLMProvider,
-  CVStyleConfig,
   TokenUsage,
   OutputLanguage,
   FitAnalysis,
 } from '@/types';
-import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
+import type { CVDesignTokens, ExperienceDescriptionFormat } from '@/types/design-tokens';
 
 // Schema for structured CV output.
 //
@@ -123,10 +123,15 @@ in their *own* words instead of the *vacancy's* words. Fix that.
    - "Helped fix bugs" → "Contributed to debugging and code quality"
    - "Talked to customers" → "Managed client communication"
 
-4. **Estimate reasonable metrics** where the source implies scale.
-   - "Handled many customer requests" → "Handled 50+ customer requests daily"
-     (only if realistic for the described role)
-   - "Managed a small team" → "Managed team of 3-5"
+4. **Use only metrics the profile actually contains.** When the source mentions
+   a number, scale, or impact, use it. When it doesn't, do NOT invent one.
+   - Profile says "managed a team" → write "managed a team" (NOT "managed a team of 5-8")
+   - Profile says "team of 5" → write "team of 5"
+   - Profile says "increased revenue" → write "increased revenue" (NOT "increased revenue by 30%")
+   - Profile says "increased revenue by 25%" → write "increased revenue by 25%"
+
+   A bullet without a number is far better than a bullet with a fabricated number.
+   Recruiters spot invented metrics instantly; one fake number tanks the entire CV's credibility.
 
 5. **Reorder and prioritize** by relevance to the target role. Most relevant
    experience first, even if it's not the most recent.
@@ -150,18 +155,45 @@ same way as the vacancy. That's the bug we're fixing.
 const languageInstructions: Record<OutputLanguage, { intro: string; outputNote: string }> = {
   en: {
     intro: 'You are an expert CV writer. Create a professional, tailored CV based on the following profile data.',
-    outputNote: 'Write ALL output in English. Use professional English language appropriate for CVs.',
+    outputNote: `Write ALL output in English. Use professional English language appropriate for CVs.
+- Past tense for past roles, present tense for current role
+- Concrete action verbs, never "responsible for" or "worked on"
+- British or American spelling — stay consistent throughout
+- Avoid AI tells: "leveraged", "synergy", "spearheaded", "passionate professional", "results-driven dynamic"`,
   },
   nl: {
     intro: 'Je bent een expert CV-schrijver. Maak een professionele, op maat gemaakte CV op basis van de volgende profielgegevens.',
-    outputNote: `Write ALL output in Dutch (Nederlands). Use professional Dutch language appropriate for CVs.
-Examples of Dutch CV language:
-- "Verantwoordelijk voor" → "Leidde" or "Beheerde"
-- "Worked on" → "Werkte aan"
-- "Led a team" → "Leidde een team van"
-- "Increased" → "Verhoogde" or "Groeide"
-- "Implemented" → "Implementeerde"
-- "Developed" → "Ontwikkelde"`,
+    outputNote: `Schrijf ALLE output in natuurlijk, professioneel Nederlands. Gebruik geen letterlijke vertalingen uit het Engels.
+
+**Nederlandse CV-conventies — gebruik deze:**
+- Verleden tijd voor afgeronde rollen, tegenwoordige tijd voor de huidige rol
+- Beknopte zakelijke toon, geen marketingtaal
+- Werkwoorden voorop: "Leidde", "Ontwikkelde", "Beheerde", "Coördineerde", "Implementeerde", "Realiseerde", "Adviseerde", "Begeleidde", "Stelde op", "Voerde door"
+
+**Correcte vertalingen / herfraseringen:**
+- "Responsible for" → "Verantwoordelijk voor" als label, maar **liever**: "Leidde", "Beheerde", "Coördineerde"
+- "Worked on" → "Werkte aan" / "Droeg bij aan" — vermijd alleen "werkte aan" als zwak werkwoord
+- "Led a team of X" → "Gaf leiding aan een team van X" of "Leidde een team van X"
+- "Increased X" → "Verhoogde X" / "Groeide X" / "Vergrootte X" (kies wat past)
+- "Implemented" → "Implementeerde" / "Voerde door" / "Zette op"
+- "Developed" → "Ontwikkelde" / "Bouwde" / "Zette op"
+- "Stakeholder management" → "Stakeholdermanagement" (één woord) of "Beheer van stakeholders"
+- "Hands-on" → "Hands-on" (Nederlandse vakliteratuur gebruikt dit ook) of "Praktisch / uitvoerend"
+
+**Vermijd anglicismen en stiff vertalingen:**
+- ❌ "Ik ben verantwoordelijk geweest voor het managen van..." → ✅ "Beheerde..."
+- ❌ "Heeft bijgedragen aan het succesvol leveren van..." → ✅ "Leverde..."
+- ❌ "Heeft de leiding genomen over een team..." → ✅ "Leidde een team..."
+- ❌ "Het team waar ik onderdeel van uitmaakte" → ✅ "Het team waar ik in werkte"
+- ❌ "Door middel van het implementeren van" → ✅ "Door X te implementeren"
+
+**Vermijd AI-tells in het Nederlands:**
+- ❌ "Resultaatgerichte professional met passie voor..." (cliché)
+- ❌ "Bewezen track record in het leveren van..." (corporate jargon)
+- ❌ "Spilfunctie", "voortrekker", "kartrekker" — alleen gebruiken als de rol dat letterlijk was
+- ❌ "Dynamische, proactieve en gedreven..." (lege opsomming van adjectieven)
+
+**Schrijf zoals een ervaren Nederlandse recruiter zou willen lezen:** concreet, feitelijk, zonder opsmuk.`,
   },
 };
 
@@ -429,13 +461,13 @@ function stripUnsupportedYearClaims(
 function buildPrompt(
   linkedIn: ParsedLinkedIn,
   jobVacancy: JobVacancy | null,
-  styleConfig?: CVStyleConfig,
+  designTokens?: CVDesignTokens,
   language: OutputLanguage = 'nl',
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
   fitAnalysis?: FitAnalysis | null
 ): string {
   // Layout-aware instructions (single-column only now for reliable PDF)
-  const isCompact = styleConfig?.layout.spacing === 'compact';
+  const isCompact = designTokens?.spacing === 'compact';
   const bulletCount = isCompact ? '2-3' : '3-5';
   const bulletLength = isCompact ? 'Keep bullet points concise (max 15 words each)' : 'Bullet points can be detailed (max 25 words each)';
 
@@ -484,7 +516,7 @@ ${linkedIn.experience
 - **${exp.title}** at ${exp.company}
   ${exp.location ? `Location: ${exp.location}` : ''}
   ${exp.startDate} - ${exp.endDate || 'Present'}${perRole.has(i) ? ` (${perRole.get(i)})` : ''}
-  ${exp.description ? `Description: ${exp.description}` : '[No description provided — generate highlights ONLY from job title, company, and context. Do NOT fabricate specific achievements, metrics, or responsibilities.]'}
+  ${exp.description ? `Description: ${exp.description}` : '[No description in profile — write 1-2 bullets describing the GENERIC responsibilities typical of this title at this kind of company. Do NOT invent metrics, project names, team sizes, technologies, or specific achievements. Prefer fewer bullets over fabricated ones.]'}
 `
   )
   .join('\n')}
@@ -734,27 +766,37 @@ infer extra years from overlapping roles, side projects, or adjacent experience.
 - Maximum 3 sentences - be impactful, not lengthy
 - AVOID vague phrases like "passionate professional" or "seeking opportunities"
 
-### Experience Bullets - STAR Format (Situation, Task, Action, Result):
-Every bullet point MUST include:
+### Experience Bullets — concrete action + context
+
+Every bullet should have:
 1. **Action verb** to start (Led, Developed, Increased, Reduced, Implemented, etc.)
-2. **Specific action** describing what you did
-3. **Measurable result** with numbers (%, €, time saved, scale, team size)
+2. **Specific action** describing what was done
+3. **Result OR scope/context** — quantify ONLY when the profile contains the number; otherwise describe scope concretely (what kind of team, what kind of system, what kind of customer)
 
-**EXCELLENT bullet point examples (USE AS MODELS):**
-✅ "Reduced page load time by 40% through implementing lazy loading and image optimization, improving user retention by 15%"
-✅ "Led cross-functional team of 8 engineers to deliver €2M e-commerce platform 2 weeks ahead of schedule"
-✅ "Increased customer retention by 25% by redesigning onboarding flow based on user research insights"
-✅ "Automated manual reporting process, saving 20 hours/week and reducing errors by 90%"
-✅ "Managed portfolio of 15 enterprise clients generating €3.5M annual recurring revenue"
-✅ "Implemented CI/CD pipeline reducing deployment time from 4 hours to 15 minutes"
+**Quantified examples (use this style ONLY when the profile gives the number):**
+✅ "Reduced page load time by 40% through lazy loading and image optimization"
+✅ "Led cross-functional team of 8 engineers to deliver e-commerce platform ahead of schedule"
+✅ "Automated manual reporting process, saving 20 hours/week"
+   *(Use these only if 40%, 8, 20 are in the profile. If not — drop the numbers.)*
 
-**POOR bullet points (NEVER USE THESE PATTERNS):**
-❌ "Responsible for managing projects" (passive, no result)
+**Unquantified examples (use these when the profile lacks numbers — these are strong without inventing metrics):**
+✅ "Owned the API contract between checkout and the order-management system"
+✅ "Introduced code-review standards that the rest of the platform team adopted"
+✅ "Rebuilt the onboarding flow after qualitative user research"
+✅ "Coördineerde de overdracht van legacy-systemen naar het nieuwe data-platform"
+✅ "Was eerste aanspreekpunt voor enterprise-klanten in de migratiefase"
+
+Both styles are excellent. The fabricated-metric anti-pattern is worse than either.
+
+**Poor bullets (NEVER USE THESE PATTERNS):**
+❌ "Responsible for managing projects" (passive, no scope)
 ❌ "Worked on various tasks" (vague, meaningless)
 ❌ "Team player with good communication skills" (cliché, not an achievement)
-❌ "Helped with customer support" (weak verb, no impact)
+❌ "Helped with customer support" (weak verb, no scope)
 ❌ "Participated in meetings" (not an achievement)
 ❌ "Successfully completed all assigned tasks" (generic, "successfully" is redundant)
+❌ "Increased revenue by 30%" — **when the profile says only "increased revenue"** (fabricated metric)
+❌ "Managed team of 5" — **when the profile says only "managed a team"** (fabricated number)
 
 ### Power Words - Start Bullets With These:
 
@@ -777,25 +819,53 @@ Every bullet point MUST include:
 ❌ "Think outside the box" → Cliché
 ❌ "Go-getter", "Self-starter" → Show, don't tell
 
-### Quantification Guidelines:
-When exact numbers aren't available, use reasonable estimates with context:
-- Revenue/Sales: "€X in revenue" or "X% increase in sales"
-- Time: "X hours/week saved" or "reduced processing time by X%"
-- Scale: "team of X" or "X customers" or "X projects"
-- Efficiency: "X% improvement" or "X% reduction in errors"
-- If you can't quantify, at least show scope: "enterprise-level", "company-wide", "cross-functional"
+### Quantification — strict rules
+
+**Use numbers ONLY when the profile actually contains them.**
+
+Permitted sources of a number in a bullet:
+- A figure stated literally in the profile's experience description, headline, summary, or projects
+- A figure clearly implied by the profile (e.g. "managed the EU team" + listed team members = team size)
+
+If neither applies: **do not include a number**. Describe scope qualitatively instead.
+Qualitative scope (always safe — no fabrication):
+- "enterprise-level", "company-wide", "cross-functional", "multi-team"
+- "production system", "customer-facing", "internal-facing"
+- "platform migration", "greenfield project", "legacy modernization"
+
+Forbidden moves:
+- Adding "%" when the profile gave no percentage
+- Adding "€X" or "$X" when no monetary figure is in the profile
+- Adding "X hours/week" or "X days" when no time figure is in the profile
+- Adding "team of X" when only "team" was mentioned
+
+A bullet with concrete action + qualitative scope is professional and credible.
+A bullet with a fabricated number is a CV-killer.
 
 ${experienceFormatInstruction}
 
 ## Output Requirements:
 - Professional, concise language
-- Active voice and action verbs (NEVER passive voice)
-- EVERY experience bullet MUST have a measurable result or clear impact
+- Active voice and action verbs (avoid passive voice when an active alternative exists)
+- Every experience bullet has a concrete ACTION + scope; results/metrics ONLY when the profile contains them
 - Keep summary to 2-3 sentences maximum
 - ${descriptionFormat === 'bullets' ? `${bulletCount} bullet points per experience entry` : '2-3 sentences per experience'}
 - ${descriptionFormat === 'bullets' ? bulletLength : 'Keep descriptions focused and impactful'}
-- Focus on achievements and RESULTS, not just responsibilities
-- Mirror exact terminology from the job posting where it fits naturally`;
+- Focus on what the candidate concretely did and the scope/context; surface real metrics where available
+- Mirror exact terminology from the job posting where it fits naturally
+
+## Final anti-hallucinatie checklist (apply before returning)
+
+Scan everything you've generated and verify:
+- [ ] Every job title in \`experience\` is either the original from the profile OR a defensible reframing supported by the described work — never an invented title.
+- [ ] Every percentage, euro amount, time saving, team size, customer count, project budget can be traced to a literal number in the profile. If not — remove the number, keep the action.
+- [ ] Every technology in \`skills.technical\` is mentioned somewhere in the profile (skills, experience descriptions, projects, or certifications). No invented tools.
+- [ ] Every certification in \`certifications\` exists in the profile's certifications list. If the profile has none — return an empty array, do not invent one.
+- [ ] Every project in \`projects\` exists in the profile's projects list. If the profile has no projects — return an empty array.
+- [ ] The summary doesn't claim more years of experience than the pre-computed unique career duration above.
+- [ ] No fabricated achievement (e.g. "winner of...", "speaker at...", "published in...") unless explicitly in the profile.
+
+When in doubt about a single item, REMOVE IT. A shorter, fully truthful CV beats a longer one with a fabricated detail every time.`;
 
   return prompt;
 }
@@ -811,12 +881,12 @@ export async function generateCV(
   provider: LLMProvider,
   apiKey: string,
   model: string,
-  styleConfig?: CVStyleConfig,
+  designTokens?: CVDesignTokens,
   language: OutputLanguage = 'nl',
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
   fitAnalysis?: FitAnalysis | null
 ): Promise<GenerateCVResult> {
-  const prompt = buildPrompt(linkedIn, jobVacancy, styleConfig, language, descriptionFormat, fitAnalysis);
+  const prompt = buildPrompt(linkedIn, jobVacancy, designTokens, language, descriptionFormat, fitAnalysis);
 
   try {
     const { value, usage } = await generateObjectResilient({
@@ -936,7 +1006,7 @@ function normalizeCVContent(
     raw.summary = stripUnsupportedYearClaims(raw.summary, maxWholeYears, false);
   }
 
-  return {
+  const filled: GeneratedCVContent = {
     headline: raw.headline ?? '',
     summary: raw.summary ?? '',
     experience: raw.experience ?? [],
@@ -946,4 +1016,13 @@ function normalizeCVContent(
     certifications: raw.certifications ?? [],
     projects: raw.projects ?? [],
   } as GeneratedCVContent;
+
+  // Deterministic claim validation — strip anything the model fabricated
+  // despite the prompt's "do not fabricate" rules. The prompt is guidance;
+  // this is the guarantee.
+  const validation = validateCVContent(filled, linkedIn);
+  if (validation.hasAnyStripped) {
+    console.warn('[CV Gen] Stripped fabricated content not found in profile:', JSON.stringify(validation.log));
+  }
+  return validation.cleaned;
 }

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generateDesignTokens, createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
-import { tokensToStyleConfig } from '@/lib/cv/templates/adapter';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import type {
   ParsedLinkedIn,
@@ -138,15 +137,11 @@ export async function POST(request: NextRequest) {
             );
             console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
 
-            // Convert to legacy CVStyleConfig for backward compatibility
-            const styleConfig = tokensToStyleConfig(tokens);
-
             // Send final result
             const result = JSON.stringify({
               type: 'complete',
               success: true,
-              styleConfig,
-              tokens, // Also include new tokens
+              tokens,
               usage,
             });
             controller.enqueue(encoder.encode(`data: ${result}\n\n`));
@@ -202,13 +197,9 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
 
-    // Convert to legacy CVStyleConfig for backward compatibility
-    const styleConfig = tokensToStyleConfig(tokens);
-
     return NextResponse.json({
       success: true,
-      styleConfig,
-      tokens, // Also include new tokens
+      tokens,
       usage,
     });
   } catch (error) {
