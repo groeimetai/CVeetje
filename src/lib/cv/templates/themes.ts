@@ -540,6 +540,30 @@ export const creativityConstraints = {
     allowedNameStyles: ['uppercase', 'extra-bold'] as const,
     allowedSkillTagStyles: ['outlined', 'pill'] as const,
   },
+  'editorial-paper': {
+    // Brand-matched editorial paper: cream paper + navy ink + clay accent.
+    // Always uses the editorial renderer (creative-style layouts).
+    allowedThemes: ['modern', 'creative'] as ThemeBase[],
+    // Serif heading + sans body — matches the brand fonts (Instrument Serif / DM Sans).
+    allowedFontPairings: [
+      'libre-baskerville-source-sans',
+      'dm-serif-dm-sans',
+      'playfair-inter',
+    ] as FontPairing[],
+    // Editorial paper prefers a clean single-column with a strong masthead,
+    // not a sidebar — distinguishes it from 'creative'.
+    allowedHeaderVariants: ['simple', 'split'] as const,
+    allowedSectionStyles: ['underlined', 'magazine'] as const,
+    allowedDecorations: ['minimal'] as const,
+    defaultDecorations: 'minimal' as const,
+    allowBanner: false,
+    allowTimeline: false,
+    allowedLayouts: ['single-column'] as const,
+    allowedBorderRadius: ['small', 'medium'] as const,
+    allowedAccentStyles: ['border-left', 'quote'] as const,
+    allowedNameStyles: ['normal'] as const,
+    allowedSkillTagStyles: ['outlined', 'pill'] as const,
+  },
   experimental: {
     // Experimental gets 'bold' — creative doesn't.
     allowedThemes: ['creative', 'bold'] as ThemeBase[],

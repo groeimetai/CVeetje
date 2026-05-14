@@ -40,6 +40,7 @@ const LEVELS: { value: StyleCreativityLevel; label: string; description: string 
   { value: 'balanced', label: 'Gebalanceerd', description: 'Modern maar professioneel' },
   { value: 'creative', label: 'Creatief', description: 'Editorial/magazine layout' },
   { value: 'experimental', label: 'Experimenteel', description: 'Bold/Canva-stijl met kleur' },
+  { value: 'editorial-paper', label: 'Editorial Paper', description: 'Cveetje-look: cream paper + ink + clay accent' },
 ];
 
 type DialogState =

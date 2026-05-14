@@ -385,7 +385,12 @@
     "freeCredits": "{count} free",
     "purchasedCredits": "{count} purchased",
     "buyMoreCredits": "Buy more credits",
-    "user": "User"
+    "user": "User",
+    "groups": {
+      "make": "Make",
+      "apply": "Apply",
+      "account": "Account"
+    }
   },
   "credits": {
     "title": "Credits",

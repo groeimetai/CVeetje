@@ -11,12 +11,14 @@ import { conservativeExpert } from './conservative';
 import { balancedExpert } from './balanced';
 import { creativeExpert } from './creative';
 import { experimentalExpert } from './experimental';
+import { editorialPaperExpert } from './editorial-paper';
 
 const REGISTRY: Record<StyleCreativityLevel, StyleExpert> = {
   conservative: conservativeExpert,
   balanced: balancedExpert,
   creative: creativeExpert,
   experimental: experimentalExpert,
+  'editorial-paper': editorialPaperExpert,
 };
 
 export function getStyleExpert(level: StyleCreativityLevel): StyleExpert {

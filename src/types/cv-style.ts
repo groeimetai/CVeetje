@@ -9,7 +9,12 @@
 // (wizard, style API, generate API) no longer emit styleConfig.
 
 // Creativity level for style generation
-export type StyleCreativityLevel = 'conservative' | 'balanced' | 'creative' | 'experimental';
+export type StyleCreativityLevel =
+  | 'conservative'
+  | 'balanced'
+  | 'creative'
+  | 'experimental'
+  | 'editorial-paper';
 
 // Print-safe font options
 export type FontFamily =

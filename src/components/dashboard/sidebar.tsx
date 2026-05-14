@@ -43,16 +43,34 @@ import {
 import { useAuth } from '@/components/auth/auth-context';
 import { signOut } from '@/lib/firebase/auth';
 
-const navigationItems = [
-  { key: 'dashboard', href: '/dashboard', icon: Home },
-  { key: 'profiles', href: '/profiles', icon: Users },
-  { key: 'myCvs', href: '/cv', icon: FileText },
-  { key: 'jobs', href: '/jobs', icon: Briefcase },
-  { key: 'applications', href: '/applications', icon: Send },
-  { key: 'templates', href: '/templates', icon: LayoutTemplate },
-  { key: 'credits', href: '/credits', icon: CreditCard },
-  { key: 'settings', href: '/settings', icon: Settings },
-  { key: 'feedback', href: '/feedback', icon: MessageSquarePlus },
+type NavItem = { key: string; href: string; icon: typeof Home };
+type NavGroup = { label: string; items: NavItem[] };
+
+const navigationGroups: NavGroup[] = [
+  {
+    label: 'make',
+    items: [
+      { key: 'dashboard', href: '/dashboard', icon: Home },
+      { key: 'myCvs', href: '/cv', icon: FileText },
+      { key: 'profiles', href: '/profiles', icon: Users },
+      { key: 'templates', href: '/templates', icon: LayoutTemplate },
+    ],
+  },
+  {
+    label: 'apply',
+    items: [
+      { key: 'jobs', href: '/jobs', icon: Briefcase },
+      { key: 'applications', href: '/applications', icon: Send },
+    ],
+  },
+  {
+    label: 'account',
+    items: [
+      { key: 'credits', href: '/credits', icon: CreditCard },
+      { key: 'settings', href: '/settings', icon: Settings },
+      { key: 'feedback', href: '/feedback', icon: MessageSquarePlus },
+    ],
+  },
 ];
 
 const adminNavigationItems = [
@@ -116,66 +134,78 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       {/* Navigation */}
-      <nav aria-label="Dashboard navigation" className="flex-1 space-y-1 px-3 py-4">
+      <nav aria-label="Dashboard navigation" className="flex-1 px-3 py-4">
         <Link href="/cv/new" onClick={handleNavClick}>
-          <Button className="w-full mb-4" size="sm">
+          <Button className="w-full mb-4 brand-btn brand-btn--primary brand-btn--block">
             <Plus className="mr-2 h-4 w-4" />
             {t('newCv')}
           </Button>
         </Link>
 
-        {navigationItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          return (
-            <Link
-              key={item.key}
-              href={item.href}
-              onClick={handleNavClick}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <item.icon className="mr-3 h-4 w-4" />
-              {t(item.key)}
-            </Link>
-          );
-        })}
-
-        {/* Admin Navigation - only visible to admins */}
-        {isAdmin && (
-          <>
-            <div className="mt-4 mb-2 px-3">
-              <div className="border-t pt-2">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">
-                  {t('adminSection')}
-                </span>
-              </div>
+        {navigationGroups.map((group, gi) => (
+          <div key={group.label} className={gi === 0 ? '' : 'mt-5'}>
+            <div className="px-3 mb-1.5 font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground">
+              {tSidebar(`groups.${group.label}`)}
             </div>
-            {adminNavigationItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  onClick={handleNavClick}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={cn(
-                    'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                  )}
-                >
-                  <item.icon className="mr-3 h-4 w-4" />
-                  {t(item.key)}
-                </Link>
-              );
-            })}
-          </>
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    onClick={handleNavClick}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                    )}
+                  >
+                    <item.icon className="mr-3 h-4 w-4" />
+                    <span className="flex-1">{t(item.key)}</span>
+                    {isActive && (
+                      <span aria-hidden="true" className="ml-2 inline-block size-1.5 rounded-full bg-[color:var(--accent)]" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {isAdmin && (
+          <div className="mt-5">
+            <div className="px-3 mb-1.5 font-mono text-[10px] tracking-[0.18em] uppercase text-[color:var(--accent)]">
+              {t('adminSection')}
+            </div>
+            <div className="space-y-0.5">
+              {adminNavigationItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    onClick={handleNavClick}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                    )}
+                  >
+                    <item.icon className="mr-3 h-4 w-4" />
+                    <span className="flex-1">{t(item.key)}</span>
+                    {isActive && (
+                      <span aria-hidden="true" className="ml-2 inline-block size-1.5 rounded-full bg-[color:var(--accent)]" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         )}
       </nav>
 

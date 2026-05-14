@@ -385,7 +385,12 @@
     "freeCredits": "{count} gratis",
     "purchasedCredits": "{count} gekocht",
     "buyMoreCredits": "Meer credits kopen",
-    "user": "Gebruiker"
+    "user": "Gebruiker",
+    "groups": {
+      "make": "Maken",
+      "apply": "Solliciteren",
+      "account": "Account"
+    }
   },
   "credits": {
     "title": "Credits",

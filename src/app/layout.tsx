@@ -1,18 +1,7 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeProvider, AppearanceScript } from '@/components/theme-provider';
 import './globals.css';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -59,16 +48,25 @@ export default async function RootLayout({
   const { locale } = await params;
 
   return (
-    <html lang={locale || 'nl'} suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+    <html
+      lang={locale || 'nl'}
+      data-theme="light"
+      data-palette="clay"
+      data-density="comfortable"
+      data-fontpair="editorial"
+      suppressHydrationWarning
+    >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
+        />
+        <AppearanceScript />
+      </head>
+      <body className="antialiased">
+        <ThemeProvider>
           {children}
           <Toaster />
         </ThemeProvider>

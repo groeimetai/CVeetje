@@ -67,7 +67,7 @@ interface CVPreviewProps {
   onTokensChange?: (tokens: CVDesignTokens) => void;
   // Dispute system state
   disputeCount?: number;
-  currentCreativityLevel?: 'conservative' | 'balanced' | 'creative' | 'experimental';
+  currentCreativityLevel?: 'conservative' | 'balanced' | 'creative' | 'experimental' | 'editorial-paper';
   onDisputeApproved?: () => void;
 }
 

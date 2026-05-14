@@ -189,6 +189,12 @@ export function DynamicStylePicker({
       icon: Zap,
       desc: 'Maximale visuele impact'
     },
+    {
+      value: 'editorial-paper' as StyleCreativityLevel,
+      label: 'Editorial Paper',
+      icon: Sparkles,
+      desc: 'Cveetje-look: cream paper + ink + clay'
+    },
   ];
 
   const handleGenerateStyle = useCallback(async () => {
