@@ -6,7 +6,6 @@ import { JobPagination } from '@/components/jobs/job-pagination';
 import { searchJobs } from '@/lib/jobs/search';
 import type { JobSortOption } from '@/lib/jobs/providers/types';
 import { BreadcrumbStructuredData } from '@/components/seo/structured-data';
-import { JobsChrome } from '@/components/jobs/jobs-chrome';
 import { PageHeader } from '@/components/brand/page-header';
 
 export const revalidate = 300;
@@ -92,7 +91,7 @@ export default async function JobsListPage({ params, searchParams }: Props) {
   };
 
   return (
-    <JobsChrome locale={locale}>
+    <>
       <BreadcrumbStructuredData
         items={[
           { name: 'Home', url: `/${locale}` },
@@ -102,7 +101,7 @@ export default async function JobsListPage({ params, searchParams }: Props) {
 
       <PageHeader
         eyebrow="§ Vacaturebank"
-        title={<>{t('listTitle').replace(/\s+\S+$/, '')} <em>{t('listTitle').split(/\s+/).slice(-1)[0]}</em></>}
+        title={<>Vind een <em>vacature</em></>}
         subtitle={t('listSubtitle')}
       />
 
@@ -147,6 +146,6 @@ export default async function JobsListPage({ params, searchParams }: Props) {
       )}
 
       <p className="text-xs text-muted-foreground pt-4 border-t">{t('poweredBy')}</p>
-    </JobsChrome>
+    </>
   );
 }

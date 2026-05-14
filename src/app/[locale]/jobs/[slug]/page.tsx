@@ -9,7 +9,6 @@ import { BreadcrumbStructuredData } from '@/components/seo/structured-data';
 import { JobPostingStructuredData } from '@/components/seo/job-posting-structured-data';
 import { JobApplyPanel } from '@/components/jobs/job-apply-panel';
 import { JobViewTracker } from '@/components/jobs/job-view-tracker';
-import { JobsChrome } from '@/components/jobs/jobs-chrome';
 import { resolveJobBySlug } from '@/lib/jobs/resolve';
 
 export const revalidate = 3600;
@@ -79,7 +78,7 @@ export default async function JobDetailPage({ params }: Props) {
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency);
 
   return (
-    <JobsChrome locale={locale}>
+    <>
       <JobViewTracker slug={job.slug} title={job.title} company={job.company} />
       <JobPostingStructuredData job={job} url={canonicalUrl} />
       <BreadcrumbStructuredData
@@ -162,6 +161,6 @@ export default async function JobDetailPage({ params }: Props) {
 
         <p className="text-xs text-muted-foreground pt-4 border-t">{t('poweredBy')}</p>
       </div>
-    </JobsChrome>
+    </>
   );
 }

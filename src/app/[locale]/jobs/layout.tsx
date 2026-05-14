@@ -1,15 +1,12 @@
-import { AuthProvider } from '@/components/auth/auth-context';
-import { JobsShell } from '@/components/jobs/jobs-shell';
-import '@/styles/dashboard.css';
+import { JobsChrome } from '@/components/jobs/jobs-chrome';
 
-export default function JobsLayout({
+export default async function JobsLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
-  return (
-    <AuthProvider>
-      <JobsShell>{children}</JobsShell>
-    </AuthProvider>
-  );
+  const { locale } = await params;
+  return <JobsChrome locale={locale}>{children}</JobsChrome>;
 }
