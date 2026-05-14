@@ -2,15 +2,16 @@
  * Editorial CV Renderer
  *
  * Self-contained renderer for creative-level CVs. Produces editorial/magazine
- * layouts with real typographic hierarchy, asymmetric grids, pull quotes,
- * drop caps and numbered sections.
+ * layouts with real typographic hierarchy, multi-color palettes, asymmetric
+ * grids, pull quotes, drop caps, decorative numerals, marginalia, kicker
+ * labels — pick & combine.
  *
  * Design principles:
  * - Print-safe: no transforms, no clip-path, no hover effects
  * - WYSIWYG: identical HTML for preview and PDF
- * - Agent-driven: the AI fills EditorialTokens freely — every combination
- *   of headerLayout × nameTreatment × accentTreatment × sectionTreatment ×
- *   grid × divider × typographyScale renders correctly
+ * - Agent-driven: the AI fills EditorialTokens freely — the renderer keys
+ *   off layoutArchetype as the main switch and layers decorElements on top
+ * - Multi-color: supports mono-accent / duotone / tritone palettes
  * - Element IDs match the existing inline editor contract
  */
 
@@ -23,6 +24,8 @@ import type {
 import type {
   CVDesignTokens,
   EditorialTokens,
+  EditorialDecorElement,
+  EditorialLayoutArchetype,
 } from '@/types/design-tokens';
 import { getFontUrls } from '../templates/themes';
 import { fontPairings } from '../templates/themes';
@@ -66,8 +69,13 @@ export function generateEditorialHTML(
 
   const protection = buildProtection(previewProtection, watermarkText);
 
+  const archetype = editorial.layoutArchetype || 'magazine-column';
+  const decorClasses = (editorial.decorElements || [])
+    .map((d) => `editorial-decor-${d}`)
+    .join(' ');
+
   return `<!DOCTYPE html>
-<!-- Generated with AI assistance by CVeetje (cveetje.nl) — editorial renderer -->
+<!-- Generated with AI assistance by CVeetje (cveetje.nl) — editorial renderer (creative) -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -81,7 +89,7 @@ export function generateEditorialHTML(
 </head>
 <body>
   ${protection.watermark}
-  <div class="editorial-cv editorial-grid-${editorial.grid} editorial-scale-${editorial.typographyScale}">
+  <div class="editorial-cv editorial-archetype-${archetype} editorial-grid-${editorial.grid} editorial-scale-${editorial.typographyScale} editorial-policy-${editorial.colorPolicy || 'mono-accent'} ${decorClasses}">
     ${header}
     ${body}
   </div>
@@ -99,6 +107,10 @@ export function generateEditorialHTML(
 function resolveEditorialTokens(tokens: CVDesignTokens): EditorialTokens {
   const e = tokens.editorial;
   return {
+    layoutArchetype: e?.layoutArchetype ?? 'magazine-column',
+    colorPolicy: e?.colorPolicy ?? 'mono-accent',
+    secondaryColor: e?.secondaryColor,
+    decorElements: e?.decorElements ?? [],
     headerLayout: e?.headerLayout ?? 'stacked',
     nameTreatment: e?.nameTreatment ?? 'oversized-serif',
     accentTreatment: e?.accentTreatment ?? 'thin-rule',
@@ -112,6 +124,26 @@ function resolveEditorialTokens(tokens: CVDesignTokens): EditorialTokens {
   };
 }
 
+function hasDecor(e: EditorialTokens, el: EditorialDecorElement): boolean {
+  return (e.decorElements || []).includes(el);
+}
+
+// Choose the effective color for "designed" elements (section titles,
+// decorative numerals, marginalia). Order: secondaryColor > accent > primary.
+function pickDesignColor(
+  e: EditorialTokens,
+  colors: CVDesignTokens['colors'],
+  preferSecondary = true,
+): string {
+  if (preferSecondary && e.colorPolicy === 'tritone' && e.secondaryColor) {
+    return e.secondaryColor;
+  }
+  if (e.colorPolicy === 'duotone' || e.colorPolicy === 'tritone') {
+    return colors.accent;
+  }
+  return colors.accent;
+}
+
 // ============ CSS Generation ============
 
 function generateEditorialCSS(
@@ -123,12 +155,19 @@ function generateEditorialCSS(
   const scaleVars = getScaleVars(e.typographyScale);
   const pageBg = tokens.pageBackground || '#ffffff';
 
+  const secondary = e.secondaryColor || colors.accent;
+  const designColor = pickDesignColor(e, colors, true);
+  const sectionTitleColor = hasDecor(e, 'colored-section-titles')
+    ? designColor
+    : colors.primary;
+
   // Typography decisions derived from nameTreatment
   const nameCSS = getNameTreatmentCSS(e.nameTreatment, fontConfig);
   const accentCSS = getAccentTreatmentCSS(e.accentTreatment, colors.accent);
   const sectionCSS = getSectionTreatmentCSS(e.sectionTreatment, colors, scaleVars);
   const dividerCSS = getDividerCSS(e.divider, colors);
-  const gridCSS = getGridCSS(e.grid);
+  const archetypeCSS = getArchetypeCSS(e.layoutArchetype || 'magazine-column');
+  const decorCSS = getDecorCSS(e, colors, sectionTitleColor, designColor, secondary);
 
   return `
     :root {
@@ -137,8 +176,12 @@ function generateEditorialCSS(
       --e-accent: ${colors.accent};
       --e-text: ${colors.text};
       --e-muted: ${colors.muted};
+      --e-design: ${designColor};
+      --e-second-design: ${secondary};
+      --e-section-title: ${sectionTitleColor};
       --e-page-bg: ${pageBg};
       --e-rule: ${withAlpha(colors.text, 0.18)};
+      --e-rule-strong: ${withAlpha(colors.text, 0.3)};
       --e-font-heading: ${fontConfig.heading.family};
       --e-font-body: ${fontConfig.body.family};
       ${scaleVars}
@@ -242,6 +285,8 @@ function generateEditorialCSS(
       color: #fff;
       margin: -52px -56px 40px;
       padding: 48px 56px 40px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .editorial-header.layout-band .name,
     .editorial-header.layout-band .kicker,
@@ -260,6 +305,14 @@ function generateEditorialCSS(
     .editorial-header.layout-band .contact-strip a {
       color: #fff;
       border-bottom-color: rgba(255,255,255,0.4);
+    }
+    /* Duotone / tritone bleed a thin accent rail under the band */
+    .editorial-policy-duotone .editorial-header.layout-band,
+    .editorial-policy-tritone .editorial-header.layout-band {
+      border-bottom: 6px solid var(--e-accent);
+    }
+    .editorial-policy-tritone .editorial-header.layout-band {
+      box-shadow: inset 0 -10px 0 0 var(--e-second-design);
     }
 
     .editorial-header.layout-overlap {
@@ -286,7 +339,6 @@ function generateEditorialCSS(
     ${accentCSS}
 
     /* ============ Grid / Body ============ */
-    ${gridCSS}
 
     .editorial-section {
       margin-top: 40px;
@@ -295,7 +347,7 @@ function generateEditorialCSS(
 
     .editorial-section .section-title {
       font-family: var(--e-font-heading);
-      color: var(--e-primary);
+      color: var(--e-section-title);
       margin: 0 0 16px;
       line-height: 1.1;
     }
@@ -446,7 +498,7 @@ function generateEditorialCSS(
       font-size: var(--e-small);
     }
 
-    /* Manuscript grid: left sidenotes */
+    /* Asymmetric grids — basic structure (archetype CSS may override) */
     .editorial-grid-asymmetric-60-40 .editorial-body,
     .editorial-grid-asymmetric-70-30 .editorial-body {
       display: grid;
@@ -508,6 +560,12 @@ function generateEditorialCSS(
       vertical-align: baseline;
     }
 
+    /* ============ Archetype-specific CSS ============ */
+    ${archetypeCSS}
+
+    /* ============ Decoration layer CSS ============ */
+    ${decorCSS}
+
     /* PDF print rules */
     @page {
       size: A4;
@@ -537,6 +595,10 @@ function generateEditorialCSS(
       .editorial-section,
       .editorial-section .item {
         break-inside: avoid;
+      }
+      /* Marginalia: narrow side column in print */
+      .editorial-decor-marginalia .editorial-section .item {
+        page-break-inside: avoid;
       }
     }
   `;
@@ -702,6 +764,8 @@ function generateEditorialBody(
   e: EditorialTokens,
   overrides?: CVElementOverrides | null,
 ): string {
+  const archetype = e.layoutArchetype || 'magazine-column';
+
   // Three-column-intro: render a hero row (location/focus/availability style)
   const introRow = e.grid === 'three-column-intro'
     ? buildThreeColumnIntro(content, tokens)
@@ -718,14 +782,23 @@ function generateEditorialBody(
     interests: () => renderInterests(content.interests, overrides),
   };
 
-  const supportsRail = e.grid === 'asymmetric-60-40' || e.grid === 'asymmetric-70-30';
+  // Sidebar archetypes: feature-sidebar
+  const supportsRail =
+    archetype === 'feature-sidebar' ||
+    e.grid === 'asymmetric-60-40' ||
+    e.grid === 'asymmetric-70-30';
+
   const requestedRailSections = tokens.sidebarSections?.length
     ? tokens.sidebarSections
     : ['skills', 'languages', 'certifications'];
-  const railSections = supportsRail
+
+  // editorial-spread uses a left marginalia column instead of right sidebar
+  const isSpread = archetype === 'editorial-spread' && hasDecor(e, 'marginalia');
+
+  const railSections = (supportsRail && !isSpread)
     ? requestedRailSections.filter(name => tokens.sectionOrder.includes(name))
     : [];
-  const mainSections = supportsRail
+  const mainSections = (supportsRail && !isSpread)
     ? tokens.sectionOrder.filter(name => !railSections.includes(name))
     : tokens.sectionOrder;
 
@@ -746,7 +819,7 @@ function generateEditorialBody(
   const railHtml = railSections.length > 0 ? renderSections(railSections) : '';
 
   return `
-    <div class="editorial-body">
+    <div class="editorial-body archetype-${archetype}">
       ${introRow}
       <main class="editorial-main">${mainHtml}</main>
       ${railHtml ? `<aside class="editorial-rail">${railHtml}</aside>` : ''}
@@ -763,16 +836,21 @@ function wrapSection(
   const prefix = e.sectionNumbering
     ? `<span class="section-number">${String(index).padStart(2, '0')}</span>`
     : '';
-  // innerHtml already contains its own <h2> and items — we just inject numbering
-  // after the </ editorial-section> opener.
-  return `<section class="editorial-section" data-section="${name}">${innerHtml.replace(
-    '<!--SECTION_NUMBER-->',
-    prefix,
-  )}</section>`;
+
+  // Big decorative numerals — replace the small section-number prefix with a
+  // huge chapter numeral *next to* the title via a separate node. The
+  // placeholder lives in the inner HTML (see sectionTitle()).
+  const numeralBlock = e.decorElements?.includes('decorative-numerals')
+    ? `<span class="decor-numeral">${String(index).padStart(2, '0')}</span>`
+    : '';
+
+  let inner = innerHtml.replace('<!--SECTION_NUMBER-->', prefix);
+  inner = inner.replace('<!--DECOR_NUMERAL-->', numeralBlock);
+  return `<section class="editorial-section" data-section="${name}" data-index="${index}">${inner}</section>`;
 }
 
 function sectionTitle(label: string): string {
-  return `<h2 class="section-title"><!--SECTION_NUMBER-->${escapeHtml(label)}</h2>`;
+  return `<h2 class="section-title"><!--DECOR_NUMERAL--><!--SECTION_NUMBER--><span class="section-title-label">${escapeHtml(label)}</span></h2>`;
 }
 
 function renderSummary(
@@ -786,9 +864,31 @@ function renderSummary(
 
   const style = getOverrideStyle(getOverride(overrides, 'summary'));
   const paragraphs = summary.split('\n').filter(Boolean);
-  const firstClass = e.dropCapSection === 'summary' ? 'drop-cap-paragraph' : '';
+
+  // drop-cap is triggered by sectionTreatment OR decor element
+  const wantsDropCap =
+    e.sectionTreatment === 'drop-cap' ||
+    (hasDecor(e, 'drop-cap') && (e.dropCapSection || 'summary') === 'summary');
+
+  // first-line-emphasis: split first paragraph into <span class="first-line"> + rest
+  const wantsFirstLine = hasDecor(e, 'first-line-emphasis');
+
   const bodyHtml = paragraphs
-    .map((p, i) => `<p class="${i === 0 ? firstClass : ''}" style="${i === 0 ? style : ''}">${escapeHtml(p)}</p>`)
+    .map((p, i) => {
+      const classes: string[] = [];
+      if (i === 0 && wantsDropCap) classes.push('drop-cap-paragraph');
+      const cls = classes.join(' ');
+      if (i === 0 && wantsFirstLine) {
+        // Split on first sentence-ending punctuation (no /s flag — work
+        // line-by-line; paragraphs in summary are already split on \n).
+        const match = p.match(/^([\s\S]+?[.?!])(\s+)([\s\S]*)$/);
+        if (match) {
+          return `<p class="${cls} has-first-line-emphasis" style="${i === 0 ? style : ''}"><span class="first-line">${escapeHtml(match[1])}</span> ${escapeHtml(match[3])}</p>`;
+        }
+        return `<p class="${cls} has-first-line-emphasis" style="${i === 0 ? style : ''}"><span class="first-line">${escapeHtml(p)}</span></p>`;
+      }
+      return `<p class="${cls}" style="${i === 0 ? style : ''}">${escapeHtml(p)}</p>`;
+    })
     .join('');
 
   return `${sectionTitle('Profile')}<div class="item-body">${bodyHtml}</div>`;
@@ -805,7 +905,11 @@ function renderExperience(
 
   const asParagraph = tokens.experienceDescriptionFormat === 'paragraph';
   const pullQuoteFromThisSection =
-    e.sectionTreatment === 'pull-quote' && e.pullQuoteSource === 'experience';
+    (e.sectionTreatment === 'pull-quote' || hasDecor(e, 'pull-quote')) &&
+    (e.pullQuoteSource || 'experience') === 'experience';
+
+  const useMarginalia =
+    e.layoutArchetype === 'editorial-spread' && hasDecor(e, 'marginalia');
 
   let pullQuoteHtml = '';
   if (pullQuoteFromThisSection) {
@@ -834,11 +938,19 @@ function renderExperience(
           .join('')}</ul>`;
       }
 
+      // In the editorial-spread archetype with marginalia, the period+company
+      // float into the gutter on the left. We emit a <aside class="margin-note">
+      // sibling of the item and let CSS position it.
+      const marginNote = useMarginalia && exp.period
+        ? `<aside class="margin-note">${escapeHtml(exp.period)}${exp.location ? ` · ${escapeHtml(exp.location)}` : ''}</aside>`
+        : '';
+
       return `
         <div class="item" data-id="experience-${i}">
+          ${marginNote}
           <h3 class="item-title" data-id="exp-${i}-title" style="${titleStyle}">${escapeHtml(exp.title)}</h3>
-          <p class="item-subtitle" data-id="exp-${i}-company" style="${companyStyle}">${escapeHtml(exp.company)}${exp.location ? ` · ${escapeHtml(exp.location)}` : ''}</p>
-          ${exp.period ? `<p class="item-meta" data-id="exp-${i}-period" style="${periodStyle}">${escapeHtml(exp.period)}</p>` : ''}
+          <p class="item-subtitle" data-id="exp-${i}-company" style="${companyStyle}">${escapeHtml(exp.company)}${exp.location && !useMarginalia ? ` · ${escapeHtml(exp.location)}` : ''}</p>
+          ${exp.period && !useMarginalia ? `<p class="item-meta" data-id="exp-${i}-period" style="${periodStyle}">${escapeHtml(exp.period)}</p>` : ''}
           <div class="item-body">${body}</div>
         </div>
       `;
@@ -851,11 +963,14 @@ function renderExperience(
 
 function renderEducation(
   education: GeneratedCVContent['education'],
-  _e: EditorialTokens,
+  e: EditorialTokens,
   overrides?: CVElementOverrides | null,
 ): string {
   if (!education || education.length === 0) return '';
   if (getOverride(overrides, 'section-education')?.hidden) return '';
+
+  const useMarginalia =
+    e.layoutArchetype === 'editorial-spread' && hasDecor(e, 'marginalia');
 
   const items = education
     .map((edu, i) => {
@@ -864,11 +979,16 @@ function renderEducation(
       const instStyle = getOverrideStyle(getOverride(overrides, `edu-${i}-institution`));
       const yearStyle = getOverrideStyle(getOverride(overrides, `edu-${i}-year`));
 
+      const marginNote = useMarginalia && edu.year
+        ? `<aside class="margin-note">${escapeHtml(edu.year)}</aside>`
+        : '';
+
       return `
         <div class="item" data-id="education-${i}">
+          ${marginNote}
           <h3 class="item-title" data-id="edu-${i}-degree" style="${degreeStyle}">${escapeHtml(edu.degree)}</h3>
           <p class="item-subtitle" data-id="edu-${i}-institution" style="${instStyle}">${escapeHtml(edu.institution)}</p>
-          ${edu.year ? `<p class="item-meta" data-id="edu-${i}-year" style="${yearStyle}">${escapeHtml(edu.year)}</p>` : ''}
+          ${edu.year && !useMarginalia ? `<p class="item-meta" data-id="edu-${i}-year" style="${yearStyle}">${escapeHtml(edu.year)}</p>` : ''}
           ${edu.details ? `<div class="item-body"><p>${escapeHtml(edu.details)}</p></div>` : ''}
         </div>
       `;
@@ -1042,6 +1162,7 @@ function getScaleVars(scale: EditorialTokens['typographyScale']): string {
         --e-body: 10.5pt;
         --e-small: 8.5pt;
         --e-kicker: 8pt;
+        --e-decor-numeral: 56pt;
       `;
     case 'modest':
       return `
@@ -1052,6 +1173,7 @@ function getScaleVars(scale: EditorialTokens['typographyScale']): string {
         --e-body: 10pt;
         --e-small: 8pt;
         --e-kicker: 7.5pt;
+        --e-decor-numeral: 36pt;
       `;
     case 'editorial':
     default:
@@ -1063,6 +1185,7 @@ function getScaleVars(scale: EditorialTokens['typographyScale']): string {
         --e-body: 10.5pt;
         --e-small: 8.5pt;
         --e-kicker: 8pt;
+        --e-decor-numeral: 44pt;
       `;
   }
 }
@@ -1258,8 +1381,6 @@ function getSectionTreatmentCSS(
           border-right: 1px solid var(--e-rule);
           padding-right: 16px;
           text-align: right;
-          position: sticky;
-          top: 0;
         }
         .editorial-section > *:not(.section-title) {
           grid-column: 2;
@@ -1271,7 +1392,7 @@ function getSectionTreatmentCSS(
           font-size: calc(var(--e-hero) * 0.38);
           font-weight: 600;
           font-style: italic;
-          color: ${colors.primary};
+          color: var(--e-section-title);
         }
       `;
     case 'pull-quote':
@@ -1312,12 +1433,16 @@ function getDividerCSS(
           position: relative;
           padding-top: 40px;
         }
+        /* Print-safe centered ornament: width 20px, margin-left -10px instead
+           of transform: translateX. */
         .editorial-section + .editorial-section::before {
           content: '✦';
           position: absolute;
           top: 16px;
           left: 50%;
-          transform: translateX(-50%);
+          margin-left: -10px;
+          width: 20px;
+          text-align: center;
           color: ${colors.accent};
           font-size: 14px;
         }
@@ -1332,9 +1457,291 @@ function getDividerCSS(
   }
 }
 
-function getGridCSS(_grid: EditorialTokens['grid']): string {
-  // Grid is handled via body-level class; placeholder for future expansion.
-  return '';
+// ============ Archetype-specific CSS ============
+
+function getArchetypeCSS(archetype: EditorialLayoutArchetype): string {
+  switch (archetype) {
+    case 'magazine-column':
+      return `
+        .editorial-archetype-magazine-column .editorial-body {
+          max-width: 64ch;
+          margin: 0 auto;
+        }
+        .editorial-archetype-magazine-column .editorial-main {
+          display: block;
+        }
+      `;
+
+    case 'editorial-spread':
+      return `
+        /* Two-column with a left margin-notes column. Even when grid is
+           asymmetric-*, we override layout here so the spread always has its
+           characteristic left gutter for marginalia. */
+        .editorial-archetype-editorial-spread .editorial-body {
+          display: block;
+        }
+        .editorial-archetype-editorial-spread .editorial-section {
+          display: grid;
+          grid-template-columns: 88px 1fr;
+          column-gap: 28px;
+          row-gap: 0;
+        }
+        .editorial-archetype-editorial-spread .editorial-section > * {
+          grid-column: 2;
+        }
+        .editorial-archetype-editorial-spread .editorial-section .item {
+          position: relative;
+        }
+        .editorial-archetype-editorial-spread .editorial-section .margin-note {
+          grid-column: 1;
+          font-family: var(--e-font-body);
+          font-size: var(--e-small);
+          color: var(--e-design);
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          text-align: right;
+          padding-top: 4px;
+          margin-top: 0;
+          line-height: 1.3;
+        }
+        /* Marginalia for items: place period flush-right in left column */
+        .editorial-archetype-editorial-spread .item > .margin-note {
+          position: absolute;
+          left: -116px;
+          top: 2px;
+          width: 88px;
+          padding: 0;
+          text-align: right;
+        }
+      `;
+
+    case 'asymmetric-feature':
+      return `
+        /* Hero band header + offset main column. The header CSS already
+           handles the band; here we offset the body grid. */
+        .editorial-archetype-asymmetric-feature .editorial-body {
+          display: block;
+          padding-left: 4%;
+          padding-right: 4%;
+        }
+        .editorial-archetype-asymmetric-feature .editorial-section {
+          max-width: 68ch;
+        }
+        .editorial-archetype-asymmetric-feature .editorial-section[data-index="1"] .section-title,
+        .editorial-archetype-asymmetric-feature .editorial-section[data-index="2"] .section-title {
+          font-size: calc(var(--e-hero) * 0.55);
+        }
+      `;
+
+    case 'feature-sidebar':
+      return `
+        /* Dense main column + tinted skills/certs rail. Force a 2-col grid
+           even if the AI picked manuscript. */
+        .editorial-archetype-feature-sidebar .editorial-body {
+          display: grid;
+          grid-template-columns: 1fr 230px;
+          gap: 40px;
+          align-items: start;
+          max-width: none;
+        }
+        .editorial-archetype-feature-sidebar .editorial-main {
+          min-width: 0;
+        }
+        .editorial-archetype-feature-sidebar .editorial-rail {
+          background: var(--e-secondary);
+          padding: 24px 22px;
+          border-radius: 4px;
+          border-top: 4px solid var(--e-accent);
+        }
+        .editorial-archetype-feature-sidebar .editorial-rail .section-title {
+          font-size: calc(var(--e-item-title) * 1.05);
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          border: none;
+          padding: 0;
+          color: var(--e-design);
+        }
+        .editorial-archetype-feature-sidebar .editorial-rail .editorial-inline-list {
+          flex-direction: column;
+          gap: 4px 0;
+        }
+        .editorial-archetype-feature-sidebar .editorial-rail .skills-editorial {
+          grid-template-columns: 1fr;
+          gap: 12px 0;
+        }
+      `;
+
+    case 'manuscript-mono':
+      return `
+        /* Classic manuscript: centered, narrow, optical type. */
+        .editorial-archetype-manuscript-mono .editorial-body {
+          max-width: 58ch;
+          margin: 0 auto;
+          display: block;
+        }
+        .editorial-archetype-manuscript-mono .editorial-section {
+          margin-top: 56px;
+        }
+        .editorial-archetype-manuscript-mono .editorial-section .section-title {
+          text-align: center;
+          font-style: italic;
+        }
+        .editorial-archetype-manuscript-mono .editorial-section + .editorial-section::before {
+          left: 50%;
+          transform: none;
+          margin-left: -6px;
+        }
+      `;
+  }
+}
+
+// ============ Decoration layer CSS ============
+//
+// Each decor element gets its own CSS block. Activated by the
+// `.editorial-decor-<element>` class on the root .editorial-cv container.
+
+function getDecorCSS(
+  e: EditorialTokens,
+  colors: CVDesignTokens['colors'],
+  sectionTitleColor: string,
+  designColor: string,
+  secondaryColor: string,
+): string {
+  let css = '';
+
+  // Decorative numerals — big chapter numbers next to section titles
+  css += `
+    .editorial-decor-decorative-numerals .editorial-section .decor-numeral {
+      display: inline-block;
+      font-family: var(--e-font-heading);
+      font-size: var(--e-decor-numeral);
+      line-height: 0.9;
+      color: ${designColor};
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      vertical-align: -0.18em;
+      margin-right: 14px;
+      opacity: 0.95;
+    }
+    /* When decorative numerals are active, suppress the small section-number prefix */
+    .editorial-decor-decorative-numerals .editorial-section .section-number {
+      display: none;
+    }
+    .editorial-decor-decorative-numerals .editorial-section .section-title {
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+    }
+  `;
+
+  // Kicker labels — small caps kicker line above the title
+  css += `
+    .editorial-decor-kicker-labels .editorial-section::before {
+      display: block;
+      content: attr(data-section);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: var(--e-kicker);
+      color: ${designColor};
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-family: var(--e-font-body);
+    }
+  `;
+
+  // Colored section titles — title in the design color
+  css += `
+    .editorial-decor-colored-section-titles .editorial-section .section-title-label {
+      color: ${sectionTitleColor};
+    }
+    .editorial-decor-colored-section-titles .editorial-section .section-title {
+      color: ${sectionTitleColor};
+    }
+  `;
+
+  // Rule ornaments — additional ✦ on dividers
+  if (e.divider !== 'ornament') {
+    // If ornament wasn't the chosen divider, layer one on anyway
+    css += `
+      .editorial-decor-rule-ornaments .editorial-section + .editorial-section {
+        position: relative;
+      }
+      .editorial-decor-rule-ornaments .editorial-section + .editorial-section .section-title::before {
+        content: '✦';
+        display: block;
+        text-align: center;
+        color: ${colors.accent};
+        font-size: 12px;
+        margin-bottom: 12px;
+        font-weight: normal;
+      }
+    `;
+  }
+
+  // First-line emphasis on summary
+  css += `
+    .editorial-decor-first-line-emphasis .has-first-line-emphasis .first-line {
+      font-family: var(--e-font-heading);
+      font-size: calc(var(--e-body) * 1.35);
+      line-height: 1.35;
+      color: var(--e-primary);
+      font-weight: 500;
+      letter-spacing: -0.005em;
+    }
+  `;
+
+  // Pull-quote styling tweak when active via decor (vs sectionTreatment)
+  // The blockquote already exists; lift its color/weight a notch
+  css += `
+    .editorial-decor-pull-quote .pull-quote {
+      border-left-color: ${designColor};
+      color: var(--e-primary);
+    }
+  `;
+
+  // Marginalia — fallback if archetype isn't editorial-spread but decor is
+  // set (shouldn't happen — normalize strips it — but guard anyway)
+  css += `
+    .editorial-decor-marginalia .item > .margin-note {
+      font-family: var(--e-font-body);
+      font-size: var(--e-small);
+      color: ${designColor};
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+  `;
+
+  // Multi-color policy hints — give the accent and secondaryColor visible
+  // moments on the page beyond just the section titles. A second-color
+  // underline under the name, secondaryColor for the section-number, etc.
+  if (e.colorPolicy === 'duotone' || e.colorPolicy === 'tritone') {
+    css += `
+      .editorial-policy-duotone .editorial-header .accent-rule-bottom,
+      .editorial-policy-tritone .editorial-header .accent-rule-bottom {
+        width: 96px;
+        border-top-width: 3px;
+      }
+      .editorial-policy-duotone .section-number,
+      .editorial-policy-tritone .section-number {
+        color: ${colors.accent};
+      }
+    `;
+  }
+  if (e.colorPolicy === 'tritone' && e.secondaryColor) {
+    css += `
+      .editorial-policy-tritone .item-body ul li::before {
+        color: ${secondaryColor};
+      }
+      .editorial-policy-tritone .skills-editorial .group-label {
+        color: ${secondaryColor};
+      }
+      .editorial-policy-tritone .section-number {
+        color: ${secondaryColor};
+      }
+    `;
+  }
+
+  return css;
 }
 
 // ============ Utility / Overrides ============
@@ -1395,7 +1802,6 @@ function buildProtection(enabled: boolean, watermarkText: string): {
         width: 200%; height: 200%;
         display: flex; flex-wrap: wrap;
         justify-content: space-around; align-content: space-around;
-        transform: rotate(-30deg);
       }
       .watermark-text {
         font-family: Arial, sans-serif;
