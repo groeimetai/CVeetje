@@ -51,15 +51,15 @@ export default function CVListPage() {
   const getStatusBadge = (status: CV['status']) => {
     switch (status) {
       case 'pdf_ready':
-        return <Badge className="bg-green-500">{tDashboard('status.ready')}</Badge>;
+        return <span className="brand-badge brand-badge--success"><span className="brand-badge-dot" />{tDashboard('status.ready')}</span>;
       case 'generated':
-        return <Badge className="bg-blue-500">{tDashboard('status.generated')}</Badge>;
+        return <span className="brand-badge brand-badge--primary"><span className="brand-badge-dot" />{tDashboard('status.generated')}</span>;
       case 'generating':
-        return <Badge className="bg-yellow-500">{tDashboard('status.generating')}</Badge>;
+        return <span className="brand-badge brand-badge--accent"><span className="brand-badge-dot" />{tDashboard('status.generating')}</span>;
       case 'failed':
         return <Badge variant="destructive">{tDashboard('status.failed')}</Badge>;
       default:
-        return <Badge variant="secondary">{tDashboard('status.draft')}</Badge>;
+        return <span className="brand-badge brand-badge--ghost">{tDashboard('status.draft')}</span>;
     }
   };
 

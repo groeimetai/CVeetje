@@ -142,9 +142,9 @@ export default function CreditsPage() {
                 className="relative rounded-lg border p-6 hover:border-primary transition-colors"
               >
                 {pkg.id === 'pack_15' && (
-                  <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 bg-green-500">
+                  <span className="brand-badge brand-badge--accent absolute -top-2 left-1/2 -translate-x-1/2">
                     {t('buy.popular')}
-                  </Badge>
+                  </span>
                 )}
                 <div className="text-center">
                   <p className="text-3xl font-bold">{pkg.credits}</p>
