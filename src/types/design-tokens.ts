@@ -85,6 +85,12 @@ export type DecorationTheme =
 // orthogonal so the AI can combine them freely — the renderer handles every
 // combination. This replaces the old "pick one of 5 header variants" approach
 // for creative mode with a much richer design space.
+//
+// Creative is the "AI decides more" level: it picks a layoutArchetype (high-
+// level composition), an editorial color palette (2-3 colors instead of just
+// one accent), and a bag of decorative elements (drop caps, pull quotes,
+// decorative numerals, marginalia). Bolder than balanced, but still readable
+// and print-safe.
 
 export type EditorialHeaderLayout = 'stacked' | 'split' | 'band' | 'overlap';
 export type EditorialNameTreatment =
@@ -122,7 +128,43 @@ export type EditorialTypographyScale =
   | 'editorial'            // Clear hero/body contrast
   | 'hero';                // Oversized display moments
 
+// ============ New: layout archetypes (high-level composition picks) ============
+//
+// The archetype is a single decision that biases many lower-level choices.
+// The renderer treats this as the primary layout switch — header position,
+// section flow, marginalia visibility and grid all key off it. The AI can
+// still tune the lower-level editorial.* primitives within an archetype.
+
+export type EditorialLayoutArchetype =
+  | 'magazine-column'        // Classic single-column with strong masthead + decorative dividers
+  | 'editorial-spread'       // Asymmetric 2-col with margin-notes column (sidenotes / dates)
+  | 'asymmetric-feature'     // Big hero band + offset main column, body content flows under
+  | 'feature-sidebar'        // Magazine feature article: dense main + skill/cert sidebar
+  | 'manuscript-mono';       // Centered manuscript with optical proportions, no sidebar
+
+// Decorative element toggles. The AI picks which ones to layer on.
+export type EditorialDecorElement =
+  | 'drop-cap'               // First letter of summary as decorative drop-cap
+  | 'pull-quote'             // Pull a quote from experience
+  | 'decorative-numerals'    // Big chapter-style numerals next to section titles
+  | 'marginalia'             // Margin notes (dates / company names) in the gutter
+  | 'rule-ornaments'         // Ornamental ✦ / ◆ on dividers
+  | 'kicker-labels'          // Small caps kicker above section titles
+  | 'colored-section-titles' // Section titles take secondary/accent color
+  | 'first-line-emphasis';   // First sentence of summary in display font + larger
+
+// Color-role policy — controls how many palette colors the renderer actually
+// uses on the page. Creative supports multi-color palettes (primary +
+// secondary-color + accent), not just one accent on a neutral base. This
+// turns the secondaryColor into a real second design color (used for section
+// titles, marginalia, decorative numerals) instead of a paper tint.
+export type EditorialColorPolicy =
+  | 'mono-accent'            // Classic editorial: one accent on neutral
+  | 'duotone'                // Primary + accent are both used as design colors
+  | 'tritone';               // Primary + secondaryColor + accent — true magazine palette
+
 export interface EditorialTokens {
+  // Existing primitives
   headerLayout: EditorialHeaderLayout;
   nameTreatment: EditorialNameTreatment;
   accentTreatment: EditorialAccentTreatment;
@@ -133,6 +175,18 @@ export interface EditorialTokens {
   sectionNumbering: boolean;      // Prefix sections with 01, 02, 03
   pullQuoteSource?: string;       // Section name to pull quote from (e.g. 'experience')
   dropCapSection?: string;        // Section name to apply drop-cap (e.g. 'summary')
+
+  // === New (Creative overhaul) ===
+  /** High-level composition pick. Drives renderer branching. */
+  layoutArchetype?: EditorialLayoutArchetype;
+  /** Mono / duotone / tritone — controls how many palette colors are visible. */
+  colorPolicy?: EditorialColorPolicy;
+  /** Optional second design color (a real hex). When set with colorPolicy =
+   *  'tritone' the renderer uses it for marginalia / decorative numerals. */
+  secondaryColor?: string;
+  /** A small bag of decorative elements the renderer should layer on. Order
+   *  doesn't matter — each entry toggles its own treatment. */
+  decorElements?: EditorialDecorElement[];
 }
 
 // ============ Bold Mode Primitives (experimental level) ============
