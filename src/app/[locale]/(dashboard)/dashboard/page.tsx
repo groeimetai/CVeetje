@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/auth/auth-context';
 import { getUserCVs } from '@/lib/firebase/firestore';
 import { getDaysUntilReset } from '@/lib/credits/manager';
-import { NextStepCard, type WizardStage } from '@/components/dashboard/next-step';
+import { getMostRecentJob, type RecentJob } from '@/lib/recent-jobs';
+import { NextStepCard } from '@/components/dashboard/next-step';
 import { StatRow } from '@/components/dashboard/stat-row';
 import { Tracker } from '@/components/dashboard/tracker';
 import { CvGridSection } from '@/components/dashboard/cv-grid';
@@ -31,19 +32,53 @@ function readDraft(): DraftSnapshot | null {
   }
 }
 
-function inferStage(draft: DraftSnapshot | null, cvs: CV[]): { stage: WizardStage; job?: { title: string; company?: string } } {
+interface InferredNextStep {
+  stage: 'profile' | 'job' | 'cv' | 'apply';
+  jobTitle?: string;
+  company?: string | null;
+  jobSlug?: string;
+  matchPercent?: number;
+}
+
+function inferStage(
+  draft: DraftSnapshot | null,
+  cvs: CV[],
+  applications: ApplicationRecord[],
+  recent: RecentJob | null,
+): InferredNextStep {
+  // 1. Wizard draft in progress
   if (draft?.generatedContent && draft?.jobVacancy?.title) {
-    return { stage: 'apply', job: { title: draft.jobVacancy.title, company: draft.jobVacancy.company } };
+    return { stage: 'apply', jobTitle: draft.jobVacancy.title, company: draft.jobVacancy.company ?? undefined };
   }
   if (draft?.jobVacancy?.title && draft?.linkedInData) {
-    return { stage: 'cv', job: { title: draft.jobVacancy.title, company: draft.jobVacancy.company } };
+    return { stage: 'cv', jobTitle: draft.jobVacancy.title, company: draft.jobVacancy.company ?? undefined };
   }
-  if (draft?.linkedInData) {
+
+  // 2. Recently viewed job (from JobsFeed clicks etc.)
+  if (recent && (draft?.linkedInData || cvs.length > 0)) {
+    return { stage: 'cv', jobTitle: recent.title, company: recent.company, jobSlug: recent.slug };
+  }
+
+  // 3. Most recent application with status 'applied' — suggest next move
+  const recentApp = applications.find((a) => a.status === 'applied');
+  if (recentApp) {
+    const linkedCV = cvs.find((cv) => cv.id === recentApp.cvId);
+    const score = linkedCV?.fitAnalysis?.overallScore;
+    return {
+      stage: 'apply',
+      jobTitle: recentApp.jobTitle,
+      company: recentApp.jobCompany,
+      jobSlug: recentApp.jobSlug,
+      matchPercent: typeof score === 'number' ? score : undefined,
+    };
+  }
+
+  // 4. Has profile/CVs → suggest picking a job
+  if (draft?.linkedInData || cvs.length > 0) {
     return { stage: 'job' };
   }
-  if (cvs.length > 0) {
-    return { stage: 'job' };
-  }
+
+  // 5. Fresh user
   return { stage: 'profile' };
 }
 
@@ -163,6 +198,27 @@ export default function DashboardPage() {
     return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   }, [cvs]);
 
+  const matchDelta = useMemo(() => {
+    const scores = cvs
+      .map((cv) => cv.fitAnalysis?.overallScore ?? null)
+      .filter((s): s is number => typeof s === 'number');
+    if (scores.length < 4) return null;
+    const recent = scores.slice(0, 3);
+    const prev = scores.slice(3, 6);
+    if (prev.length === 0) return null;
+    const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+    const prevAvg = prev.reduce((a, b) => a + b, 0) / prev.length;
+    return Math.round(recentAvg - prevAvg);
+  }, [cvs]);
+
+  const cvDeltaWeek = useMemo(() => {
+    const oneWeekAgo = Date.now() - 7 * 86_400_000;
+    return cvs.filter((cv) => {
+      const d = toDate(cv.createdAt);
+      return d && d.getTime() >= oneWeekAgo;
+    }).length;
+  }, [cvs]);
+
   const interviewCount = applications.filter((a) => a.status === 'interview').length;
   const offerCount = applications.filter((a) => a.status === 'offer').length;
 
@@ -175,33 +231,44 @@ export default function DashboardPage() {
     [applications],
   );
 
-  const { stage, job } = inferStage(draft, cvs);
+  const [recentJob, setRecentJob] = useState<RecentJob | null>(null);
+  useEffect(() => {
+    setRecentJob(getMostRecentJob());
+  }, []);
+
+  const next = inferStage(draft, cvs, applications, recentJob);
   const daysUntilReset = getDaysUntilReset();
 
-  const primaryHref = stage === 'profile'
-    ? '/profiles'
-    : stage === 'job'
-      ? '/jobs'
-      : stage === 'cv'
-        ? '/cv/new'
-        : '/applications';
-
-  const secondaryHref = stage === 'profile'
-    ? '/profiles'
-    : stage === 'job'
-      ? '/jobs'
-      : stage === 'cv'
-        ? '/jobs'
-        : '/cv';
+  let primaryHref: string;
+  let secondaryHref: string | undefined;
+  switch (next.stage) {
+    case 'profile':
+      primaryHref = '/cv/new';
+      secondaryHref = '/profiles';
+      break;
+    case 'job':
+      primaryHref = '/jobs';
+      secondaryHref = '/cv';
+      break;
+    case 'cv':
+      primaryHref = next.jobSlug ? `/cv/new?jobId=${encodeURIComponent(next.jobSlug)}` : '/cv/new';
+      secondaryHref = next.jobSlug ? `/jobs/${next.jobSlug}` : '/jobs';
+      break;
+    case 'apply':
+      primaryHref = next.jobSlug ? `/jobs/${next.jobSlug}` : '/applications';
+      secondaryHref = '/cv';
+      break;
+  }
 
   const activity = useMemo(() => buildActivity(cvs, applications), [cvs, applications]);
 
   return (
     <>
       <NextStepCard
-        stage={stage}
-        jobTitle={job?.title}
-        company={job?.company}
+        stage={next.stage}
+        jobTitle={next.jobTitle}
+        company={next.company ?? undefined}
+        matchPercent={next.matchPercent}
         primaryHref={primaryHref}
         secondaryHref={secondaryHref}
       />
@@ -209,18 +276,20 @@ export default function DashboardPage() {
       <StatRow
         cvCount={cvs.length}
         readyCount={readyCount}
+        cvDeltaWeek={cvDeltaWeek}
         appCount={applications.length}
         interviewCount={interviewCount}
         offerCount={offerCount}
         matchAvg={matchAvg}
         matchSampleSize={Math.min(cvs.length, 5)}
+        matchDelta={matchDelta}
         credits={credits}
         daysUntilReset={daysUntilReset}
         cvSpark={cvs.length > 0 ? cvSpark : undefined}
         appSpark={applications.length > 0 ? appSpark : undefined}
       />
 
-      <Tracker applications={applications} />
+      <Tracker applications={applications} cvs={cvs} />
 
       <div className="dash-cols">
         <CvGridSection cvs={cvs} total={cvs.length} readyCount={readyCount} />

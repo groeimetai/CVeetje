@@ -6,26 +6,39 @@ import { MiniBars } from '@/components/brand/mini-bars';
 interface StatRowProps {
   cvCount: number;
   readyCount: number;
+  cvDeltaWeek: number;
   appCount: number;
   interviewCount: number;
   offerCount: number;
   matchAvg: number | null;
   matchSampleSize: number;
+  matchDelta: number | null;
   credits: number;
   daysUntilReset: number;
-  /** 7-bucket sparkline values; if absent, no chart is rendered */
   cvSpark?: number[];
   appSpark?: number[];
+}
+
+function Delta({ value, suffix = '', label }: { value: number; suffix?: string; label?: string }) {
+  if (value === 0) return null;
+  const isUp = value > 0;
+  return (
+    <span className={`stat-card__delta${isUp ? '' : ' stat-card__delta--down'}`}>
+      {isUp ? '▲' : '▼'} {isUp ? '+' : ''}{value}{suffix}{label ? ` ${label}` : ''}
+    </span>
+  );
 }
 
 export function StatRow({
   cvCount,
   readyCount,
+  cvDeltaWeek,
   appCount,
   interviewCount,
   offerCount,
   matchAvg,
   matchSampleSize,
+  matchDelta,
   credits,
   daysUntilReset,
   cvSpark,
@@ -41,7 +54,9 @@ export function StatRow({
           {cvSpark && <MiniBars values={cvSpark} color="var(--accent)" />}
         </div>
         <div className="stat-card__value">{cvCount}</div>
-        <div className="stat-card__hint">{t('cvsHint', { count: readyCount })}</div>
+        <div className="stat-card__hint">
+          {cvDeltaWeek !== 0 ? <Delta value={cvDeltaWeek} label={t('cvsDeltaSuffix')} /> : t('cvsHint', { count: readyCount })}
+        </div>
       </div>
 
       <div className="stat-card">
@@ -60,6 +75,7 @@ export function StatRow({
       <div className="stat-card">
         <div className="stat-card__top">
           <span className="stat-card__label">{t('matchLabel')}</span>
+          {matchDelta != null && matchDelta !== 0 && <Delta value={matchDelta} suffix="%" />}
         </div>
         <div className="stat-card__value">
           {matchAvg != null ? <>{matchAvg}<em>%</em></> : '—'}
@@ -72,6 +88,7 @@ export function StatRow({
       <div className="stat-card">
         <div className="stat-card__top">
           <span className="stat-card__label">{t('creditsLabel')}</span>
+          <span className="brand-badge brand-badge--primary">{credits} op</span>
         </div>
         <div className="stat-card__value">{credits}</div>
         <div className="stat-card__hint">{t('creditsHint', { days: daysUntilReset })}</div>

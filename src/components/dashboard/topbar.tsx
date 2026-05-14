@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Bell, ChevronRight, MessageSquarePlus, Search } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Link } from '@/i18n/navigation';
+import { CommandPalette } from '@/components/dashboard/command-palette';
 
 const SEGMENT_KEYS: Record<string, string> = {
   dashboard: 'dashboard',
@@ -40,10 +41,26 @@ export function DashTopbar() {
   const t = useTranslations('navigation');
   const tDashboard = useTranslations('dashboard');
   const [isMac, setIsMac] = useState(true);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     setIsMac(/Mac/i.test(navigator.platform));
   }, []);
+
+  // Global ⌘K / Ctrl-K shortcut
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const closePalette = useCallback(() => setPaletteOpen(false), []);
 
   const { crumbRoot, pageKey } = useMemo(() => getPageKey(pathname), [pathname]);
 
@@ -75,15 +92,21 @@ export function DashTopbar() {
         <strong>{pageLabel}</strong>
       </div>
 
-      <div className="dash-topbar__search">
+      <button
+        type="button"
+        className="dash-topbar__search"
+        onClick={openPalette}
+        aria-label={tDashboard('searchPlaceholder')}
+      >
         <Search />
         <input
           type="search"
           placeholder={tDashboard('searchPlaceholder')}
-          aria-label={tDashboard('searchPlaceholder')}
+          readOnly
+          onClick={(e) => { e.preventDefault(); openPalette(); }}
         />
         <kbd>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
-      </div>
+      </button>
 
       <div className="dash-topbar__icons">
         <ThemeSwitcher />
@@ -95,6 +118,8 @@ export function DashTopbar() {
           <Bell size={16} />
         </button>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={closePalette} />
     </div>
   );
 }

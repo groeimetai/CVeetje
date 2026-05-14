@@ -4,9 +4,11 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { ArrowRight } from 'lucide-react';
 import type { ApplicationRecord, ApplicationStatus } from '@/types/application';
+import type { CV } from '@/types';
 
 interface TrackerProps {
   applications: ApplicationRecord[];
+  cvs?: CV[];
 }
 
 const COLUMN_ORDER: ApplicationStatus[] = ['applied', 'interview', 'offer', 'accepted'];
@@ -67,8 +69,14 @@ function toDate(value: unknown): Date | null {
   return null;
 }
 
-export function Tracker({ applications }: TrackerProps) {
+export function Tracker({ applications, cvs = [] }: TrackerProps) {
   const t = useTranslations('dashboard.tracker');
+
+  const cvScoreById = new Map<string, number>();
+  for (const cv of cvs) {
+    const score = cv.fitAnalysis?.overallScore;
+    if (typeof score === 'number' && cv.id) cvScoreById.set(cv.id, score);
+  }
 
   const grouped: Record<ApplicationStatus, ApplicationRecord[]> = {
     applied: [],
@@ -112,8 +120,13 @@ export function Tracker({ applications }: TrackerProps) {
                     const company = app.jobCompany || '—';
                     const role = app.jobTitle || '—';
                     const time = fmtRelative(toDate(app.appliedAt));
+                    const score = app.cvId ? cvScoreById.get(app.cvId) : undefined;
                     return (
-                      <div className="tracker__card" key={app.id}>
+                      <Link
+                        href={app.jobSlug ? `/jobs/${app.jobSlug}` : '/applications'}
+                        className="tracker__card"
+                        key={app.id}
+                      >
                         <div className="tracker__card-top">
                           <div className="tracker__card-logo" style={{ background: colorFor(company) }}>
                             {initialsFor(company)}
@@ -123,14 +136,20 @@ export function Tracker({ applications }: TrackerProps) {
                         <div className="tracker__card-role">{role}</div>
                         <div className="tracker__card-meta">
                           {time && <span>{time}</span>}
-                          {app.jobLocation && (
+                          {typeof score === 'number' && (
+                            <>
+                              <span style={{ opacity: 0.4 }}>·</span>
+                              <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{score}%</span>
+                            </>
+                          )}
+                          {app.jobLocation && !score && (
                             <>
                               <span style={{ opacity: 0.4 }}>·</span>
                               <span>{app.jobLocation}</span>
                             </>
                           )}
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>

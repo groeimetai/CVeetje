@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, Plus } from 'lucide-react';
 import type { NormalizedJob } from '@/lib/jobs/providers/types';
+import { trackJobView } from '@/lib/recent-jobs';
 
 const PALETTE = [
   '#1a2540', '#c2410c', '#0066cc', '#df1b12',
@@ -72,28 +73,44 @@ export function JobsFeed() {
           )}
           {jobs.map((j) => {
             const co = j.company ?? '—';
+            const handleView = () => trackJobView(j.slug, j.title, j.company);
             return (
-              <Link key={j.slug} href={`/jobs/${j.slug}`} className="jobs-feed__item">
-                <div className="jobs-feed__logo" style={{ background: colorFor(co) }}>{initialsFor(co)}</div>
-                <div className="jobs-feed__main">
-                  <p className="jobs-feed__title">{j.title}</p>
-                  <div className="jobs-feed__meta">
-                    <span><Briefcase size={11} />{co}</span>
-                    {j.location && (
-                      <>
-                        <span style={{ opacity: 0.4 }}>·</span>
-                        <span>{j.location}</span>
-                      </>
-                    )}
-                    {j.employmentType && (
-                      <>
-                        <span style={{ opacity: 0.4 }}>·</span>
-                        <span>{j.employmentType}</span>
-                      </>
-                    )}
+              <div key={j.slug} className="jobs-feed__row">
+                <Link
+                  href={`/jobs/${j.slug}`}
+                  className="jobs-feed__item"
+                  onClick={handleView}
+                >
+                  <div className="jobs-feed__logo" style={{ background: colorFor(co) }}>{initialsFor(co)}</div>
+                  <div className="jobs-feed__main">
+                    <p className="jobs-feed__title">{j.title}</p>
+                    <div className="jobs-feed__meta">
+                      <span><Briefcase size={11} />{co}</span>
+                      {j.location && (
+                        <>
+                          <span style={{ opacity: 0.4 }}>·</span>
+                          <span>{j.location}</span>
+                        </>
+                      )}
+                      {j.employmentType && (
+                        <>
+                          <span style={{ opacity: 0.4 }}>·</span>
+                          <span>{j.employmentType}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+                <Link
+                  href={`/cv/new?jobId=${encodeURIComponent(j.slug)}`}
+                  className="jobs-feed__quick"
+                  title="Genereer CV voor deze vacature"
+                  aria-label="Genereer CV"
+                  onClick={handleView}
+                >
+                  <Plus size={14} />
+                </Link>
+              </div>
             );
           })}
         </div>
