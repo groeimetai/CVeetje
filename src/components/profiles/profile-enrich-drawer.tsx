@@ -14,13 +14,35 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, AlertCircle, Check } from 'lucide-react';
-import type { ParsedLinkedIn } from '@/types';
+import { Loader2, Sparkles, AlertCircle, Check, AlertTriangle, ArrowRight } from 'lucide-react';
+import type {
+  ParsedLinkedIn,
+  LinkedInExperience,
+  LinkedInEducation,
+  LinkedInSkill,
+  LinkedInCertification,
+  LinkedInProject,
+} from '@/types';
+
+interface UpdatePreview<T> {
+  before: T;
+  after: T;
+  targetIndex: number;
+}
 
 interface EnrichmentResult {
   enrichedProfile: ParsedLinkedIn;
   changes: string[];
   changesSummary: string;
+  ambiguityWarnings?: string[];
+  skippedUpdates?: string[];
+  updates?: {
+    experience: UpdatePreview<LinkedInExperience>[];
+    education: UpdatePreview<LinkedInEducation>[];
+    skills: UpdatePreview<LinkedInSkill>[];
+    certifications: UpdatePreview<LinkedInCertification>[];
+    projects: UpdatePreview<LinkedInProject>[];
+  };
 }
 
 interface ProfileEnrichDrawerProps {
@@ -29,6 +51,10 @@ interface ProfileEnrichDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onApply: (enriched: ParsedLinkedIn) => void;
+}
+
+function fieldDiff(before: string | null | undefined, after: string | null | undefined): boolean {
+  return (before ?? '') !== (after ?? '');
 }
 
 export function ProfileEnrichDrawer({
@@ -82,6 +108,9 @@ export function ProfileEnrichDrawer({
         enrichedProfile: result.enrichedProfile,
         changes: result.changes || [],
         changesSummary: result.changesSummary || '',
+        ambiguityWarnings: result.ambiguityWarnings || [],
+        skippedUpdates: result.skippedUpdates || [],
+        updates: result.updates,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('error'));
@@ -125,6 +154,18 @@ export function ProfileEnrichDrawer({
         (preview.enrichedProfile.projects?.length || 0) - (currentProfile.projects?.length || 0)
       )
     : [];
+
+  const hasAnyChange = preview && (
+    newExperience.length > 0 || newEducation.length > 0 || newSkills.length > 0 ||
+    newCertifications.length > 0 || newProjects.length > 0 ||
+    (preview.updates?.experience.length ?? 0) > 0 ||
+    (preview.updates?.education.length ?? 0) > 0 ||
+    (preview.updates?.skills.length ?? 0) > 0 ||
+    (preview.updates?.certifications.length ?? 0) > 0 ||
+    (preview.updates?.projects.length ?? 0) > 0 ||
+    preview.enrichedProfile.headline !== currentProfile.headline ||
+    preview.enrichedProfile.about !== currentProfile.about
+  );
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -177,10 +218,155 @@ export function ProfileEnrichDrawer({
                 </div>
               )}
 
+              {(preview.ambiguityWarnings && preview.ambiguityWarnings.length > 0) && (
+                <Alert variant="default" className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
+                  <AlertTriangle className="h-4 w-4" />
+                  <div className="ml-2 space-y-1">
+                    <p className="text-sm font-medium">{t('ambiguityTitle')}</p>
+                    <ul className="text-sm list-disc pl-4 space-y-0.5">
+                      {preview.ambiguityWarnings.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </Alert>
+              )}
+
+              {(preview.skippedUpdates && preview.skippedUpdates.length > 0) && (
+                <Alert variant="default" className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100">
+                  <AlertTriangle className="h-4 w-4" />
+                  <div className="ml-2 space-y-1">
+                    <p className="text-sm font-medium">{t('skippedTitle')}</p>
+                    <ul className="text-sm list-disc pl-4 space-y-0.5">
+                      {preview.skippedUpdates.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </Alert>
+              )}
+
+              {/* ----- UPDATES ----- */}
+
+              {(preview.updates?.experience.length ?? 0) > 0 && (
+                <section>
+                  <h4 className="text-sm font-semibold mb-2">
+                    {t('updatedHeader')} · {t('workExperience')}
+                  </h4>
+                  <div className="space-y-2">
+                    {preview.updates!.experience.map((upd, idx) => (
+                      <DiffCard key={idx}>
+                        <DiffRow
+                          label={t('jobTitle')}
+                          before={upd.before.title}
+                          after={upd.after.title}
+                        />
+                        <DiffRow
+                          label={t('company')}
+                          before={upd.before.company}
+                          after={upd.after.company}
+                        />
+                        <DiffRow
+                          label={t('period')}
+                          before={`${upd.before.startDate}${upd.before.endDate ? ` – ${upd.before.endDate}` : ' – heden'}`}
+                          after={`${upd.after.startDate}${upd.after.endDate ? ` – ${upd.after.endDate}` : ' – heden'}`}
+                        />
+                        <DiffRow
+                          label={t('description')}
+                          before={upd.before.description || ''}
+                          after={upd.after.description || ''}
+                          multiline
+                        />
+                      </DiffCard>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(preview.updates?.education.length ?? 0) > 0 && (
+                <section>
+                  <h4 className="text-sm font-semibold mb-2">
+                    {t('updatedHeader')} · {t('education')}
+                  </h4>
+                  <div className="space-y-2">
+                    {preview.updates!.education.map((upd, idx) => (
+                      <DiffCard key={idx}>
+                        <DiffRow
+                          label={t('school')}
+                          before={upd.before.school}
+                          after={upd.after.school}
+                        />
+                        <DiffRow
+                          label={t('degree')}
+                          before={upd.before.degree || ''}
+                          after={upd.after.degree || ''}
+                        />
+                        <DiffRow
+                          label={t('fieldOfStudy')}
+                          before={upd.before.fieldOfStudy || ''}
+                          after={upd.after.fieldOfStudy || ''}
+                        />
+                      </DiffCard>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(preview.updates?.skills.length ?? 0) > 0 && (
+                <section>
+                  <h4 className="text-sm font-semibold mb-2">
+                    {t('updatedHeader')} · {t('skills')}
+                  </h4>
+                  <div className="space-y-1">
+                    {preview.updates!.skills.map((upd, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        <Badge variant="outline" className="line-through opacity-70">{upd.before.name}</Badge>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <Badge variant="default">{upd.after.name}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(preview.updates?.certifications.length ?? 0) > 0 && (
+                <section>
+                  <h4 className="text-sm font-semibold mb-2">
+                    {t('updatedHeader')} · {t('certifications')}
+                  </h4>
+                  <div className="space-y-2">
+                    {preview.updates!.certifications.map((upd, idx) => (
+                      <DiffCard key={idx}>
+                        <DiffRow label={t('name')} before={upd.before.name} after={upd.after.name} />
+                        <DiffRow label={t('issuer')} before={upd.before.issuer || ''} after={upd.after.issuer || ''} />
+                      </DiffCard>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(preview.updates?.projects.length ?? 0) > 0 && (
+                <section>
+                  <h4 className="text-sm font-semibold mb-2">
+                    {t('updatedHeader')} · {t('projects')}
+                  </h4>
+                  <div className="space-y-2">
+                    {preview.updates!.projects.map((upd, idx) => (
+                      <DiffCard key={idx}>
+                        <DiffRow label={t('name')} before={upd.before.title} after={upd.after.title} />
+                        <DiffRow label={t('description')} before={upd.before.description || ''} after={upd.after.description || ''} multiline />
+                      </DiffCard>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ----- NEW ITEMS ----- */}
+
               {newExperience.length > 0 && (
                 <section>
                   <h4 className="text-sm font-semibold mb-2">
-                    {t('changesHeader')} · Werkervaring
+                    {t('changesHeader')} · {t('workExperience')}
                   </h4>
                   <div className="space-y-2">
                     {newExperience.map((exp, idx) => (
@@ -202,7 +388,7 @@ export function ProfileEnrichDrawer({
               {newEducation.length > 0 && (
                 <section>
                   <h4 className="text-sm font-semibold mb-2">
-                    {t('changesHeader')} · Opleiding
+                    {t('changesHeader')} · {t('education')}
                   </h4>
                   <div className="space-y-2">
                     {newEducation.map((edu, idx) => (
@@ -222,7 +408,7 @@ export function ProfileEnrichDrawer({
               {newSkills.length > 0 && (
                 <section>
                   <h4 className="text-sm font-semibold mb-2">
-                    {t('changesHeader')} · Vaardigheden
+                    {t('changesHeader')} · {t('skills')}
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {newSkills.map((s, idx) => (
@@ -237,7 +423,7 @@ export function ProfileEnrichDrawer({
               {newCertifications.length > 0 && (
                 <section>
                   <h4 className="text-sm font-semibold mb-2">
-                    {t('changesHeader')} · Certificaten
+                    {t('changesHeader')} · {t('certifications')}
                   </h4>
                   <div className="space-y-2">
                     {newCertifications.map((cert, idx) => (
@@ -253,7 +439,7 @@ export function ProfileEnrichDrawer({
               {newProjects.length > 0 && (
                 <section>
                   <h4 className="text-sm font-semibold mb-2">
-                    {t('changesHeader')} · Projecten
+                    {t('changesHeader')} · {t('projects')}
                   </h4>
                   <div className="space-y-2">
                     {newProjects.map((proj, idx) => (
@@ -268,7 +454,9 @@ export function ProfileEnrichDrawer({
                 </section>
               )}
 
-              <p className="text-xs text-muted-foreground italic">{t('applied')}</p>
+              {hasAnyChange && (
+                <p className="text-xs text-muted-foreground italic">{t('applied')}</p>
+              )}
             </div>
           )}
         </div>
@@ -298,7 +486,7 @@ export function ProfileEnrichDrawer({
               <Button variant="outline" onClick={() => setPreview(null)} className="flex-1">
                 {t('cancel')}
               </Button>
-              <Button onClick={handleApply} className="flex-1">
+              <Button onClick={handleApply} disabled={!hasAnyChange} className="flex-1">
                 <Check className="h-4 w-4 mr-2" />
                 {t('applyToForm')}
               </Button>
@@ -307,5 +495,44 @@ export function ProfileEnrichDrawer({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function DiffCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded border bg-muted/30 p-3 text-sm space-y-1.5">
+      {children}
+    </div>
+  );
+}
+
+function DiffRow({
+  label,
+  before,
+  after,
+  multiline = false,
+}: {
+  label: string;
+  before: string;
+  after: string;
+  multiline?: boolean;
+}) {
+  const changed = fieldDiff(before, after);
+  if (!changed) {
+    // Don't render unchanged fields — keeps the diff card focused.
+    return null;
+  }
+  return (
+    <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
+      <div className="text-xs text-muted-foreground pt-0.5">{label}</div>
+      <div className="space-y-0.5">
+        <div className={`text-xs text-muted-foreground line-through ${multiline ? '' : 'truncate'}`}>
+          {before || '—'}
+        </div>
+        <div className={`text-sm font-medium ${multiline ? 'whitespace-pre-wrap' : 'truncate'}`}>
+          {after || '—'}
+        </div>
+      </div>
+    </div>
   );
 }
