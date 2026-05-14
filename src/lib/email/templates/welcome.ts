@@ -12,7 +12,7 @@ export function renderWelcomeEmail(data: { displayName: string }): {
       Hoi ${data.displayName},
     </p>
     <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#374151;">
-      Leuk dat je er bent! Je account is aangemaakt en je hebt <strong>10 gratis credits</strong> ontvangen om direct aan de slag te gaan.
+      Leuk dat je er bent! Je account is aangemaakt en je hebt <strong>15 gratis credits</strong> ontvangen om direct aan de slag te gaan — genoeg voor 1 volledig CV.
     </p>
     <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:#374151;">
       Met CVeetje maak je in een paar stappen een professioneel CV dat perfect aansluit bij de vacature. Zo werkt het:

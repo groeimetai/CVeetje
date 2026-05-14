@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generatePDF } from '@/lib/pdf/generator';
-import { FieldValue } from 'firebase-admin/firestore';
 import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
 import {
   checkRateLimit,
@@ -96,7 +95,8 @@ export async function POST(
 
     const db = getAdminDb();
 
-    // Get CV document first to check if PDF was already downloaded
+    // PDF download is now free — credits are consumed during cv-generate.
+    // We still track 'pdf_ready' status for analytics / first-download UX.
     const cvDoc = await db
       .collection('users')
       .doc(userId)
@@ -112,24 +112,7 @@ export async function POST(
     }
 
     const cvData = cvDoc.data() as CV & { tokens?: CVDesignTokens };
-
-    // If PDF was already downloaded (paid for), skip credit check
-    const alreadyPaid = cvData.status === 'pdf_ready';
-
-    // Check user credits (free + purchased) — only if not already paid
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    const freeCredits = userData?.credits?.free ?? 0;
-    const purchasedCredits = userData?.credits?.purchased ?? 0;
-    const totalCredits = freeCredits + purchasedCredits;
-
-    if (!alreadyPaid && (!userData || totalCredits < 1)) {
-      return NextResponse.json(
-        { error: 'Insufficient credits. Please purchase more credits.' },
-        { status: 402 }
-      );
-    }
+    const isFirstDownload = cvData.status !== 'pdf_ready';
 
     if (!cvData.generatedContent) {
       return NextResponse.json(
@@ -215,32 +198,8 @@ export async function POST(
       pageMode
     );
 
-    // Deduct credit only if not already paid
-    if (!alreadyPaid) {
-      if (freeCredits >= 1) {
-        await db.collection('users').doc(userId).update({
-          'credits.free': FieldValue.increment(-1),
-          updatedAt: new Date(),
-        });
-      } else {
-        await db.collection('users').doc(userId).update({
-          'credits.purchased': FieldValue.increment(-1),
-          updatedAt: new Date(),
-        });
-      }
-
-      // Log transaction
-      const creditSource = freeCredits >= 1 ? 'free' : 'purchased';
-      await db.collection('users').doc(userId).collection('transactions').add({
-        amount: -1,
-        type: 'cv_generation',
-        description: `CV PDF download (${creditSource} credit)`,
-        molliePaymentId: null,
-        cvId,
-        createdAt: new Date(),
-      });
-
-      // Update CV status to mark as paid
+    // Mark CV as pdf_ready on first download — analytics/UX only, no credit deduction.
+    if (isFirstDownload) {
       await db
         .collection('users')
         .doc(userId)

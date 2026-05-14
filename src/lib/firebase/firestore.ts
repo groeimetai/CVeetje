@@ -188,24 +188,23 @@ export async function resetMonthlyCredits(userId: string): Promise<void> {
   const userSnap = await getDoc(userRef);
   const userData = userSnap.data();
 
-  const FREE_CREDITS_AMOUNT = 10;
+  // Single source of truth — see src/lib/ai/platform-config.ts
+  const { MONTHLY_FREE_CREDITS } = await import('@/lib/ai/platform-config');
   const currentFree = userData?.credits?.free ?? 0;
 
-  // Reset free credits to 10 (this is a separate bucket from purchased)
-  // Purchased credits are never touched
+  // Reset free credits (separate bucket from purchased — purchased never touched).
   await updateDoc(userRef, {
-    'credits.free': FREE_CREDITS_AMOUNT,
+    'credits.free': MONTHLY_FREE_CREDITS,
     'credits.lastFreeReset': serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
-  // Log transaction with credits added (5 minus what they had left)
-  const creditsAdded = FREE_CREDITS_AMOUNT - currentFree;
+  const creditsAdded = MONTHLY_FREE_CREDITS - currentFree;
   if (creditsAdded > 0) {
     await addCreditTransaction(userId, {
       amount: creditsAdded,
       type: 'monthly_free',
-      description: `Monthly free credits reset (${currentFree} → ${FREE_CREDITS_AMOUNT})`,
+      description: `Monthly free credits reset (${currentFree} → ${MONTHLY_FREE_CREDITS})`,
       molliePaymentId: null,
       cvId: null,
       createdAt: Timestamp.now(),

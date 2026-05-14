@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generateMotivationLetter } from '@/lib/ai/motivation-generator';
-import { FieldValue } from 'firebase-admin/firestore';
 import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import type {
   CV,
@@ -51,33 +50,7 @@ export async function POST(
 
     const db = getAdminDb();
 
-    // Check user credits (motivation letter costs 1 credit)
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    const freeCredits = userData?.credits?.free ?? 0;
-    const purchasedCredits = userData?.credits?.purchased ?? 0;
-    const totalCredits = freeCredits + purchasedCredits;
-
-    if (!userData || totalCredits < 1) {
-      return NextResponse.json(
-        { error: 'Insufficient credits. Please purchase more credits.' },
-        { status: 402 }
-      );
-    }
-
-    // Resolve AI provider (skipCreditDeduction — this route handles its own credits)
-    let resolved;
-    try {
-      resolved = await resolveProvider({ userId, skipCreditDeduction: true });
-    } catch (err) {
-      if (err instanceof ProviderError) {
-        return NextResponse.json({ error: err.message }, { status: err.statusCode });
-      }
-      throw err;
-    }
-
-    // Get CV document
+    // Get CV document — validate before charging credits
     const cvDoc = await db
       .collection('users')
       .doc(userId)
@@ -108,43 +81,44 @@ export async function POST(
       );
     }
 
-    // Generate motivation letter
-    const { letter, usage } = await generateMotivationLetter(
-      cvData.linkedInData as ParsedLinkedIn,
-      cvData.jobVacancy as JobVacancy,
-      cvData.generatedContent as GeneratedCVContent,
-      resolved.providerName,
-      resolved.apiKey,
-      resolved.model,
-      language,
-      personalMotivation
-    );
-
-    // Deduct credit (use free credits first, then purchased)
-    if (freeCredits >= 1) {
-      await db.collection('users').doc(userId).update({
-        'credits.free': FieldValue.increment(-1),
-        updatedAt: new Date(),
-      });
-    } else {
-      await db.collection('users').doc(userId).update({
-        'credits.purchased': FieldValue.increment(-1),
-        updatedAt: new Date(),
-      });
+    // Resolve AI provider — deducts motivation-letter credits (platform mode only)
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'motivation-letter' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
 
-    // Log transaction
-    const creditSource = freeCredits >= 1 ? 'free' : 'purchased';
-    await db.collection('users').doc(userId).collection('transactions').add({
-      amount: -1,
-      type: 'motivation_letter',
-      description: `Motivation letter generation (${creditSource} credit)`,
-      molliePaymentId: null,
-      cvId,
-      createdAt: new Date(),
-    });
+    // Generate motivation letter — credits already deducted by resolveProvider above.
+    // If this call throws, refund via refundPlatformCredits is handled below.
+    let letter;
+    let usage;
+    try {
+      const result = await generateMotivationLetter(
+        cvData.linkedInData as ParsedLinkedIn,
+        cvData.jobVacancy as JobVacancy,
+        cvData.generatedContent as GeneratedCVContent,
+        resolved.providerName,
+        resolved.apiKey,
+        resolved.model,
+        language,
+        personalMotivation
+      );
+      letter = result.letter;
+      usage = result.usage;
+    } catch (genErr) {
+      // Refund credits on generator failure (platform mode only)
+      if (resolved.mode === 'platform') {
+        const { refundPlatformCredits } = await import('@/lib/ai/platform-provider');
+        await refundPlatformCredits(userId, 'motivation-letter').catch(() => {});
+      }
+      throw genErr;
+    }
 
-    // Optionally save the letter to the CV document
+    // Save the letter to the CV document
     await db
       .collection('users')
       .doc(userId)

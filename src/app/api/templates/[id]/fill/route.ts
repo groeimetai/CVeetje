@@ -124,20 +124,6 @@ export async function POST(
       );
     }
 
-    // Check user credits (unless skipCredit is true)
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-    const freeCredits = userData?.credits?.free || 0;
-    const purchasedCredits = userData?.credits?.purchased || 0;
-    const totalCredits = freeCredits + purchasedCredits;
-
-    if (!skipCredit && totalCredits < 1) {
-      return NextResponse.json(
-        { error: 'Insufficient credits. You need at least 1 credit to fill a template.' },
-        { status: 402 }
-      );
-    }
-
     // Download the template PDF
     const templateResponse = await fetch(template.storageUrl);
     if (!templateResponse.ok) {
@@ -162,10 +148,14 @@ export async function POST(
       // Returns DOCX directly to preserve all styling
       const docxBuffer = templateBuffer;
 
-      // Resolve AI provider for DOCX template filling (skipCreditDeduction — this route handles its own credits)
+      // Resolve AI provider — deducts template-fill credits unless skipCredit query param is set
       let docxResolved;
       try {
-        docxResolved = await resolveProvider({ userId, skipCreditDeduction: true });
+        docxResolved = await resolveProvider({
+          userId,
+          operation: 'template-fill',
+          skipCreditDeduction: skipCredit,
+        });
       } catch (err) {
         if (err instanceof ProviderError) {
           return NextResponse.json({ error: err.message }, { status: err.statusCode });
@@ -237,9 +227,11 @@ export async function POST(
       }
     }
 
-    // Deduct credit and save CV record (only on initial fill, not on PDF re-conversion)
+    // Save CV record (only on initial fill, not on PDF re-conversion).
+    // Credit handling:
+    //  - DOCX flow: credits already deducted by resolveProvider({operation: 'template-fill'})
+    //  - PDF flow:  no AI calls, so charge a flat template-fill credit-cost here
     if (!skipCredit) {
-      // Save a CV record in Firestore so template-filled CVs appear in admin/dashboard
       const cvRef = await db.collection('users').doc(userId).collection('cvs').add({
         linkedInData: profileData,
         jobVacancy: jobVacancy || null,
@@ -260,17 +252,29 @@ export async function POST(
         updatedAt: new Date(),
       });
 
-      if (freeCredits > 0) {
-        await db.collection('users').doc(userId).update({
-          'credits.free': freeCredits - 1,
-        });
-      } else {
-        await db.collection('users').doc(userId).update({
-          'credits.purchased': purchasedCredits - 1,
-        });
+      // PDF templates skip the AI path → charge the template-fill cost manually here.
+      // DOCX templates already paid via resolveProvider above.
+      if (template.fileType !== 'docx') {
+        const { chargePlatformCredits } = await import('@/lib/ai/platform-provider');
+        const userDocCheck = await db.collection('users').doc(userId).get();
+        const isPlatformMode = (userDocCheck.data()?.llmMode || 'own-key') === 'platform';
+        if (isPlatformMode) {
+          const { PLATFORM_CREDIT_COSTS } = await import('@/lib/ai/platform-config');
+          try {
+            await chargePlatformCredits(
+              userId,
+              PLATFORM_CREDIT_COSTS['template-fill'],
+              'template-fill',
+            );
+          } catch (err) {
+            if (err instanceof ProviderError) {
+              return NextResponse.json({ error: err.message }, { status: err.statusCode });
+            }
+            throw err;
+          }
+        }
       }
 
-      // Record transaction
       let methodDescription: string;
       switch (fillMethod) {
         case 'form':
@@ -285,8 +289,9 @@ export async function POST(
         default:
           methodDescription = '';
       }
+      // Log the CV creation alongside the AI deduction transaction (already logged by resolveProvider).
       await db.collection('users').doc(userId).collection('transactions').add({
-        amount: -1,
+        amount: 0,
         type: 'cv_generation',
         description: `Template filled: ${template.name} ${methodDescription}`,
         molliePaymentId: null,
