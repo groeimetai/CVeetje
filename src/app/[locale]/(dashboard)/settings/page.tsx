@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslations } from 'next-intl';
-import { Key, Trash2, Save, Eye, EyeOff, User, Shield, Loader2, ExternalLink, Cpu, DollarSign, AlertTriangle, Sparkles, Coins } from 'lucide-react';
+import { Key, Trash2, Save, Eye, EyeOff, User, Shield, Loader2, ExternalLink, Cpu, DollarSign, AlertTriangle, Sparkles, Coins, Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -285,6 +285,27 @@ export default function SettingsPage() {
     return providerKeyUrls[providerId] || null;
   };
 
+  const handleExportData = async () => {
+    try {
+      const response = await fetch('/api/settings/export');
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cveetje-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Export failed',
+      });
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (deleteConfirmation !== 'DELETE') {
       setMessage({ type: 'error', text: t('account.deleteConfirmationError') });
@@ -418,24 +439,24 @@ export default function SettingsPage() {
                   <div className="p-3 bg-muted rounded-lg space-y-3">
                     <p className="text-xs font-medium text-muted-foreground">{t('aiMode.platformCostLabel')}</p>
 
-                    {/* AI actions — each costs 1 credit */}
+                    {/* AI actions — weighted by real token cost */}
                     <div>
                       <p className="text-xs font-semibold text-foreground mb-1">{t('aiMode.platformCostTable.sectionAiActions')}</p>
                       <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-xs">
                         <span>{t('aiMode.platformCostTable.profileParse')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.profileParseCost')}</span>
                         <span>{t('aiMode.platformCostTable.jobParse')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.jobParseCost')}</span>
                         <span>{t('aiMode.platformCostTable.fitAnalysis')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.fitAnalysisCost')}</span>
                         <span>{t('aiMode.platformCostTable.styleGenerate')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.styleGenerateCost')}</span>
                         <span>{t('aiMode.platformCostTable.cvGenerate')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.cvGenerateCost')}</span>
                         <span>{t('aiMode.platformCostTable.motivationGenerate')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.motivationGenerateCost')}</span>
                         <span>{t('aiMode.platformCostTable.templateFill')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.templateFillCost')}</span>
                       </div>
                     </div>
 
@@ -444,7 +465,7 @@ export default function SettingsPage() {
                       <p className="text-xs font-semibold text-foreground mb-1">{t('aiMode.platformCostTable.sectionExport')}</p>
                       <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-xs">
                         <span>{t('aiMode.platformCostTable.pdfDownload')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.pdfDownloadCost')}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1 italic">
                         {t('aiMode.platformCostTable.pdfDownloadNote')}
@@ -456,12 +477,17 @@ export default function SettingsPage() {
                       <p className="text-xs font-semibold text-foreground mb-1">{t('aiMode.platformCostTable.sectionChat')}</p>
                       <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-xs">
                         <span>{t('aiMode.platformCostTable.cvChat')}</span>
-                        <span className="text-right">{t('aiMode.platformCostTable.creditsCost')}</span>
+                        <span className="text-right">{t('aiMode.platformCostTable.cvChatCost')}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground mt-1 italic">
                         {t('aiMode.platformCostTable.cvChatNote')}
                       </p>
                     </div>
+
+                    {/* Bottom-line summary */}
+                    <p className="text-[10px] text-muted-foreground italic pt-1 border-t border-border/50">
+                      {t('aiMode.platformCostTable.bottomLine')}
+                    </p>
                   </div>
 
                   <p className="text-xs text-muted-foreground">
@@ -797,6 +823,23 @@ export default function SettingsPage() {
                   {userData?.createdAt?.toDate?.()?.toLocaleDateString() || t('account.unknown')}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Data Export — AVG art. 20 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                {t('account.exportTitle')}
+              </CardTitle>
+              <CardDescription>{t('account.exportDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={handleExportData}>
+                <Download className="mr-2 h-4 w-4" />
+                {t('account.exportButton')}
+              </Button>
             </CardContent>
           </Card>
 

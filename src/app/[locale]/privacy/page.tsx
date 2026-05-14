@@ -51,7 +51,7 @@ export default async function PrivacyPage({ params }: Props) {
   const t = await getTranslations('privacy');
 
   // Format date based on locale
-  const lastUpdatedDate = new Date('2026-02-09').toLocaleDateString(
+  const lastUpdatedDate = new Date('2026-05-15').toLocaleDateString(
     locale === 'nl' ? 'nl-NL' : 'en-US',
     { year: 'numeric', month: 'long', day: 'numeric' }
   );
@@ -201,15 +201,24 @@ export default async function PrivacyPage({ params }: Props) {
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} CVeetje
             </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <Link href="/privacy" className="hover:text-foreground font-medium text-foreground">
-                {locale === 'nl' ? 'Privacy' : 'Privacy'}
+                Privacy
               </Link>
               <Link href="/terms" className="hover:text-foreground">
                 {locale === 'nl' ? 'Voorwaarden' : 'Terms'}
               </Link>
+              <Link href="/cookies" className="hover:text-foreground">
+                {locale === 'nl' ? 'Cookies' : 'Cookies'}
+              </Link>
               <Link href="/ai-transparency" className="hover:text-foreground">
                 {locale === 'nl' ? 'AI Transparantie' : 'AI Transparency'}
+              </Link>
+              <Link href="/sub-processors" className="hover:text-foreground">
+                {locale === 'nl' ? 'Subverwerkers' : 'Sub-processors'}
+              </Link>
+              <Link href="/compliance" className="hover:text-foreground">
+                Compliance
               </Link>
             </div>
           </div>

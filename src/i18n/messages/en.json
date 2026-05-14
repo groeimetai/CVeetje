@@ -3,7 +3,10 @@
     "copyright": "© {year} CVeetje. All rights reserved.",
     "privacy": "Privacy",
     "terms": "Terms",
-    "aiTransparency": "AI Transparency"
+    "aiTransparency": "AI Transparency",
+    "cookies": "Cookies",
+    "subProcessors": "Sub-processors",
+    "compliance": "Compliance"
   },
   "cookieConsent": {
     "title": "Cookies & Privacy",
@@ -90,7 +93,7 @@
     "signInDescription": "Sign in to your CVeetje account to manage your CVs",
     "signUpTitle": "Create Account",
     "signUpDescription": "Sign up to start creating professional CVs with AI",
-    "termsAgreement": "By signing up, you agree to our <terms>Terms of Service</terms>, <privacy>Privacy Policy</privacy> and <aiTransparency>AI Transparency</aiTransparency>. You get 10 free credits per month.",
+    "termsAgreement": "By signing up, you agree to our <terms>Terms of Service</terms>, <privacy>Privacy Policy</privacy> and <aiTransparency>AI Transparency</aiTransparency>. You get 15 free credits per month — enough for 1 complete CV.",
     "verifyEmail": {
       "title": "Verify your email",
       "description": "We sent a verification email to {email}. Click the link in the email to activate your account.",
@@ -121,7 +124,7 @@
     "heroDescription": "No more hours of tweaking CVs. Save your profile once, paste a job posting, and receive a CV where your experience is automatically matched to what the job requires. Same you, perfect fit.",
     "ctaStart": "Get Started Free",
     "ctaHowItWorks": "See How It Works",
-    "freeNote": "10 free credits per month. No credit card required.",
+    "freeNote": "15 free credits per month — enough for 1 complete CV. No credit card required.",
     "valueProps": {
       "enterOnce": "Enter once",
       "enterOnceDesc": "Save your profile and reuse it for every application",
@@ -219,7 +222,7 @@
         "matchesCv": "Aligns with your generated CV",
         "addOwn": "Add your own motivation",
         "downloadFormats": "Download as PDF or Word",
-        "extraCredit": "Only costs 1 extra credit"
+        "extraCredit": "Costs 3 extra credits — incl. humanizer pass"
       },
       "preview": {
         "title": "Preview & Adjust",
@@ -263,9 +266,9 @@
         "title": "Platform AI",
         "description": "Start directly without configuration. We handle the AI for you.",
         "model": "Claude Opus 4.7",
-        "creditCost": "1 credit per AI action",
+        "creditCost": "≈ 9 credits per complete CV (download is free)",
         "noSetup": "No configuration needed",
-        "freeCredits": "10 free credits per month",
+        "freeCredits": "15 free credits per month — 1 free CV every month",
         "idealFor": "Ideal for: getting started quickly"
       },
       "ownKey": {
@@ -274,7 +277,7 @@
         "description": "Bring your own API key. AI actions cost no credits.",
         "providers": "20+ providers: OpenAI, Anthropic, Google, and more",
         "noCreditCost": "AI actions cost 0 credits",
-        "onlyPdf": "Only PDF download costs 1 credit",
+        "onlyPdf": "PDF download is free — you only pay your own API",
         "transparent": "Fully transparent token usage",
         "idealFor": "Ideal for: regular use, maximum control"
       },
@@ -296,7 +299,7 @@
       "whyCredits": {
         "title": "Why do Platform AI actions cost credits?",
         "description": "With Platform AI, CVeetje runs the AI for you on our servers using Claude Opus 4.7. Every AI action (parsing your profile, generating a CV, etc.) costs us compute at Anthropic. Credits cover these costs fairly and transparently.",
-        "ownKeyBenefit": "With your own API key, you pay AI costs directly to your provider (like OpenAI or Google) — often cheaper with regular use. CVeetje then only charges 1 credit for the PDF download.",
+        "ownKeyBenefit": "With your own API key, you pay AI costs directly to your provider (like OpenAI or Google) — often cheaper with regular use. All CVeetje actions then cost 0 credits, including the PDF download.",
         "tip": "Tip: start free with 10 Platform AI credits. Like it? Add your own API key to save on costs."
       }
     },
@@ -556,7 +559,10 @@
       "deleteButton": "Permanently Delete Account",
       "deleting": "Deleting...",
       "deleteConfirmationError": "Type DELETE to confirm",
-      "deleteError": "Something went wrong while deleting your account"
+      "deleteError": "Something went wrong while deleting your account",
+      "exportTitle": "Export my data",
+      "exportDescription": "Download all your data as a JSON file (GDPR art. 20, right to data portability).",
+      "exportButton": "Download data (JSON)"
     },
     "messages": {
       "apiKeySaved": "API key saved successfully",
@@ -569,7 +575,7 @@
       "title": "AI Mode",
       "description": "Choose how you want to use AI features",
       "ownKey": "Own API Key",
-      "ownKeyDescription": "Use your own API key from an AI provider. AI actions cost no credits, only PDF export (1 credit).",
+      "ownKeyDescription": "Use your own API key from an AI provider. All CVeetje actions cost 0 credits — you pay your provider directly.",
       "platform": "Platform AI",
       "platformModel": "Claude Opus 4.7",
       "platformDescription": "Use our AI (Claude by Anthropic) without your own API key. Your data is processed by Anthropic (US). Each AI action costs credits.",
@@ -585,11 +591,21 @@
         "templateFill": "Fill CV from DOCX template",
         "sectionExport": "Export",
         "pdfDownload": "Download PDF",
-        "pdfDownloadNote": "Free when re-downloading the same CV.",
+        "pdfDownloadNote": "Already included in CV generation — re-download unlimited.",
         "sectionChat": "Chat",
         "cvChat": "CV chat",
-        "cvChatNote": "1 credit as soon as you use chat, +1 per extra 40,000 characters.",
-        "creditsCost": "1 credit"
+        "cvChatNote": "1 credit per ~8,000 characters of conversation history.",
+        "creditsCost": "1 credit",
+        "profileParseCost": "2 credits",
+        "jobParseCost": "1 credit",
+        "fitAnalysisCost": "2 credits",
+        "styleGenerateCost": "1 credit",
+        "cvGenerateCost": "3 credits",
+        "motivationGenerateCost": "3 credits",
+        "templateFillCost": "3 credits",
+        "pdfDownloadCost": "Free",
+        "cvChatCost": "1 credit",
+        "bottomLine": "A complete CV with vacancy match: ≈ 9 credits."
       },
       "currentCredits": "Current balance: {credits} credit(s)",
       "tipOwnKey": "Tip: add your own API key to save credits. With your own key, AI actions cost nothing.",
@@ -690,7 +706,7 @@
     },
     "enrich": {
       "title": "Enrich with AI",
-      "description": "Paste text below (a new role, a project, or an edit like 'change my title at Acme to Lead Engineer') and the AI will add it or update existing items. You'll see a preview first.",
+      "description": "Description",
       "placeholder": "For example: \"Starting January 2026 I'll be working as Lead Frontend Developer at Contoso\" or \"change my title at Acme to Senior Engineer\".",
       "analyze": "Analyze",
       "analyzing": "AI analyzing...",
@@ -712,7 +728,6 @@
       "jobTitle": "Title",
       "company": "Company",
       "period": "Period",
-      "description": "Description",
       "school": "School",
       "degree": "Degree",
       "fieldOfStudy": "Field",
@@ -726,7 +741,7 @@
     "description": "Optimized content for your LinkedIn profile. Copy and paste to LinkedIn.",
     "selectLanguage": "Generate optimized LinkedIn content for {name}",
     "chooseLanguage": "Choose the language for your LinkedIn content",
-    "creditCost": "This costs 1 credit",
+    "creditCost": "This costs 3 credits",
     "generating": "Generating LinkedIn content...",
     "dutch": "Dutch",
     "english": "English",
@@ -1109,7 +1124,7 @@
     "viewMode": "View",
     "singlePage": "Single Page",
     "allPages": "All Pages",
-    "creditCost": "1 credit for download"
+    "creditCost": "Download free"
   },
   "templatePreview": {
     "title": "CV Ready",
@@ -1569,6 +1584,18 @@
     "jobs": {
       "title": "Jobs | CVeetje",
       "description": "Browse current job openings and generate a tailored CV for any role with a single click."
+    },
+    "cookies": {
+      "title": "Cookie Policy - CVeetje",
+      "description": "Which cookies CVeetje uses and how to withdraw consent."
+    },
+    "subProcessors": {
+      "title": "Sub-processors - CVeetje",
+      "description": "Public list of CVeetje sub-processors, including location and legal safeguards."
+    },
+    "compliance": {
+      "title": "Compliance (GDPR + EU AI Act) - CVeetje",
+      "description": "How CVeetje complies with GDPR and the EU AI Act."
     }
   },
   "jobs": {
@@ -1637,11 +1664,11 @@
       "creditsAndPayments": {
         "title": "4. Credits and Payments",
         "subtitle1": "4.1 Credit System",
-        "content1": "CVeetje operates with a credit system:\n\n• Each new user receives 10 free credits per month\n• Free credits are reset on the first day of each month\n• Unused free credits expire at the end of the month\n• Purchased credits do not expire and are added to your balance\n• Downloading a CV costs 1 credit\n• Generating a cover letter costs 1 extra credit\n• Generating LinkedIn export content costs 1 credit\n• When using Platform AI (without own API key), AI actions each cost 1 extra credit",
+        "content1": "CVeetje operates with a credit system. When using Platform AI (without your own API key), AI actions cost credits proportional to their size:\n\n• Each user receives 15 free credits per month\n• Free credits are reset on the first day of each month\n• Unused free credits expire at the end of the month\n• Purchased credits do not expire and are added to your balance\n• PDF download is free (already included in CV generation)\n\nCredit cost per AI action (Platform mode):\n• Profile parse (LinkedIn/PDF): 2 credits\n• Vacancy parse: 1 credit\n• Match analysis: 2 credits\n• CV content generation: 3 credits\n• Style/design generation: 1 credit\n• Cover letter (incl. humanizer): 3 credits\n• Template fill (DOCX/PDF): 3 credits\n• Chat editing: 1 credit per ~8,000 characters\n\nA complete new CV with vacancy match typically costs ~9 credits.\nWith your own API key all these actions cost 0 credits (you pay your AI provider directly).",
         "subtitle2": "4.2 Purchases",
-        "content2": "Credits can be purchased via Mollie, our payment provider. Available packages:\n\n• 5 credits for €4.99\n• 15 credits for €12.99\n• 30 credits for €22.99\n\nAll prices include VAT. Payments are processed in euros.",
+        "content2": "Credits can be purchased via Mollie, our payment provider. Available packages:\n\n• 15 credits for €4.99 (Starter — ~1 CV)\n• 50 credits for €14.99 (Popular — ~5 CVs, 10% off)\n• 120 credits for €29.99 (Pro — ~13 CVs, 25% off)\n\nAll prices include VAT. Payments are processed in euros.",
         "subtitle3": "4.3 Refund Policy",
-        "content3": "Purchased credits are non-refundable, except in the following cases:\n\n• Technical errors on our part that make it impossible to use purchased credits\n• Duplicate charges due to a payment error\n\nRefund requests must be submitted within 14 days of purchase via our contact form. Free credits are not eligible for refund or compensation."
+        "content3": "Statutory right of withdrawal (consumers): For digital content not supplied on a tangible medium a 14-day cooling-off period normally applies (Dutch Civil Code art. 6:230o). By explicitly agreeing at checkout to the statement \"I want delivery to begin immediately and I waive my right of withdrawal once credits are delivered\" the right of withdrawal ends as soon as we add the credits to your balance (art. 6:230p(g) DCC).\n\nPurchased credits are therefore non-refundable, except in the following cases:\n\n• Technical errors on our side that make use of purchased credits impossible\n• Double charging due to a payment error\n• Unauthorised charge (not authorised by you)\n\nRefund requests must be submitted within 14 days of purchase via info@groeimetai.io. Refunds are processed through Mollie back to the same payment method."
       },
       "apiKeys": {
         "title": "5. API Keys and External Services",
@@ -1669,7 +1696,7 @@
         "subtitle1": "9.1 Service \"As Is\"",
         "content1": "The Service is provided \"as is\" and \"as available\" without any warranties, express or implied. We do not guarantee that:\n\n• The Service will operate uninterrupted or error-free\n• AI-generated content is accurate, complete or suitable for any purpose\n• The Service will meet your specific expectations",
         "subtitle2": "9.2 AI-Generated Content",
-        "content2": "Content generated by AI models may contain errors, inaccuracies or inappropriate formulations. It is your responsibility to:\n\n• Review all generated content before using it\n• Verify factual information (dates, job titles, company names)\n• Adjust content where necessary\n• Not include misleading information in your CV\n\nOur AI is instructed not to fabricate work experience, education or skills that are not in your profile. Nevertheless, AI-generated content may contain unintended errors. Always review the final result.\n\nThe fit analysis is an indicative AI estimate and not a guarantee or prediction of your chances in a job application.\n\nWe are not responsible for the outcomes of job applications or for decisions made based on content generated by the Service.\n\nFor more information about how we use AI and your rights in this regard, see our AI Transparency page.",
+        "content2": "Content generated by AI models may contain errors, inaccuracies or inappropriate phrasing. CVeetje complies with Article 50 of the EU AI Act (transparency obligation): you always know that content was AI-generated. It is your responsibility to:\n\n• Review all generated content before using it\n• Verify factual information (dates, job titles, company names)\n• Adjust content to your personal situation\n• Not include misleading or false information in your CV\n\nCVeetje does not make automated decisions with legal effects for you (GDPR art. 22). The fit analysis is purely a tool; employers do not see the score.",
         "subtitle3": "9.3 Limitation of Liability",
         "content3": "To the extent permitted by law, CVeetje is not liable for:\n\n• Indirect, incidental, special or consequential damages\n• Loss of data, profits or business opportunities\n• Damage resulting from the use of or inability to use the Service\n• Costs arising from API use with third parties\n\nOur total liability is limited to the amount you have paid us for the Service in the preceding 12 months."
       },
@@ -1726,16 +1753,16 @@
       },
       "dataSharing": {
         "title": "6. Data Sharing",
-        "content": "We do not sell your personal data to third parties. We only share your data in the following situations:\n\n• With service providers: See section 7 for an overview of the external services we use.\n\n• With AI providers: When you generate a CV, your profile data is processed by the AI provider whose API key you provided (such as OpenAI, Anthropic or Google). This happens directly with your own API key.\n\n• When legally required: If we are legally obligated to do so, for example by a court order.\n\n• In case of business transfer: In the event of a merger, acquisition or sale of assets, your data may be transferred to the new owner."
+        "content": "We do not sell your personal data to third parties. We share your data only in the following situations:\n\n• With sub-processors: See section 7 and our public sub-processor page (/sub-processors) for the complete current list, including jurisdiction and legal safeguards.\n\n• With AI providers: In Platform AI mode we send prompt data to Anthropic under a Data Processing Agreement (DPA) + EU Standard Contractual Clauses. In BYOK mode your profile data is sent directly to the provider of your choice under their own terms.\n\n• Under legal obligation: When we are legally required to do so, for example following a court order or report to the Dutch DPA.\n\n• In case of business transfer: In the event of a merger, acquisition or asset sale your data may be transferred to the new owner; you will be informed in advance and may delete your account before the transfer."
       },
       "thirdPartyServices": {
         "title": "7. Third-Party Services",
         "subtitle1": "7.1 Firebase (Google Cloud)",
-        "content1": "We use Firebase from Google for:\n\n• Authentication (login and account management)\n• Database (storage of your profiles and CVs)\n• Hosting of certain services\n\nFirebase processes data in accordance with Google's privacy policy. Data may be stored in data centers within the EU or US. Google is certified under the EU-US Data Privacy Framework.\n\nMore information: https://firebase.google.com/support/privacy",
+        "content1": "We use Firebase (Google Cloud) for:\n\n• Authentication (Firebase Auth — sign-in and account management)\n• Database (Cloud Firestore — storage of profiles, CVs, transactions)\n• File storage (Cloud Storage — uploads, profile photos, generated files)\n• Hosting (Cloud Run for the web app)\n\nOur production environment runs in europe-west4 (Eemshaven, Netherlands). Primary data is therefore stored in the Netherlands. Google is certified under the EU-US Data Privacy Framework and uses EU Standard Contractual Clauses for any intra-group transfers.\n\nDPA: https://cloud.google.com/terms/data-processing-addendum\nPrivacy: https://firebase.google.com/support/privacy",
         "subtitle2": "7.2 Mollie (Payments)",
         "content2": "We use Mollie for processing payments. When you purchase credits, your payment details are processed directly by Mollie. We only receive confirmation of payment, not your full payment details.\n\nMollie is based in the Netherlands and processes data in accordance with GDPR.\n\nMore information: https://www.mollie.com/en/privacy",
         "subtitle3": "7.3 AI Providers",
-        "content3": "For generating CV content, AI models are used in two ways:\n\n1. Platform AI (our built-in AI): We offer Claude by Anthropic (currently Claude Opus 4.7) as an AI service. When using Platform AI, CVeetje is the data controller and Anthropic is the data processor. We have a Data Processing Agreement (DPA) with Anthropic. Your profile data and job posting text are sent to Anthropic (US) for processing. Anthropic does not use this data for training AI models (in accordance with their API terms for commercial use).\n\n2. Own API key: You can bring your own API key from a supported provider, including OpenAI (GPT-4), Anthropic (Claude), Google (Gemini), and more than 20 other providers. When using your own key, your data is sent directly to your chosen provider. This processing falls under the privacy policy and terms of the respective provider.\n\nFor more information about how we use AI, see our AI Transparency page."
+        "content3": "AI models are used for content generation in two ways:\n\n1. Platform AI (our built-in AI): We offer Claude by Anthropic (currently Claude Opus 4.7). In Platform AI mode GroeimetAI is the controller and Anthropic is the processor. We have a DPA with Anthropic, including EU Standard Contractual Clauses (module 2). Your profile summary and job description are sent to Anthropic. Anthropic does not use this data for training AI models (Anthropic Commercial Terms of Service).\n\n2. Your own API key (BYOK): You can bring your own API key from a supported provider (OpenAI, Anthropic, Google Gemini, Mistral, Groq, DeepSeek, Together, Fireworks, Azure, Cohere and others). In that case you are the controller vis-à-vis the provider, and CVeetje only stores your encrypted key (AES-256) plus your model choice.\n\nThe full current list of AI and infrastructure sub-processors is available at /sub-processors. More on how we use AI is at /ai-transparency."
       },
       "cookies": {
         "title": "8. Cookies and Local Storage",
@@ -1747,15 +1774,15 @@
       },
       "yourRights": {
         "title": "10. Your Rights",
-        "content": "Under the GDPR, you have the following rights regarding your personal data:\n\n• Right of access: You can request what data we process about you.\n\n• Right to rectification: You can have incorrect data corrected.\n\n• Right to erasure: You can request deletion of your data (\"right to be forgotten\").\n\n• Right to restriction: You can request restriction of the processing of your data.\n\n• Right to portability: You can request your data in a structured format to transfer to another service.\n\n• Right to object: You can object to processing based on legitimate interest.\n\n• Right to withdraw consent: You can withdraw previously given consent at any time.\n\nTo exercise these rights, you can contact us at info@groeimetai.io. We will respond to your request within 30 days.\n\nYou also have the right to file a complaint with the Dutch Data Protection Authority (https://autoriteitpersoonsgegevens.nl) or your local supervisory authority."
+        "content": "Under the GDPR you have the following rights regarding your personal data:\n\n• Right of access: You can request which data we process about you.\n• Right to rectification: You can have inaccurate data corrected.\n• Right to erasure: You can request deletion of your data (\"right to be forgotten\"). Self-service via Settings → Account → Delete account.\n• Right to restriction: You can request that processing of your data be restricted.\n• Right to portability: You can download your data as a structured JSON file via Settings → Account → Export my data (GDPR art. 20).\n• Right to object: You can object to processing based on legitimate interest.\n• Right to withdraw consent: You can withdraw previously given consent at any time (e.g. cookie consent via your browser).\n• Right to information on automated decision-making: CVeetje does not make automated decisions with legal effects for you.\n\nTo exercise these rights, contact info@groeimetai.io. We will respond to your request within 30 days (free of charge for the first request per calendar year).\n\nYou also have the right to lodge a complaint with the Dutch Data Protection Authority (https://autoriteitpersoonsgegevens.nl)."
       },
       "dataTransfers": {
         "title": "11. International Transfers",
-        "content": "Your data may be processed outside the European Economic Area (EEA), specifically:\n\n• By Firebase/Google (US): Google is certified under the EU-US Data Privacy Framework and uses Standard Contractual Clauses (SCCs).\n\n• By Anthropic (US) for Platform AI: When you use Platform AI, your profile data and job posting text are processed by Anthropic in the United States. We maintain Standard Contractual Clauses (SCCs) as safeguards for this transfer.\n\n• By AI providers (US) with own key: OpenAI, Anthropic and Google are all based in the US. When using your own API key, processing takes place under the terms of the respective provider.\n\nWe take appropriate measures to ensure an adequate level of protection in accordance with Chapter V of the GDPR."
+        "content": "Your data may be processed outside the European Economic Area (EEA), namely:\n\n• By Anthropic (USA) for Platform AI: under EU Standard Contractual Clauses (module 2) and a completed Transfer Impact Assessment. Inputs/outputs are not used for model training.\n\n• By Google (USA/intra-group): EU-US Data Privacy Framework + Standard Contractual Clauses. Primary storage is in europe-west4 (Netherlands) — only support data may be accessed from the USA.\n\n• By GitHub (USA) for feedback issues: EU-US Data Privacy Framework + Microsoft DPA.\n\n• By Firebase Trigger Email extension (us-central1): for sending transactional emails. Source data is in EU Firestore; only the ephemeral send queue runs in the USA.\n\nFor each transfer we have assessed that the level of protection of the GDPR remains safeguarded through adequacy decisions (EU-US DPF, UK), contractual safeguards (SCCs), technical measures (encryption) and organisational measures (access control, audit logging)."
       },
       "security": {
         "title": "12. Security",
-        "content": "We take the security of your data seriously and have implemented appropriate technical and organizational measures:\n\n• Encryption: All data is transmitted encrypted (HTTPS/TLS). API keys are stored encrypted with AES-256 encryption.\n\n• Access control: Only authorized personnel have access to systems containing personal data.\n\n• Infrastructure: We use secure cloud infrastructure (Google Cloud/Firebase) with enterprise-grade security.\n\n• Passwords: Passwords are stored hashed and are not accessible in plain text.\n\nDespite these measures, no method of data transmission or storage can be guaranteed to be 100% secure. If you suspect your data has been compromised, please contact us immediately."
+        "content": "We take the security of your data seriously and have implemented appropriate technical and organisational measures:\n\n• Encryption in transit: all traffic via HTTPS/TLS 1.2+.\n• Encryption at rest: all Firestore and Storage data is encrypted at rest by Google (AES-256, Google-managed keys).\n• API keys: user-stored API keys are separately encrypted with AES-256-GCM (env key ENCRYPTION_KEY).\n• Authentication: Firebase Authentication with optional OAuth providers (Google, Apple); passwords are hashed by Firebase — we never see your password.\n• Access control: server-side admin routes explicitly check permissions via verifyAdminRequest(); Firestore Security Rules scope to user level.\n• Abuse detection: reCAPTCHA v3 on register/login; rate limiting on critical endpoints.\n• Breach procedure: notification within 72 hours to the Dutch DPA per GDPR art. 33; notification to data subjects in case of high risk (art. 34).\n\nDespite these measures we cannot guarantee 100% security. In case of a (suspected) data breach or security incident, please contact info@groeimetai.io immediately."
       },
       "children": {
         "title": "13. Children",
@@ -1805,7 +1832,7 @@
       },
       "classification": {
         "title": "7. EU AI Act Classification",
-        "content": "CVeetje is classified as a limited-risk AI system under the EU AI Act (Regulation (EU) 2024/1689). This classification is based on the following considerations:\n\n• CVeetje is a consumer tool that helps job seekers write their own CVs\n• CVeetje does not screen, rank or filter candidates on behalf of employers\n• CVeetje does not make hiring or selection decisions\n• The AI improves the presentation of existing information provided by the user themselves (Article 6(3)(b) — improvement of a previously completed human activity)\n\nWe comply with the transparency obligations of Article 50 of the EU AI Act by:\n\n• Clearly communicating that CVeetje uses AI for content generation\n• Disclosing which AI models are used\n• Informing users about their responsibilities when using AI-generated content\n\nWe document our risk assessment and keep it available for supervisory authorities. The Dutch Data Protection Authority (Autoriteit Persoonsgegevens) is the responsible supervisory authority in the Netherlands."
+        "content": "CVeetje is classified as a limited-risk AI system under the EU AI Act (Regulation (EU) 2024/1689). This classification is based on the following considerations:\n\n• CVeetje is a consumer tool that helps job seekers write their own CVs\n• CVeetje does not screen, rank or filter candidates on behalf of employers\n• CVeetje does not make hiring or selection decisions\n• The AI improves the presentation of existing information supplied by the user (Article 6(3)(b) — improving the result of a previously completed human activity)\n• No practices from Article 5 (prohibited AI practices): no subliminal manipulation, no social scoring, no exploitation of vulnerable groups, no workplace emotion recognition\n\nWe meet the transparency obligations of Article 50 of the EU AI Act by:\n\n• Clearly communicating that CVeetje uses AI for content generation\n• Stating which AI models are used (see section 3)\n• Informing users about their responsibilities when using AI-generated content (see section 5)\n• Visibly labelling AI output where relevant\n\nAI literacy (Article 4): we invest in understanding what AI can and cannot do. This page, /compliance and in-app explanations help you make an informed choice.\n\nDispute flow: if you think the AI generated something wrong, you can flag it via the \"Dispute\" button. A second LLM reviews the objection and regenerates correctly if you are right — at no additional credits.\n\nWe document our risk assessment and keep it available for supervisors. The Dutch Data Protection Authority (AP) is the supervisor in the Netherlands."
       },
       "rights": {
         "title": "8. Your Rights",

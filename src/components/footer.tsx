@@ -19,22 +19,31 @@ export function Footer({ minimal = false }: FooterProps) {
       <footer className="border-t py-4 mt-auto bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <span>© {currentYear} CVeetje</span>
               <span className="hidden sm:inline">|</span>
               <span>GroeimetAI</span>
               <span className="hidden sm:inline">|</span>
               <span>KvK: 90102304</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <Link href="/privacy" className="hover:text-foreground">
                 {t('privacy')}
               </Link>
               <Link href="/terms" className="hover:text-foreground">
                 {t('terms')}
               </Link>
+              <Link href="/cookies" className="hover:text-foreground">
+                {locale === 'nl' ? 'Cookies' : 'Cookies'}
+              </Link>
               <Link href="/ai-transparency" className="hover:text-foreground">
                 {t('aiTransparency')}
+              </Link>
+              <Link href="/sub-processors" className="hover:text-foreground">
+                {locale === 'nl' ? 'Subverwerkers' : 'Sub-processors'}
+              </Link>
+              <Link href="/compliance" className="hover:text-foreground">
+                Compliance
               </Link>
             </div>
           </div>
@@ -60,7 +69,7 @@ export function Footer({ minimal = false }: FooterProps) {
           {/* Quick Links */}
           <div className="space-y-3">
             <h4 className="font-semibold text-sm">
-              {locale === 'nl' ? 'Links' : 'Links'}
+              {locale === 'nl' ? 'Juridisch & Compliance' : 'Legal & Compliance'}
             </h4>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
               <Link href="/privacy" className="hover:text-foreground">
@@ -69,8 +78,17 @@ export function Footer({ minimal = false }: FooterProps) {
               <Link href="/terms" className="hover:text-foreground">
                 {t('terms')}
               </Link>
+              <Link href="/cookies" className="hover:text-foreground">
+                {locale === 'nl' ? 'Cookiebeleid' : 'Cookie Policy'}
+              </Link>
               <Link href="/ai-transparency" className="hover:text-foreground">
                 {t('aiTransparency')}
+              </Link>
+              <Link href="/sub-processors" className="hover:text-foreground">
+                {locale === 'nl' ? 'Subverwerkers' : 'Sub-processors'}
+              </Link>
+              <Link href="/compliance" className="hover:text-foreground">
+                {locale === 'nl' ? 'Compliance (AVG + AI Act)' : 'Compliance (GDPR + AI Act)'}
               </Link>
               <a href="mailto:info@groeimetai.io" className="hover:text-foreground">
                 {locale === 'nl' ? 'Contact' : 'Contact'}
@@ -91,9 +109,14 @@ export function Footer({ minimal = false }: FooterProps) {
           </div>
         </div>
 
-        <div className="mt-8 pt-4 border-t text-center text-xs text-muted-foreground">
+        <div className="mt-8 pt-4 border-t text-center text-xs text-muted-foreground space-y-1">
           <p>
             © {currentYear} CVeetje - {locale === 'nl' ? 'Een dienst van' : 'A service by'} GroeimetAI
+          </p>
+          <p>
+            {locale === 'nl'
+              ? 'Data opgeslagen in Nederland (europe-west4) · AVG-compliant · EU AI Act beperkt risico'
+              : 'Data stored in the Netherlands (europe-west4) · GDPR-compliant · EU AI Act limited risk'}
           </p>
         </div>
       </div>

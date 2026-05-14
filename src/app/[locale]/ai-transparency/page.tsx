@@ -51,7 +51,7 @@ export default async function AITransparencyPage({ params }: Props) {
   const t = await getTranslations('aiTransparency');
 
   // Format date based on locale
-  const lastUpdatedDate = new Date('2026-02-09').toLocaleDateString(
+  const lastUpdatedDate = new Date('2026-05-15').toLocaleDateString(
     locale === 'nl' ? 'nl-NL' : 'en-US',
     { year: 'numeric', month: 'long', day: 'numeric' }
   );
@@ -168,7 +168,7 @@ export default async function AITransparencyPage({ params }: Props) {
               <h2 className="font-semibold mb-4">
                 {locale === 'nl' ? 'Gerelateerde pagina\'s' : 'Related pages'}
               </h2>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-wrap gap-3">
                 <Link href="/privacy">
                   <Button variant="outline" size="sm">
                     {locale === 'nl' ? 'Privacybeleid' : 'Privacy Policy'}
@@ -177,6 +177,16 @@ export default async function AITransparencyPage({ params }: Props) {
                 <Link href="/terms">
                   <Button variant="outline" size="sm">
                     {locale === 'nl' ? 'Algemene Voorwaarden' : 'Terms of Service'}
+                  </Button>
+                </Link>
+                <Link href="/sub-processors">
+                  <Button variant="outline" size="sm">
+                    {locale === 'nl' ? 'Subverwerkers' : 'Sub-processors'}
+                  </Button>
+                </Link>
+                <Link href="/compliance">
+                  <Button variant="outline" size="sm">
+                    Compliance
                   </Button>
                 </Link>
               </div>
@@ -207,15 +217,24 @@ export default async function AITransparencyPage({ params }: Props) {
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} CVeetje
             </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <Link href="/privacy" className="hover:text-foreground">
-                {locale === 'nl' ? 'Privacy' : 'Privacy'}
+                Privacy
               </Link>
               <Link href="/terms" className="hover:text-foreground">
                 {locale === 'nl' ? 'Voorwaarden' : 'Terms'}
               </Link>
+              <Link href="/cookies" className="hover:text-foreground">
+                {locale === 'nl' ? 'Cookies' : 'Cookies'}
+              </Link>
               <Link href="/ai-transparency" className="hover:text-foreground font-medium text-foreground">
                 {locale === 'nl' ? 'AI Transparantie' : 'AI Transparency'}
+              </Link>
+              <Link href="/sub-processors" className="hover:text-foreground">
+                {locale === 'nl' ? 'Subverwerkers' : 'Sub-processors'}
+              </Link>
+              <Link href="/compliance" className="hover:text-foreground">
+                Compliance
               </Link>
             </div>
           </div>
