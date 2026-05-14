@@ -169,23 +169,29 @@ export async function searchJobs(params: JobSearchParams): Promise<JobSearchResu
   const page = Math.max(1, params.page ?? 1);
   const perPage = Math.min(50, Math.max(1, params.resultsPerPage ?? 20));
 
-  const [adzunaJobs, seededJobs] = await Promise.all([
-    isAdzunaConfigured()
-      ? searchAdzuna(params).catch((err) => {
-          console.warn(
-            '[jobs/search] Adzuna failed',
-            err instanceof Error ? err.message : err,
-          );
-          return [] as NormalizedJob[];
-        })
-      : Promise.resolve([] as NormalizedJob[]),
-    searchSeededAts(params).catch(() => [] as NormalizedJob[]),
-  ]);
+  // Adzuna is the primary discovery surface — it indexes the major NL/EU
+  // employers' ATS boards already. ATS detection (enrichWithAtsDetection)
+  // promotes Adzuna results pointing at Greenhouse/Lever/Recruitee to
+  // 1-click-apply slugs, and resolveJobBySlug's enrichFromAts fetches full
+  // descriptions + apply questions lazily on the detail page.
+  //
+  // The seeded ATS fan-out (~14 parallel HTTP calls) was duplicating Adzuna
+  // coverage and was the dominant page-render cost. It now only fires as a
+  // fallback when Adzuna is not configured (e.g. local dev without keys).
+  const jobs = isAdzunaConfigured()
+    ? await searchAdzuna(params).catch((err) => {
+        console.warn(
+          '[jobs/search] Adzuna failed',
+          err instanceof Error ? err.message : err,
+        );
+        return [] as NormalizedJob[];
+      })
+    : await searchSeededAts(params).catch(() => [] as NormalizedJob[]);
 
-  // Dedupe by slug (seeded ATS jobs may overlap with Adzuna-detected ATS jobs)
+  // Dedupe by slug (Adzuna can return the same job under multiple ids)
   const seen = new Set<string>();
   const merged: NormalizedJob[] = [];
-  for (const job of [...seededJobs, ...adzunaJobs]) {
+  for (const job of jobs) {
     if (seen.has(job.slug)) continue;
     seen.add(job.slug);
     merged.push(job);
