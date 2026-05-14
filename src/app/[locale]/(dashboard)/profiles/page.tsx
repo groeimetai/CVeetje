@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useProfiles } from '@/hooks/use-profiles';
 import { ProfileCard } from '@/components/profiles/profile-card';
+import { PageHeader } from '@/components/brand/page-header';
 
 export default function ProfilesPage() {
   const router = useRouter();
@@ -59,19 +60,22 @@ export default function ProfilesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            {t('subtitle')}
-          </p>
-        </div>
-        <Button onClick={() => router.push('/cv/new')} size="sm" className="self-start sm:self-auto sm:size-default">
-          <Plus className="h-4 w-4 mr-2" />
-          {t('newProfile')}
-        </Button>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="§ LinkedIn-profielen"
+        title={<>Mijn <em>profielen</em></>}
+        subtitle={t('subtitle')}
+        actions={
+          <button
+            type="button"
+            onClick={() => router.push('/cv/new')}
+            className="brand-btn brand-btn--primary"
+          >
+            <Plus className="h-4 w-4" />
+            {t('newProfile')}
+          </button>
+        }
+      />
 
       {error && (
         <Alert variant="destructive">
@@ -143,6 +147,6 @@ export default function ProfilesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

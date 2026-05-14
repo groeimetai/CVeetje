@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/components/auth/auth-context';
 import { getUserCVs, deleteCV } from '@/lib/firebase/firestore';
+import { PageHeader } from '@/components/brand/page-header';
 import type { CV } from '@/types';
 
 export default function CVListPage() {
@@ -63,19 +64,18 @@ export default function CVListPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">{t('subtitle')}</p>
-        </div>
-        <Link href="/cv/new" className="self-start sm:self-auto">
-          <Button size="sm" className="sm:size-default">
-            <Plus className="mr-2 h-4 w-4" />
+    <>
+      <PageHeader
+        eyebrow="§ CV-archief"
+        title={<>Mijn <em>CV's</em></>}
+        subtitle={t('subtitle')}
+        actions={
+          <Link href="/cv/new" className="brand-btn brand-btn--primary">
+            <Plus size={14} />
             {tDashboard('newCv')}
-          </Button>
-        </Link>
-      </div>
+          </Link>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -210,6 +210,6 @@ export default function CVListPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

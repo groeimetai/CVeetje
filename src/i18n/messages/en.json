@@ -354,6 +354,83 @@
     "welcome": "Welcome, {name}!",
     "subtitle": "Create AI-powered CVs tailored to your dream job",
     "newCv": "New CV",
+    "overview": "Overview",
+    "searchPlaceholder": "Search CVs, jobs, profiles…",
+    "next": {
+      "eyebrow": "№ {n} · Next step",
+      "titleProfile": "Fill in your profile first.",
+      "titleProfileEm": "Start with LinkedIn.",
+      "titleProfileSub": "Paste your LinkedIn URL or upload a screenshot. We save your profile securely.",
+      "titleJob": "Pick a job.",
+      "titleJobEm": "Or paste one.",
+      "titleJobSub": "We pull out the keywords and weigh the match against your profile.",
+      "titleCv": "Your job is queued.",
+      "titleCvEm": "Time for a tailored CV.",
+      "titleCvSub": "One click and you have a CV that perfectly fits this role.",
+      "titleDone": "Everything's ready.",
+      "titleDoneEm": "Apply in one click.",
+      "titleDoneSub": "Your CV and motivation letter are ready. Click through to apply or save for later.",
+      "ctaCv": "Generate CV",
+      "ctaProfile": "Add profile",
+      "ctaJob": "Pick a job",
+      "ctaApply": "Apply",
+      "ctaSecondary": "Open job",
+      "ctaSecondaryProfile": "My profiles",
+      "ctaSecondaryJob": "Jobs board",
+      "progress": {
+        "profile": "Profile",
+        "vacancy": "Job",
+        "generate": "Generate CV",
+        "apply": "Apply",
+        "done": "Done",
+        "skip": "—",
+        "oneClick": "1-click",
+        "oneCredit": "1 credit"
+      }
+    },
+    "statRow": {
+      "cvsLabel": "CVs created",
+      "appsLabel": "Applications",
+      "matchLabel": "Match score",
+      "creditsLabel": "Credits",
+      "cvsHint": "{count} ready to download",
+      "appsHint": "{interview} in talks · {offers} offers",
+      "appsHintEmpty": "No applications yet",
+      "matchHint": "Average fit on last {count} CVs",
+      "matchHintEmpty": "No CVs yet",
+      "creditsHint": "Resets in {days} days"
+    },
+    "tracker": {
+      "title": "Application tracker",
+      "subtitle": "{active} active · {accepted} accepted",
+      "viewAll": "All applications",
+      "applied": "Applied",
+      "interview": "Interview",
+      "offer": "Offer",
+      "accepted": "Accepted",
+      "empty": "No items"
+    },
+    "cvGrid": {
+      "title": "Recent CVs",
+      "subtitle": "{total} total · {ready} ready as PDF",
+      "viewAll": "All CVs",
+      "newCv": "New CV",
+      "newCvSub": "Start with a job posting",
+      "ago": "{time} ago",
+      "untitled": "Untitled CV"
+    },
+    "jobsFeed": {
+      "title": "For you",
+      "subtitle": "Jobs based on your profile",
+      "viewAll": "All jobs",
+      "empty": "Fill in your profile to see matching jobs."
+    },
+    "activity": {
+      "title": "Activity",
+      "subtitle": "Last 7 days",
+      "viewAll": "All",
+      "empty": "No activity in the past week."
+    },
     "stats": {
       "totalCvs": "Total CVs",
       "readyForDownload": "Ready for Download"

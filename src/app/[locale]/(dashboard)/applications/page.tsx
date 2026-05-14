@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Building2, MapPin, ExternalLink, Trash2, Save, Briefcase } from 'lucide-react';
 import type { ApplicationRecord, ApplicationStatus } from '@/types/application';
+import { PageHeader } from '@/components/brand/page-header';
 
 const STATUSES: Array<{ value: ApplicationStatus; label: string; color: string }> = [
   { value: 'applied', label: 'Verzonden', color: 'bg-blue-100 text-blue-800' },
@@ -103,13 +104,12 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Mijn sollicitaties</h1>
-        <p className="text-muted-foreground">
-          Overzicht van alle sollicitaties die je via CVeetje hebt verstuurd.
-        </p>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="§ Sollicitatie-tracker"
+        title={<>Mijn <em>sollicitaties</em></>}
+        subtitle="Overzicht van alle sollicitaties die je via CVeetje hebt verstuurd."
+      />
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
@@ -233,6 +233,6 @@ export default function ApplicationsPage() {
           })}
         </div>
       )}
-    </div>
+    </>
   );
 }

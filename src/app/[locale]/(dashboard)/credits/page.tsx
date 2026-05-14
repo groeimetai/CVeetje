@@ -14,6 +14,7 @@ import { getTransactionHistory } from '@/lib/firebase/firestore';
 import { CREDIT_PACKAGES } from '@/lib/mollie/client';
 import { getDaysUntilReset, getNextResetDate } from '@/lib/credits/manager';
 import type { CreditTransaction } from '@/types';
+import { PageHeader } from '@/components/brand/page-header';
 
 export default function CreditsPage() {
   const searchParams = useSearchParams();
@@ -74,12 +75,11 @@ export default function CreditsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
-          {t('subtitle')}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="§ Saldo & pakketten"
+        title={<>{t('title')} <em>kopen</em></>}
+        subtitle={t('subtitle')}
+      />
 
       {paymentStatus === 'complete' && (
         <Alert className="bg-green-50 border-green-200">

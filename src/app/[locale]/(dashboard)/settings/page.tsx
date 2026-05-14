@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/components/auth/auth-context';
 import type { ProviderInfo } from '@/lib/ai/models-registry';
 import type { LLMMode } from '@/types';
+import { PageHeader } from '@/components/brand/page-header';
 
 const apiKeySchema = z.object({
   provider: z.string().min(1, 'Please select a provider'),
@@ -317,12 +318,11 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">
-          {t('subtitle')}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="§ Configuratie"
+        title={<>{t('title')} <em>aanpassen</em></>}
+        subtitle={t('subtitle')}
+      />
 
       <Tabs defaultValue="api-key">
         <TabsList className="w-full sm:w-auto">

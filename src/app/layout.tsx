@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider, AppearanceScript } from '@/components/theme-provider';
+import { TweaksPanel } from '@/components/tweaks-panel';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -68,6 +69,7 @@ export default async function RootLayout({
       <body className="antialiased">
         <ThemeProvider>
           {children}
+          <TweaksPanel />
           <Toaster />
         </ThemeProvider>
       </body>

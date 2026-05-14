@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, RefreshCw, Search, Users, UserCheck, UserX, Shield } from 'lucide-react';
 import type { AdminUser } from '@/lib/firebase/admin-utils';
+import { PageHeader } from '@/components/brand/page-header';
 
 export default function AdminUsersPage() {
   const t = useTranslations('admin');
@@ -91,55 +92,43 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('description')}</p>
-      </div>
+    <>
+      <PageHeader
+        eyebrow={`§ ${t('description')}`}
+        title={<>{t('title').replace(/\s+\S+$/, '')} <em>{t('title').split(/\s+/).slice(-1)[0]}</em></>}
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('stats.totalUsers')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-muted-foreground" />
-            <span className="text-2xl font-bold">{stats.total}</span>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('stats.verified')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-green-500" />
-            <span className="text-2xl font-bold">{stats.verified}</span>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('stats.disabled')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center gap-2">
-            <UserX className="h-5 w-5 text-destructive" />
-            <span className="text-2xl font-bold">{stats.disabled}</span>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{t('stats.admins')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-500" />
-            <span className="text-2xl font-bold">{stats.admins}</span>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Stats Cards — brand stat-card layout */}
+      <section className="stat-row">
+        <div className="stat-card">
+          <div className="stat-card__top">
+            <span className="stat-card__label">{t('stats.totalUsers')}</span>
+            <Users size={18} style={{ color: 'var(--muted)' }} />
+          </div>
+          <div className="stat-card__value">{stats.total}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__top">
+            <span className="stat-card__label">{t('stats.verified')}</span>
+            <UserCheck size={18} style={{ color: 'var(--success)' }} />
+          </div>
+          <div className="stat-card__value">{stats.verified}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__top">
+            <span className="stat-card__label">{t('stats.disabled')}</span>
+            <UserX size={18} style={{ color: 'var(--accent)' }} />
+          </div>
+          <div className="stat-card__value">{stats.disabled}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card__top">
+            <span className="stat-card__label">{t('stats.admins')}</span>
+            <Shield size={18} style={{ color: 'var(--accent)' }} />
+          </div>
+          <div className="stat-card__value">{stats.admins}</div>
+        </div>
+      </section>
 
       {/* Users Table Card */}
       <Card>
@@ -198,6 +187,6 @@ export default function AdminUsersPage() {
         onOpenChange={setDialogOpen}
         onUserUpdated={handleUserUpdated}
       />
-    </div>
+    </>
   );
 }

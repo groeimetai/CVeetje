@@ -18,6 +18,7 @@ import { Logo } from '@/components/ui/logo';
 import { WebsiteStructuredData, FAQStructuredData, OrganizationStructuredData } from '@/components/seo/structured-data';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { CvShowcaseRotate } from '@/components/landing/cv-showcase-rotate';
 import '@/styles/landing.css';
 
 type Props = {
@@ -220,6 +221,46 @@ export default async function LandingPage({ params }: Props) {
                 <span className="stat-ticker__value">€ <em>0</em></span>
                 <span className="stat-ticker__hint">{nl ? '5 gratis downloads / maand' : '5 free downloads / month'}</span>
               </div>
+            </div>
+          </section>
+
+          {/* SHOWCASE */}
+          <section id="stijlen" className="land-section land-section--alt" aria-labelledby="showcase-heading">
+            <div className="brand-container showcase">
+              <div className="showcase__left">
+                <span className="section-header__eyebrow">§ {nl ? 'Stijl-generator' : 'Style generator'}</span>
+                <h2 id="showcase-heading" className="section-header__title">
+                  {nl ? <>Een stijl<br />die past bij <em>de baan</em>.</> : <>A style<br />that fits <em>the role</em>.</>}
+                </h2>
+                <p className="section-header__sub">
+                  {nl ? 'Solliciteer je bij een advocatenkantoor of een design studio? Cveetje genereert per vacature een passende stijl — kleur, layout, typografie — of kiest uit een collectie editorial templates.' :
+                       "Applying at a law firm or a design studio? Cveetje generates a fitting style per role — color, layout, type — or picks from a collection of editorial templates."}
+                </p>
+                <div className="showcase__features">
+                  <div className="showcase__feat">
+                    <span className="showcase__feat-num">01</span>
+                    <div className="showcase__feat-text">
+                      <strong>{nl ? 'Vijf creativiteits-niveaus' : 'Five creativity levels'}</strong>
+                      <span>{nl ? 'Van zakelijk-conservatief tot uitgesproken editorial.' : 'From conservative business to outspoken editorial.'}</span>
+                    </div>
+                  </div>
+                  <div className="showcase__feat">
+                    <span className="showcase__feat-num">02</span>
+                    <div className="showcase__feat-text">
+                      <strong>{nl ? 'Onbeperkt regenereren' : 'Unlimited regenerate'}</strong>
+                      <span>{nl ? 'Niet tevreden? Klik opnieuw — andere kleuren, ander grid.' : "Not happy? Click again — new colors, new grid."}</span>
+                    </div>
+                  </div>
+                  <div className="showcase__feat">
+                    <span className="showcase__feat-num">03</span>
+                    <div className="showcase__feat-text">
+                      <strong>{nl ? 'Eigen DOCX-template' : 'Your own DOCX template'}</strong>
+                      <span>{nl ? 'Upload je bedrijfssjabloon — Cveetje vult het netjes in.' : 'Upload your company template — Cveetje fills it in neatly.'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <CvShowcaseRotate />
             </div>
           </section>
 

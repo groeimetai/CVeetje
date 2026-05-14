@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { Sidebar, MobileHeader } from '@/components/dashboard/sidebar';
+import { DashTopbar } from '@/components/dashboard/topbar';
 import { AuthProvider, useAuth } from '@/components/auth/auth-context';
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner';
-import { Footer } from '@/components/footer';
 import { Loader2 } from 'lucide-react';
+import '@/styles/dashboard.css';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { firebaseUser, emailVerified, loading } = useAuth();
@@ -18,7 +19,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [firebaseUser, loading, router]);
 
-  // Redirect to verify-email page if email not verified
   useEffect(() => {
     if (!loading && firebaseUser && !emailVerified) {
       router.push('/verify-email');
@@ -33,9 +33,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!firebaseUser || !emailVerified) {
-    return null;
-  }
+  if (!firebaseUser || !emailVerified) return null;
 
   return (
     <>
@@ -47,13 +45,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       >
         Skip to main content
       </a>
-      <div className="min-h-screen flex flex-col md:flex-row">
+      <div className="dash">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-h-screen md:min-h-0">
+        <div className="dash-main">
           <MobileHeader />
-          <main id="main-content" className="flex-1 overflow-auto flex flex-col">
-            <div className="container mx-auto p-4 md:p-6 flex-1">{children}</div>
-            <Footer minimal />
+          <DashTopbar />
+          <main id="main-content" className="dash-content">
+            {children}
           </main>
         </div>
       </div>

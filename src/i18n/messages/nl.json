@@ -354,6 +354,83 @@
     "welcome": "Welkom, {name}!",
     "subtitle": "Maak AI-gegenereerde CVs op maat voor je droombaan",
     "newCv": "Nieuwe CV",
+    "overview": "Overzicht",
+    "searchPlaceholder": "Zoek CV's, vacatures, profielen…",
+    "next": {
+      "eyebrow": "№ {n} · Volgende stap",
+      "titleProfile": "Vul eerst je profiel in.",
+      "titleProfileEm": "Begin met LinkedIn.",
+      "titleProfileSub": "Plak je LinkedIn-link of upload een screenshot. We slaan je profiel veilig op.",
+      "titleJob": "Kies een vacature.",
+      "titleJobEm": "Of plak er een.",
+      "titleJobSub": "Wij vissen de keywords eruit en wegen de match in tegen je profiel.",
+      "titleCv": "Je vacature staat klaar.",
+      "titleCvEm": "Tijd voor een CV op maat.",
+      "titleCvSub": "Eén klik en je hebt een CV dat hier helemaal op aansluit.",
+      "titleDone": "Alles staat klaar.",
+      "titleDoneEm": "Solliciteer met één klik.",
+      "titleDoneSub": "Je CV en motivatiebrief zijn klaar. Klik door om te solliciteren of bewaar voor later.",
+      "ctaCv": "Genereer CV",
+      "ctaProfile": "Profiel toevoegen",
+      "ctaJob": "Vacature kiezen",
+      "ctaApply": "Solliciteren",
+      "ctaSecondary": "Vacature bekijken",
+      "ctaSecondaryProfile": "Mijn profielen",
+      "ctaSecondaryJob": "Vacaturebank",
+      "progress": {
+        "profile": "Profiel",
+        "vacancy": "Vacature",
+        "generate": "CV genereren",
+        "apply": "Solliciteren",
+        "done": "Klaar",
+        "skip": "—",
+        "oneClick": "1-klik",
+        "oneCredit": "1 credit"
+      }
+    },
+    "statRow": {
+      "cvsLabel": "CV's gemaakt",
+      "appsLabel": "Sollicitaties",
+      "matchLabel": "Match score",
+      "creditsLabel": "Credits",
+      "cvsHint": "{count} klaar voor download",
+      "appsHint": "{interview} in gesprek · {offers} aanbod",
+      "appsHintEmpty": "Nog geen sollicitaties",
+      "matchHint": "Gemiddelde fit laatste {count} CV's",
+      "matchHintEmpty": "Nog geen CV's",
+      "creditsHint": "Reset over {days} dagen"
+    },
+    "tracker": {
+      "title": "Sollicitatie-tracker",
+      "subtitle": "{active} actief · {accepted} aangenomen",
+      "viewAll": "Alle sollicitaties",
+      "applied": "Verzonden",
+      "interview": "Gesprek",
+      "offer": "Aanbod",
+      "accepted": "Aangenomen",
+      "empty": "Geen items"
+    },
+    "cvGrid": {
+      "title": "Recente CV's",
+      "subtitle": "{total} totaal · {ready} met PDF klaar",
+      "viewAll": "Alle CV's",
+      "newCv": "Nieuw CV",
+      "newCvSub": "Begin met een vacature",
+      "ago": "{time} geleden",
+      "untitled": "Naamloze CV"
+    },
+    "jobsFeed": {
+      "title": "Voor jou",
+      "subtitle": "Vacatures op basis van je profiel",
+      "viewAll": "Alle vacatures",
+      "empty": "Vul je profiel in om vacatures te zien."
+    },
+    "activity": {
+      "title": "Activiteit",
+      "subtitle": "Laatste 7 dagen",
+      "viewAll": "Alles",
+      "empty": "Nog geen activiteit deze week."
+    },
     "stats": {
       "totalCvs": "Totaal CVs",
       "readyForDownload": "Klaar voor Download"
