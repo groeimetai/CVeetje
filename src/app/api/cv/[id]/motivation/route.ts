@@ -162,8 +162,11 @@ export async function POST(
     });
   } catch (error) {
     console.error('Motivation letter generation error:', error);
+    const message = error instanceof Error && error.message
+      ? error.message
+      : 'Failed to generate motivation letter';
     return NextResponse.json(
-      { error: 'Failed to generate motivation letter' },
+      { error: message },
       { status: 500 }
     );
   }
