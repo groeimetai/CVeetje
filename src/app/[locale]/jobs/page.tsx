@@ -6,6 +6,8 @@ import { JobPagination } from '@/components/jobs/job-pagination';
 import { searchJobs } from '@/lib/jobs/search';
 import type { JobSortOption } from '@/lib/jobs/providers/types';
 import { BreadcrumbStructuredData } from '@/components/seo/structured-data';
+import { JobsChrome } from '@/components/jobs/jobs-chrome';
+import { PageHeader } from '@/components/brand/page-header';
 
 export const revalidate = 300;
 
@@ -90,7 +92,7 @@ export default async function JobsListPage({ params, searchParams }: Props) {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <JobsChrome locale={locale}>
       <BreadcrumbStructuredData
         items={[
           { name: 'Home', url: `/${locale}` },
@@ -98,54 +100,53 @@ export default async function JobsListPage({ params, searchParams }: Props) {
         ]}
       />
 
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold">{t('listTitle')}</h1>
-          <p className="text-muted-foreground">{t('listSubtitle')}</p>
+      <PageHeader
+        eyebrow="§ Vacaturebank"
+        title={<>{t('listTitle').replace(/\s+\S+$/, '')} <em>{t('listTitle').split(/\s+/).slice(-1)[0]}</em></>}
+        subtitle={t('listSubtitle')}
+      />
+
+      <JobSearchBar
+        defaultQuery={q ?? ''}
+        defaultLocation={location ?? ''}
+        defaultFilters={activeFilters}
+      />
+
+      {errorMessage && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {t('error')}: {errorMessage}
         </div>
+      )}
 
-        <JobSearchBar
-          defaultQuery={q ?? ''}
-          defaultLocation={location ?? ''}
-          defaultFilters={activeFilters}
-        />
+      {!errorMessage && results && (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {t('resultCount', { count: results.totalResults })}
+          </p>
 
-        {errorMessage && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-            {t('error')}: {errorMessage}
-          </div>
-        )}
+          {results.results.length === 0 ? (
+            <div className="rounded-md border bg-muted/20 p-8 text-center text-muted-foreground">
+              {t('noResults')}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {results.results.map((job) => (
+                <JobCard key={job.sourceId} job={job} />
+              ))}
+            </div>
+          )}
 
-        {!errorMessage && results && (
-          <>
-            <p className="text-sm text-muted-foreground">
-              {t('resultCount', { count: results.totalResults })}
-            </p>
+          <JobPagination
+            currentPage={results.currentPage}
+            totalPages={results.totalPages}
+            q={q}
+            location={location}
+            filters={activeFilters}
+          />
+        </>
+      )}
 
-            {results.results.length === 0 ? (
-              <div className="rounded-md border bg-muted/20 p-8 text-center text-muted-foreground">
-                {t('noResults')}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {results.results.map((job) => (
-                  <JobCard key={job.sourceId} job={job} />
-                ))}
-              </div>
-            )}
-
-            <JobPagination
-              currentPage={results.currentPage}
-              totalPages={results.totalPages}
-              q={q}
-              location={location}
-              filters={activeFilters}
-            />
-          </>
-        )}
-
-        <p className="text-xs text-muted-foreground pt-4 border-t">{t('poweredBy')}</p>
-      </div>
-    </div>
+      <p className="text-xs text-muted-foreground pt-4 border-t">{t('poweredBy')}</p>
+    </JobsChrome>
   );
 }

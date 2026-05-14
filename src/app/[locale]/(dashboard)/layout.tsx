@@ -2,10 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from '@/i18n/navigation';
-import { Sidebar, MobileHeader } from '@/components/dashboard/sidebar';
-import { DashTopbar } from '@/components/dashboard/topbar';
-import { AuthProvider, useAuth } from '@/components/auth/auth-context';
-import { ImpersonationBanner } from '@/components/admin/impersonation-banner';
+import { useAuth } from '@/components/auth/auth-context';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { Loader2 } from 'lucide-react';
 import '@/styles/dashboard.css';
 
@@ -35,28 +33,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   if (!firebaseUser || !emailVerified) return null;
 
-  return (
-    <>
-      <meta name="robots" content="noindex, nofollow" />
-      <ImpersonationBanner />
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
-      >
-        Skip to main content
-      </a>
-      <div className="dash">
-        <Sidebar />
-        <div className="dash-main">
-          <MobileHeader />
-          <DashTopbar />
-          <main id="main-content" className="dash-content">
-            {children}
-          </main>
-        </div>
-      </div>
-    </>
-  );
+  return <DashboardShell noIndex>{children}</DashboardShell>;
 }
 
 export default function DashboardLayout({
@@ -64,9 +41,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <AuthProvider>
-      <DashboardContent>{children}</DashboardContent>
-    </AuthProvider>
-  );
+  // AuthProvider is now in [locale]/layout.tsx so /jobs etc. share the same context.
+  return <DashboardContent>{children}</DashboardContent>;
 }
