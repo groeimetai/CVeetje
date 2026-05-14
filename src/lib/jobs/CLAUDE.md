@@ -39,7 +39,7 @@ UI: `src/components/jobs/` + `src/app/[locale]/(dashboard)/applications/`.
 
 ## Adzuna config
 
-`ADZUNA_APP_ID` + `ADZUNA_API_KEY` zijn **optioneel** — bij ontbreken valt search terug op providers zonder Adzuna.
+`ADZUNA_APP_ID` + `ADZUNA_APP_KEY` zijn **optioneel** — bij ontbreken valt search terug op providers zonder Adzuna.
 
 ## Nieuwe provider toevoegen
 

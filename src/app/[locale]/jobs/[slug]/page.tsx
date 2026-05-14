@@ -1,16 +1,16 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Briefcase, Building2, Clock, Euro, MapPin, ExternalLink, Sparkles, Zap } from 'lucide-react';
+import { ArrowLeft, Briefcase, Building2, Clock, Euro, MapPin, ExternalLink, Zap } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { Logo } from '@/components/ui/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { BreadcrumbStructuredData } from '@/components/seo/structured-data';
 import { JobPostingStructuredData } from '@/components/seo/job-posting-structured-data';
+import { JobApplyPanel } from '@/components/jobs/job-apply-panel';
 import { resolveJobBySlug } from '@/lib/jobs/resolve';
 
 export const revalidate = 3600;
@@ -78,8 +78,6 @@ export default async function JobDetailPage({ params }: Props) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://maakcveetje.nl';
   const canonicalUrl = `${baseUrl}/${locale}/jobs/${slug}`;
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency);
-
-  const cvCtaHref = `/cv/new?jobId=${encodeURIComponent(slug)}`;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -168,34 +166,7 @@ export default async function JobDetailPage({ params }: Props) {
             </div>
           </header>
 
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-5 flex flex-col md:flex-row md:items-center gap-4 justify-between">
-              <div>
-                <h2 className="font-semibold text-base">{t('detail.ctaHeading')}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {job.supportsInAppApply
-                    ? t('detail.ctaSubheadingInApp')
-                    : t('detail.ctaSubheadingExternal')}
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button asChild>
-                  <Link href={cvCtaHref}>
-                    <Sparkles className="h-4 w-4 mr-1" />
-                    {t('detail.makeCV')}
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <a href={job.url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    {job.supportsInAppApply
-                      ? t('detail.viewOnEmployer')
-                      : t('detail.applyExternal')}
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <JobApplyPanel job={job} locale={locale} />
 
           <section className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
             <h2>{t('detail.descriptionHeading')}</h2>

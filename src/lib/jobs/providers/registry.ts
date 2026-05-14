@@ -36,18 +36,25 @@ export interface CompanyConfig {
  * entry won't break the page — it just contributes zero results.
  */
 const DEFAULT_SEED: CompanyConfig[] = [
-  // Greenhouse — large public boards
+  // Greenhouse — large public boards (international, plus NL-active)
   { provider: 'greenhouse', companyId: 'gitlab', companyKey: 'gitlab', name: 'GitLab' },
   { provider: 'greenhouse', companyId: 'stripe', companyKey: 'stripe', name: 'Stripe' },
   { provider: 'greenhouse', companyId: 'airbnb', companyKey: 'airbnb', name: 'Airbnb' },
   { provider: 'greenhouse', companyId: 'dropbox', companyKey: 'dropbox', name: 'Dropbox' },
   { provider: 'greenhouse', companyId: 'figma', companyKey: 'figma', name: 'Figma' },
+  { provider: 'greenhouse', companyId: 'adyen', companyKey: 'adyen', name: 'Adyen' },
+  { provider: 'greenhouse', companyId: 'bookingcom', companyKey: 'bookingcom', name: 'Booking.com' },
+  { provider: 'greenhouse', companyId: 'mollie', companyKey: 'mollie', name: 'Mollie' },
+  { provider: 'greenhouse', companyId: 'messagebird', companyKey: 'messagebird', name: 'Bird (MessageBird)' },
+  { provider: 'greenhouse', companyId: 'picnic', companyKey: 'picnic', name: 'Picnic' },
   // Lever — large public sites
   { provider: 'lever', companyId: 'shopify', companyKey: 'shopify', name: 'Shopify' },
   { provider: 'lever', companyId: 'netflix', companyKey: 'netflix', name: 'Netflix' },
   { provider: 'lever', companyId: 'spotify', companyKey: 'spotify', name: 'Spotify' },
-  // Recruitee — keep one entry as starting point; add NL companies via env var
+  // Recruitee — NL-heavy ATS
   { provider: 'recruitee', companyId: 'recruitee', companyKey: 'recruitee', name: 'Recruitee' },
+  { provider: 'recruitee', companyId: 'coolblue-careers', companyKey: 'coolblue', name: 'Coolblue' },
+  { provider: 'recruitee', companyId: 'bynder', companyKey: 'bynder', name: 'Bynder' },
 ];
 
 function normalizeKey(key: string): string {

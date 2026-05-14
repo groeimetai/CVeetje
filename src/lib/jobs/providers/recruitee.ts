@@ -123,18 +123,19 @@ export class RecruiteeProvider implements JobProvider {
   }
 
   async fetchJob(companyId: string, jobId: string): Promise<NormalizedJob | null> {
-    // Recruitee does not have a public single-offer by ID; fetch list and filter.
-    // `jobId` may be either the numeric offer ID or the offer slug (from URL detection).
+    // Recruitee does not have a public single-offer by ID; fetch the offers list once
+    // and map locally. `jobId` may be the numeric offer ID or the offer slug.
     const url = `https://${companyId}.recruitee.com/api/offers/`;
     const res = await fetch(url, { next: { revalidate: 600 } });
     if (!res.ok) return null;
-    const data = (await res.json()) as { offers?: Array<{ id: number; slug: string }> };
-    const raw = (data.offers ?? []).find(
+    const data = (await res.json()) as RecruiteeListResponse;
+    const offer = (data.offers ?? []).find(
       (o) => String(o.id) === jobId || o.slug === jobId,
     );
-    if (!raw) return null;
-    const jobs = await this.listForCompany(companyId);
-    return jobs.find((j) => j.sourceId === String(raw.id)) ?? null;
+    if (!offer) return null;
+    const companyKey = companyId.replace(/[^a-z0-9]/g, '');
+    const companyName = this.companyNames[companyKey] || companyId;
+    return mapOffer(companyKey, companyId, companyName, offer);
   }
 
   async apply(

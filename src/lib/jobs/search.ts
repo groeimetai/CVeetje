@@ -28,6 +28,76 @@ function matchesQuery(
   return true;
 }
 
+const REMOTE_KEYWORDS = [
+  'remote',
+  'thuiswerk',
+  'hybride',
+  'hybrid',
+  'work from home',
+  'work-from-home',
+  'wfh',
+  'telework',
+];
+
+function matchesFilters(job: NormalizedJob, params: JobSearchParams): boolean {
+  if (params.employmentType) {
+    const target = params.employmentType.toLowerCase();
+    const value = (job.employmentType ?? '').toLowerCase();
+    if (!value.includes(target)) return false;
+  }
+  if (params.remote) {
+    const haystack = [job.title, job.description, job.location, job.employmentType]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    if (!REMOTE_KEYWORDS.some((kw) => haystack.includes(kw))) return false;
+  }
+  if (typeof params.salaryMin === 'number' && params.salaryMin > 0) {
+    // Only filter when we actually have salary info — don't hide jobs without it
+    // unless the user has signalled they only want salary-disclosing jobs (not
+    // currently exposed, so default: keep unknown-salary jobs visible).
+    if (job.salaryMin !== null && job.salaryMin < params.salaryMin) return false;
+    if (
+      job.salaryMin === null &&
+      job.salaryMax !== null &&
+      job.salaryMax < params.salaryMin
+    ) {
+      return false;
+    }
+  }
+  if (params.inAppOnly && !job.supportsInAppApply) return false;
+  return true;
+}
+
+function sortJobs(jobs: NormalizedJob[], params: JobSearchParams): NormalizedJob[] {
+  const sort = params.sort ?? 'recent';
+  if (sort === 'salary') {
+    return [...jobs].sort((a, b) => {
+      const aSal = a.salaryMax ?? a.salaryMin ?? -1;
+      const bSal = b.salaryMax ?? b.salaryMin ?? -1;
+      return bSal - aSal;
+    });
+  }
+  if (sort === 'relevance' && params.q) {
+    const q = params.q.toLowerCase();
+    const score = (job: NormalizedJob) => {
+      let s = 0;
+      if (job.title?.toLowerCase().includes(q)) s += 5;
+      if (job.industry?.toLowerCase().includes(q)) s += 2;
+      if (job.company?.toLowerCase().includes(q)) s += 1;
+      if (job.description?.toLowerCase().includes(q)) s += 1;
+      return s;
+    };
+    return [...jobs].sort((a, b) => score(b) - score(a));
+  }
+  // default: recent
+  return [...jobs].sort((a, b) => {
+    const ta = a.postedAt ? Date.parse(a.postedAt) : 0;
+    const tb = b.postedAt ? Date.parse(b.postedAt) : 0;
+    return tb - ta;
+  });
+}
+
 /**
  * Take an Adzuna-sourced job and, if its redirect URL points at a known ATS
  * (Greenhouse/Lever/Recruitee), promote it to that ATS so 1-click apply works.
@@ -106,16 +176,13 @@ export async function searchJobs(params: JobSearchParams): Promise<JobSearchResu
     merged.push(job);
   }
 
-  merged.sort((a, b) => {
-    const ta = a.postedAt ? Date.parse(a.postedAt) : 0;
-    const tb = b.postedAt ? Date.parse(b.postedAt) : 0;
-    return tb - ta;
-  });
+  const filtered = merged.filter((job) => matchesFilters(job, params));
+  const sorted = sortJobs(filtered, params);
 
-  const totalResults = merged.length;
+  const totalResults = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / perPage));
   const start = (page - 1) * perPage;
-  const results = merged.slice(start, start + perPage);
+  const results = sorted.slice(start, start + perPage);
 
   return {
     results,

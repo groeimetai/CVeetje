@@ -95,6 +95,8 @@ export function CVWizard() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [pdfDownloaded, setPdfDownloaded] = useState(false);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [coverLetterBlob, setCoverLetterBlob] = useState<Blob | null>(null);
+  const [isLoadingCoverLetter, setIsLoadingCoverLetter] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Jobs-board deeplink metadata (fetched once if ?jobId= present)
@@ -675,6 +677,41 @@ export function CVWizard() {
     }
   };
 
+  // Fetch motivation letter PDF for current CV (used when opening apply dialog
+  // so the generated cover letter is auto-attached). Silently fails if no letter
+  // exists or download cannot be produced — user can still apply without one.
+  const fetchCoverLetterBlob = useCallback(async () => {
+    if (!cvId) return;
+    setIsLoadingCoverLetter(true);
+    try {
+      const letterRes = await fetch(`/api/cv/${cvId}/motivation`);
+      if (!letterRes.ok) return;
+      const letterData = await letterRes.json().catch(() => null);
+      if (!letterData?.letter) return;
+
+      const pdfRes = await fetch(`/api/cv/${cvId}/motivation/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format: 'pdf', letter: letterData.letter }),
+      });
+      if (!pdfRes.ok) return;
+      const blob = await pdfRes.blob();
+      setCoverLetterBlob(blob);
+    } catch (err) {
+      console.warn('[wizard] failed to fetch motivation letter for apply', err);
+    } finally {
+      setIsLoadingCoverLetter(false);
+    }
+  }, [cvId]);
+
+  const handleOpenApplyDialog = useCallback(async () => {
+    setApplyDialogOpen(true);
+    // Fetch motivation letter in parallel with dialog open if not already loaded
+    if (!coverLetterBlob && !isLoadingCoverLetter) {
+      await fetchCoverLetterBlob();
+    }
+  }, [coverLetterBlob, isLoadingCoverLetter, fetchCoverLetterBlob]);
+
   const goBack = () => {
     // Handle template step specially - always go back to style-choice
     if (currentStep === 'template') {
@@ -916,10 +953,10 @@ export function CVWizard() {
           </div>
           <Button
             size="sm"
-            onClick={() => setApplyDialogOpen(true)}
-            disabled={!pdfBlob}
+            onClick={() => void handleOpenApplyDialog()}
+            disabled={!pdfBlob || isLoadingCoverLetter}
           >
-            Solliciteer via CVeetje
+            {isLoadingCoverLetter ? 'Even laden…' : 'Solliciteer via CVeetje'}
           </Button>
         </div>
       )}
@@ -979,6 +1016,12 @@ export function CVWizard() {
               jobSlug={jobSourceMeta.slug}
               cvPdfBlob={pdfBlob}
               cvFileName={`cv-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'download'}.pdf`}
+              coverLetterBlob={coverLetterBlob ?? undefined}
+              coverLetterFileName={
+                coverLetterBlob
+                  ? `motivatiebrief-${linkedInData?.fullName?.toLowerCase().replace(/\s+/g, '-') || 'download'}.pdf`
+                  : undefined
+              }
               cvId={cvId}
               questions={jobSourceMeta.applyQuestions}
               defaults={{

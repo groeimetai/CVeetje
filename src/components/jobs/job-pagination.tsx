@@ -1,24 +1,42 @@
 import { Link } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import type { JobSearchFilters } from './job-search-bar';
 
 interface JobPaginationProps {
   currentPage: number;
   totalPages: number;
   q?: string;
   location?: string;
+  filters?: JobSearchFilters;
 }
 
-function buildHref(page: number, q?: string, location?: string) {
+function buildHref(
+  page: number,
+  q?: string,
+  location?: string,
+  filters?: JobSearchFilters,
+) {
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   if (location) params.set('location', location);
+  if (filters?.employmentType) params.set('type', filters.employmentType);
+  if (filters?.remote) params.set('remote', '1');
+  if (filters?.inAppOnly) params.set('inApp', '1');
+  if (filters?.salaryMin) params.set('salaryMin', String(filters.salaryMin));
+  if (filters?.sort && filters.sort !== 'recent') params.set('sort', filters.sort);
   if (page > 1) params.set('page', String(page));
   const qs = params.toString();
   return `/jobs${qs ? `?${qs}` : ''}`;
 }
 
-export function JobPagination({ currentPage, totalPages, q, location }: JobPaginationProps) {
+export function JobPagination({
+  currentPage,
+  totalPages,
+  q,
+  location,
+  filters,
+}: JobPaginationProps) {
   if (totalPages <= 1) return null;
   const prev = Math.max(1, currentPage - 1);
   const next = Math.min(totalPages, currentPage + 1);
@@ -33,7 +51,7 @@ export function JobPagination({ currentPage, totalPages, q, location }: JobPagin
         asChild={currentPage > 1}
       >
         {currentPage > 1 ? (
-          <Link href={buildHref(prev, q, location)}>
+          <Link href={buildHref(prev, q, location, filters)}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             Vorige
           </Link>
@@ -54,7 +72,7 @@ export function JobPagination({ currentPage, totalPages, q, location }: JobPagin
         asChild={currentPage < totalPages}
       >
         {currentPage < totalPages ? (
-          <Link href={buildHref(next, q, location)}>
+          <Link href={buildHref(next, q, location, filters)}>
             Volgende
             <ChevronRight className="h-4 w-4 ml-1" />
           </Link>

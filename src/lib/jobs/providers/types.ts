@@ -40,11 +40,18 @@ export interface NormalizedJob {
   applyQuestions: ApplyQuestion[];
 }
 
+export type JobSortOption = 'recent' | 'salary' | 'relevance';
+
 export interface JobSearchParams {
   q?: string;
   location?: string;
   page?: number;
   resultsPerPage?: number;
+  employmentType?: string;
+  remote?: boolean;
+  salaryMin?: number;
+  inAppOnly?: boolean;
+  sort?: JobSortOption;
 }
 
 export interface JobSearchResult {

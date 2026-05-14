@@ -54,7 +54,7 @@ Copy `.env.example` → `.env.local`. Required:
 - `GITHUB_TOKEN` — feedback → GitHub issue creation (`groeimetai/CVeetje`)
 - `GITHUB_WEBHOOK_SECRET` — HMAC verify voor `/api/github/webhook`
 - `ADMIN_EMAIL` — initial admin (gebruikt door `/api/admin/setup`)
-- `ADZUNA_APP_ID` + `ADZUNA_API_KEY` — jobs board (optioneel)
+- `ADZUNA_APP_ID` + `ADZUNA_APP_KEY` — jobs board (optioneel)
 
 ## Folder map → waar zit de detail-CLAUDE.md
 
