@@ -413,6 +413,20 @@ function validateAndFixEditorialTokens(
   if (layoutArchetype !== 'editorial-spread') {
     decorElements = decorElements.filter(el => el !== 'marginalia');
   }
+  // sectionTreatment ↔ decor conflicts (renderer also defends against these):
+  //  - sidenote uses a 110px title column; decorative-numerals (36-56pt)
+  //    overflow into the item content area. Strip them.
+  //  - sidenote already has a kicker-style affordance. kicker-labels would
+  //    duplicate it.
+  //  - kicker treatment renders the section name via ::before; kicker-labels
+  //    layered on top makes two kickers.
+  if (sectionTreatment === 'sidenote') {
+    decorElements = decorElements.filter(el =>
+      el !== 'decorative-numerals' && el !== 'kicker-labels',
+    );
+  } else if (sectionTreatment === 'kicker') {
+    decorElements = decorElements.filter(el => el !== 'kicker-labels');
+  }
   // colored-section-titles requires a secondaryColor when policy is mono
   if (decorElements.includes('colored-section-titles') && colorPolicy === 'mono-accent') {
     // Allow it but the renderer falls back to accent

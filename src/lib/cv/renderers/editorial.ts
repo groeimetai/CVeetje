@@ -89,7 +89,7 @@ export function generateEditorialHTML(
 </head>
 <body>
   ${protection.watermark}
-  <div class="editorial-cv editorial-archetype-${archetype} editorial-grid-${editorial.grid} editorial-scale-${editorial.typographyScale} editorial-policy-${editorial.colorPolicy || 'mono-accent'} ${decorClasses}">
+  <div class="editorial-cv editorial-archetype-${archetype} editorial-grid-${editorial.grid} editorial-scale-${editorial.typographyScale} editorial-policy-${editorial.colorPolicy || 'mono-accent'} editorial-treatment-${editorial.sectionTreatment} ${decorClasses}">
     ${header}
     ${body}
   </div>
@@ -1394,19 +1394,30 @@ function getSectionTreatmentCSS(
       return `
         .editorial-section {
           display: grid;
-          grid-template-columns: 110px 1fr;
+          /* Widened from 110px to fit "EXPERIENCE" / "CERTIFICATIONS" at
+             uppercase + letter-spacing. Shorter labels (PROFILE, SKILLS)
+             still right-align cleanly. */
+          grid-template-columns: 160px 1fr;
           gap: 24px;
           align-items: start;
         }
         .editorial-section .section-title {
-          font-size: calc(var(--e-item-title) * 1);
+          font-size: calc(var(--e-item-title) * 0.95);
           text-transform: uppercase;
-          letter-spacing: 0.18em;
+          letter-spacing: 0.14em;
           font-weight: 600;
           color: ${colors.accent};
           border-right: 1px solid var(--e-rule);
           padding-right: 16px;
           text-align: right;
+          /* Prevent the section-number prefix from forcing a second line —
+             keep label and number on one line where they fit. */
+          line-height: 1.25;
+        }
+        /* In sidenote, the title IS the kicker — section-number prefix is
+           redundant and adds width that risks overflow. Hide it. */
+        .editorial-treatment-sidenote .editorial-section .section-title .section-number {
+          display: none;
         }
         .editorial-section > *:not(.section-title) {
           grid-column: 2;
@@ -1734,6 +1745,27 @@ function getDecorCSS(
       color: ${designColor};
       text-transform: uppercase;
       letter-spacing: 0.12em;
+    }
+  `;
+
+  // ============ Treatment ↔ decor conflict resolution =============
+  // Three incompatible combinations were producing visible overlap / dupes:
+  //
+  //  1. sidenote treatment puts the section title in a narrow 110px left
+  //     column. Layering a 36-56pt decorative numeral on top overflows the
+  //     column and crashes into the item content. Hide the numeral here.
+  //  2. sidenote treatment is already a kicker-style affordance — adding
+  //     the kicker-labels decor produces a duplicate kicker line.
+  //  3. kicker treatment already renders the section name as a kicker via
+  //     ::before. Layering kicker-labels on top duplicates it.
+  //
+  // These overrides are defensive: normalize() in the expert also strips the
+  // conflicting decor for new generations, but already-stored CVs need this.
+  css += `
+    .editorial-treatment-sidenote .editorial-section .decor-numeral { display: none; }
+    .editorial-treatment-sidenote.editorial-decor-kicker-labels .editorial-section::before,
+    .editorial-treatment-kicker.editorial-decor-kicker-labels .editorial-section::before {
+      display: none;
     }
   `;
 
