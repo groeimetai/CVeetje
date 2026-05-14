@@ -265,7 +265,10 @@ function generateBoldCSS(
       max-width: 820px;
       margin: 0 auto;
       background: var(--b-page-bg);
-      min-height: 1120px;
+      /* No base min-height — content drives the CV height. Archetype-specific
+         CSS may still set its own min-height (e.g. vertical-rail needs it).
+         Forcing a base min-height here padded sparse CVs with empty space
+         in single-page PDF export. */
       position: relative;
       overflow: hidden;
     }
@@ -484,7 +487,10 @@ function generateBoldCSS(
         min-height: auto;
         overflow: visible;
       }
-      .bold-section, .bold-item { break-inside: avoid; }
+      /* Only avoid breaking inside items, not whole sections. Avoiding on
+         sections caused entire sections to jump to the next A4 page when
+         they didn't quite fit at the bottom, leaving large empty bands. */
+      .bold-item { break-inside: avoid; }
     }
   `;
 }

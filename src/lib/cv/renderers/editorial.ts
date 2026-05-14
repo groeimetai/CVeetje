@@ -206,7 +206,9 @@ function generateEditorialCSS(
       margin: 0 auto;
       background: var(--e-page-bg);
       padding: 52px 56px 64px;
-      min-height: 1000px;
+      /* No min-height — content drives the CV height. The preview iframe
+         has its own 800px min-height (cv-preview.tsx), and forcing a height
+         here pads sparse CVs with empty cream in single-page PDF export. */
     }
 
     /* ============ Header ============ */
@@ -592,11 +594,27 @@ function generateEditorialCSS(
       .editorial-grid-asymmetric-70-30 .editorial-body {
         gap: 28px;
       }
-      .editorial-section,
+      /* break-inside: avoid only on items, not whole sections.
+         Avoiding on whole sections caused entire sections to jump to the
+         next page when they didn't quite fit at the bottom, leaving large
+         empty bands at page boundaries. Items are short and atomic; sections
+         can flow naturally across pages. */
       .editorial-section .item {
         break-inside: avoid;
       }
-      /* Marginalia: narrow side column in print */
+      /* Tighten archetype spacing in print so A4 pagination doesn't accumulate gaps. */
+      .editorial-archetype-manuscript-mono .editorial-section {
+        margin-top: 24px;
+      }
+      .editorial-archetype-asymmetric-feature .editorial-section,
+      .editorial-archetype-feature-sidebar .editorial-main .editorial-section,
+      .editorial-archetype-magazine-column .editorial-section {
+        margin-top: 20px;
+      }
+      .editorial-section + .editorial-section {
+        padding-top: 20px;
+      }
+      /* Marginalia: keep item with its margin-note */
       .editorial-decor-marginalia .editorial-section .item {
         page-break-inside: avoid;
       }
