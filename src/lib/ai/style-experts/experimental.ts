@@ -33,14 +33,68 @@ const LOG_TAG = 'Style Gen [experimental]';
 // ============ Bold schema ============
 
 const boldSchema = z.object({
+  // ===== Top-level archetype — THE most important decision =====
+  layoutArchetype: z.enum([
+    'sidebar-canva',
+    'manifesto',
+    'magazine-cover',
+    'editorial-inversion',
+    'brutalist-grid',
+    'vertical-rail',
+    'mosaic',
+  ]).optional().describe(
+    `THE top-level page structure decision — pick ONE first, then everything else
+    layers on top:
+    - sidebar-canva: classic Canva look (use sparingly — feels safest)
+    - manifesto: huge typographic opening statement, compressed grid below
+    - magazine-cover: name treated as cover headline filling the upper half
+    - editorial-inversion: lead paragraph on top, contact at bottom, photo right
+    - brutalist-grid: hard rectilinear N-column grid, no sidebar (Vignelli / Massimo)
+    - vertical-rail: name as a vertical strip running the full left edge (Saville)
+    - mosaic: asymmetric mosaic of colored blocks — no rigid columns (Kruger)
+
+    DEFAULT BIAS: pick one of manifesto / brutalist-grid / vertical-rail / mosaic /
+    editorial-inversion / magazine-cover. Only fall back to sidebar-canva when the
+    role / context strongly demands restraint (e.g. legal, regulated banking).`,
+  ),
+  columnCount: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional().describe(
+    'Number of columns in the main content area. 1 = single editorial column, 2 = standard grid, 3-4 = dense brutalist. Only consumed by manifesto / brutalist-grid / mosaic.',
+  ),
+  backgroundNumeral: z.enum(['none', 'initials', 'year', 'section-number', 'role']).optional().describe(
+    `Optional huge faded background element that anchors the page:
+    - initials: candidate's initials at giant scale, ghosted
+    - year: a year (current or first year of experience) as page anchor
+    - section-number: big numerals per section bleeding into the background
+    - role: first word of target role at editorial scale
+    - none: no background numeral`,
+  ),
+  marginalia: z.enum(['none', 'vertical-strip', 'numbered', 'kicker-callouts']).optional().describe(
+    `Side-margin annotation treatment:
+    - vertical-strip: vertical-rl text rotated along one page edge
+    - numbered: small numbered annotations beside sections
+    - kicker-callouts: short kicker labels floated into the margin
+    - none: no marginalia`,
+  ),
+  paletteSaturation: z.enum(['monochrome-plus-one', 'duotone', 'tri-tone', 'full-palette']).optional().describe(
+    `How many palette colors to actually deploy:
+    - monochrome-plus-one: greyscale + single screaming accent (Kruger)
+    - duotone: two strong colors only, riso vibe
+    - tri-tone: three colors in equal weight, museum-poster feel
+    - full-palette: deploy all 5 palette colors freely`,
+  ),
+  manifestoOpener: z.boolean().optional().describe(
+    'When true, the summary section is rendered as a manifesto-style oversized opening statement instead of normal body text. Strongest in manifesto / magazine-cover / editorial-inversion archetypes.',
+  ),
+
+  // ===== Layered primitives (apply within the chosen archetype) =====
   headerLayout: z.enum(['hero-band', 'split-photo', 'tiled', 'asymmetric-burst']).optional().describe(
-    'Header composition: hero-band (full-width gradient/color band) | split-photo (photo block + colored block) | tiled (colored tiles grid) | asymmetric-burst (diagonal gradient)',
+    'Header composition (only consumed by sidebar-canva archetype — other archetypes own their own header treatment).',
   ),
   sidebarStyle: z.enum(['solid-color', 'gradient', 'photo-hero', 'transparent']).optional().describe(
-    'Sidebar treatment: solid-color | gradient | photo-hero (only if photo available) | transparent',
+    'Sidebar treatment (only consumed by sidebar-canva archetype).',
   ),
   skillStyle: z.enum(['bars-gradient', 'dots-rating', 'icon-tagged', 'colored-pills']).optional().describe(
-    'Skills in sidebar: bars-gradient | dots-rating | icon-tagged | colored-pills',
+    'Skills rendering style.',
   ),
   photoTreatment: z.enum(['circle-halo', 'squircle', 'color-overlay', 'badge-framed']).optional().describe(
     'Photo frame treatment.',
@@ -91,6 +145,19 @@ const experimentalSchema = baseDesignTokensSchema.extend({
 // ============ Bold pools ============
 
 const BOLD_POOLS = {
+  // The "wild" archetypes — sidebar-canva is intentionally excluded from
+  // the rotation pool so the AI biases away from the safest layout. The
+  // schema still allows it; only `rotateLeastUsed` won't pull it back.
+  layoutArchetype: [
+    'manifesto', 'magazine-cover', 'editorial-inversion', 'brutalist-grid',
+    'vertical-rail', 'mosaic',
+  ] as const,
+  columnCount: [1, 2, 3, 4] as const,
+  backgroundNumeral: ['none', 'initials', 'year', 'section-number', 'role'] as const,
+  marginalia: ['none', 'vertical-strip', 'numbered', 'kicker-callouts'] as const,
+  paletteSaturation: ['monochrome-plus-one', 'duotone', 'tri-tone', 'full-palette'] as const,
+  manifestoOpener: [true, false] as const,
+
   headerLayout: ['hero-band', 'split-photo', 'tiled', 'asymmetric-burst'] as const,
   sidebarStyle: ['solid-color', 'gradient', 'photo-hero', 'transparent'] as const,
   skillStyle: ['bars-gradient', 'dots-rating', 'icon-tagged', 'colored-pills'] as const,
@@ -199,13 +266,49 @@ const avantGardePalettes: AvantPalette[] = [
 
 // ============ Bold validator ============
 
+// All possible archetypes the schema allows. Pools above intentionally
+// omit sidebar-canva to bias rotation, but we still need to validate it.
+const ALL_ARCHETYPES = [
+  'sidebar-canva', 'manifesto', 'magazine-cover', 'editorial-inversion',
+  'brutalist-grid', 'vertical-rail', 'mosaic',
+] as const;
+
 function validateAndFixBoldTokens(
   raw: CVDesignTokens['bold'] | undefined,
   showPhoto: boolean,
 ): NonNullable<CVDesignTokens['bold']> {
   const isValid = <T extends string>(val: unknown, allowed: readonly T[]): val is T =>
     typeof val === 'string' && allowed.includes(val as T);
+  const isValidNum = <T extends number>(val: unknown, allowed: readonly T[]): val is T =>
+    typeof val === 'number' && allowed.includes(val as T);
 
+  // ===== New v3 primitives =====
+  const layoutArchetype = isValid(raw?.layoutArchetype, ALL_ARCHETYPES)
+    ? raw!.layoutArchetype
+    : pickFrom(BOLD_POOLS.layoutArchetype);
+
+  const columnCount = isValidNum(raw?.columnCount, BOLD_POOLS.columnCount)
+    ? raw!.columnCount
+    : pickFrom(BOLD_POOLS.columnCount);
+
+  const backgroundNumeral = isValid(raw?.backgroundNumeral, BOLD_POOLS.backgroundNumeral)
+    ? raw!.backgroundNumeral
+    : pickFrom(BOLD_POOLS.backgroundNumeral);
+
+  const marginalia = isValid(raw?.marginalia, BOLD_POOLS.marginalia)
+    ? raw!.marginalia
+    : pickFrom(BOLD_POOLS.marginalia);
+
+  const paletteSaturation = isValid(raw?.paletteSaturation, BOLD_POOLS.paletteSaturation)
+    ? raw!.paletteSaturation
+    : pickFrom(BOLD_POOLS.paletteSaturation);
+
+  const manifestoOpener = typeof raw?.manifestoOpener === 'boolean'
+    ? raw!.manifestoOpener
+    : (layoutArchetype === 'manifesto' || layoutArchetype === 'magazine-cover'
+      || layoutArchetype === 'editorial-inversion');
+
+  // ===== Legacy primitives =====
   const headerLayout = isValid(raw?.headerLayout, BOLD_POOLS.headerLayout)
     ? raw!.headerLayout
     : pickFrom(BOLD_POOLS.headerLayout);
@@ -223,11 +326,19 @@ function validateAndFixBoldTokens(
   const gradientDirection = isValid(raw?.gradientDirection, BOLD_POOLS.gradientDirection)
     ? raw!.gradientDirection
     : pickFrom(BOLD_POOLS.gradientDirection);
-  const surfaceTexture = isValid(raw?.surfaceTexture, BOLD_POOLS.surfaceTexture)
+  let surfaceTexture = isValid(raw?.surfaceTexture, BOLD_POOLS.surfaceTexture)
     ? raw!.surfaceTexture
     : pickFrom(BOLD_POOLS.surfaceTexture);
+  // Experimental should virtually never be SaaS-flat — bump 'none' to riso-grain.
+  if (surfaceTexture === 'none') surfaceTexture = 'riso-grain';
 
   return {
+    layoutArchetype,
+    columnCount,
+    backgroundNumeral,
+    marginalia,
+    paletteSaturation,
+    manifestoOpener,
     headerLayout,
     sidebarStyle,
     skillStyle,
@@ -246,125 +357,204 @@ function buildSystemPrompt(hasPhoto: boolean): string {
   const constraints = creativityConstraints.experimental;
   return `${commonSystemHeader(hasPhoto)}
 
-*** EXPERIMENTAL MODE — AVANT-GARDE / GALLERY ***
+*** EXPERIMENTAL MODE — ART-DIRECTED, OVERBOARD, ZERO COMPROMISE ***
 
-Reference points: MSCHF, Toilet Paper magazine, Barbara Kruger, David Carson,
+You are the ART DIRECTOR for this CV, not a template picker. The brief:
+*overboard*. The result should NOT resemble a standard CV. Anything but
+boring. A recruiter looking at it should think "this person had it MADE,
+not generated."
+
+References: MSCHF, Toilet Paper magazine, Barbara Kruger, David Carson,
 Peter Saville, Aries Moross, Stedelijk Museum identity, Centre Pompidou
-posters. The goal is "made by a designer with a voice and an opinion", NOT
-"made by a SaaS template".
+posters, Massimo Vignelli, Wim Crouwel, Jonathan Castro, John Maeda.
 
-What this means concretely:
-- Colors that CLASH deliberately (hot pink + forest green, red + teal,
-  mustard + plum). Not safe Tailwind complements.
-- Typography as a statement, not a label. Section titles can be ENORMOUS.
-  Stacked uppercase, overlapping blocks, gradient fills — all allowed.
-- Flat areas of saturated color PLUS texture (halftone dots, riso-print
-  grain, mis-registered offset) so surfaces feel printed / made, not SaaS-flat.
-- Compositional tension: asymmetric, off-kilter, blocks that aren't aligned
-  to a grid. Intentional imbalance.
-- NOT "Canva nor Linear nor Notion nor Stripe". That family is creative
-  territory (editorial). Experimental is galleries, zines, museum shops.
+This level MUST clearly out-do "creative" — creative is an editorial
+magazine layout, this is a gallery wall, a zine, a manifesto poster.
 
-A dedicated bold renderer handles this level. Fill the \`bold\` object:
+==================================================================
+STEP 1 — PICK A LAYOUT ARCHETYPE  (this is the BIG decision)
+==================================================================
 
-THE BOLD PRIMITIVES:
+Pick \`bold.layoutArchetype\`. This radically restructures the WHOLE
+page — not just a header variant, an entire DOM skeleton.
 
-- **headerLayout** — hero-band | split-photo | tiled | asymmetric-burst
-  tiled is strongest for avant-garde (grid of clashing color blocks).
-  asymmetric-burst also works (diagonal color field bleeding off the edge).
+- **manifesto** — Huge typographic opening (the summary becomes a
+  poster-scale statement). Below: a compressed N-column grid of
+  experience + education + skills. No sidebar. Like a zine cover.
 
-- **sidebarStyle** — solid-color | gradient | photo-hero | transparent
-  Sidebar is always present. For avant-garde, solid-color in the accent
-  (not primary) makes a stronger clash; gradient with duotone-split is
-  another strong move.
+- **magazine-cover** — Name treated as a magazine cover headline filling
+  the upper half of the page (ENORMOUS display type, kicker labels in
+  smaller caps, oversized issue-number style). Story content flows
+  below in a single dense column.
 
-- **skillStyle** — bars-gradient | dots-rating | icon-tagged | colored-pills
-  colored-pills in a clashing accent feels most zine-like; bars-gradient
-  is the loudest.
+- **editorial-inversion** — Inverts the conventional order: a "lead
+  paragraph" summary at the very top, photo on the right, experience
+  in the middle, contact info pushed to the BOTTOM of the page (not
+  the top — that's the inversion). Feels like a long-form article.
 
-- **photoTreatment** — circle-halo | squircle | color-overlay | badge-framed
-  color-overlay with a saturated tint is the most art-directed look.
+- **brutalist-grid** — Hard rectilinear N-column grid (3 or 4 columns).
+  No sidebar. Every section is its own bordered cell. Vignelli /
+  Massimo Vignelli / Crouwel. Sharp corners, generous whitespace
+  inside cells, blocks of pure color used as section dividers.
 
-- **accentShape** — diagonal-stripe | angled-corner | colored-badge | hex-pattern
-  diagonal-stripe for screen-printed feel, hex-pattern for riso background.
+- **vertical-rail** — Name set as a VERTICAL strip running the full
+  height of the left page edge (writing-mode vertical-rl, oversized
+  caps). The rest of the content sits in a single column to the right.
+  Peter Saville / album-sleeve energy.
 
-- **iconTreatment** — solid-filled | duotone | line-with-accent
+- **mosaic** — Asymmetric mosaic of colored blocks. Sections live in
+  rectangles of different sizes and clashing colors arranged in a
+  Mondrian-ish composition. Some blocks have a section title, some
+  have body text, some are just pure color "breathing" blocks. Barbara
+  Kruger / De Stijl reprint.
+
+- **sidebar-canva** — The classic Canva sidebar layout. ONLY use this
+  when the role explicitly demands restraint (regulated banking, big-4
+  audit, government). For most experimental CVs this is OFF THE TABLE.
+
+DEFAULT BIAS: choose anything EXCEPT sidebar-canva. If you find
+yourself reaching for sidebar-canva, push back — the user explicitly
+asked for "anything but boring". Pick the archetype the role can
+SUPPORT, not the safest one.
+
+==================================================================
+STEP 2 — LAYER COMPOSITIONAL PRIMITIVES
+==================================================================
+
+- **columnCount** — 1 | 2 | 3 | 4. Number of columns in the main
+  content grid. Use 1 for single editorial column. 2 for standard.
+  3-4 for dense brutalist. Only consumed by manifesto, brutalist-grid,
+  mosaic.
+
+- **backgroundNumeral** — none | initials | year | section-number | role
+  A huge faded anchor element behind the content. Common in editorial
+  design (think: massive ghosted "01" or "2026" or "DESIGN" sitting
+  behind a column of text). Adds depth + scale. Use OFTEN.
+
+- **marginalia** — none | vertical-strip | numbered | kicker-callouts
+  Side-margin annotations. vertical-strip = vertical text running on
+  one edge; numbered = small numbered footnotes beside sections;
+  kicker-callouts = short kicker labels floating in margins.
+
+- **paletteSaturation** — monochrome-plus-one | duotone | tri-tone | full-palette
+  How aggressively to use the palette. monochrome-plus-one = greyscale
+  + one screaming accent (Kruger). duotone = two strong colors only.
+  tri-tone = three colors equal weight. full-palette = use all 5.
+
+- **manifestoOpener** — boolean. When true, the summary becomes a
+  manifesto-scale statement at the top of the page. Strongest with
+  manifesto, magazine-cover, editorial-inversion.
+
+==================================================================
+STEP 3 — LAYERED PRIMITIVES (apply within chosen archetype)
+==================================================================
 
 - **headingStyle** — oversized-numbered | kicker-bar | gradient-text | bracketed | stacked-caps | overlap-block
-  For avant-garde: stacked-caps (title vertical, ENORMOUS — Peter Saville)
-  and overlap-block (title set against a colored block that extends past
-  it — Kruger) are the strongest. oversized-numbered also still works.
+  For avant-garde: stacked-caps and overlap-block are strongest.
 
 - **gradientDirection** — none | linear-vertical | linear-diagonal | radial-burst | duotone-split | offset-clash
-  duotone-split creates a hard edge between two colors (riso energy).
-  offset-clash puts two color bands next to each other without blending.
+  duotone-split = hard edge, riso energy. offset-clash = two contrasting
+  bands. radial-burst = museum-poster.
 
-- **surfaceTexture** — none | halftone | riso-grain | screen-print | stripe-texture
-  DO NOT leave at 'none' for this level. Texture is what lifts the design
-  out of the "SaaS flat" look. halftone = dots, riso-grain = noise,
-  screen-print = slight offset misregistration, stripe-texture = fine lines.
+- **surfaceTexture** — halftone | riso-grain | screen-print | stripe-texture
+  REQUIRED. Pick a non-'none' value. This is what lifts the design out
+  of "SaaS flat".
 
-REQUIRED BASE TOKENS:
-- showPhoto: ${hasPhoto ? 'true' : 'false'}
-- useIcons: true
-- roundedCorners: often false for avant-garde (sharp corners feel more gallery)
-- experienceDescriptionFormat: 'bullets'
-- themeBase: 'bold' or 'creative'
+- **skillStyle, photoTreatment, accentShape, iconTreatment** — as before,
+  pick whatever fits the archetype. These get used regardless.
+
+- **headerLayout, sidebarStyle** — Only matter for sidebar-canva
+  archetype; ignored by other archetypes. Still fill them.
+
+==================================================================
+COLORS — STATEMENT, NOT DECORATION
+==================================================================
+
+Experimental EXISTS to use color as a statement. The palette MUST be
+unexpected. NEVER reach for Tailwind defaults (#0891b2, #be185d,
+#4f46e5, #f59e0b) — those are SaaS dashboard colors and the user will
+spot them immediately.
+
+Off-key combinations that work:
+- hot-pink + forest-green (Aries Moross)
+- red + teal (riso-print)
+- mustard + aubergine plum (Bauhaus reprint)
+- electric-violet + dusty-olive (Stedelijk)
+- sage-green + hot-coral (Apartamento)
+- bone-white + pure-black + one screaming red (Kruger / Vignelli)
+- navy + mustard + dusty-pink (1970s art-book)
+- terracotta + deep-teal (Centre Pompidou ceramics)
+- black + single neon-yellow accent (Kunsthalle Basel)
+- electric-blue + hot-pink (riso duotone)
+
+Match palette to paletteSaturation:
+- monochrome-plus-one → primary near-black, accent loud (red/yellow/pink)
+- duotone → two strong colors of equal weight (red+teal, pink+blue)
+- tri-tone → three confident colors (navy/mustard/pink, terracotta/teal/cream)
+- full-palette → all 5 palette tokens get airtime
+
+==================================================================
+TYPE
+==================================================================
 
 FONTS (pick from): ${constraints.allowedFontPairings.join(' | ')}
 - oswald-source-sans = condensed impact (David Carson / concert posters)
 - dm-serif-dm-sans = sharp editorial serif
-- playfair-inter = literary with contrast
+- playfair-inter = literary high-contrast
 - space-grotesk-work-sans = techno-gallery (Kunsthalle)
-- montserrat-open-sans = geometric assertive
+- libre-baskerville-source-sans = old-school book editorial
+- merriweather-source-sans = serif workhorse
 
-COLORS: the whole reason you're in experimental is to USE COLOR AS A
-STATEMENT. The AI-picked color-palette MUST be unexpected. Copy the
-reasoning from the examples below, then override with something ELSE that
-still clashes — don't just reuse the same palette twice in a row.
+For manifesto / magazine-cover: pick oswald or dm-serif (display weight matters).
+For brutalist-grid / vertical-rail: oswald or space-grotesk.
+For editorial-inversion: playfair, libre-baskerville, dm-serif (long-form serif).
 
-Do NOT reach for Tailwind defaults (#0891b2, #be185d, #4f46e5, #f59e0b).
-Those feel like a SaaS dashboard. Reach for off-key combinations:
-- hot-pink + forest-green
-- red + teal (riso-print)
-- mustard + aubergine plum
-- electric-violet + dusty-olive
-- sage-green + hot-coral
-- bone-white + pure-black + one screaming red
-- navy + mustard + dusty-pink
-- terracotta + deep-teal
-- black + single neon-yellow accent
+==================================================================
+REQUIRED BASE TOKENS
+==================================================================
 
-EXAMPLE COMBINATIONS (copy the energy, vary the specifics):
+- showPhoto: ${hasPhoto ? 'true' : 'false'}
+- useIcons: true
+- roundedCorners: false (sharp corners feel more gallery)
+- experienceDescriptionFormat: 'bullets'
+- themeBase: 'bold' or 'creative'
 
-1. *Gallery curator* — tiled header, solid-color sidebar, colored-pills
-   skills, color-overlay photo, diagonal-stripe accent, solid-filled icons,
-   stacked-caps headings, duotone-split gradient, halftone texture.
-   Primary #0f0f0f, accent #d9322b. Font: oswald-source-sans.
+==================================================================
+THE REJECTION TEST
+==================================================================
 
-2. *Art director / publisher* — asymmetric-burst header, gradient sidebar,
-   bars-gradient skills, squircle photo, colored-badge accent,
-   line-with-accent icons, overlap-block headings, offset-clash gradient,
-   screen-print texture. Primary #1e2847, accent #d6a42b. Font: dm-serif-dm-sans.
+Before finalising, ask: "does this look like a CV someone could have
+made in Canva in 10 minutes?" If yes, START OVER. The brief is
+overboard, art-directed, made-by-a-person. Sidebar-canva archetype +
+default colors = automatic fail.
 
-3. *Independent designer / zine editor* — tiled header, solid-color sidebar
-   (in the accent), dots-rating skills, color-overlay photo, hex-pattern
-   accent, duotone icons, oversized-numbered headings, duotone-split
-   gradient, riso-grain texture. Primary #d73838, accent #1d8a99. Font:
-   space-grotesk-work-sans.
+Two experimental CVs for the same industry should share NO archetype
+and NO palette.
 
-4. *Creative technologist* — hero-band header, gradient sidebar,
-   icon-tagged skills, badge-framed photo, angled-corner accent, solid-filled
-   icons, gradient-text headings, linear-diagonal gradient, stripe-texture.
-   Primary #6b21a8, accent #6e7e3c. Font: montserrat-open-sans.
+==================================================================
+ARCHETYPE → ENERGY MATCHING
+==================================================================
 
-5. *Fashion / cultural role* — split-photo header, solid-color sidebar,
-   colored-pills skills, badge-framed photo, colored-badge accent,
-   solid-filled icons, overlap-block headings, none gradient, halftone
-   texture. Primary #e91e63, accent #1b5e20. Font: playfair-inter.
+1. Manifesto — "I'M HERE, READ ME" energy. Designers, journalists,
+   founders, activists, creative directors.
 
-Vary aggressively. Two experimental CVs for the same industry should share
-NO primitives in common.
+2. Magazine-cover — Cultural curator, fashion editor, cinematographer,
+   art director. Anyone whose role is a brand of one.
+
+3. Editorial-inversion — Long-form storyteller. Strategist,
+   policymaker, researcher, writer, designer with depth.
+
+4. Brutalist-grid — Architect, industrial designer, engineer with
+   strong design taste, museum identity work, art director with
+   Swiss-school taste.
+
+5. Vertical-rail — Music industry, gallery curator, music producer,
+   anyone with Saville reference. Also works for boutique consultancy.
+
+6. Mosaic — Visual artist, photographer, multimedia, brand
+   strategist, anyone who needs visual variety.
+
+7. Sidebar-canva — RESERVED for regulated/conservative roles only.
 ${commonSectionOrderFooter}`;
 }
 
@@ -402,39 +592,77 @@ should come from the avant-garde family.
     ? BOLD_POOLS.sidebarStyle
     : BOLD_POOLS.sidebarStyle.filter(s => s !== 'photo-hero');
   const palette = pickFrom(avantGardePalettes);
+  const archetypeNudge = pickFrom(BOLD_POOLS.layoutArchetype);
+  const paletteSatNudge = pickFrom(BOLD_POOLS.paletteSaturation);
+  const numeralNudge = pickFrom(BOLD_POOLS.backgroundNumeral.filter(n => n !== 'none'));
+  const marginaliaNudge = pickFrom(BOLD_POOLS.marginalia);
+  const colCountNudge = pickFrom(BOLD_POOLS.columnCount);
   prompt += `
-VARIATION NUDGE — pick a concrete avant-garde palette + primitives:
-- Suggested palette: "${palette.name}" — ${palette.description} (primary suggestion ${palette.primary}, accent ${palette.accent})
-- Try bold.headerLayout = "${pickFrom(BOLD_POOLS.headerLayout)}"
-- Try bold.sidebarStyle = "${pickFrom(sidebarPool)}"
-- Try bold.headingStyle = "${pickFrom(BOLD_POOLS.headingStyle)}"
-- Try bold.gradientDirection = "${pickFrom(BOLD_POOLS.gradientDirection)}"
-- Try bold.surfaceTexture = "${pickFrom(BOLD_POOLS.surfaceTexture.filter(t => t !== 'none'))}"
-- Try bold.skillStyle = "${pickFrom(BOLD_POOLS.skillStyle)}"
+VARIATION NUDGE — concrete starting point for this round (override only
+if the role pulls strongly elsewhere):
 
-You MAY override these if the job context strongly pulls elsewhere, but
-DO use an avant-garde palette (not a Tailwind default).
+ARCHETYPE: try \`bold.layoutArchetype\` = "${archetypeNudge}"
+  → If this doesn't fit the role, pick a DIFFERENT non-sidebar-canva
+    archetype. Do NOT fall back to sidebar-canva unless the role is
+    regulated/conservative.
+
+PALETTE: "${palette.name}" — ${palette.description}
+  (suggested primary ${palette.primary}, accent ${palette.accent})
+PALETTE SATURATION: try \`bold.paletteSaturation\` = "${paletteSatNudge}"
+
+LAYOUT DETAILS:
+- columnCount = ${colCountNudge}  (override based on archetype: brutalist-grid needs 3 or 4, manifesto often 2, mosaic 2 or 3)
+- backgroundNumeral = "${numeralNudge}"
+- marginalia = "${marginaliaNudge}"
+- manifestoOpener = ${archetypeNudge === 'manifesto' || archetypeNudge === 'magazine-cover' || archetypeNudge === 'editorial-inversion'}
+
+LAYERED:
+- bold.headingStyle = "${pickFrom(BOLD_POOLS.headingStyle)}"
+- bold.gradientDirection = "${pickFrom(BOLD_POOLS.gradientDirection)}"
+- bold.surfaceTexture = "${pickFrom(BOLD_POOLS.surfaceTexture.filter(t => t !== 'none'))}"
+- bold.skillStyle = "${pickFrom(BOLD_POOLS.skillStyle)}"
+- bold.accentShape = "${pickFrom(BOLD_POOLS.accentShape)}"
+- bold.headerLayout = "${pickFrom(BOLD_POOLS.headerLayout)}"  (ignored unless archetype is sidebar-canva)
+- bold.sidebarStyle = "${pickFrom(sidebarPool)}"  (ignored unless archetype is sidebar-canva)
 `;
 
   prompt += `
-Generate tokens for the AVANT-GARDE BOLD RENDERER. The most important part
-is the \`bold\` object — fill all 9 fields INCLUDING surfaceTexture.
+==================================================================
+THE BRIEF
+==================================================================
 
-Non-negotiables:
-1. Fill every field in \`bold\`. Do NOT set surfaceTexture = 'none' — pick
-   at least a subtle texture (riso-grain if unsure).
-2. Use an avant-garde palette (see examples). Tailwind-default saturated
-   blues/cyans/magentas are NOT allowed as the whole palette.
-3. Vary from previous CVs — this is experimental, repetition is the
-   enemy. If history shows a primitive was used, pick a different one.
+You're designing a CV that goes OVERBOARD. The user explicitly asked
+for "anything but boring". Your output must include:
 
-IMPORTANT: think like a museum exhibition designer or a zine art director
-commissioned for this specific role. NOT a Canva template picker.
+1. \`bold.layoutArchetype\` — pick something OTHER than sidebar-canva
+   unless the role truly demands restraint. The default expectation is
+   manifesto, magazine-cover, brutalist-grid, vertical-rail, mosaic, or
+   editorial-inversion.
+
+2. A complete \`bold\` object — ALL fields filled, including the new
+   archetype-driver fields (layoutArchetype, columnCount,
+   backgroundNumeral, marginalia, paletteSaturation, manifestoOpener)
+   AND the layered primitives (headingStyle, gradientDirection,
+   surfaceTexture etc).
+
+3. An avant-garde palette (NOT Tailwind defaults). Bias toward
+   off-key combinations.
+
+4. surfaceTexture != 'none'. Always texture.
+
+5. nameStyle = 'uppercase' or 'extra-bold'. Never 'normal'.
+
+6. headerFullBleed = true unless the archetype is sidebar-canva.
+
+REJECTION TEST: If your output could plausibly come from Canva in 10
+minutes, REJECT IT and pick a wilder combination. The whole point of
+experimental is the strong opinion.
 
 Priority order:
 1. Respect the target vacancy and company context
 2. Respect explicit user style instructions
-3. Then use avant-garde references/examples only as a language, never as a fixed template`;
+3. Then use avant-garde references/examples as a language, never as a fixed template
+4. Always pick the wildest archetype the role can plausibly carry`;
 
   return prompt;
 }
@@ -487,6 +715,12 @@ function getFallback(industry?: string): CVDesignTokens {
     skillTagStyle: 'outlined',
     pageBackground: '#faf7f2',
     bold: {
+      layoutArchetype: 'manifesto',
+      columnCount: 2,
+      backgroundNumeral: 'initials',
+      marginalia: 'numbered',
+      paletteSaturation: 'duotone',
+      manifestoOpener: true,
       headerLayout: 'tiled',
       sidebarStyle: 'solid-color',
       skillStyle: 'colored-pills',
@@ -519,6 +753,12 @@ function getContextualFallback(ctx: PromptContext): CVDesignTokens {
         muted: '#5d5d5d',
       },
       bold: {
+        layoutArchetype: 'editorial-inversion',
+        columnCount: 1,
+        backgroundNumeral: 'year',
+        marginalia: 'numbered',
+        paletteSaturation: 'tri-tone',
+        manifestoOpener: true,
         headerLayout: 'asymmetric-burst',
         sidebarStyle: 'gradient',
         skillStyle: 'dots-rating',
@@ -547,6 +787,12 @@ function getContextualFallback(ctx: PromptContext): CVDesignTokens {
         muted: '#595959',
       },
       bold: {
+        layoutArchetype: 'mosaic',
+        columnCount: 3,
+        backgroundNumeral: 'initials',
+        marginalia: 'vertical-strip',
+        paletteSaturation: 'duotone',
+        manifestoOpener: false,
         headerLayout: 'tiled',
         sidebarStyle: 'solid-color',
         skillStyle: 'colored-pills',
@@ -581,24 +827,40 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
     tokens.showPhoto = ctx.hasPhoto;
   }
 
-  // Bold always has a sidebar
-  if (tokens.layout !== 'sidebar-left' && tokens.layout !== 'sidebar-right') {
-    tokens.layout = Math.random() > 0.5 ? 'sidebar-left' : 'sidebar-right';
-  }
-  if (!tokens.sidebarSections || tokens.sidebarSections.length === 0) {
-    tokens.sidebarSections = ['skills', 'languages', 'certifications'];
-  }
-
+  // Pre-validate bold so we know the archetype before deciding layout.
   tokens.bold = validateAndFixBoldTokens(tokens.bold, !!tokens.showPhoto);
+
+  // Only the sidebar-canva archetype needs the sidebar-* layout flag. The
+  // other archetypes own their own structure inside bold.ts.
+  if (tokens.bold.layoutArchetype === 'sidebar-canva') {
+    if (tokens.layout !== 'sidebar-left' && tokens.layout !== 'sidebar-right') {
+      tokens.layout = Math.random() > 0.5 ? 'sidebar-left' : 'sidebar-right';
+    }
+    if (!tokens.sidebarSections || tokens.sidebarSections.length === 0) {
+      tokens.sidebarSections = ['skills', 'languages', 'certifications'];
+    }
+  } else {
+    // Non-sidebar archetypes default to single-column; sidebarSections is moot.
+    tokens.layout = 'single-column';
+    tokens.sidebarSections = [];
+  }
 
   applyBaseValidations(tokens, LOG_TAG);
   clearOtherRendererTokens(tokens, 'bold');
 
   // Rotate the bold primitives across history — THE variation fix.
+  // rotateLeastUsed only handles string values, so columnCount stays a
+  // plain field (rotation handled by validator's pickFrom for fresh runs).
   rotateLeastUsed(
     tokens,
     ctx.styleHistory,
     {
+      // ===== Archetype rotation is the most important — bias diversity at the top =====
+      'bold.layoutArchetype': BOLD_POOLS.layoutArchetype,
+      'bold.backgroundNumeral': BOLD_POOLS.backgroundNumeral,
+      'bold.marginalia': BOLD_POOLS.marginalia,
+      'bold.paletteSaturation': BOLD_POOLS.paletteSaturation,
+      // ===== Layered primitives =====
       'bold.headerLayout': BOLD_POOLS.headerLayout,
       'bold.sidebarStyle': tokens.showPhoto
         ? BOLD_POOLS.sidebarStyle
@@ -610,13 +872,31 @@ function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
       'bold.photoTreatment': BOLD_POOLS.photoTreatment,
       'bold.surfaceTexture': BOLD_POOLS.surfaceTexture,
       fontPairing: constraints.allowedFontPairings,
-      layout: ['sidebar-left', 'sidebar-right'],
+      // Only rotate the layout token for sidebar-canva archetype; the
+      // other archetypes don't use this field.
+      ...(tokens.bold.layoutArchetype === 'sidebar-canva'
+        ? { layout: ['sidebar-left', 'sidebar-right'] }
+        : {}),
     },
     LOG_TAG,
   );
 
   // Final pass after rotation
   tokens.bold = validateAndFixBoldTokens(tokens.bold, !!tokens.showPhoto);
+
+  // Final consistency: archetype may have flipped during rotation, so
+  // re-align layout / sidebarSections to match the *final* archetype.
+  if (tokens.bold.layoutArchetype === 'sidebar-canva') {
+    if (tokens.layout !== 'sidebar-left' && tokens.layout !== 'sidebar-right') {
+      tokens.layout = 'sidebar-left';
+    }
+    if (!tokens.sidebarSections || tokens.sidebarSections.length === 0) {
+      tokens.sidebarSections = ['skills', 'languages', 'certifications'];
+    }
+  } else {
+    tokens.layout = 'single-column';
+    tokens.sidebarSections = [];
+  }
 
   return tokens;
 }

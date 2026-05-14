@@ -31,6 +31,9 @@ import type {
   BoldSidebarStyle,
   BoldPhotoTreatment,
   BoldSkillStyle,
+  BoldLayoutArchetype,
+  BoldBackgroundNumeral,
+  BoldMarginaliaStyle,
 } from '@/types/design-tokens';
 import { getFontUrls, fontPairings } from '../templates/themes';
 import { splitInterest } from '../interest-format';
@@ -59,26 +62,27 @@ export function generateBoldHTML(
   const previewProtection = options?.previewProtection ?? false;
   const watermarkText = options?.watermarkText ?? 'PREVIEW';
 
-  const css = generateBoldCSS(tokens, bold, fontConfig);
-  const header = generateBoldHeader(
+  const protection = buildProtection(previewProtection, watermarkText);
+
+  // Generate base CSS shared by all archetypes, plus archetype-specific CSS.
+  const baseCss = generateBoldCSS(tokens, bold, fontConfig);
+  const archetypeCss = generateArchetypeCSS(bold, tokens);
+
+  // Dispatch on archetype — each archetype owns its own DOM skeleton.
+  const body = renderArchetypeBody(
+    bold.layoutArchetype,
+    content,
+    tokens,
+    bold,
     fullName,
     headline,
     avatarUrl,
-    tokens,
-    bold,
     overrides,
     contactInfo,
   );
-  const sidebar = generateBoldSidebar(content, tokens, bold, overrides, avatarUrl, contactInfo);
-  const main = generateBoldMain(content, tokens, bold, overrides);
-
-  const protection = buildProtection(previewProtection, watermarkText);
-
-  // Sidebar-left by default (classic Canva). Agent can override via tokens.layout.
-  const sidebarSide = tokens.layout === 'sidebar-right' ? 'right' : 'left';
 
   return `<!DOCTYPE html>
-<!-- Generated with AI assistance by CVeetje (cveetje.nl) — bold renderer -->
+<!-- Generated with AI assistance by CVeetje (cveetje.nl) — bold renderer (archetype: ${bold.layoutArchetype}) -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -86,26 +90,105 @@ export function generateBoldHTML(
   <title>${escapeHtml(fullName)} — CV</title>
   ${fontUrls.map(url => `<link rel="stylesheet" href="${url}">`).join('\n  ')}
   <style>
-    ${css}
+    ${baseCss}
+    ${archetypeCss}
     ${protection.css}
   </style>
 </head>
 <body>
   ${protection.watermark}
-  <div class="bold-cv bold-sidebar-${sidebarSide} bold-header-${bold.headerLayout} bold-sidebar-style-${bold.sidebarStyle}">
-    ${header}
-    <div class="bold-body">
-      ${sidebarSide === 'left' ? sidebar + main : main + sidebar}
-    </div>
-  </div>
+  ${body}
   ${protection.script}
 </body>
 </html>`;
 }
 
+// ============ Archetype dispatcher ============
+
+function renderArchetypeBody(
+  archetype: BoldLayoutArchetype,
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  let html: string;
+  switch (archetype) {
+    case 'manifesto':
+      html = renderManifesto(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+      break;
+    case 'magazine-cover':
+      html = renderMagazineCover(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+      break;
+    case 'editorial-inversion':
+      html = renderEditorialInversion(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+      break;
+    case 'brutalist-grid':
+      html = renderBrutalistGrid(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+      break;
+    case 'vertical-rail':
+      html = renderVerticalRail(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+      break;
+    case 'mosaic':
+      html = renderMosaic(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+      break;
+    case 'sidebar-canva':
+    default:
+      html = renderSidebarCanva(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+  }
+  // Clean up the SECTION_NUMBER placeholder for any path that didn't
+  // explicitly replace it (only sidebar-canva's `wrapBoldSection` does
+  // the per-section replacement; archetypes do it inline but extras /
+  // skills sections that call `sectionTitle()` directly need this).
+  return html.replace(/<!--SECTION_NUMBER-->/g, '');
+}
+
+// ============ Sidebar-canva archetype (legacy default) ============
+
+function renderSidebarCanva(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const header = generateBoldHeader(
+    fullName,
+    headline,
+    avatarUrl,
+    tokens,
+    b,
+    overrides,
+    contactInfo,
+  );
+  const sidebar = generateBoldSidebar(content, tokens, b, overrides, avatarUrl, contactInfo);
+  const main = generateBoldMain(content, tokens, b, overrides);
+  const sidebarSide = tokens.layout === 'sidebar-right' ? 'right' : 'left';
+  return `<div class="bold-cv archetype-sidebar-canva bold-sidebar-${sidebarSide} bold-header-${b.headerLayout} bold-sidebar-style-${b.sidebarStyle}">
+    ${header}
+    <div class="bold-body">
+      ${sidebarSide === 'left' ? sidebar + main : main + sidebar}
+    </div>
+  </div>`;
+}
+
 // ============ Resolve Bold Tokens ============
 
-function resolveBoldTokens(tokens: CVDesignTokens): BoldTokens {
+function resolveBoldTokens(tokens: CVDesignTokens): Required<Pick<
+  BoldTokens,
+  | 'headerLayout' | 'sidebarStyle' | 'skillStyle' | 'photoTreatment'
+  | 'accentShape' | 'iconTreatment' | 'headingStyle' | 'gradientDirection'
+  | 'surfaceTexture' | 'layoutArchetype' | 'columnCount'
+  | 'backgroundNumeral' | 'marginalia' | 'paletteSaturation'
+  | 'manifestoOpener'
+>> {
   const b = tokens.bold;
   return {
     headerLayout: b?.headerLayout ?? 'hero-band',
@@ -117,6 +200,12 @@ function resolveBoldTokens(tokens: CVDesignTokens): BoldTokens {
     headingStyle: b?.headingStyle ?? 'oversized-numbered',
     gradientDirection: b?.gradientDirection ?? 'linear-diagonal',
     surfaceTexture: b?.surfaceTexture ?? 'none',
+    layoutArchetype: b?.layoutArchetype ?? 'sidebar-canva',
+    columnCount: b?.columnCount ?? 2,
+    backgroundNumeral: b?.backgroundNumeral ?? 'none',
+    marginalia: b?.marginalia ?? 'none',
+    paletteSaturation: b?.paletteSaturation ?? 'duotone',
+    manifestoOpener: b?.manifestoOpener ?? false,
   };
 }
 
@@ -1680,6 +1769,1259 @@ function escapeHtml(text: string): string {
     "'": '&#39;',
   };
   return text.replace(/[&<>"']/g, (c) => map[c] || c);
+}
+
+// ============ Archetype CSS ============
+//
+// Each non-sidebar-canva archetype gets a self-contained CSS block. The
+// base CSS (generateBoldCSS) provides typography, colors, item-level
+// styling. The archetype CSS provides the page-level layout shell.
+
+function generateArchetypeCSS(b: BoldTokens, tokens: CVDesignTokens): string {
+  const arch = b.layoutArchetype ?? 'sidebar-canva';
+  const colors = tokens.colors;
+  const sat = b.paletteSaturation ?? 'duotone';
+
+  // Palette-saturation modifiers shared across archetypes. monochrome-plus-one
+  // forces near-greyscale primary + single screaming accent.
+  const satCss = paletteSaturationCSS(sat, colors);
+
+  // Marginalia + background numeral CSS is shared across archetypes that
+  // opt in (we apply via a wrapper class).
+  const marginaliaCss = marginaliaCSS(b.marginalia ?? 'none', colors);
+  const numeralCss = backgroundNumeralCSS(b.backgroundNumeral ?? 'none', colors);
+
+  let archetypeCss = '';
+  switch (arch) {
+    case 'manifesto':
+      archetypeCss = manifestoCSS(b, colors);
+      break;
+    case 'magazine-cover':
+      archetypeCss = magazineCoverCSS(b, colors);
+      break;
+    case 'editorial-inversion':
+      archetypeCss = editorialInversionCSS(b, colors);
+      break;
+    case 'brutalist-grid':
+      archetypeCss = brutalistGridCSS(b, colors);
+      break;
+    case 'vertical-rail':
+      archetypeCss = verticalRailCSS(b, colors);
+      break;
+    case 'mosaic':
+      archetypeCss = mosaicCSS(b, colors);
+      break;
+    case 'sidebar-canva':
+    default:
+      archetypeCss = '';
+  }
+  return `${satCss}\n${marginaliaCss}\n${numeralCss}\n${archetypeCss}`;
+}
+
+function paletteSaturationCSS(sat: NonNullable<BoldTokens['paletteSaturation']>, colors: CVDesignTokens['colors']): string {
+  // We expose a CSS variable --b-saturation-token that downstream rules
+  // can read for hints. Mostly we just adjust which palette colors
+  // are used in archetype-specific spots.
+  switch (sat) {
+    case 'monochrome-plus-one':
+      return `
+        :root {
+          --b-sat-primary: #1a1a1a;
+          --b-sat-accent: ${colors.accent};
+          --b-sat-third: #6a6a6a;
+        }
+        .bold-cv { --b-mono-tone: #1a1a1a; }
+      `;
+    case 'duotone':
+      return `
+        :root {
+          --b-sat-primary: ${colors.primary};
+          --b-sat-accent: ${colors.accent};
+          --b-sat-third: ${colors.primary};
+        }
+      `;
+    case 'tri-tone':
+      return `
+        :root {
+          --b-sat-primary: ${colors.primary};
+          --b-sat-accent: ${colors.accent};
+          --b-sat-third: ${colors.muted};
+        }
+      `;
+    case 'full-palette':
+    default:
+      return `
+        :root {
+          --b-sat-primary: ${colors.primary};
+          --b-sat-accent: ${colors.accent};
+          --b-sat-third: ${colors.secondary};
+        }
+      `;
+  }
+}
+
+function marginaliaCSS(style: BoldMarginaliaStyle, colors: CVDesignTokens['colors']): string {
+  switch (style) {
+    case 'vertical-strip':
+      return `
+        .marginalia-vertical {
+          position: absolute;
+          left: 8px;
+          top: 60px;
+          bottom: 60px;
+          writing-mode: vertical-rl;
+          font-family: var(--b-font-body);
+          font-size: 7.5pt;
+          letter-spacing: 0.3em;
+          text-transform: uppercase;
+          color: ${colors.muted};
+          opacity: 0.7;
+          white-space: nowrap;
+        }
+      `;
+    case 'numbered':
+      return `
+        .marginalia-numbered .bold-section { position: relative; }
+        .marginalia-numbered .bold-section > .section-margin-number {
+          position: absolute;
+          left: -28px;
+          top: 0;
+          font-family: var(--b-font-heading);
+          font-size: 9pt;
+          font-weight: 700;
+          color: ${colors.accent};
+          letter-spacing: 0.15em;
+        }
+      `;
+    case 'kicker-callouts':
+      return `
+        .marginalia-kicker .bold-section {
+          position: relative;
+        }
+        .marginalia-kicker .bold-section > .section-margin-kicker {
+          position: absolute;
+          left: -90px;
+          top: 4px;
+          width: 80px;
+          font-family: var(--b-font-body);
+          font-size: 7pt;
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          color: ${colors.muted};
+          line-height: 1.3;
+        }
+      `;
+    case 'none':
+    default:
+      return '';
+  }
+}
+
+function backgroundNumeralCSS(style: BoldBackgroundNumeral, colors: CVDesignTokens['colors']): string {
+  if (style === 'none') return '';
+  return `
+    .bg-numeral {
+      position: absolute;
+      pointer-events: none;
+      font-family: var(--b-font-heading);
+      font-weight: 900;
+      color: ${colors.primary};
+      opacity: 0.07;
+      line-height: 0.85;
+      letter-spacing: -0.04em;
+      z-index: 0;
+      user-select: none;
+    }
+    .bg-numeral.bg-numeral-page {
+      font-size: 320pt;
+      top: 80px;
+      right: -40px;
+    }
+    .bg-numeral.bg-numeral-corner {
+      font-size: 220pt;
+      bottom: -60px;
+      left: -20px;
+    }
+    .bg-numeral.bg-numeral-section {
+      font-size: 180pt;
+      right: -10px;
+      top: -40px;
+      opacity: 0.05;
+    }
+  `;
+}
+
+// ============ Archetype-specific CSS ============
+
+function manifestoCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  const cols = Math.max(1, Math.min(4, b.columnCount ?? 2));
+  return `
+    .archetype-manifesto {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+    }
+    .archetype-manifesto .manifesto-opener {
+      padding: 56px 48px 28px;
+      background: var(--b-gradient);
+      color: #fff;
+      position: relative;
+      z-index: 1;
+    }
+    .archetype-manifesto .manifesto-name {
+      font-family: var(--b-font-heading);
+      font-size: 48pt;
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .archetype-manifesto .manifesto-headline {
+      font-family: var(--b-font-body);
+      font-size: 14pt;
+      color: rgba(255,255,255,0.92);
+      margin: 14px 0 0;
+      max-width: 60ch;
+    }
+    .archetype-manifesto .manifesto-statement {
+      font-family: var(--b-font-heading);
+      font-size: 22pt;
+      font-weight: 700;
+      line-height: 1.15;
+      color: ${colors.primary};
+      padding: 28px 48px 36px;
+      max-width: 720px;
+      letter-spacing: -0.01em;
+      position: relative;
+      z-index: 1;
+    }
+    .archetype-manifesto .manifesto-statement::before {
+      content: '';
+      display: block;
+      width: 64px;
+      height: 6px;
+      background: ${colors.accent};
+      margin-bottom: 18px;
+    }
+    .archetype-manifesto .manifesto-grid {
+      display: grid;
+      grid-template-columns: repeat(${cols}, 1fr);
+      gap: 0;
+      padding: 16px 48px 56px;
+      position: relative;
+      z-index: 1;
+    }
+    .archetype-manifesto .manifesto-grid > .bold-section {
+      padding: 20px 16px 20px 0;
+      border-top: 2px solid ${colors.primary};
+      margin: 0;
+    }
+    /* Stretch summary-less sections into full width if columnCount is 1 */
+    .archetype-manifesto .manifesto-grid > .bold-section.span-full {
+      grid-column: 1 / -1;
+    }
+    .archetype-manifesto .manifesto-contact {
+      padding: 0 48px 28px;
+      font-family: var(--b-font-body);
+      font-size: 9.5pt;
+      color: ${colors.muted};
+      letter-spacing: 0.05em;
+    }
+    .archetype-manifesto .manifesto-contact a {
+      color: ${colors.primary};
+      text-decoration: none;
+      margin-right: 16px;
+    }
+  `;
+}
+
+function magazineCoverCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  return `
+    .archetype-magazine-cover {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      overflow: hidden;
+    }
+    .archetype-magazine-cover .cover-hero {
+      background: var(--b-gradient);
+      color: #fff;
+      padding: 56px 48px 48px;
+      position: relative;
+      min-height: 460px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .archetype-magazine-cover .cover-kicker {
+      font-family: var(--b-font-body);
+      font-size: 9pt;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 18px;
+    }
+    .archetype-magazine-cover .cover-name {
+      font-family: var(--b-font-heading);
+      font-size: 78pt;
+      font-weight: 900;
+      line-height: 0.88;
+      letter-spacing: -0.04em;
+      margin: 0;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .archetype-magazine-cover .cover-issue {
+      font-family: var(--b-font-heading);
+      font-size: 9pt;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.9);
+    }
+    .archetype-magazine-cover .cover-headline {
+      font-family: var(--b-font-body);
+      font-size: 14pt;
+      color: rgba(255,255,255,0.92);
+      margin: 18px 0 0;
+      max-width: 50ch;
+      font-style: italic;
+    }
+    .archetype-magazine-cover .cover-portrait {
+      position: absolute;
+      bottom: 24px;
+      right: 32px;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 0 0 6px ${colors.accent};
+    }
+    .archetype-magazine-cover .cover-portrait img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .archetype-magazine-cover .cover-body {
+      padding: 36px 48px 48px;
+      column-count: ${Math.max(1, Math.min(2, b.columnCount ?? 1))};
+      column-gap: 32px;
+      position: relative;
+    }
+    .archetype-magazine-cover .cover-body .bold-section {
+      break-inside: avoid;
+      margin-bottom: 24px;
+    }
+    .archetype-magazine-cover .cover-contact {
+      padding: 0 48px 32px;
+      font-family: var(--b-font-body);
+      font-size: 9pt;
+      color: ${colors.muted};
+      letter-spacing: 0.06em;
+      border-top: 1px solid ${colors.primary}22;
+      margin-top: 8px;
+      padding-top: 16px;
+    }
+    .archetype-magazine-cover .cover-contact a {
+      color: ${colors.primary};
+      text-decoration: none;
+      margin-right: 14px;
+    }
+  `;
+}
+
+function editorialInversionCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  return `
+    .archetype-editorial-inversion {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      overflow: hidden;
+      padding: 48px 56px 32px;
+    }
+    .archetype-editorial-inversion .inv-kicker {
+      font-family: var(--b-font-body);
+      font-size: 8.5pt;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: ${colors.accent};
+      margin-bottom: 10px;
+    }
+    .archetype-editorial-inversion .inv-lead {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 28px;
+      align-items: start;
+      padding-bottom: 28px;
+      border-bottom: 4px solid ${colors.primary};
+    }
+    .archetype-editorial-inversion .inv-lead-text {
+      font-family: var(--b-font-heading);
+      font-size: 19pt;
+      font-weight: 600;
+      line-height: 1.25;
+      color: ${colors.primary};
+      letter-spacing: -0.01em;
+    }
+    .archetype-editorial-inversion .inv-portrait {
+      width: 140px;
+      height: 140px;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+    .archetype-editorial-inversion .inv-portrait img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .archetype-editorial-inversion .inv-name {
+      font-family: var(--b-font-heading);
+      font-size: 36pt;
+      font-weight: 900;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      color: ${colors.primary};
+      margin: 16px 0 6px;
+      text-transform: uppercase;
+    }
+    .archetype-editorial-inversion .inv-headline {
+      font-family: var(--b-font-body);
+      font-size: 12pt;
+      color: ${colors.muted};
+      font-style: italic;
+      margin: 0 0 24px;
+    }
+    .archetype-editorial-inversion .inv-body {
+      column-count: ${Math.max(1, Math.min(2, b.columnCount ?? 2))};
+      column-gap: 36px;
+      padding: 28px 0;
+      position: relative;
+    }
+    .archetype-editorial-inversion .inv-body .bold-section {
+      break-inside: avoid;
+      margin-bottom: 24px;
+    }
+    .archetype-editorial-inversion .inv-contact-footer {
+      border-top: 2px solid ${colors.primary};
+      padding-top: 18px;
+      margin-top: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+      font-family: var(--b-font-body);
+      font-size: 9.5pt;
+      color: ${colors.text};
+      letter-spacing: 0.04em;
+    }
+    .archetype-editorial-inversion .inv-contact-footer a {
+      color: ${colors.primary};
+      text-decoration: none;
+    }
+    .archetype-editorial-inversion .inv-contact-footer .inv-contact-label {
+      font-size: 7.5pt;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: ${colors.accent};
+      font-weight: 700;
+      width: 100%;
+      margin-bottom: 6px;
+    }
+  `;
+}
+
+function brutalistGridCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  const cols = Math.max(2, Math.min(4, b.columnCount ?? 3));
+  return `
+    .archetype-brutalist-grid {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+    }
+    .archetype-brutalist-grid .brut-header {
+      background: ${colors.primary};
+      color: #fff;
+      padding: 36px 40px 28px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 32px;
+      align-items: end;
+      border-bottom: 8px solid ${colors.accent};
+    }
+    .archetype-brutalist-grid .brut-name {
+      font-family: var(--b-font-heading);
+      font-size: 44pt;
+      font-weight: 900;
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      margin: 0;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .archetype-brutalist-grid .brut-headline {
+      font-family: var(--b-font-body);
+      font-size: 12pt;
+      color: rgba(255,255,255,0.85);
+      margin: 12px 0 0;
+      max-width: 56ch;
+    }
+    .archetype-brutalist-grid .brut-contact {
+      font-family: var(--b-font-body);
+      font-size: 9pt;
+      color: rgba(255,255,255,0.9);
+      text-align: right;
+      letter-spacing: 0.06em;
+      line-height: 1.5;
+    }
+    .archetype-brutalist-grid .brut-contact a {
+      color: #fff;
+      text-decoration: none;
+      display: block;
+    }
+    .archetype-brutalist-grid .brut-grid {
+      display: grid;
+      grid-template-columns: repeat(${cols}, 1fr);
+      gap: 0;
+      border-top: 0;
+    }
+    .archetype-brutalist-grid .brut-grid > .bold-section {
+      padding: 24px 22px;
+      border-right: 2px solid ${colors.primary};
+      border-bottom: 2px solid ${colors.primary};
+      margin: 0;
+      background: var(--b-page-bg);
+      position: relative;
+    }
+    .archetype-brutalist-grid .brut-grid > .bold-section:nth-child(${cols}n) {
+      border-right: 0;
+    }
+    .archetype-brutalist-grid .brut-grid > .bold-section.span-full {
+      grid-column: 1 / -1;
+      border-right: 0;
+    }
+    .archetype-brutalist-grid .brut-grid > .bold-section.span-2 {
+      grid-column: span 2;
+    }
+    .archetype-brutalist-grid .brut-grid > .bold-section.tinted {
+      background: ${colors.accent};
+      color: #fff;
+    }
+    .archetype-brutalist-grid .brut-grid > .bold-section.tinted .bold-section-title,
+    .archetype-brutalist-grid .brut-grid > .bold-section.tinted .bold-item-title,
+    .archetype-brutalist-grid .brut-grid > .bold-section.tinted p,
+    .archetype-brutalist-grid .brut-grid > .bold-section.tinted li {
+      color: #fff !important;
+    }
+  `;
+}
+
+function verticalRailCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  return `
+    .archetype-vertical-rail {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      overflow: hidden;
+    }
+    .archetype-vertical-rail .rail {
+      background: var(--b-gradient);
+      color: #fff;
+      position: relative;
+      padding: 32px 0;
+      overflow: hidden;
+    }
+    .archetype-vertical-rail .rail-name {
+      font-family: var(--b-font-heading);
+      font-size: 44pt;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: #fff;
+      text-transform: uppercase;
+      white-space: nowrap;
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      writing-mode: vertical-rl;
+      /* No transform (would break PDF print). vertical-rl alone provides the rotation. */
+    }
+    .archetype-vertical-rail .rail-bottom {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: var(--b-font-body);
+      font-size: 8pt;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+    }
+    .archetype-vertical-rail .rail-main {
+      padding: 40px 44px 32px;
+      position: relative;
+      min-height: 1120px;
+    }
+    .archetype-vertical-rail .rail-headline {
+      font-family: var(--b-font-heading);
+      font-size: 16pt;
+      font-weight: 700;
+      color: ${colors.primary};
+      margin: 0 0 6px;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .archetype-vertical-rail .rail-kicker {
+      font-family: var(--b-font-body);
+      font-size: 8.5pt;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: ${colors.accent};
+      margin-bottom: 10px;
+    }
+    .archetype-vertical-rail .rail-contact {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 18px;
+      font-size: 9pt;
+      color: ${colors.muted};
+      margin: 8px 0 28px;
+      padding-bottom: 22px;
+      border-bottom: 2px solid ${colors.primary};
+    }
+    .archetype-vertical-rail .rail-contact a {
+      color: ${colors.primary};
+      text-decoration: none;
+    }
+    .archetype-vertical-rail .rail-body .bold-section {
+      margin-bottom: 26px;
+      break-inside: avoid;
+    }
+  `;
+}
+
+function mosaicCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  return `
+    .archetype-mosaic {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      grid-auto-rows: minmax(140px, auto);
+      gap: 6px;
+      padding: 6px;
+      overflow: hidden;
+    }
+    .archetype-mosaic .tile {
+      padding: 22px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+    .archetype-mosaic .tile-name {
+      grid-column: 1 / 3;
+      background: var(--b-gradient);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .archetype-mosaic .tile-name .mosaic-name {
+      font-family: var(--b-font-heading);
+      font-size: 38pt;
+      font-weight: 900;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .archetype-mosaic .tile-name .mosaic-headline {
+      font-family: var(--b-font-body);
+      font-size: 12pt;
+      color: rgba(255,255,255,0.9);
+      margin: 12px 0 0;
+    }
+    .archetype-mosaic .tile-portrait {
+      background: ${colors.accent};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+    .archetype-mosaic .tile-portrait img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .archetype-mosaic .tile-portrait.no-photo::before {
+      content: '';
+      position: absolute;
+      inset: 18px;
+      background:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 6px, transparent 6px 14px);
+    }
+    .archetype-mosaic .tile-summary {
+      grid-column: 1 / -1;
+      background: ${colors.primary};
+      color: #fff;
+    }
+    .archetype-mosaic .tile-summary .bold-section-title { color: #fff !important; }
+    .archetype-mosaic .tile-summary p,
+    .archetype-mosaic .tile-summary li {
+      color: #fff !important;
+    }
+    .archetype-mosaic .tile-section {
+      background: var(--b-page-bg);
+      color: ${colors.text};
+      border: 2px solid ${colors.primary};
+    }
+    .archetype-mosaic .tile-section.tinted {
+      background: ${colors.accent};
+      color: #fff;
+      border: 0;
+    }
+    .archetype-mosaic .tile-section.tinted .bold-section-title,
+    .archetype-mosaic .tile-section.tinted .bold-item-title,
+    .archetype-mosaic .tile-section.tinted p,
+    .archetype-mosaic .tile-section.tinted li {
+      color: #fff !important;
+    }
+    .archetype-mosaic .tile-section.span-2 {
+      grid-column: span 2;
+    }
+    .archetype-mosaic .tile-section.span-full {
+      grid-column: 1 / -1;
+    }
+    .archetype-mosaic .tile-contact {
+      grid-column: 1 / -1;
+      background: ${colors.primary};
+      color: #fff;
+      padding: 14px 22px;
+      font-family: var(--b-font-body);
+      font-size: 9pt;
+      letter-spacing: 0.06em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 22px;
+    }
+    .archetype-mosaic .tile-contact a {
+      color: #fff;
+      text-decoration: none;
+    }
+  `;
+}
+
+// ============ Archetype HTML renderers ============
+//
+// Each renderer composes a complete <div class="bold-cv archetype-*">
+// shell. They lean on the existing renderSummary/renderExperience/
+// renderEducation/renderProjects helpers — those produce the per-section
+// content; the archetype controls only the PAGE shell.
+
+function buildSimpleContact(contact: CVContactInfo | null | undefined): string {
+  if (!contact) return '';
+  const items: string[] = [];
+  if (contact.email) items.push(`<span>${escapeHtml(contact.email)}</span>`);
+  if (contact.phone) items.push(`<span>${escapeHtml(contact.phone)}</span>`);
+  if (contact.location) items.push(`<span>${escapeHtml(contact.location)}</span>`);
+  if (contact.linkedinUrl) {
+    const href = contact.linkedinUrl.startsWith('http') ? contact.linkedinUrl : 'https://' + contact.linkedinUrl;
+    items.push(`<a href="${escapeHtml(href)}">${escapeHtml(contact.linkedinUrl.replace(/^https?:\/\/(www\.)?/, ''))}</a>`);
+  }
+  if (contact.website) {
+    const href = contact.website.startsWith('http') ? contact.website : 'https://' + contact.website;
+    items.push(`<a href="${escapeHtml(href)}">${escapeHtml(contact.website.replace(/^https?:\/\//, ''))}</a>`);
+  }
+  if (contact.github) {
+    const href = contact.github.startsWith('http') ? contact.github : 'https://github.com/' + contact.github;
+    items.push(`<a href="${escapeHtml(href)}">${escapeHtml(contact.github.replace(/^https?:\/\/(www\.)?github\.com\//, ''))}</a>`);
+  }
+  return items.join('');
+}
+
+function getInitials(fullName: string): string {
+  return fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .slice(0, 3)
+    .join('');
+}
+
+function backgroundNumeralContent(
+  style: BoldBackgroundNumeral,
+  fullName: string,
+  content: GeneratedCVContent,
+): string {
+  switch (style) {
+    case 'initials':
+      return getInitials(fullName);
+    case 'year': {
+      // Use the current calendar year — falls back to "2026" if anything fails.
+      try {
+        return String(new Date().getFullYear());
+      } catch {
+        return '2026';
+      }
+    }
+    case 'role':
+      return (content.headline || '').split(/\s+/)[0]?.toUpperCase() ?? '';
+    case 'section-number':
+      return '';
+    case 'none':
+    default:
+      return '';
+  }
+}
+
+function renderManifesto(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  // Manifesto: opener (name + headline) → giant summary statement → grid of sections.
+  const sectionRenderers: Record<string, () => string> = {
+    summary: () => renderSummary(content.summary, overrides),
+    experience: () => renderExperience(content.experience, tokens, overrides),
+    education: () => renderEducation(content.education, overrides),
+    projects: () => renderProjects(content.projects, overrides),
+  };
+  // When the manifestoOpener is on, summary lives in the top statement, not the grid.
+  const useStatement = b.manifestoOpener && !!content.summary;
+  const skipInGrid = new Set<string>([
+    'languages', 'certifications', 'interests', // these stay simple/inline below
+  ]);
+  if (useStatement) skipInGrid.add('summary');
+
+  let idx = 0;
+  const gridSections = tokens.sectionOrder
+    .filter((n) => !skipInGrid.has(n) && sectionRenderers[n])
+    .map((n) => {
+      const html = sectionRenderers[n]();
+      if (!html) return '';
+      idx += 1;
+      const numberHint = b.marginalia === 'numbered'
+        ? `<span class="section-margin-number">${String(idx).padStart(2, '0')}</span>`
+        : '';
+      const kickerHint = b.marginalia === 'kicker-callouts'
+        ? `<span class="section-margin-kicker">Section ${String(idx).padStart(2, '0')} — ${escapeHtml(n.toUpperCase())}</span>`
+        : '';
+      const span = n === 'experience' ? 'span-full' : '';
+      return `<section class="bold-section ${span}" data-section="${n}">${numberHint}${kickerHint}${html.replace('<!--SECTION_NUMBER-->', '')}</section>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  // Skills / languages / certifications get a compact row at the bottom.
+  const extras = renderManifestoExtras(content, b, overrides);
+
+  const statementHtml = useStatement
+    ? `<div class="manifesto-statement">${escapeHtml(content.summary.split('\n')[0] || content.summary)}</div>`
+    : '';
+
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralHtml = numeralText
+    ? `<div class="bg-numeral bg-numeral-page">${escapeHtml(numeralText)}</div>`
+    : '';
+  const marginaliaVert = b.marginalia === 'vertical-strip'
+    ? `<div class="marginalia-vertical">${escapeHtml(content.headline || fullName)} — CV</div>`
+    : '';
+
+  const wrapClass = [
+    'bold-cv archetype-manifesto',
+    b.marginalia === 'numbered' ? 'marginalia-numbered' : '',
+    b.marginalia === 'kicker-callouts' ? 'marginalia-kicker' : '',
+  ].filter(Boolean).join(' ');
+
+  return `<div class="${wrapClass}">
+    ${numeralHtml}
+    ${marginaliaVert}
+    <header class="manifesto-opener">
+      <h1 class="manifesto-name" data-id="header-name">${escapeHtml(fullName)}</h1>
+      ${headline ? `<p class="manifesto-headline">${escapeHtml(headline)}</p>` : ''}
+    </header>
+    ${statementHtml}
+    <div class="manifesto-grid">${gridSections}</div>
+    ${extras}
+    <footer class="manifesto-contact">${buildSimpleContact(contactInfo)}</footer>
+  </div>`;
+}
+
+function renderManifestoExtras(
+  content: GeneratedCVContent,
+  b: BoldTokens,
+  overrides: CVElementOverrides | null | undefined,
+): string {
+  const parts: string[] = [];
+  if (content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0)) {
+    if (!getOverride(overrides, 'section-skills')?.hidden) {
+      const techPills = content.skills.technical.slice(0, 12).map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('');
+      const softPills = content.skills.soft.slice(0, 8).map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('');
+      parts.push(`<section class="bold-section span-full" data-section="skills" style="padding: 16px 48px; border-top: 2px solid var(--b-primary);">
+        ${sectionTitle('Skills')}
+        <div class="skill-tags">${techPills}${softPills}</div>
+      </section>`);
+    }
+  }
+  if (content.languages && content.languages.length > 0 && !getOverride(overrides, 'section-languages')?.hidden) {
+    const items = content.languages.map((l) => `<span style="margin-right: 18px;">${escapeHtml(l.language)}${l.level ? ' · ' + escapeHtml(l.level) : ''}</span>`).join('');
+    parts.push(`<section class="bold-section span-full" data-section="languages" style="padding: 12px 48px; border-top: 1px solid var(--b-primary);">${items}</section>`);
+  }
+  // Suppress unused parameter warning
+  void b;
+  return parts.join('');
+}
+
+function renderMagazineCover(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const sectionRenderers: Record<string, () => string> = {
+    summary: () => renderSummary(content.summary, overrides),
+    experience: () => renderExperience(content.experience, tokens, overrides),
+    education: () => renderEducation(content.education, overrides),
+    projects: () => renderProjects(content.projects, overrides),
+  };
+  const body = tokens.sectionOrder
+    .filter((n) => sectionRenderers[n] && !['languages', 'certifications', 'interests'].includes(n))
+    .map((n) => {
+      const html = sectionRenderers[n]();
+      if (!html) return '';
+      return `<section class="bold-section" data-section="${n}">${html.replace('<!--SECTION_NUMBER-->', '')}</section>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  // Skills/languages row at the bottom
+  const skillsHtml = content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && !getOverride(overrides, 'section-skills')?.hidden
+    ? `<section class="bold-section" data-section="skills">${sectionTitle('Skills')}<div class="skill-tags">${[...content.skills.technical.slice(0, 10), ...content.skills.soft.slice(0, 6)].map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('')}</div></section>`
+    : '';
+
+  const portrait = avatarUrl
+    ? `<div class="cover-portrait"><img src="${escapeHtml(avatarUrl)}" alt="" /></div>`
+    : '';
+
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralHtml = numeralText
+    ? `<div class="bg-numeral bg-numeral-corner">${escapeHtml(numeralText)}</div>`
+    : '';
+  const year = new Date().getFullYear();
+
+  return `<div class="bold-cv archetype-magazine-cover">
+    ${numeralHtml}
+    <header class="cover-hero">
+      <div>
+        <div class="cover-kicker">Curriculum Vitae · ${year}</div>
+        <h1 class="cover-name" data-id="header-name">${escapeHtml(fullName)}</h1>
+        ${headline ? `<p class="cover-headline">${escapeHtml(headline)}</p>` : ''}
+      </div>
+      <div class="cover-issue">№ ${String(year).slice(-2)} — Issue One</div>
+      ${portrait}
+    </header>
+    <div class="cover-body">${body}${skillsHtml}</div>
+    <footer class="cover-contact">${buildSimpleContact(contactInfo)}</footer>
+  </div>`;
+}
+
+function renderEditorialInversion(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const sectionRenderers: Record<string, () => string> = {
+    experience: () => renderExperience(content.experience, tokens, overrides),
+    education: () => renderEducation(content.education, overrides),
+    projects: () => renderProjects(content.projects, overrides),
+  };
+  const body = tokens.sectionOrder
+    .filter((n) => sectionRenderers[n])
+    .map((n) => {
+      const html = sectionRenderers[n]();
+      return html ? `<section class="bold-section" data-section="${n}">${html.replace('<!--SECTION_NUMBER-->', '')}</section>` : '';
+    })
+    .filter(Boolean)
+    .join('');
+
+  const skillsHtml = content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0)
+    ? `<section class="bold-section" data-section="skills">${sectionTitle('Skills')}<div class="skill-tags">${[...content.skills.technical.slice(0, 12), ...content.skills.soft.slice(0, 6)].map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('')}</div></section>`
+    : '';
+
+  const portrait = avatarUrl
+    ? `<div class="inv-portrait"><img src="${escapeHtml(avatarUrl)}" alt="" /></div>`
+    : '';
+
+  const lead = content.summary
+    ? `<div class="inv-lead">
+        <div>
+          <div class="inv-kicker">A Curriculum Vitae</div>
+          <p class="inv-lead-text">${escapeHtml((content.summary.split('\n')[0] || content.summary).slice(0, 320))}</p>
+        </div>
+        ${portrait}
+      </div>`
+    : '';
+
+  const contactItems: string[] = [];
+  if (contactInfo?.email) contactItems.push(`<span>${escapeHtml(contactInfo.email)}</span>`);
+  if (contactInfo?.phone) contactItems.push(`<span>${escapeHtml(contactInfo.phone)}</span>`);
+  if (contactInfo?.location) contactItems.push(`<span>${escapeHtml(contactInfo.location)}</span>`);
+  if (contactInfo?.linkedinUrl) {
+    const href = contactInfo.linkedinUrl.startsWith('http') ? contactInfo.linkedinUrl : 'https://' + contactInfo.linkedinUrl;
+    contactItems.push(`<a href="${escapeHtml(href)}">${escapeHtml(contactInfo.linkedinUrl.replace(/^https?:\/\/(www\.)?/, ''))}</a>`);
+  }
+  if (contactInfo?.website) {
+    const href = contactInfo.website.startsWith('http') ? contactInfo.website : 'https://' + contactInfo.website;
+    contactItems.push(`<a href="${escapeHtml(href)}">${escapeHtml(contactInfo.website.replace(/^https?:\/\//, ''))}</a>`);
+  }
+
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralHtml = numeralText
+    ? `<div class="bg-numeral bg-numeral-corner">${escapeHtml(numeralText)}</div>`
+    : '';
+
+  return `<div class="bold-cv archetype-editorial-inversion">
+    ${numeralHtml}
+    ${lead}
+    <h1 class="inv-name" data-id="header-name">${escapeHtml(fullName)}</h1>
+    ${headline ? `<p class="inv-headline">${escapeHtml(headline)}</p>` : ''}
+    <div class="inv-body">${body}${skillsHtml}</div>
+    <footer class="inv-contact-footer">
+      <div class="inv-contact-label">Contact</div>
+      ${contactItems.join('')}
+    </footer>
+  </div>`;
+}
+
+function renderBrutalistGrid(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const sectionRenderers: Record<string, () => string> = {
+    summary: () => renderSummary(content.summary, overrides),
+    experience: () => renderExperience(content.experience, tokens, overrides),
+    education: () => renderEducation(content.education, overrides),
+    projects: () => renderProjects(content.projects, overrides),
+  };
+  let idx = 0;
+  const sections = tokens.sectionOrder
+    .filter((n) => sectionRenderers[n] && !['languages', 'certifications', 'interests'].includes(n))
+    .map((n) => {
+      const html = sectionRenderers[n]();
+      if (!html) return '';
+      idx += 1;
+      // Every 4th block gets the tinted accent treatment (gallery rhythm)
+      const tinted = idx % 4 === 0 ? 'tinted' : '';
+      const span = n === 'experience' ? 'span-full' : (n === 'summary' ? 'span-2' : '');
+      return `<section class="bold-section ${span} ${tinted}" data-section="${n}">${html.replace('<!--SECTION_NUMBER-->', '')}</section>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  // Skills block
+  const skillsHtml = content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && !getOverride(overrides, 'section-skills')?.hidden
+    ? `<section class="bold-section span-full" data-section="skills">${sectionTitle('Skills')}<div class="skill-tags">${[...content.skills.technical.slice(0, 14), ...content.skills.soft.slice(0, 8)].map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('')}</div></section>`
+    : '';
+
+  const contactItems: string[] = [];
+  if (contactInfo?.email) contactItems.push(`<a>${escapeHtml(contactInfo.email)}</a>`);
+  if (contactInfo?.phone) contactItems.push(`<a>${escapeHtml(contactInfo.phone)}</a>`);
+  if (contactInfo?.location) contactItems.push(`<a>${escapeHtml(contactInfo.location)}</a>`);
+  if (contactInfo?.linkedinUrl) {
+    const href = contactInfo.linkedinUrl.startsWith('http') ? contactInfo.linkedinUrl : 'https://' + contactInfo.linkedinUrl;
+    contactItems.push(`<a href="${escapeHtml(href)}">${escapeHtml(contactInfo.linkedinUrl.replace(/^https?:\/\/(www\.)?/, ''))}</a>`);
+  }
+
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralHtml = numeralText
+    ? `<div class="bg-numeral bg-numeral-corner">${escapeHtml(numeralText)}</div>`
+    : '';
+
+  // Suppress unused params
+  void avatarUrl;
+
+  return `<div class="bold-cv archetype-brutalist-grid">
+    ${numeralHtml}
+    <header class="brut-header">
+      <div>
+        <h1 class="brut-name" data-id="header-name">${escapeHtml(fullName)}</h1>
+        ${headline ? `<p class="brut-headline">${escapeHtml(headline)}</p>` : ''}
+      </div>
+      <div class="brut-contact">${contactItems.join('')}</div>
+    </header>
+    <div class="brut-grid">${sections}${skillsHtml}</div>
+  </div>`;
+}
+
+function renderVerticalRail(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const sectionRenderers: Record<string, () => string> = {
+    summary: () => renderSummary(content.summary, overrides),
+    experience: () => renderExperience(content.experience, tokens, overrides),
+    education: () => renderEducation(content.education, overrides),
+    projects: () => renderProjects(content.projects, overrides),
+  };
+  let idx = 0;
+  const body = tokens.sectionOrder
+    .filter((n) => sectionRenderers[n] && !['languages', 'certifications', 'interests'].includes(n))
+    .map((n) => {
+      const html = sectionRenderers[n]();
+      if (!html) return '';
+      idx += 1;
+      const numberHint = b.marginalia === 'numbered'
+        ? `<span class="section-margin-number">${String(idx).padStart(2, '0')}</span>`
+        : '';
+      return `<section class="bold-section" data-section="${n}">${numberHint}${html.replace('<!--SECTION_NUMBER-->', '')}</section>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  const skillsHtml = content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && !getOverride(overrides, 'section-skills')?.hidden
+    ? `<section class="bold-section" data-section="skills">${sectionTitle('Skills')}<div class="skill-tags">${[...content.skills.technical.slice(0, 12), ...content.skills.soft.slice(0, 8)].map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('')}</div></section>`
+    : '';
+
+  // Suppress unused
+  void avatarUrl;
+
+  const wrapClass = [
+    'bold-cv archetype-vertical-rail',
+    b.marginalia === 'numbered' ? 'marginalia-numbered' : '',
+  ].filter(Boolean).join(' ');
+
+  return `<div class="${wrapClass}">
+    <aside class="rail">
+      <div class="rail-name" data-id="header-name">${escapeHtml(fullName)}</div>
+      <div class="rail-bottom">CV / ${new Date().getFullYear()}</div>
+    </aside>
+    <main class="rail-main">
+      <div class="rail-kicker">Curriculum Vitae</div>
+      ${headline ? `<h2 class="rail-headline">${escapeHtml(headline)}</h2>` : ''}
+      <div class="rail-contact">${buildSimpleContact(contactInfo)}</div>
+      <div class="rail-body">${body}${skillsHtml}</div>
+    </main>
+  </div>`;
+}
+
+function renderMosaic(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const sectionRenderers: Record<string, () => string> = {
+    summary: () => renderSummary(content.summary, overrides),
+    experience: () => renderExperience(content.experience, tokens, overrides),
+    education: () => renderEducation(content.education, overrides),
+    projects: () => renderProjects(content.projects, overrides),
+  };
+
+  // Layout pattern: a name-tile (top-left wide), a portrait tile (top-right),
+  // then summary spans full, then a mosaic of section tiles. Every 3rd
+  // section tile is tinted for visual rhythm.
+  const tiles: string[] = [];
+  // Name + portrait row
+  tiles.push(`<div class="tile tile-name">
+    <h1 class="mosaic-name" data-id="header-name">${escapeHtml(fullName)}</h1>
+    ${headline ? `<p class="mosaic-headline">${escapeHtml(headline)}</p>` : ''}
+  </div>`);
+  if (avatarUrl) {
+    tiles.push(`<div class="tile tile-portrait"><img src="${escapeHtml(avatarUrl)}" alt="" /></div>`);
+  } else {
+    tiles.push(`<div class="tile tile-portrait no-photo"></div>`);
+  }
+
+  // Summary as a full-width tinted tile
+  if (content.summary && !getOverride(overrides, 'section-summary')?.hidden) {
+    const summaryHtml = renderSummary(content.summary, overrides);
+    if (summaryHtml) {
+      tiles.push(`<section class="tile tile-summary bold-section" data-section="summary">${summaryHtml.replace('<!--SECTION_NUMBER-->', '')}</section>`);
+    }
+  }
+
+  // The other sections
+  let idx = 0;
+  tokens.sectionOrder
+    .filter((n) => n !== 'summary' && sectionRenderers[n] && !['languages', 'certifications', 'interests'].includes(n))
+    .forEach((n) => {
+      const html = sectionRenderers[n]();
+      if (!html) return;
+      idx += 1;
+      const tinted = idx % 3 === 0 ? 'tinted' : '';
+      const span = n === 'experience' ? 'span-full' : (n === 'projects' || n === 'education' ? 'span-2' : '');
+      tiles.push(`<section class="tile tile-section bold-section ${tinted} ${span}" data-section="${n}">${html.replace('<!--SECTION_NUMBER-->', '')}</section>`);
+    });
+
+  // Skills as final big block
+  if (content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && !getOverride(overrides, 'section-skills')?.hidden) {
+    const techPills = content.skills.technical.slice(0, 12).map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('');
+    const softPills = content.skills.soft.slice(0, 8).map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('');
+    tiles.push(`<section class="tile tile-section span-full bold-section" data-section="skills">${sectionTitle('Skills')}<div class="skill-tags">${techPills}${softPills}</div></section>`);
+  }
+
+  // Contact strip
+  tiles.push(`<footer class="tile tile-contact">${buildSimpleContact(contactInfo)}</footer>`);
+
+  // Suppress unused params lint
+  void b;
+
+  return `<div class="bold-cv archetype-mosaic">
+    ${tiles.join('\n')}
+  </div>`;
 }
 
 // ============ Protection (preview watermark) ============
