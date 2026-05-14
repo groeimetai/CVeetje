@@ -1,10 +1,5 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
-import { Link } from '@/i18n/navigation';
-import { Logo } from '@/components/ui/logo';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { ThemeSwitcher } from '@/components/theme-switcher';
-import { Button } from '@/components/ui/button';
 import { JobSearchBar } from '@/components/jobs/job-search-bar';
 import { JobCard } from '@/components/jobs/job-card';
 import { JobPagination } from '@/components/jobs/job-pagination';
@@ -95,7 +90,7 @@ export default async function JobsListPage({ params, searchParams }: Props) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
       <BreadcrumbStructuredData
         items={[
           { name: 'Home', url: `/${locale}` },
@@ -103,71 +98,54 @@ export default async function JobsListPage({ params, searchParams }: Props) {
         ]}
       />
 
-      <header className="border-b sticky top-0 z-40 bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex-shrink-0">
-            <Logo size="sm" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <ThemeSwitcher />
-            <LanguageSwitcher />
-            <Button asChild variant="outline" size="sm">
-              <Link href="/login">{locale === 'nl' ? 'Inloggen' : 'Sign in'}</Link>
-            </Button>
-          </div>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-bold">{t('listTitle')}</h1>
+          <p className="text-muted-foreground">{t('listSubtitle')}</p>
         </div>
-      </header>
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold">{t('listTitle')}</h1>
-            <p className="text-muted-foreground">{t('listSubtitle')}</p>
+        <JobSearchBar
+          defaultQuery={q ?? ''}
+          defaultLocation={location ?? ''}
+          defaultFilters={activeFilters}
+        />
+
+        {errorMessage && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            {t('error')}: {errorMessage}
           </div>
+        )}
 
-          <JobSearchBar
-            defaultQuery={q ?? ''}
-            defaultLocation={location ?? ''}
-            defaultFilters={activeFilters}
-          />
+        {!errorMessage && results && (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {t('resultCount', { count: results.totalResults })}
+            </p>
 
-          {errorMessage && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-              {t('error')}: {errorMessage}
-            </div>
-          )}
+            {results.results.length === 0 ? (
+              <div className="rounded-md border bg-muted/20 p-8 text-center text-muted-foreground">
+                {t('noResults')}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {results.results.map((job) => (
+                  <JobCard key={job.sourceId} job={job} />
+                ))}
+              </div>
+            )}
 
-          {!errorMessage && results && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                {t('resultCount', { count: results.totalResults })}
-              </p>
+            <JobPagination
+              currentPage={results.currentPage}
+              totalPages={results.totalPages}
+              q={q}
+              location={location}
+              filters={activeFilters}
+            />
+          </>
+        )}
 
-              {results.results.length === 0 ? (
-                <div className="rounded-md border bg-muted/20 p-8 text-center text-muted-foreground">
-                  {t('noResults')}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {results.results.map((job) => (
-                    <JobCard key={job.sourceId} job={job} />
-                  ))}
-                </div>
-              )}
-
-              <JobPagination
-                currentPage={results.currentPage}
-                totalPages={results.totalPages}
-                q={q}
-                location={location}
-                filters={activeFilters}
-              />
-            </>
-          )}
-
-          <p className="text-xs text-muted-foreground pt-4 border-t">{t('poweredBy')}</p>
-        </div>
-      </main>
+        <p className="text-xs text-muted-foreground pt-4 border-t">{t('poweredBy')}</p>
+      </div>
     </div>
   );
 }

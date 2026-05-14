@@ -164,8 +164,8 @@ export default function ProfileEditPage() {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between min-w-0">
+              <div className="flex items-start gap-4 min-w-0 flex-1">
                 <div className="h-16 w-16 flex-shrink-0 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
                   {profile.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -178,7 +178,7 @@ export default function ProfileEditPage() {
                     <User className="h-8 w-8 text-primary" />
                   )}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold tracking-tight truncate">
                       {draft.fullName || profile.name}
@@ -188,16 +188,16 @@ export default function ProfileEditPage() {
                     )}
                   </div>
                   {draft.headline && (
-                    <p className="text-sm text-muted-foreground truncate">{draft.headline}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{draft.headline}</p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
                     {profile.name}
                   </p>
                 </div>
               </div>
 
               {/* Primary actions */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
                 <Button onClick={handleSave} disabled={!isDirty || isSaving}>
                   {isSaving ? (
                     <>
