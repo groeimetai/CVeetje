@@ -709,6 +709,11 @@ export function LinkedInInput({ onParsed, onTokenUsage, initialData, modelInfo, 
             <Badge variant="secondary">
               {parsed.languages.length} Languages
             </Badge>
+            {(parsed.interests?.length || 0) > 0 && (
+              <Badge variant="secondary">
+                {parsed.interests!.length} Interest{parsed.interests!.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
           </div>
 
           {parsed.experience.length > 0 && (

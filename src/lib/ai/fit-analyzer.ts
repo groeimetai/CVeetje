@@ -17,7 +17,7 @@ import type {
 // Top-level fields are OPTIONAL for robustness against Opus 4.7 structured
 // output flakes ({} or {data: ...}); normalizeFitAnalysis fills defaults.
 const fitAnalysisSchema = z.object({
-  overallScore: z.number().optional().describe('Overall fit score from 0-100. 80+ = excellent, 60-79 = good, 40-59 = moderate, 20-39 = challenging, <20 = unlikely'),
+  overallScore: z.number().optional().describe('Overall fit score from 0-100. Tiers: 70+ = excellent, 50-69 = good, 30-49 = moderate, 15-29 = challenging, <15 = unlikely. Lifted rubric: capable candidates with transferable seniority must land in good (50+) or higher.'),
   verdict: z.enum(['excellent', 'good', 'moderate', 'challenging', 'unlikely']).optional().describe('Overall verdict on the fit'),
   verdictExplanation: z.string().optional().describe('Brief explanation of the verdict (1-2 sentences)'),
 
@@ -43,7 +43,7 @@ const fitAnalysisSchema = z.object({
 
   experienceMatch: z.object({
     candidateYears: z.number().describe('Estimated years of RELEVANT experience including transferable work'),
-    requiredYears: z.number().describe('Years of experience required by the job'),
+    requiredYears: z.number().describe('Years required by the vacancy. Use 0 when the vacancy does not literally state a years requirement — never invent a number based on the job title.'),
     gap: z.number().describe('candidateYears - requiredYears'),
     levelMatch: z.boolean().describe('Does candidate experience level match required level?'),
   }).optional(),
@@ -77,42 +77,27 @@ function buildFitAnalysisPrompt(linkedIn: ParsedLinkedIn, jobVacancy: JobVacancy
 
 ${getCurrentDateContext('nl')}
 
-## CORE PRINCIPLES (READ FIRST — these override everything below)
+## CORE PRINCIPLES (override everything below)
 
-**Principle 1 — Default to MATCHED, not missing.**
-When the evidence is ambiguous, count the skill as MATCHED. A profile rarely uses the exact wording of a vacancy. Recruiters compensate for this; you must too. The cost of a false miss (a strong candidate gets a low score) is much higher than the cost of a generous match.
+**1. Default to MATCHED when ambiguous.** Profiles rarely use the exact vacancy wording. The cost of a false miss is much higher than a generous match. When evidence is ambiguous, count the skill as MATCHED.
 
-**Principle 2 — Terminology gaps are NOT skill gaps.**
-If the candidate has the capability under a different word, the skill counts as MATCHED — full stop. Different vocabulary is a CV-writing problem, not a fit problem. Never raise a warning purely because words differ between profile and vacancy.
+**2. Terminology gaps are NOT skill gaps.** If the candidate has the capability under a different word, it counts as MATCHED. Never raise a warning purely because words differ — linguistic mismatches belong in \`advice\` as CV-rewriting suggestions.
 
-**Principle 3 — Trust the candidate's seniority over literal titles.**
-Someone who ran a 5-person team in logistics has "people management" experience. Someone who built and shipped production systems has "software engineering" experience. Years under a title are evidence of capability, not the whole picture.
+**3. Trust seniority over titles.** Years under a title are evidence of capability. Team-leading in one domain is people management. Shipping production systems is software engineering.
 
-**Principle 4 — The parser may have hallucinated.**
-The list of must-have skills you receive was extracted by another model and may include items that are NOT actually hard requirements in the vacancy text. Cross-check every must-have against the RAW VACANCY TEXT below. If a must-have is not LITERALLY a hard requirement in the original text (e.g. it's a "nice to have", a working-tool mention, or implied), TREAT IT AS NICE-TO-HAVE — never raise a missing-skill warning for it.
+**4. The parser may have hallucinated.** Cross-check every parsed must-have against the RAW VACANCY TEXT. If it is not literally a hard requirement there (signal words: "vereist", "must have", "noodzakelijk", "je hebt minimaal", "wij verwachten", or under an explicit "Eisen" / "Wat wij vragen" header), treat it as nice-to-have — do NOT raise a missing-skill warning for it.
 
-## WHAT COUNTS AS A MATCH (be generous)
+**5. Never invent years requirements.** If the vacancy does not literally state years of experience, set \`requiredYears\` to 0. Do not infer years from "Senior" / "Lead" in the title or from seniority language.
 
-A must-have skill is MATCHED when ANY of these signals is present:
-- **Direct mention**: the exact term appears in skills, experience, or about
-- **Synonym / functional equivalent**: same capability, different name
-  (e.g. "Kubernetes" ↔ "container orchestration"; "Salesforce admin" ↔ "CRM experience")
-- **Implicit evidence**: described work clearly requires this capability
-  (e.g. "5 years DevOps with AWS" ↔ "cloud infrastructure experience")
-- **Transferable seniority**: equivalent craft in adjacent domain
-  (e.g. senior PM in fintech applying to senior PM in healthtech — the PM craft transfers; only industry-specific regulation is a learnable gap)
+## WHAT COUNTS AS A MATCH
 
-A skill is MISSING only when NONE of those four signals is present. If you have to squint, it's MATCHED.
+A must-have is MATCHED when ANY signal is present:
+- **Direct mention** — the term appears in skills, experience, or about.
+- **Synonym / functional equivalent** — same capability, different name.
+- **Implicit evidence** — described work clearly requires this capability.
+- **Transferable seniority** — equivalent craft in an adjacent domain.
 
-## EXAMPLES OF READING GENEROUSLY BUT HONESTLY
-
-- Candidate has "Kubernetes", vacancy asks for "container orchestration" → MATCHED
-- Candidate has 5 years AWS DevOps, vacancy asks for "cloud infrastructure" → MATCHED
-- Senior fintech PM → senior healthtech PM: PM seniority MATCHED; industry knowledge is INFO-level note, not a warning
-- Candidate ran a logistics team of 5, vacancy asks for "people management" → MATCHED
-- Candidate did "klantenservice" 4y, vacancy asks "customer success" → MATCHED on customer-facing competency (note retention/upsell as growth area if relevant)
-
-Don't fabricate matches either. A graphic designer applying to a backend dev role with no overlap is genuinely unlikely. Honesty cuts both ways — but the typical failure mode of this analyzer is being too strict, not too generous.
+MISSING only when NONE of those signals is present. If you have to squint, it's MATCHED. Don't fabricate matches either — honesty cuts both ways. The typical failure mode is being too strict, not too generous.
 
 ## CANDIDATE PROFILE
 
@@ -174,83 +159,38 @@ ${jobVacancy.rawText || '(raw text not available — rely on parsed fields only)
 
 ---
 
-## ANALYSIS INSTRUCTIONS
+## ANALYSIS WORKFLOW
 
-Apply the CORE PRINCIPLES above to every step. The typical failure mode of this analyzer is being too strict — over-correct toward generosity when ambiguous.
+Apply the CORE PRINCIPLES at every step. Default to generosity when ambiguous.
 
-1. **Experience Analysis:**
-   - Count RELEVANT experience generously. Include work under different titles when the described responsibilities clearly overlap with the target role.
-   - A senior in an adjacent field is NOT a junior in the target field — judge by craft level, not title.
-   - When the vacancy has no explicit years requirement, do not invent one (set requiredYears to 0).
+1. **Experience.** Count relevant experience generously, including work under different titles when responsibilities overlap. Senior in an adjacent field ≠ junior in the target field. If the vacancy states no years requirement → \`requiredYears = 0\`.
 
-2. **Skills Analysis — apply this workflow strictly:**
+2. **Skills workflow:**
+   - **2a — Verify must-haves against RAW VACANCY TEXT.** If a parsed must-have is not a literal hard requirement there, silently demote to nice-to-have. Do NOT include it in \`skillMatch.missing\`.
+   - **2b — Match each verified must-have** against the four signals. Any signal → MATCHED. Zero signals → MISSING. Uncertain → default MATCHED.
+   - **2c — Bonus:** nice-to-haves the candidate has (direct or equivalent) → \`skillMatch.bonus\`.
+   - **2d — matchPercentage:** calculated over VERIFIED must-haves only, not raw parser output.
 
-   **Step 2a (must-have validation):** For each parsed must-have, look at the RAW VACANCY TEXT. Does it appear as a literal hard requirement (signal words: "vereist", "must have", "noodzakelijk", "je hebt minimaal", "wij verwachten", or under an explicit Eisen/Wat-wij-vragen header)?
-   - If NO → silently demote it to nice-to-have. Do NOT include it in skillMatch.missing even if absent from profile. The parser was wrong.
-   - If YES → proceed to step 2b.
+3. **Education & Certifications.** Senior experience can compensate for a missing degree unless the vacancy explicitly says otherwise. Only flag missing certifications when literally required (not preferred).
 
-   **Step 2b (matching):** For each VERIFIED must-have, scan the candidate profile for the four signals: direct mention, synonym/equivalent, implicit evidence, or transferable seniority.
-   - ANY signal present → MATCHED (add to skillMatch.matched).
-   - ZERO signals present → MISSING (add to skillMatch.missing).
-   - Genuinely uncertain → default to MATCHED.
+4. **Industry.** Different industry is NEUTRAL by default. Only flag as a warning when the target sector requires deep domain knowledge that cannot be picked up quickly.
 
-   **Step 2c (bonus):** Note nice-to-have skills the candidate has (direct or equivalent) in skillMatch.bonus.
+5. **Warnings — be sparing.**
+   - **CRITICAL**: genuine dealbreakers (missing legally required license, fundamental experience-level mismatch).
+   - **WARNING**: 2+ verified must-haves with zero matching signals and no plausible equivalent.
+   - **INFO**: minor gaps, growth areas, industry-knowledge notes.
+   - **Never** raise a warning for terminology differences (→ \`advice\` instead) or for must-haves that failed step 2a.
+   - Empty warnings is correct and expected for strong candidates.
 
-   **Step 2d (matchPercentage):** Calculate over VERIFIED must-haves only. If the parser produced 10 must-haves but only 6 survive step 2a, then percentage = matched / 6, not matched / 10.
+6. **Strengths — be generous.** Name transferable skills, equivalent capabilities and senior responsibilities explicitly. Every must-have matched via equivalence is a strength worth naming — it prevents the candidate from being unfairly screened out.
 
-3. **Education & Certifications:**
-   - Check if education meets requirements. Years of senior experience can
-     compensate for a missing degree unless the vacancy explicitly states
-     otherwise.
-   - Only flag missing certifications when the vacancy lists them as required,
-     not merely preferred.
+7. **Overall Score.**
+   - **Mandatory lift check:** capable candidates with transferable seniority, matched must-haves via equivalents, and no critical warnings MUST land at minimum in the "good" tier (50+). Under-scoring capable candidates whose vocabulary differs from the vacancy is the bug we are fixing.
+   - Use the tier ranges defined in the \`overallScore\` schema description. The rubric measures probability of being a strong hire, not literal keyword overlap.
 
-4. **Industry Fit:**
-   - A different industry background is NEUTRAL by default — many roles
-     transfer cleanly between sectors.
-   - Only flag industry as a warning when the target sector requires
-     domain-specific knowledge that genuinely cannot be picked up quickly
-     (e.g. medical device regulation, securities law, pharma GxP, aviation
-     safety standards). For most roles, industry transition is not a gap.
+8. **Advice.** Concrete actions. Name specific profile experiences and the vacancy term they should be reframed as. If the main gap is LINGUISTIC, say so explicitly. Mention extra certifications ONLY if the vacancy actually requires them. Warm, constructive tone — not gatekeeping.
 
-5. **Generate Warnings — be sparing:**
-   - **CRITICAL**: Genuine dealbreakers. Concrete examples: vacancy requires an active professional license (BIG, Wft, advocaat) that the candidate clearly lacks, OR asks for 10+ years senior leadership and the candidate has under 3 years total experience.
-   - **WARNING**: Significant gaps the candidate should explicitly address — typically 2+ VERIFIED must-haves with zero matching signals, AND no plausible equivalent in the profile.
-   - **INFO**: Minor gaps, growth areas, industry-knowledge notes.
-   - **NEVER raise a warning purely because terminology differs.** If the capability is present under a different word, it is MATCHED, not a gap. Linguistic mismatches belong in \`advice\` as a CV-rewriting suggestion, NOT in warnings.
-   - **NEVER raise a warning for a must-have that failed step 2a** (parser hallucinated it).
-   - It is correct and expected for the warnings array to be short or even empty for a strong candidate.
-
-6. **Identify Strengths (be generous — surface real value):**
-   - What makes this candidate stand out?
-   - Which transferable skills, equivalent capabilities and senior
-     responsibilities should the recruiter notice?
-   - Any overqualification in certain areas?
-   - For every must-have skill the candidate matches via equivalence or
-     implicit evidence, that is a strength worth naming explicitly — it
-     prevents the candidate from being unfairly screened out.
-
-7. **Overall Score — apply the mandatory lift check BEFORE picking a tier:**
-
-   **Mandatory lift check:** If the candidate shows clear transferable seniority for the target role (substantial relevant experience, matched must-haves via equivalents, no critical warnings), the score MUST land at minimum in the "good" tier (50+). Under-scoring capable candidates whose CV vocabulary differs from the vacancy is the explicit bug we are fixing.
-
-   **Rubric (after lift check):**
-   - **70-100 — Excellent fit**: strong direct match, minor gaps at most
-   - **50-69 — Good fit**: solid match with some gaps; includes capable candidates whose phrasing differs from the vacancy but whose evidence clearly supports the role
-   - **30-49 — Moderate fit**: real potential but significant verified gaps (2-3+ missing must-haves with no equivalent)
-   - **15-29 — Challenging fit**: major verified gaps; would need a strong narrative case
-   - **0-14 — Unlikely fit**: fundamental mismatch (e.g. graphic designer applying for backend developer with no programming evidence anywhere)
-
-   A 50% must-have match WITH transferable seniority and equivalent evidence should land in 60-75, not 40-55. The rubric measures probability of being a strong hire, not literal keyword overlap.
-
-8. **Actionable Advice:**
-   - Concrete actions the candidate can take to strengthen their application.
-   - **Reframing tips**: Name specific profile experiences and the vacancy term they should be reframed as. Concrete is better: "Reframe je 'klantenservice'-ervaring als 'customer success' — voeg toe wat je deed rond retentie/upsell."
-   - Mention additional certifications ONLY if the vacancy actually requires them.
-   - If the main gap is LINGUISTIC rather than substantive, say so explicitly — the candidate may already qualify and just needs to phrase it right.
-   - Warm and constructive tone, not gatekeeping.
-
-Be constructive AND honest. The goal is an accurate picture of the candidate's actual chances — not gatekeeping, not flattery.`;
+Be constructive AND honest. Goal: accurate picture of actual chances — not gatekeeping, not flattery.`;
 }
 
 export interface AnalyzeFitResult {

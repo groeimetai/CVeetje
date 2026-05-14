@@ -991,7 +991,8 @@
     },
     "cvOptions": {
       "showInterests": "Show interests & hobbies on CV",
-      "interestsHintCount": "interest(s) on profile"
+      "interestsHintCount": "interest(s) on profile",
+      "noInterestsHint": "Add interests to your profile first to show this section."
     },
     "noApiKey": {
       "title": "AI Access Required",

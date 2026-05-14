@@ -895,24 +895,31 @@ export function CVWizard() {
         <div className="space-y-6">
           <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
 
-          {linkedInData.interests && linkedInData.interests.length > 0 && (
-            <div className="rounded-lg border bg-card p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded border-input"
-                  checked={showInterestsOnCV}
-                  onChange={(e) => setShowInterestsOnCV(e.target.checked)}
-                />
-                <div className="flex-1 text-sm">
-                  <div className="font-medium">{t('cvOptions.showInterests')}</div>
-                  <p className="text-muted-foreground mt-0.5">
-                    {linkedInData.interests.length} {t('cvOptions.interestsHintCount')}: {linkedInData.interests.slice(0, 3).join(', ')}{linkedInData.interests.length > 3 ? '…' : ''}
-                  </p>
-                </div>
-              </label>
-            </div>
-          )}
+          {(() => {
+            const interestsCount = linkedInData.interests?.length ?? 0;
+            const hasInterests = interestsCount > 0;
+            return (
+              <div className="rounded-lg border bg-card p-4">
+                <label className={`flex items-start gap-3 ${hasInterests ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}>
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-input"
+                    checked={hasInterests && showInterestsOnCV}
+                    disabled={!hasInterests}
+                    onChange={(e) => setShowInterestsOnCV(e.target.checked)}
+                  />
+                  <div className="flex-1 text-sm">
+                    <div className="font-medium">{t('cvOptions.showInterests')}</div>
+                    <p className="text-muted-foreground mt-0.5">
+                      {hasInterests
+                        ? `${interestsCount} ${t('cvOptions.interestsHintCount')}: ${linkedInData.interests!.slice(0, 3).join(', ')}${interestsCount > 3 ? '…' : ''}`
+                        : t('cvOptions.noInterestsHint')}
+                    </p>
+                  </div>
+                </label>
+              </div>
+            );
+          })()}
 
           <DynamicStylePicker
             linkedInData={linkedInData}

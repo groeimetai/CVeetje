@@ -1126,6 +1126,11 @@ export function ProfileInput({
                 {parsed.projects!.length} Project{parsed.projects!.length !== 1 ? 'en' : ''}
               </Badge>
             )}
+            {(parsed.interests?.length || 0) > 0 && (
+              <Badge variant="secondary">
+                {parsed.interests!.length} Interesse{parsed.interests!.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
           </div>
 
           {parsed.experience.length > 0 && (

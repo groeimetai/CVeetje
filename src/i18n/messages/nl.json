@@ -991,7 +991,8 @@
     },
     "cvOptions": {
       "showInterests": "Interesses & hobbies tonen op CV",
-      "interestsHintCount": "interesse(s) op profiel"
+      "interestsHintCount": "interesse(s) op profiel",
+      "noInterestsHint": "Voeg eerst interesses toe aan je profiel om deze sectie te tonen."
     },
     "noApiKey": {
       "title": "AI Toegang Vereist",
