@@ -204,6 +204,54 @@ export type BoldSurfaceTexture =
   | 'screen-print'       // Slight mis-registered color offset
   | 'stripe-texture';    // Fine repeating diagonal lines
 
+// ============ Top-level Layout Archetype ============
+//
+// This is the BIG knob for experimental. The archetype radically
+// restructures the whole page — sidebar vs no sidebar, where the name
+// lives, whether there's a "lead paragraph" block at the top, whether
+// content is on a strict grid or a mosaic. Each archetype maps to a
+// completely different DOM skeleton in bold.ts. Layered primitives
+// (color, texture, headingStyle, etc.) still apply on top.
+export type BoldLayoutArchetype =
+  | 'sidebar-canva'        // Classic Canva: sidebar + main column (legacy default)
+  | 'manifesto'            // Huge typographic opening statement, compressed grid below
+  | 'magazine-cover'       // Name as a cover headline, "story" content below
+  | 'editorial-inversion'  // Lead paragraph up top, contact pushed to bottom, photo on the right
+  | 'brutalist-grid'       // Hard rectilinear N-column grid, blocky bordered cells, no sidebar
+  | 'vertical-rail'        // Name as a vertical strip running the full left edge
+  | 'mosaic';              // Asymmetric mosaic of colored blocks — no rigid columns
+
+// How many text columns the main content area uses. The renderer
+// clamps this based on archetype (e.g. mosaic ignores it; sidebar-canva
+// forces 1). Only fully consumed by manifesto / brutalist-grid.
+export type BoldColumnCount = 1 | 2 | 3 | 4;
+
+// Big background numeral / word treatment — a single oversized faded
+// element that anchors the page visually. Common in editorial design.
+export type BoldBackgroundNumeral =
+  | 'none'
+  | 'initials'             // Candidate's initials, ghost-sized
+  | 'year'                 // Current year or first year of experience
+  | 'section-number'       // Per-section big numerals in the bg
+  | 'role';                // First word of target role, oversized + faded
+
+// Marginalia / sidenote treatment — small text living in the margins.
+// Magazine-y. Adds depth to the layout without stealing focus.
+export type BoldMarginaliaStyle =
+  | 'none'
+  | 'vertical-strip'       // Vertical text on one edge of the page (vertical-rl writing-mode)
+  | 'numbered'             // Numbered annotations next to sections
+  | 'kicker-callouts';     // Short kicker labels in the side margin
+
+// Palette saturation strategy. Used by the renderer to decide whether
+// to deploy 1, 2, or 3+ colors across the page. Lets the AI pick "loud
+// monochrome with a single screaming accent" vs "full multi-palette".
+export type BoldPaletteSaturation =
+  | 'monochrome-plus-one'  // Greyscale page + single accent (Kruger)
+  | 'duotone'              // 2 strong colors only, no neutrals
+  | 'tri-tone'             // 3 strong colors used in equal weight
+  | 'full-palette';        // Use all 5 palette colors freely
+
 export interface BoldTokens {
   headerLayout: BoldHeaderLayout;
   sidebarStyle: BoldSidebarStyle;
@@ -216,6 +264,31 @@ export interface BoldTokens {
   // Optional so existing documents without it still render cleanly; the
   // renderer treats absence as 'none'. New experimental CVs always fill it.
   surfaceTexture?: BoldSurfaceTexture;
+
+  // ===== New v3 experimental primitives =====
+  // All optional so legacy documents render without changes. The renderer
+  // treats absence as 'sidebar-canva' / sensible defaults.
+
+  /** The big knob — completely re-organises the page skeleton. */
+  layoutArchetype?: BoldLayoutArchetype;
+
+  /** Number of columns in the main content grid (consumed by manifesto /
+   *  brutalist-grid). Ignored by sidebar-canva. */
+  columnCount?: BoldColumnCount;
+
+  /** Optional huge background numeral or word for visual anchoring. */
+  backgroundNumeral?: BoldBackgroundNumeral;
+
+  /** Marginalia / sidenote treatment in the page margins. */
+  marginalia?: BoldMarginaliaStyle;
+
+  /** Palette saturation strategy — controls how many palette colors
+   *  the renderer deploys across the page. */
+  paletteSaturation?: BoldPaletteSaturation;
+
+  /** When true, the summary/about section is rendered as a manifesto-
+   *  style oversized opening statement (huge type, single block). */
+  manifestoOpener?: boolean;
 }
 
 // Custom decoration element (for experimental mode)
