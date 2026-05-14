@@ -98,6 +98,8 @@ export const parsedLinkedInSchema = z.object({
   github: urlSchema,
   // Personal info commonly included on Dutch/European CVs
   birthDate: z.string().max(50).optional(),
+  // Free-text interests/hobbies — shown on the CV when the wizard checkbox is on.
+  interests: z.array(z.string().max(100)).max(50).optional(),
 });
 
 // ============ Job Vacancy Schemas ============
