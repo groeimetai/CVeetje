@@ -63,6 +63,7 @@ const cvContentSchema = z.object({
       highlights: z.array(z.string()).describe('1-3 key achievements from the project'),
     })
   ).optional().describe('Projects ordered by relevance. Include personal projects, open source, academic work.'),
+  interests: z.array(z.string()).optional().describe('Personal interests/hobbies — verbatim from profile.interests. Empty array if profile has none or if interests should be omitted.'),
 });
 
 // HONESTY RULES - Two clear blocks: what is forbidden, what is encouraged.
@@ -464,7 +465,8 @@ function buildPrompt(
   designTokens?: CVDesignTokens,
   language: OutputLanguage = 'nl',
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
-  fitAnalysis?: FitAnalysis | null
+  fitAnalysis?: FitAnalysis | null,
+  includeInterests: boolean = false,
 ): string {
   // Layout-aware instructions (single-column only now for reliable PDF)
   const isCompact = designTokens?.spacing === 'compact';
@@ -553,6 +555,14 @@ ${linkedIn.projects && linkedIn.projects.length > 0
       return parts.join('\n  ');
     }).join('\n')
   : 'No projects listed'}
+
+### Interests/Hobbies:
+${linkedIn.interests && linkedIn.interests.length > 0 ? linkedIn.interests.join(', ') : 'None listed in profile'}
+
+${includeInterests
+  ? `**Interests output rule:** Include the interests listed above VERBATIM in the output \`interests\` array. Do not rephrase, translate, or add new ones. If the profile has no interests, return an empty array.`
+  : `**Interests output rule:** Return an EMPTY \`interests\` array. The user opted out of showing hobbies on this CV — do not include any, regardless of what the profile lists.`
+}
 `;
 
   if (jobVacancy) {
@@ -884,9 +894,10 @@ export async function generateCV(
   designTokens?: CVDesignTokens,
   language: OutputLanguage = 'nl',
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
-  fitAnalysis?: FitAnalysis | null
+  fitAnalysis?: FitAnalysis | null,
+  includeInterests: boolean = false,
 ): Promise<GenerateCVResult> {
-  const prompt = buildPrompt(linkedIn, jobVacancy, designTokens, language, descriptionFormat, fitAnalysis);
+  const prompt = buildPrompt(linkedIn, jobVacancy, designTokens, language, descriptionFormat, fitAnalysis, includeInterests);
 
   try {
     const { value, usage } = await generateObjectResilient({
@@ -896,7 +907,7 @@ export async function generateCV(
       schema: cvContentSchema,
       prompt,
       temperature: resolveTemperature(provider, model, 0.5),
-      normalize: (raw) => normalizeCVContent(raw, linkedIn, jobVacancy),
+      normalize: (raw) => normalizeCVContent(raw, linkedIn, jobVacancy, includeInterests),
       logTag: 'CV Gen',
     });
 
@@ -920,6 +931,7 @@ function normalizeCVContent(
   rawInput: unknown,
   linkedIn: ParsedLinkedIn,
   jobVacancy: JobVacancy | null,
+  includeInterests: boolean = false,
 ): GeneratedCVContent {
   type RawShape = Partial<GeneratedCVContent> & { data?: Partial<GeneratedCVContent> };
   let raw = (rawInput ?? {}) as RawShape;
@@ -1006,6 +1018,19 @@ function normalizeCVContent(
     raw.summary = stripUnsupportedYearClaims(raw.summary, maxWholeYears, false);
   }
 
+  // Interests gating: if the user opted out at the wizard, force an empty
+  // array regardless of what the model returned. If opted in, intersect with
+  // the profile's interests so we never surface a hallucinated hobby.
+  let interests: string[] = [];
+  if (includeInterests && linkedIn.interests && linkedIn.interests.length > 0) {
+    const profileInterestsLower = new Set(linkedIn.interests.map((i) => i.trim().toLowerCase()).filter(Boolean));
+    interests = (raw.interests ?? []).filter((i) => i && profileInterestsLower.has(i.trim().toLowerCase()));
+    // If the model silently dropped them, fall back to the profile list verbatim.
+    if (interests.length === 0) {
+      interests = linkedIn.interests.filter((i) => i && i.trim().length > 0);
+    }
+  }
+
   const filled: GeneratedCVContent = {
     headline: raw.headline ?? '',
     summary: raw.summary ?? '',
@@ -1015,6 +1040,7 @@ function normalizeCVContent(
     languages: raw.languages ?? [],
     certifications: raw.certifications ?? [],
     projects: raw.projects ?? [],
+    interests,
   } as GeneratedCVContent;
 
   // Deterministic claim validation — strip anything the model fabricated

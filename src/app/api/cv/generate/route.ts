@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
       language = 'nl',
       fitAnalysis,
       creativityLevel,
+      includeInterests = false,
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
       language?: OutputLanguage;
       fitAnalysis?: FitAnalysis | null;
       creativityLevel?: StyleCreativityLevel;
+      includeInterests?: boolean;
     };
 
     // Validate input
@@ -121,7 +123,8 @@ export async function POST(request: NextRequest) {
         designTokens,
         language,
         designTokens.experienceDescriptionFormat || 'bullets',
-        fitAnalysis
+        fitAnalysis,
+        includeInterests,
       );
       content = result.content;
       usage = result.usage;

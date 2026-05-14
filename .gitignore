@@ -47,6 +47,9 @@ doc-outputs/
 # local test/debug scripts
 scripts/local/
 
+# local design / rebranding assets (not for repo)
+maakcveetje rebranding/
+
 # social media posts
 /posts/
 

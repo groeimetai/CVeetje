@@ -478,7 +478,7 @@ function getFallback(industry?: string): CVDesignTokens {
     headerFullBleed: false,
     decorations: 'none',
     decorationTheme,
-    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
+    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications', 'interests'],
     layout: 'sidebar-left',
     sidebarSections: ['skills', 'languages', 'certifications'],
     borderRadius: 'none',

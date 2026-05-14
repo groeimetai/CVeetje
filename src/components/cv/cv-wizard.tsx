@@ -85,6 +85,9 @@ export function CVWizard() {
   const [elementColors, setElementColors] = useState<Record<string, string | undefined>>({});
   const [cvId, setCvId] = useState<string | null>(null);
   const [outputLanguage, setOutputLanguage] = useState<OutputLanguage>('nl');
+  // CV options — pre-generate preferences. Default ON if the profile actually
+  // has interests; otherwise OFF (no point asking the AI to render nothing).
+  const [showInterestsOnCV, setShowInterestsOnCV] = useState<boolean>(false);
 
   // Model info for file upload support
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -201,16 +204,17 @@ export function CVWizard() {
         designTokens,
         avatarUrl,
         outputLanguage,
+        showInterestsOnCV,
       });
     }
-  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, saveDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, showInterestsOnCV, saveDraft]);
 
   // Auto-save draft on state changes (debounced by the effect dependencies)
   useEffect(() => {
     if (draftChecked && !showResumeDialog && currentStep !== 'generating' && currentStep !== 'preview') {
       saveCurrentDraft();
     }
-  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, draftChecked, showResumeDialog, saveCurrentDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, showInterestsOnCV, draftChecked, showResumeDialog, saveCurrentDraft]);
 
   // Resume from draft
   const handleResumeDraft = () => {
@@ -222,6 +226,9 @@ export function CVWizard() {
       setDesignTokens(draft.designTokens);
       setAvatarUrl(draft.avatarUrl);
       setOutputLanguage(draft.outputLanguage);
+      setShowInterestsOnCV(
+        draft.showInterestsOnCV ?? !!(draft.linkedInData?.interests && draft.linkedInData.interests.length > 0)
+      );
     }
     setShowResumeDialog(false);
   };
@@ -338,6 +345,8 @@ export function CVWizard() {
 
   const handleLinkedInParsed = (data: ParsedLinkedIn) => {
     setLinkedInData(data);
+    // Default the CV-options checkbox based on whether the profile has interests.
+    setShowInterestsOnCV(!!(data.interests && data.interests.length > 0));
     setCurrentStep('job');
   };
 
@@ -510,6 +519,7 @@ export function CVWizard() {
           language: outputLanguage,
           fitAnalysis,
           creativityLevel: creativityLevel || selectedCreativityLevel,
+          includeInterests: showInterestsOnCV,
         }),
       });
 
@@ -556,6 +566,7 @@ export function CVWizard() {
           avatarUrl,
           language: outputLanguage,
           fitAnalysis,
+          includeInterests: showInterestsOnCV,
         }),
       });
 
@@ -883,6 +894,25 @@ export function CVWizard() {
       {currentStep === 'style' && linkedInData && (
         <div className="space-y-6">
           <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
+
+          {linkedInData.interests && linkedInData.interests.length > 0 && (
+            <div className="rounded-lg border bg-card p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-input"
+                  checked={showInterestsOnCV}
+                  onChange={(e) => setShowInterestsOnCV(e.target.checked)}
+                />
+                <div className="flex-1 text-sm">
+                  <div className="font-medium">{t('cvOptions.showInterests')}</div>
+                  <p className="text-muted-foreground mt-0.5">
+                    {linkedInData.interests.length} {t('cvOptions.interestsHintCount')}: {linkedInData.interests.slice(0, 3).join(', ')}{linkedInData.interests.length > 3 ? '…' : ''}
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
 
           <DynamicStylePicker
             linkedInData={linkedInData}

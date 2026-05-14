@@ -61,6 +61,7 @@ export interface GeneratedCVContent {
   languages: GeneratedCVLanguage[];
   certifications: string[];
   projects?: GeneratedCVProject[];
+  interests?: string[]; // Personal interests/hobbies — verbatim from profile, optional on CV
 }
 
 // ============ Element Override Types (Interactive Preview Editing) ============

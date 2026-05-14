@@ -54,6 +54,8 @@ export interface ProfileEvidence {
   projectTitleSet: Set<string>;
   /** Normalized language names — for exact-match lookup. */
   languageSet: Set<string>;
+  /** Normalized interest/hobby strings — for exact-match lookup. */
+  interestSet: Set<string>;
 }
 
 /**
@@ -94,6 +96,8 @@ export function buildProfileEvidence(profile: ParsedLinkedIn): ProfileEvidence {
     for (const tech of proj.technologies) parts.push(tech);
   }
 
+  for (const interest of profile.interests || []) parts.push(interest);
+
   const evidenceText = parts.map(normalizeText).filter(Boolean).join(' ');
 
   return {
@@ -104,6 +108,7 @@ export function buildProfileEvidence(profile: ParsedLinkedIn): ProfileEvidence {
     schoolSet: new Set(profile.education.map(e => normalizeText(e.school)).filter(Boolean)),
     projectTitleSet: new Set((profile.projects || []).map(p => normalizeText(p.title)).filter(Boolean)),
     languageSet: new Set(profile.languages.map(l => normalizeText(l.language)).filter(Boolean)),
+    interestSet: new Set((profile.interests || []).map(i => normalizeText(i)).filter(Boolean)),
   };
 }
 
@@ -197,6 +202,20 @@ export function validateLanguages<T extends { language: string }>(
   return partition(langs, l => hasEvidence(l.language, evidence.languageSet, evidence.evidenceText));
 }
 
+/**
+ * Interests/hobbies are validated strictly against the profile's interests set.
+ * No permissive matching — if the user listed "fotografie" in their profile
+ * and the model returned "photography", we strip it. Interests are short free
+ * strings; reframing creates fabrication risk without any upside.
+ */
+export function validateInterests(interests: string[], evidence: ProfileEvidence): ValidationResult<string> {
+  return partition(interests, (i) => {
+    const normalized = normalizeText(i);
+    if (!normalized) return false;
+    return evidence.interestSet.has(normalized);
+  });
+}
+
 // ============ Top-level: validate a whole GeneratedCVContent ============
 
 export interface CVContentValidationLog {
@@ -207,6 +226,7 @@ export interface CVContentValidationLog {
   strippedExperience: Array<{ title: string; company: string }>;
   strippedEducation: Array<{ degree: string; institution: string }>;
   strippedLanguages: Array<{ language: string; level: string }>;
+  strippedInterests: string[];
 }
 
 export interface CVContentValidationResult {
@@ -235,6 +255,7 @@ export function validateCVContent(
   const experience = validateExperience(content.experience || [], evidence);
   const education = validateEducation(content.education || [], evidence);
   const languages = validateLanguages(content.languages || [], evidence);
+  const interests = validateInterests(content.interests || [], evidence);
 
   const log: CVContentValidationLog = {
     strippedSkillsTechnical: technical.stripped,
@@ -244,6 +265,7 @@ export function validateCVContent(
     strippedExperience: experience.stripped.map(e => ({ title: e.title, company: e.company })),
     strippedEducation: education.stripped.map(e => ({ degree: e.degree, institution: e.institution })),
     strippedLanguages: languages.stripped.map(l => ({ language: l.language, level: l.level })),
+    strippedInterests: interests.stripped,
   };
 
   const cleaned: GeneratedCVContent = {
@@ -254,6 +276,7 @@ export function validateCVContent(
     experience: experience.kept,
     education: education.kept,
     languages: languages.kept,
+    interests: interests.kept,
   };
 
   const hasAnyStripped =
@@ -263,7 +286,8 @@ export function validateCVContent(
     projects.stripped.length > 0 ||
     experience.stripped.length > 0 ||
     education.stripped.length > 0 ||
-    languages.stripped.length > 0;
+    languages.stripped.length > 0 ||
+    interests.stripped.length > 0;
 
   return { cleaned, log, hasAnyStripped };
 }

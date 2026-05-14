@@ -843,6 +843,22 @@ function generateBoldSidebar(
     }
   }
 
+  // Interests
+  if (content.interests && content.interests.length > 0) {
+    if (!getOverride(overrides, 'section-interests')?.hidden) {
+      const items = content.interests.map((interest, i) => {
+        if (getOverride(overrides, `interest-${i}`)?.hidden) return '';
+        return `<li data-id="interest-${i}">${escapeHtml(interest)}</li>`;
+      }).filter(Boolean).join('');
+      sections.push(`
+        <div class="sidebar-section" data-section="interests">
+          <h2>Interests</h2>
+          <ul>${items}</ul>
+        </div>
+      `);
+    }
+  }
+
   return `<aside class="bold-sidebar">${sections.join('')}</aside>`;
 }
 
@@ -898,7 +914,7 @@ function generateBoldMain(
   };
 
   // Main column never includes sidebar sections
-  const sidebarSectionNames = new Set(['skills', 'languages', 'certifications']);
+  const sidebarSectionNames = new Set(['skills', 'languages', 'certifications', 'interests']);
   let sectionIndex = 0;
   const sections = tokens.sectionOrder
     .filter((name) => !sidebarSectionNames.has(name))

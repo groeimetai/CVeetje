@@ -21,6 +21,7 @@ import {
   Languages as LanguagesIcon,
   FolderKanban,
   Wrench,
+  Heart,
   Plus,
   Trash2,
   ArrowUp,
@@ -173,6 +174,15 @@ export function ProfileEditForm({ value, onChange }: ProfileEditFormProps) {
     setProjects(updateAt(projectsList, idx, patch));
   const removeProject = (idx: number) => setProjects(removeAt(projectsList, idx));
   const moveProject = (idx: number, dir: -1 | 1) => setProjects(moveItem(projectsList, idx, dir));
+
+  // Interests handlers (simple string array, tag-style)
+  const interestsList = value.interests || [];
+  const setInterests = (next: string[]) => onChange({ ...value, interests: next });
+  const addInterest = () => setInterests([...interestsList, '']);
+  const updateInterest = (idx: number, name: string) =>
+    setInterests(interestsList.map((item, i) => (i === idx ? name : item)));
+  const removeInterest = (idx: number) =>
+    setInterests(interestsList.filter((_, i) => i !== idx));
 
   return (
     <Accordion
@@ -542,6 +552,53 @@ export function ProfileEditForm({ value, onChange }: ProfileEditFormProps) {
             <Button type="button" variant="outline" size="sm" onClick={addSkill}>
               <Plus className="h-4 w-4 mr-1" />
               {a('addSkill')}
+            </Button>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* Interests & hobbies */}
+      <AccordionItem value="interests">
+        <AccordionTrigger className="text-base font-semibold">
+          <div className="flex items-center gap-2">
+            <Heart className="h-4 w-4" />
+            {t('sections.interests')}
+            {interestsList.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{interestsList.length}</Badge>
+            )}
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-3 pt-2">
+            <div className="flex flex-wrap gap-2">
+              {interestsList.map((interest, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1 rounded-full border bg-background pl-3 pr-1 py-1"
+                >
+                  <Input
+                    value={interest}
+                    onChange={(e) => updateInterest(idx, e.target.value)}
+                    placeholder={f('interestPlaceholder')}
+                    className="h-6 w-auto border-0 bg-transparent px-0 py-0 text-sm focus-visible:ring-0 shadow-none"
+                    style={{ minWidth: '5rem', width: `${Math.max(interest.length, 5)}ch` }}
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-5 w-5"
+                    onClick={() => removeInterest(idx)}
+                    aria-label={a('remove')}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addInterest}>
+              <Plus className="h-4 w-4 mr-1" />
+              {a('addInterest')}
             </Button>
           </div>
         </AccordionContent>

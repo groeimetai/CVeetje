@@ -643,6 +643,7 @@ function generateSections(
     languages: () => generateLanguages(content.languages, overrides),
     certifications: () => generateCertifications(content.certifications, overrides),
     projects: () => generateProjects(content.projects, overrides),
+    interests: () => generateInterests(content.interests, overrides),
   };
 
   return tokens.sectionOrder
@@ -672,6 +673,7 @@ function generateSectionsFromList(
     languages: () => generateLanguages(content.languages, overrides),
     certifications: () => generateCertifications(content.certifications, overrides),
     projects: () => generateProjects(content.projects, overrides),
+    interests: () => generateInterests(content.interests, overrides),
   };
 
   return sectionNames
@@ -1048,6 +1050,38 @@ function generateCertifications(
   </section>`;
 }
 
+// ============ Interests Section ============
+
+function generateInterests(
+  interests: string[] | undefined,
+  overrides?: CVElementOverrides | null
+): string {
+  if (!interests || interests.length === 0) return '';
+
+  const sectionOverride = getOverride(overrides, 'section-interests');
+  if (sectionOverride?.hidden) return '';
+
+  const items = interests.map((interest, index) => {
+    const itemOverride = getOverride(overrides, `interest-${index}`);
+    if (itemOverride?.hidden) return '';
+
+    return `
+      <li class="interest-item" data-id="interest-${index}" style="${getOverrideStyle(itemOverride)}">
+        <span class="interest-name">${escapeHtml(interest)}</span>
+      </li>`;
+  }).filter(Boolean).join('');
+
+  return `
+  <section class="section" data-section="interests">
+    <h2 class="section-title">Interests</h2>
+    <div class="section-content">
+      <ul class="interests-list">
+        ${items}
+      </ul>
+    </div>
+  </section>`;
+}
+
 // ============ Projects Section ============
 
 function generateProjects(
@@ -1175,6 +1209,6 @@ export function getDefaultTokens(): CVDesignTokens {
     roundedCorners: true,
     headerFullBleed: false,
     decorations: 'none',
-    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
+    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications', 'interests'],
   };
 }

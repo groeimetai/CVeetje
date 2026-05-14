@@ -22,6 +22,7 @@ export interface WizardDraft {
   designTokens: CVDesignTokens | null;
   avatarUrl: string | null;
   outputLanguage: OutputLanguage;
+  showInterestsOnCV?: boolean;
   savedAt: number; // timestamp
 }
 

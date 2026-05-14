@@ -710,6 +710,7 @@ function generateEditorialBody(
     languages: () => renderLanguages(content.languages, overrides),
     certifications: () => renderCertifications(content.certifications, overrides),
     projects: () => renderProjects(content.projects, e, overrides),
+    interests: () => renderInterests(content.interests, overrides),
   };
 
   const supportsRail = e.grid === 'asymmetric-60-40' || e.grid === 'asymmetric-70-30';
@@ -936,6 +937,24 @@ function renderCertifications(
     .join('');
 
   return `${sectionTitle('Certifications')}<ul class="editorial-inline-list">${items}</ul>`;
+}
+
+function renderInterests(
+  interests: string[] | undefined,
+  overrides?: CVElementOverrides | null,
+): string {
+  if (!interests || interests.length === 0) return '';
+  if (getOverride(overrides, 'section-interests')?.hidden) return '';
+
+  const items = interests
+    .map((interest, i) => {
+      if (getOverride(overrides, `interest-${i}`)?.hidden) return '';
+      return `<li data-id="interest-${i}">${escapeHtml(interest)}</li>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  return `${sectionTitle('Interests')}<ul class="editorial-inline-list">${items}</ul>`;
 }
 
 function renderProjects(

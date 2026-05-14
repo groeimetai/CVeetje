@@ -154,10 +154,13 @@ export function ProfileEnrichDrawer({
         (preview.enrichedProfile.projects?.length || 0) - (currentProfile.projects?.length || 0)
       )
     : [];
+  const newInterests = preview
+    ? (preview.enrichedProfile.interests || []).slice(currentProfile.interests?.length ?? 0)
+    : [];
 
   const hasAnyChange = preview && (
     newExperience.length > 0 || newEducation.length > 0 || newSkills.length > 0 ||
-    newCertifications.length > 0 || newProjects.length > 0 ||
+    newCertifications.length > 0 || newProjects.length > 0 || newInterests.length > 0 ||
     (preview.updates?.experience.length ?? 0) > 0 ||
     (preview.updates?.education.length ?? 0) > 0 ||
     (preview.updates?.skills.length ?? 0) > 0 ||
@@ -449,6 +452,21 @@ export function ProfileEnrichDrawer({
                           <p className="text-muted-foreground line-clamp-2">{proj.description}</p>
                         )}
                       </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {newInterests.length > 0 && (
+                <section>
+                  <h4 className="text-sm font-semibold mb-2">
+                    {t('changesHeader')} · {t('interests')}
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {newInterests.map((interest, idx) => (
+                      <Badge key={idx} variant="outline">
+                        {interest}
+                      </Badge>
                     ))}
                   </div>
                 </section>

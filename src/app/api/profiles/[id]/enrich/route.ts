@@ -25,7 +25,7 @@ import type {
 
 const updateExperienceSchema = z.object({
   targetIndex: z.number().int().min(0).describe('0-based index in the existing experience list'),
-  targetIdentifier: z.string().describe('Identifier of the item being updated, exact format: "{currentTitle} @ {currentCompany}". Used to verify the right item is targeted.'),
+  targetIdentifier: z.string().min(1).describe('REQUIRED, non-empty. Identifier of the item being updated, exact format: "{currentTitle} @ {currentCompany}" — copied verbatim from the profile listing. Used to verify the right item is targeted.'),
   title: z.string().describe('New job title, empty string to keep existing'),
   company: z.string().describe('New company name, empty string to keep existing'),
   location: z.string().describe('New location, empty string to keep existing'),
@@ -37,7 +37,7 @@ const updateExperienceSchema = z.object({
 
 const updateEducationSchema = z.object({
   targetIndex: z.number().int().min(0),
-  targetIdentifier: z.string().describe('Format: "{currentDegree} @ {currentSchool}"'),
+  targetIdentifier: z.string().min(1).describe('REQUIRED, non-empty. Format: "{currentDegree} @ {currentSchool}"'),
   school: z.string().describe('Empty string to keep existing'),
   degree: z.string().describe('Empty string to keep existing'),
   fieldOfStudy: z.string().describe('Empty string to keep existing'),
@@ -47,13 +47,13 @@ const updateEducationSchema = z.object({
 
 const updateSkillSchema = z.object({
   targetIndex: z.number().int().min(0),
-  targetIdentifier: z.string().describe('Current skill name'),
-  name: z.string().describe('New skill name (cannot be empty for a skill update)'),
+  targetIdentifier: z.string().min(1).describe('REQUIRED, non-empty. Current skill name verbatim.'),
+  name: z.string().min(1).describe('New skill name (cannot be empty for a skill update)'),
 });
 
 const updateCertificationSchema = z.object({
   targetIndex: z.number().int().min(0),
-  targetIdentifier: z.string().describe('Format: "{currentName} @ {currentIssuer}"'),
+  targetIdentifier: z.string().min(1).describe('REQUIRED, non-empty. Format: "{currentName} @ {currentIssuer}"'),
   name: z.string().describe('Empty string to keep existing'),
   issuer: z.string().describe('Empty string to keep existing'),
   issueDate: z.string().describe('Empty string to keep existing'),
@@ -61,7 +61,7 @@ const updateCertificationSchema = z.object({
 
 const updateProjectSchema = z.object({
   targetIndex: z.number().int().min(0),
-  targetIdentifier: z.string().describe('Current project title'),
+  targetIdentifier: z.string().min(1).describe('REQUIRED, non-empty. Current project title verbatim.'),
   title: z.string().describe('Empty string to keep existing'),
   description: z.string().describe('Empty string to keep existing'),
   technologies: z.array(z.string()).describe('Empty array to keep existing technologies, non-empty replaces the entire list'),
@@ -116,6 +116,7 @@ const enrichmentSchema = z.object({
       role: z.string().describe('Empty string if not specified'),
     })
   ).describe('NEW projects'),
+  newInterests: z.array(z.string()).describe('NEW interests/hobbies — only when the user explicitly mentions a hobby or interest (e.g. "ik fotografeer veel", "houd van wandelen"). Empty array otherwise. Avoid duplicates with existing interests.'),
 
   // UPDATES — alleen invullen als de gebruikersinput EXPLICIET een bestaand item beschrijft
   updatedExperience: z.array(updateExperienceSchema).describe('UPDATES to existing experience items. Empty array if no updates.'),
@@ -371,6 +372,13 @@ function mergeEnrichment(
       })),
       ...projectsWithUpdates,
     ],
+    interests: [
+      ...(existing.interests || []),
+      ...ai.newInterests
+        .map(i => i.trim())
+        .filter(i => i.length > 0)
+        .filter(i => !(existing.interests || []).some(e => e.toLowerCase() === i.toLowerCase())),
+    ],
   };
 
   return {
@@ -417,6 +425,10 @@ function buildPrompt(existing: ParsedLinkedIn, enrichmentText: string): string {
     ? '(geen)'
     : (existing.projects || []).map((p, i) => `  [${i}] "${p.title}"`).join('\n');
 
+  const interestList = (existing.interests || []).length === 0
+    ? '(geen)'
+    : (existing.interests || []).map((interest, i) => `  [${i}] "${interest}"`).join('\n');
+
   return `Je bent een professionele CV-assistent. De gebruiker heeft een bestaand profiel en wil dit verrijken of bijwerken op basis van vrije tekst.
 
 ═══════════════════════════════════════
@@ -441,6 +453,9 @@ ${certList}
 Projecten (0-based index):
 ${projList}
 
+Interesses & hobbies (0-based index):
+${interestList}
+
 ═══════════════════════════════════════
 GEBRUIKERSINPUT
 ═══════════════════════════════════════
@@ -452,18 +467,28 @@ INSTRUCTIES
 
 Je kunt TWEE soorten wijzigingen voorstellen:
 
-A) NIEUW TOEVOEGEN (newExperience, newEducation, newSkills, newCertifications, newProjects)
+A) NIEUW TOEVOEGEN (newExperience, newEducation, newSkills, newCertifications, newProjects, newInterests)
    → Gebruik dit als de input een item beschrijft dat NIET in het bestaande profiel staat.
+   → Voor newInterests: korte vrije tekst per item (bijv. "fotografie", "mountainbiken"). Alleen toevoegen als de gebruiker expliciet een hobby/interesse benoemt.
 
 B) BESTAAND ITEM WIJZIGEN (updatedExperience, updatedEducation, updatedSkills, updatedCertifications, updatedProjects)
    → Gebruik dit als de input EXPLICIET een wijziging beschrijft aan een item dat AL in het profiel staat.
    → Bijvoorbeeld: "verander mijn titel bij Acme naar Lead Engineer" of "verplaats mijn startdatum bij Contoso naar maart 2024".
    → Vereisten per update-item:
        • targetIndex: de exacte 0-based index uit de lijst hierboven
-       • targetIdentifier: kopieer het identifier-deel tussen aanhalingstekens uit de lijst hierboven (bijv. "Senior Engineer @ Acme")
+       • targetIdentifier: kopieer het identifier-deel tussen aanhalingstekens uit de lijst hierboven (bijv. "Senior Engineer @ Acme"). NOOIT leeg laten — zonder identifier wordt de update afgewezen.
        • Voor velden die je NIET wilt wijzigen: gebruik een lege string ""
        • Voor isCurrentRole (alleen experience): "keep" tenzij de input expliciet aangeeft dat de rol stopt of nu loopt
    → Een update-item alleen NEW velden bevat die DAADWERKELIJK iets veranderen — geen identieke kopie van de huidige waarde.
+   → Voor interesses bestaat GEEN updated-variant: als de gebruiker een hobby wil hernoemen, laat dat aan de gebruiker (deze flow ondersteunt het niet).
+
+═══════════════════════════════════════
+SIGNAAL-WOORDEN: UPDATE vs ADD
+═══════════════════════════════════════
+
+→ Werkwoorden zoals **"verander", "wijzig", "update", "hernoem", "pas aan", "corrigeer", "verbeter", "verfijn"** duiden bijna altijd op UPDATE — niet ADD.
+→ Werkwoorden zoals **"voeg toe", "nieuw", "begonnen bij", "extra", "ook nog"** duiden op ADD.
+→ Frases zoals **"vanaf <datum>"** of **"sinds <datum>"** met een nieuwe bedrijfsnaam = ADD; met een bestaande bedrijfsnaam = UPDATE op endDate/isCurrentRole.
 
 ═══════════════════════════════════════
 KRITIEKE REGELS — ANTI-HALLUCINATIE
@@ -474,6 +499,7 @@ KRITIEKE REGELS — ANTI-HALLUCINATIE
 2. **Bij twijfel: zet in ambiguityWarnings, doe NIETS.**
    - "Verander mijn titel naar Lead" en er zijn meerdere mogelijke ervaringen → géén update, voeg een waarschuwing toe in ambiguityWarnings die uitlegt om welke ervaring het zou kunnen gaan.
    - "Voeg toe dat ik bij Acme werk" en er staat al een Acme-rol → géén NEW maar overweeg of het een UPDATE is.
+   - Maar: als er één duidelijke kandidaat is (één Acme-rol, één titel die "Engineer" bevat, etc.) → wees NIET overdreven voorzichtig. Voer de update uit.
 
 3. **UPDATE vs ADD:**
    - Als de input een bedrijf/school/skill/project noemt dat AL bestaat (zelfde of vergelijkbare spelling) → UPDATE.
@@ -486,7 +512,9 @@ KRITIEKE REGELS — ANTI-HALLUCINATIE
 
 6. **Headline/about updaten alleen** als de input een significant nieuwe rol of richting beschrijft. Anders headline=null en about=null.
 
-7. **changesSummary** in Nederlands, kort, telt zowel toegevoegde als gewijzigde items. Als je niets hebt gewijzigd vanwege ambiguïteit, leg dat uit.`;
+7. **Interesses zijn vrij-tekst** — alleen toevoegen via newInterests als de input expliciet een hobby of interesse benoemt. Verzin geen interesses uit de about-tekst of werkervaring.
+
+8. **changesSummary** in Nederlands, kort, telt zowel toegevoegde als gewijzigde items. Als je niets hebt gewijzigd vanwege ambiguïteit, leg dat uit.`;
 }
 
 // ============================================================================
@@ -608,6 +636,12 @@ export async function POST(
       }
       if (merge.appliedUpdates.projects > 0) {
         changes.push(`${merge.appliedUpdates.projects} project(en) gewijzigd`);
+      }
+      const newInterestsAdded = (object.newInterests || []).filter(
+        i => i.trim() && !(existingProfile.interests || []).some(e => e.toLowerCase() === i.trim().toLowerCase())
+      ).length;
+      if (newInterestsAdded > 0) {
+        changes.push(`${newInterestsAdded} interesse(s)/hobby('s) toegevoegd`);
       }
 
       const tokenUsage: TokenUsage | undefined = usage ? {

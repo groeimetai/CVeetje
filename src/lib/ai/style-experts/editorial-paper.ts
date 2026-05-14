@@ -100,7 +100,7 @@ function getFallback(industry?: string): CVDesignTokens {
     roundedCorners: true,
     headerFullBleed: false,
     decorations: 'minimal',
-    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'],
+    sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications', 'interests'],
   };
 }
 

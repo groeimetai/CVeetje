@@ -631,6 +631,7 @@
         "experience": "Experience",
         "education": "Education",
         "skills": "Skills",
+        "interests": "Interests & hobbies",
         "languages": "Languages",
         "certifications": "Certifications",
         "projects": "Projects"
@@ -667,7 +668,8 @@
         "projectDescription": "Description",
         "technologies": "Technologies",
         "url": "URL",
-        "role": "Role"
+        "role": "Role",
+        "interestPlaceholder": "e.g. photography"
       },
       "actions": {
         "add": "Add",
@@ -679,7 +681,8 @@
         "addSkill": "Add skill",
         "addLanguage": "Add language",
         "addCertification": "Add certification",
-        "addProject": "Add project"
+        "addProject": "Add project",
+        "addInterest": "Add interest"
       }
     },
     "enrich": {
@@ -702,6 +705,7 @@
       "skills": "Skills",
       "certifications": "Certifications",
       "projects": "Projects",
+      "interests": "Interests & hobbies",
       "jobTitle": "Title",
       "company": "Company",
       "period": "Period",
@@ -981,6 +985,10 @@
       "description": "In which language should the CV content be generated?",
       "dutch": "Dutch",
       "english": "English"
+    },
+    "cvOptions": {
+      "showInterests": "Show interests & hobbies on CV",
+      "interestsHintCount": "interest(s) on profile"
     },
     "noApiKey": {
       "title": "AI Access Required",

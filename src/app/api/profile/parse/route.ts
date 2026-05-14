@@ -74,6 +74,7 @@ const profileSchema = z.object({
       role: z.string().describe('Role in the project, empty string if not specified'),
     })
   ).describe('Projects (personal, open source, academic, portfolio)'),
+  interests: z.array(z.string()).describe('Personal interests/hobbies — only items literally listed under a "Hobbies", "Interests", "Interesses", or similar heading. Empty array if no such section is present in the source.'),
 });
 
 export async function POST(request: NextRequest) {
@@ -219,6 +220,7 @@ Fields to extract (only when visible in source):
 - Skills — only skills literally listed in source (don't infer from job titles)
 - Languages and proficiency levels — only languages actually mentioned
 - Certifications — only certifications actually listed
+- **Interests/hobbies** — only items listed under a dedicated section heading like "Hobbies", "Interests", "Interesses", "Hobby's". Return them verbatim (e.g. "photography", "mountain biking"). Empty array if no such section exists. NEVER derive hobbies from job descriptions, about-text, or general atmosphere.
 
 Be thorough about extracting what IS there. Be empty/null about what ISN'T there.`;
 
@@ -360,6 +362,7 @@ Be thorough about extracting what IS there. Be empty/null about what ISN'T there
         website: object.contactInfo.website || undefined,
         github: object.contactInfo.github || undefined,
         birthDate: object.contactInfo.birthDate || undefined,
+        interests: (object.interests || []).map(i => i.trim()).filter(Boolean),
       };
 
       return NextResponse.json({

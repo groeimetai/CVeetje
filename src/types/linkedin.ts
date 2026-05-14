@@ -60,6 +60,9 @@ export interface ParsedLinkedIn {
   github?: string;
   // Personal info commonly included on Dutch CVs but not exported by LinkedIn
   birthDate?: string;
+  // Hobbies/interests — free-text strings, optional. Surfaces in CV when the
+  // user opts in via the wizard checkbox.
+  interests?: string[];
 }
 
 // Contact information for CV header

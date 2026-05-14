@@ -53,7 +53,7 @@ export function validateColors(colors: CVDesignTokens['colors']): CVDesignTokens
  * preserving user-specified order at the front.
  */
 export function validateSectionOrder(order: string[] | undefined): string[] {
-  const allSections = ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications'];
+  const allSections = ['summary', 'experience', 'education', 'skills', 'projects', 'languages', 'certifications', 'interests'];
   const safeOrder = (order || []).filter(s => allSections.includes(s));
   for (const section of allSections) {
     if (!safeOrder.includes(section)) safeOrder.push(section);

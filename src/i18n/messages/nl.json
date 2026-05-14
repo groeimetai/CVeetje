@@ -631,6 +631,7 @@
         "experience": "Werkervaring",
         "education": "Opleiding",
         "skills": "Vaardigheden",
+        "interests": "Interesses & hobbies",
         "languages": "Talen",
         "certifications": "Certificaten",
         "projects": "Projecten"
@@ -667,7 +668,8 @@
         "projectDescription": "Omschrijving",
         "technologies": "Technologieën",
         "url": "URL",
-        "role": "Rol"
+        "role": "Rol",
+        "interestPlaceholder": "bijv. fotografie"
       },
       "actions": {
         "add": "Toevoegen",
@@ -679,7 +681,8 @@
         "addSkill": "Vaardigheid toevoegen",
         "addLanguage": "Taal toevoegen",
         "addCertification": "Certificaat toevoegen",
-        "addProject": "Project toevoegen"
+        "addProject": "Project toevoegen",
+        "addInterest": "Interesse toevoegen"
       }
     },
     "enrich": {
@@ -702,6 +705,7 @@
       "skills": "Vaardigheden",
       "certifications": "Certificaten",
       "projects": "Projecten",
+      "interests": "Interesses & hobbies",
       "jobTitle": "Titel",
       "company": "Bedrijf",
       "period": "Periode",
@@ -981,6 +985,10 @@
       "description": "In welke taal moet de CV content gegenereerd worden?",
       "dutch": "Nederlands",
       "english": "Engels"
+    },
+    "cvOptions": {
+      "showInterests": "Interesses & hobbies tonen op CV",
+      "interestsHintCount": "interesse(s) op profiel"
     },
     "noApiKey": {
       "title": "AI Toegang Vereist",
