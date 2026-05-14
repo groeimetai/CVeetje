@@ -50,16 +50,37 @@ export async function getCachedJob(slug: string): Promise<CachedJob | null> {
   return fromFirestore(snap.id, snap.data() as Record<string, unknown>);
 }
 
+/**
+ * Recursively remove `undefined` values. Firestore rejects undefined unless the
+ * admin SDK is initialized with `ignoreUndefinedProperties: true`, and that
+ * setting is fragile across cold starts. Strip preemptively so a single rogue
+ * undefined never breaks the entire cache write.
+ */
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((v) => stripUndefined(v)) as unknown as T;
+  }
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v === undefined) continue;
+      out[k] = stripUndefined(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 export async function upsertCachedJob(job: NormalizedJob): Promise<CachedJob> {
   const db = getAdminDb();
   const now = Date.now();
   const expiresAt = new Date(now + TTL_MS);
 
-  const payload = {
+  const payload = stripUndefined({
     ...job,
     fetchedAt: FieldValue.serverTimestamp(),
     expiresAt: Timestamp.fromDate(expiresAt),
-  };
+  });
 
   await db.collection(COLLECTION).doc(job.slug).set(payload, { merge: true });
 

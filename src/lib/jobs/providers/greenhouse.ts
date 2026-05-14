@@ -85,13 +85,15 @@ function extractQuestions(raw: GreenhouseQuestion[] | undefined): ApplyQuestion[
       if (field.name === 'phone') continue;
       if (field.name === 'resume_text') continue;
       if (field.name === 'cover_letter_text') continue;
+      const options = field.values?.map((v) => v.label);
+      const description = q.description ? stripTags(q.description) : undefined;
       out.push({
         id: field.name,
         label: q.label || field.name,
         required: q.required ?? false,
         type: mapFieldType(field.type),
-        options: field.values?.map((v) => v.label),
-        description: q.description ? stripTags(q.description) : undefined,
+        ...(options && options.length > 0 ? { options } : {}),
+        ...(description ? { description } : {}),
       });
     }
   }

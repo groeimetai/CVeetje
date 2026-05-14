@@ -83,13 +83,16 @@ function mapPosting(
   const description = buildDescription(posting);
   const detail = posting as LeverPostingDetail;
   const applyQuestions: ApplyQuestion[] = (detail.applicationFields ?? []).map(
-    (field, idx) => ({
-      id: `customQuestions[${idx}]`,
-      label: field.text,
-      required: field.required ?? false,
-      type: mapApplicationFieldType(field.type),
-      options: field.options?.map((o) => o.text),
-    }),
+    (field, idx) => {
+      const options = field.options?.map((o) => o.text);
+      return {
+        id: `customQuestions[${idx}]`,
+        label: field.text,
+        required: field.required ?? false,
+        type: mapApplicationFieldType(field.type),
+        ...(options && options.length > 0 ? { options } : {}),
+      };
+    },
   );
 
   return {

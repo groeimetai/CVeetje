@@ -73,7 +73,7 @@ function mapOffer(
     label: stripTags(q.body) || 'Question',
     required: q.required ?? false,
     type: mapQuestionType(q.kind),
-    options: q.options,
+    ...(q.options && q.options.length > 0 ? { options: q.options } : {}),
   }));
 
   return {
