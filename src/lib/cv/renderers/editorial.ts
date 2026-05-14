@@ -568,12 +568,20 @@ function generateEditorialCSS(
     /* ============ Decoration layer CSS ============ */
     ${decorCSS}
 
-    /* PDF print rules */
+    /* PDF print rules.
+       @page intentionally does NOT set size A4 at top level — Puppeteer's
+       pdf() options set the paper size. With CSS size A4 here, single-page
+       mode (dynamic options.height, e.g. 1273mm) hit a Chromium conflict:
+       paper was 1273mm but pages broke every 297mm, producing 4+ pages
+       with massive empty bands. Letting options dictate size avoids this.
+       The size A4 lives inside @media print so multi-page mode still uses A4. */
     @page {
-      size: A4;
       margin: 0;
     }
     @media print {
+      @page {
+        size: A4;
+      }
       html, body {
         background: var(--e-page-bg);
       }

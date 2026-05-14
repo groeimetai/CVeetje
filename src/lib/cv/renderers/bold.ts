@@ -471,12 +471,17 @@ function generateBoldCSS(
     /* ================= Icons base ================= */
     ${getIconTreatmentCSS(b.iconTreatment, colors)}
 
-    /* ================= Print ================= */
+    /* ================= Print =================
+       Same fix as editorial.ts — only declare size A4 inside @media print so
+       single-page PDF mode (which uses dynamic options.width/height) is not
+       paginated at A4 boundaries by Chromium. */
     @page {
-      size: A4;
       margin: 0;
     }
     @media print {
+      @page {
+        size: A4;
+      }
       html, body {
         background: var(--b-page-bg);
       }
