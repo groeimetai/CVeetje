@@ -979,7 +979,10 @@
 }
 @media (max-width: 880px) {
   .dash { display: block; }
-  .dash-sb { display: none; }
+  /* Only hide the desktop sidebar (direct child of .dash). The mobile
+     Sheet renders <aside class="dash-sb"> in a portal at document.body,
+     which is NOT a direct child of .dash — so it stays visible. */
+  .dash > .dash-sb { display: none; }
   .dash-mobile-header { display: flex; }
   .dash-topbar { display: none; }
 }
