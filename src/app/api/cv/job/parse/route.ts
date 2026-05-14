@@ -3,6 +3,10 @@ import { cookies } from 'next/headers';
 import { getAdminAuth } from '@/lib/firebase/admin';
 import { parseJobVacancy } from '@/lib/ai/job-parser';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { crawlVacancy } from '@/lib/jobs/crawl';
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Get request body
     const body = await request.json();
-    const { rawText } = body as { rawText: string };
+    const { rawText, sourceUrl } = body as { rawText: string; sourceUrl?: string };
 
     // Validate input
     if (!rawText || rawText.trim().length < 50) {
@@ -40,6 +44,28 @@ export async function POST(request: NextRequest) {
         { error: 'Plak een volledige vacaturetekst (minimaal 50 tekens)' },
         { status: 400 }
       );
+    }
+
+    // If a source URL was supplied (e.g. Adzuna listing prefill), try to crawl
+    // the full vacancy text. Adzuna gives us a 500-char snippet; the AI parser
+    // produces a *much* sharper JobVacancy when fed the full posting. Crawl
+    // failures are silent — we fall back to the rawText we already have.
+    let effectiveRawText = rawText;
+    let crawlMethod: string | null = null;
+    if (typeof sourceUrl === 'string' && sourceUrl.trim().length > 0) {
+      try {
+        const crawl = await crawlVacancy(sourceUrl.trim());
+        if (
+          crawl.ok &&
+          crawl.fullText.length > rawText.trim().length * 1.5 &&
+          crawl.fullText.length >= 800
+        ) {
+          effectiveRawText = crawl.fullText;
+          crawlMethod = crawl.method + (crawl.cached ? '-cached' : '');
+        }
+      } catch (err) {
+        console.warn('[job/parse] crawl failed:', err instanceof Error ? err.message : err);
+      }
     }
 
     // Resolve AI provider (handles own-key vs platform mode + credit deduction)
@@ -58,7 +84,7 @@ export async function POST(request: NextRequest) {
     let usage;
     try {
       const result = await parseJobVacancy(
-        rawText,
+        effectiveRawText,
         resolved.providerName,
         resolved.apiKey,
         resolved.model
@@ -76,6 +102,9 @@ export async function POST(request: NextRequest) {
       success: true,
       data: vacancy,
       usage,
+      crawl: crawlMethod
+        ? { method: crawlMethod, originalLength: rawText.length, fullLength: effectiveRawText.length }
+        : null,
     });
   } catch (error) {
     console.error('Job parsing error:', error);

@@ -100,7 +100,7 @@ export function JobInput({
       const response = await fetch('/api/cv/job/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText }),
+        body: JSON.stringify({ rawText, sourceUrl: sourceHint?.externalUrl }),
       });
 
       const result = await response.json();
