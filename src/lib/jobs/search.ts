@@ -120,6 +120,13 @@ function enrichWithAtsDetection(job: NormalizedJob): NormalizedJob {
   };
 }
 
+/**
+ * Cap how many jobs per seeded company we keep, sorted by most recent. Stripe,
+ * Booking, GitLab etc. can have 300-500 open positions; processing all of them
+ * on every search is wasteful since we only show 20 per page.
+ */
+const MAX_JOBS_PER_SEEDED_COMPANY = 100;
+
 async function searchSeededAts(params: JobSearchParams): Promise<NormalizedJob[]> {
   const companies = getCompanies();
   const lists = await Promise.all(
@@ -127,7 +134,15 @@ async function searchSeededAts(params: JobSearchParams): Promise<NormalizedJob[]
       const provider = getProvider(company.provider);
       if (!provider) return [];
       try {
-        return await provider.listForCompany(company.companyId);
+        const all = await provider.listForCompany(company.companyId);
+        if (all.length <= MAX_JOBS_PER_SEEDED_COMPANY) return all;
+        // Most-recent first, then cap.
+        const sorted = [...all].sort((a, b) => {
+          const ta = a.postedAt ? Date.parse(a.postedAt) : 0;
+          const tb = b.postedAt ? Date.parse(b.postedAt) : 0;
+          return tb - ta;
+        });
+        return sorted.slice(0, MAX_JOBS_PER_SEEDED_COMPANY);
       } catch (err) {
         console.warn(
           `[jobs/search] ${company.provider}/${company.companyId} failed`,

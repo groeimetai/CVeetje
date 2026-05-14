@@ -142,7 +142,11 @@ export class GreenhouseProvider implements JobProvider {
   }
 
   async listForCompany(boardToken: string): Promise<NormalizedJob[]> {
-    const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs?content=true`;
+    // Drop content=true: full HTML description per job is unused on the listing
+    // page (cards show title/company/location only) and inflates the payload
+    // 10-20x. Description is fetched on demand via fetchJob() for the detail
+    // page. Same for questions=true.
+    const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs`;
     const res = await fetch(url, { next: { revalidate: 600 } });
     if (!res.ok) {
       throw new Error(`Greenhouse list failed for ${boardToken}: ${res.status}`);
