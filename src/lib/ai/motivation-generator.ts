@@ -35,19 +35,19 @@ import type {
 // the model output would double it up.
 const motivationLetterSchema = z.object({
   opening: z.string().optional().describe(
-    'Opening paragraph: a compelling hook that grabs attention and immediately shows understanding of the company/role. Reference something specific — a product, a mission statement, a value, a recent development. 2-3 sentences. Never start with "Ik schrijf u" / "I am writing to apply".'
+    'Opening hook referencing something concrete from the vacancy text (product, mission, value, tech stack, customer segment). 2-3 sentences. Never "I am writing to apply" or "Ik schrijf u" — start with substance.'
   ),
   whyCompany: z.string().optional().describe(
-    'Why this company/role: show genuine research. Reference what the company does, what they value, and what drew you specifically to THIS role (not just the title). Draw a line from something the company cares about to something the candidate cares about. 2-3 sentences.'
+    'Why this company/role: connect what the vacancy says about the company to what the candidate values. Only use details that literally appear in the vacancy text — do not invent company facts. 2-3 sentences.'
   ),
   whyMe: z.string().optional().describe(
-    'Why I am a good fit: address the vacancy\'s most important must-have skills one by one, each backed by a concrete experience from the CV. Use the SAME terminology the CV uses — the CV has already been tailored to this vacancy, so the letter must mirror its framing (no new paraphrases). 4-6 sentences.'
+    'Address the vacancy\'s must-have skills one by one, each backed by a WORK-HISTORY experience from the tailored CV (not personal projects unless work history truly doesn\'t cover a must-have). Reuse the CV\'s exact wording — no new paraphrases. 4-6 sentences.'
   ),
   motivation: z.string().optional().describe(
-    'Personal motivation and enthusiasm: what drives the candidate, why this role fits their trajectory. Mine the profile\'s about, projects, and certifications for genuine interest signals and connect them to the company\'s domain. If personal motivation text was provided, weave it in naturally. 2-3 sentences.'
+    'Restrained bridge from a real signal in the profile (about-section, work patterns, or projects) to the vacancy\'s domain. If the candidate provided personal motivation text, weave it in. 2-3 sentences. No gushing, no "passionate about", no "thrilled to apply".'
   ),
   closing: z.string().optional().describe(
-    'Final call to action paragraph: express enthusiasm and availability for an interview. 1-2 sentences. CRITICAL: do NOT include any sign-off greeting ("Met vriendelijke groet", "Hoogachtend", "Kind regards", "Sincerely", "Best regards"). Do NOT include the candidate name. Just the call-to-action sentences — the sign-off and name are appended automatically afterwards.'
+    'Specific call to action. 1-2 sentences. Do NOT include any sign-off ("Met vriendelijke groet", "Kind regards" etc.) or the candidate name — those are appended automatically.'
   ),
 });
 
@@ -103,116 +103,61 @@ function normalizeMotivationSections(rawInput: unknown): MotivationSections {
 function buildSystemPrompt(language: OutputLanguage): string {
   const languageInstructions =
     language === 'nl'
-      ? `Schrijf de hele brief in natuurlijk, professioneel Nederlands.
+      ? `Schrijf in natuurlijk, professioneel Nederlands met de "u"-vorm. Geen letterlijke vertalingen uit het Engels, geen anglicismen, geen opgesomde adjectieven. Concrete werkwoorden (leidde, ontwikkelde, beheerde). Korte zinnen waar dat helderheid geeft.`
+      : `Write in natural, professional English. Confident and personable, not stiff. Short sentences where they aid clarity.`;
 
-**Aanspreking en vorm:**
-- Gebruik de formele "u"-vorm consequent door de hele brief
-- Gebruik natuurlijk Nederlands — geen letterlijke vertalingen uit het Engels
-- Vermijd stijve openingen als "Hierbij wil ik u graag schrijven omtrent..."
-- Vermijd anglicismen als "Door middel van het implementeren van..." → liever "Door X te implementeren"
-- Vermijd opgesomde adjectieven ("Als gedreven, resultaatgerichte en proactieve professional...")
-
-**Goede Nederlandse stijl:**
-- Concrete werkwoorden ("Leidde", "Ontwikkelde", "Beheerde", "Realiseerde")
-- Korte zinnen waar dat helderheid geeft — geen kunstmatige uitbreidingen
-- Vermijd corporate jargon ("synergie", "spilfunctie als kartrekker", "bewezen track record")`
-      : `Write the entire letter in natural, professional English.
-
-**Tone and form:**
-- Confident, personable, not stiff
-- Avoid corporate jargon ("leveraged", "synergized", "spearheaded", "passionate professional")
-- Short sentences where they aid clarity, avoid padding`;
-
-  return `You are an expert cover letter writer who creates compelling, personalized motivation letters that get results.
+  return `You are an expert cover letter writer. Generate a motivation letter that reads like a thoughtful human candidate wrote it — not an LLM.
 
 ${languageInstructions}
 
-═══════════════════════════════════════════════
-CORE PRINCIPLES
-═══════════════════════════════════════════════
+## CORE PRINCIPLES
 
-1. **Use only facts that exist in the profile or CV.** This is the most
-   important rule. Never invent:
-   - Studies, degrees, schools the candidate did not attend
-   - Companies or job titles the candidate has not held
-   - Projects, certifications, or accomplishments not listed in the profile
-   - Personal interests not visible in about/projects/certifications
-   - Specific products the candidate worked on if not described
-   - Quantified results (percentages, euros, team sizes) not in the source
+1. **Only facts that are in the profile or CV.** Never invent companies, degrees, projects, numbers, interests, or company details. When in doubt: omit. A shorter honest letter beats a longer fabricated one.
 
-   When in doubt, omit. A shorter honest letter beats a longer letter
-   with a fabricated detail.
+2. **Mirror the tailored CV.** The CV passed below was just generated for THIS vacancy and already uses the vacancy's language. Reuse that framing verbatim where possible — do not paraphrase or reinvent. The letter and CV should feel written by the same person about the same job.
 
-2. **Mirror the CV, don't reinvent it.** You will be given the CV that
-   was just generated for THIS specific vacancy. That CV has already
-   been tailored — headline, summary, experience highlights, and skills
-   are already written in the vacancy's language. Reuse that framing in
-   the letter. A recruiter reading both should feel they're written by
-   the same person about the same job.
+3. **whyMe leans on WORK EXPERIENCE, not projects.** For each must-have skill, pick ONE work-history item from the CV that demonstrates it. Personal projects are a fallback ONLY when work history genuinely doesn't cover a must-have. Do not lead with portfolio/side-project work when relevant employment evidence exists.
 
-3. **Address must-haves concretely.** For each must-have skill in the
-   vacancy, pick ONE experience from the CV that demonstrates it and
-   say so explicitly. "The vacancy asks for X; in my role at Y I did Z."
-   Vague claims ("I'm a strong communicator") are forbidden — always
-   point to evidence FROM the CV.
+4. **Every paragraph touches the vacancy text.**
+   - opening hooks something concrete the vacancy mentions (product, mission, value, tech stack, customer segment).
+   - whyCompany references what the vacancy actually says about the company — never invent company facts.
+   - whyMe addresses verified must-haves.
+   - motivation bridges to a domain detail from the vacancy.
+   No generic platitudes; if you can't tie a paragraph back to the vacancy text, rewrite it.
 
-   If a parsed must-have looks like a "nice to have" in the vacancy
-   description (no "vereist"/"must"/"je hebt minimaal" wording around
-   it), do not force it. Cover the genuine hard requirements first.
+5. **Restrained motivation paragraph.** If the candidate provided personal motivation text, weave it in. Otherwise find ONE genuine bridge from the profile (about, work patterns, or — only if richer — a project or certification) to the vacancy's domain. No gushing.
 
-4. **Bridge interests honestly.** The candidate has real interests visible
-   in their profile (about, personal projects, certifications, volunteer
-   work). The company has a real mission visible in the vacancy text.
-   Draw an honest, specific line between the two.
+## FORBIDDEN VOCABULARY (these are AI tells — do not use)
 
-   FORBIDDEN: writing "I am passionate about X" where X is invented or
-   vague. FORBIDDEN: claiming an interest the profile doesn't support
-   ("Sinds mijn studie elektrotechniek..." when the profile shows no
-   electrical engineering degree).
+"thrilled", "passionate about", "deeply committed", "excited about", "exciting opportunity",
+"leverage", "spearhead", "foster", "delve", "navigate", "harness", "unlock", "empower",
+"robust", "holistic", "dynamic", "cutting-edge", "innovative", "vibrant", "renowned",
+"world-class", "best-in-class", "evolving landscape", "in today's fast-paced world",
+"testament to", "pivotal moment", "underscores", "aligned with", "in alignment with",
+"at its core", "fundamentally", "the real question is".
 
-   ALLOWED: connecting a real project or about-section detail to
-   something concrete in the vacancy.
+NL-equivalenten ook verboden: "gepassioneerd", "gedreven door", "kartrekker", "spilfunctie",
+"in een dynamische omgeving", "bewezen track record", "in essentie", "fundamenteel".
 
-5. **Show company knowledge — only from the vacancy text.** Reference
-   something concrete the vacancy actually mentions (a product, a
-   mission statement, a value, a tech stack, a customer segment). Do
-   NOT invent details about the company that aren't in the vacancy
-   text. "Your impressive growth in the European market" is forbidden
-   unless the vacancy says they are growing in Europe.
+## STYLE RULES
 
-6. **Be specific, not generic.** Never open with "Ik schrijf u om te
-   solliciteren..." / "I am writing to apply...". Open with a hook
-   that shows you already understand something about them.
+- **No rule-of-three.** Don't write "A, B, and C" lists where two items add no information. Don't write "not just X, but Y" or "het gaat niet alleen om X, maar om Y".
+- **Plain verbs.** "Built", "led", "shipped", "managed", "wrote" — not "embodied", "facilitated", "championed".
+- **No em-dash overuse.** Use commas or periods.
+- **No signposting.** Don't write "I want to highlight that..." — just say the thing.
 
-7. **Tone**: professional but personable, confident but not arrogant,
-   enthusiastic but not desperate. Formal Dutch "u" form (if Dutch).
+## HARD OUTPUT RULES
 
-8. **Length**: total letter 300-400 words across all five sections
-   combined. Every sentence must earn its place.
+- The closing contains ONLY a call-to-action — NO sign-off, NO candidate name. Those are appended automatically.
+- Total letter length: 280–360 words across all five sections. Every sentence earns its place.
 
-═══════════════════════════════════════════════
-HARD OUTPUT RULES
-═══════════════════════════════════════════════
+## STRUCTURE
 
-- The closing section must contain ONLY the call-to-action sentences.
-- Do NOT write "Met vriendelijke groet", "Hoogachtend", "Kind regards",
-  "Sincerely", "Best regards", or any other sign-off inside the closing.
-- Do NOT write the candidate name inside the closing.
-- The sign-off and signature are appended automatically after the
-  closing — anything you put there would create a duplicate.
-
-═══════════════════════════════════════════════
-STRUCTURE
-═══════════════════════════════════════════════
-
-- **opening**: hook showing immediate understanding of the role/company
-- **whyCompany**: why this company, drawing a specific line from their
-  mission/product/values to what the candidate cares about
-- **whyMe**: evidence-based pitch addressing must-haves one by one,
-  reusing the CV's exact vocabulary
-- **motivation**: personal drive; honestly bridge interests from the
-  profile's about/projects/certs to the company's domain
-- **closing**: confident call to action — NO sign-off, NO name`;
+- **opening**: hook anchored in the vacancy text
+- **whyCompany**: line from vacancy text → what the candidate values (only details from sources)
+- **whyMe**: must-haves addressed one by one, each tied to a work-history experience from the CV in the CV's wording
+- **motivation**: one restrained bridge from a real profile signal to the vacancy's domain
+- **closing**: specific call to action, NO sign-off, NO name`;
 }
 
 // Build the user prompt with all context
@@ -292,130 +237,98 @@ function buildUserPrompt(
 
   let prompt = `Generate a motivation letter for this application.
 
-═══════════════════════════════════════════════
-CANDIDATE PROFILE (raw — use for interest signals)
-═══════════════════════════════════════════════
-
-Name: ${linkedInData.fullName}
-${linkedInData.headline ? `Current title: ${linkedInData.headline}` : ''}
-${linkedInData.location ? `Location: ${linkedInData.location}` : ''}
-
-${linkedInData.about ? `## About\n${linkedInData.about}\n` : ''}
-## Experience
-${experienceLines || 'None listed'}
-
-## Projects (personal, open source, side work — strong interest signals)
-${projectLines}
-
-## Certifications (additional interest signals — what did they choose to learn?)
-${certLines}
-
-## Skills
-${skillsList || 'None listed'}
-
-═══════════════════════════════════════════════
-TAILORED CV (use for language mirroring — THIS is the vocabulary to reuse)
-═══════════════════════════════════════════════
-
-The CV below was just generated for this exact vacancy. It already uses
-the vacancy's terminology and frames each experience to match. Your
-letter MUST mirror this framing — do not invent new phrasings.
-
-## CV Headline
-${cvContent.headline}
-
-## CV Summary
-${cvContent.summary}
-
-## CV Experience (with tailored highlights)
-${cvExperienceLines}
-
-## CV Skills (already prioritized for this vacancy)
-${cvSkillLines || 'None'}
-
-═══════════════════════════════════════════════
-TARGET VACANCY
-═══════════════════════════════════════════════
+## TARGET VACANCY (primary source — every paragraph must touch this)
 
 Position: ${jobVacancy.title}
 ${jobVacancy.company ? `Company: ${jobVacancy.company}` : ''}
 ${jobVacancy.industry ? `Industry: ${jobVacancy.industry}` : ''}
 ${jobVacancy.location ? `Location: ${jobVacancy.location}` : ''}
 
-## Full Job Description
+### Job Description
 ${jobVacancy.description}
 
-## Key Requirements
+### Key Requirements
 ${jobVacancy.requirements.map((r) => `- ${r}`).join('\n')}
 
-## Must-Have Skills (the letter must address these one by one in whyMe)
+### Must-Have Skills (address each in whyMe with one work-history example)
 ${mustHaveLines}
 
-## Nice-to-Have Skills
+### Nice-to-Have Skills
 ${niceToHaveLines}
 
-## Keywords
-${jobVacancy.keywords.join(', ')}
+---
+
+## TAILORED CV (this is the vocabulary to reuse — whyMe leans on this)
+
+The CV was generated for THIS vacancy. Mirror its wording in the letter — do not paraphrase.
+
+### CV Headline
+${cvContent.headline}
+
+### CV Summary
+${cvContent.summary}
+
+### CV Work Experience (with tailored highlights — primary source for whyMe)
+${cvExperienceLines}
+
+### CV Skills
+${cvSkillLines || 'None'}
+
+---
+
+## CANDIDATE PROFILE (supporting context — use sparingly)
+
+Name: ${linkedInData.fullName}
+${linkedInData.headline ? `Current title: ${linkedInData.headline}` : ''}
+
+${linkedInData.about ? `### About\n${linkedInData.about}\n` : ''}
+### Raw Work Experience
+${experienceLines || 'None listed'}
+
+### Projects (use ONLY as a motivation-bridge if work experience doesn't cover the relevant ground)
+${projectLines}
+
+### Certifications
+${certLines}
+
+### Skills
+${skillsList || 'None listed'}
 `;
 
   if (personalMotivation && personalMotivation.trim()) {
     prompt += `
-═══════════════════════════════════════════════
-PERSONAL MOTIVATION FROM THE CANDIDATE (incorporate naturally)
-═══════════════════════════════════════════════
+---
+
+## PERSONAL MOTIVATION FROM CANDIDATE
 
 "${personalMotivation}"
 
-The candidate has shared this directly. Weave these sentiments into the
-motivation paragraph, especially when bridging interests to the company.
+Weave this into the motivation paragraph naturally.
 `;
   }
 
   prompt += `
-═══════════════════════════════════════════════
-YOUR TASK
-═══════════════════════════════════════════════
+---
 
-Generate a compelling, personalized motivation letter that:
+## INSTRUCTIONS
 
-1. **Opens with a specific hook** — reference something concrete from
-   the vacancy (product, mission, value, tech stack). Never "I am
-   writing to apply...".
+1. **opening**: hook anchored in the vacancy text (product, mission, value). No "Ik schrijf u" / "I am writing to apply".
+2. **whyCompany**: reference what the vacancy actually says about the company. Do not invent company facts.
+3. **whyMe**: each must-have addressed with ONE work-history experience from the tailored CV. Lead with employment evidence, not side projects.
+4. **motivation**: one genuine bridge between a profile signal and the vacancy's domain. Restrained tone — no "passionate about", no "thrilled".
+5. **closing**: specific call to action. NO sign-off, NO name (appended automatically).
+6. **Mirror CV wording** verbatim where possible. If the CV says "Loste klantincidenten op binnen SLA", the letter uses that — not "hielp klanten met problemen".
+7. **Follow forbidden-vocabulary list** in the system prompt strictly.
 
-2. **Draws an interest bridge** in the whyCompany and motivation
-   paragraphs. Mine the candidate's about/projects/certifications for
-   genuine interest signals, and connect them honestly to what this
-   company does. Generic "passionate about X" phrases are forbidden —
-   find something real.
+## FINAL CHECK (apply before returning)
 
-3. **Addresses must-have skills concretely in whyMe**. For each must-
-   have, pick one experience from the TAILORED CV (not the raw
-   profile) and say explicitly how it demonstrates that must-have.
-   Reuse the CV's exact wording — don't paraphrase what has already
-   been carefully framed.
+- Every company, project, degree, number mentioned exists in the profile or CV.
+- Every detail about the target company is in the vacancy text.
+- Every paragraph touches the vacancy text in a verifiable way.
+- whyMe is backed by work experience, not just projects.
+- No forbidden vocabulary, no rule-of-three, no em-dash overuse.
 
-4. **Mirrors the CV's vocabulary**. If the CV reframed "Hielp klanten
-   bij problemen" as "Loste klantincidenten op binnen SLA", the letter
-   MUST use "klantincidenten binnen SLA", not the original "hielp
-   klanten bij problemen". Same for every other reframed item.
-
-5. **Closes with a confident call to action** — NO sign-off, NO name
-   in the closing field. These are appended automatically.
-
-═══════════════════════════════════════════════
-FINAL ANTI-HALLUCINATIE CHECK (apply before returning)
-═══════════════════════════════════════════════
-
-Scan every sentence you wrote and verify:
-- [ ] Every company, school, or degree mentioned exists in the profile
-- [ ] Every project, certification, or accomplishment exists in the profile
-- [ ] Every interest claimed has a source in about/projects/certifications
-- [ ] Every detail about the target company is in the vacancy description
-- [ ] Every number (percentage, euros, team size, years) is in the profile or CV
-- [ ] No invented "Sinds mijn studie X", "Tijdens mijn tijd bij Y", "Ik heb mij ontwikkeld als Z" unless X/Y/Z exist in the profile
-- [ ] No claims like "Ik heb gewerkt aan project X bij bedrijf Y" unless that's literally in the experience list
-
-Remove any sentence that fails the check. A shorter letter is fine.`;
+Remove any sentence that fails. A shorter honest letter is fine.`;
 
   return prompt;
 }
