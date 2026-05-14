@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { X, Plus, Briefcase, Sparkles, CheckCircle, Pencil, ArrowLeft, Loader2, Building2, MapPin, Clock, Euro, ChevronDown, ChevronUp, Gift, TrendingUp, Target, AlertCircle, Coins } from 'lucide-react';
+import { X, Plus, Briefcase, Sparkles, CheckCircle, Pencil, ArrowLeft, Loader2, Building2, MapPin, Clock, Euro, ChevronDown, ChevronUp, Gift, TrendingUp, Target, AlertCircle, Coins, ExternalLink, Link2 } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-context';
 import type { JobVacancy, JobCompensation, SalaryEstimate, TokenUsage } from '@/types';
 
@@ -56,6 +56,7 @@ export function JobInput({
   const { llmMode } = useAuth();
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
   const [rawText, setRawText] = useState(initialData?.rawText || '');
+  const [sourceUrl, setSourceUrl] = useState<string>(initialData?.sourceUrl ?? sourceHint?.externalUrl ?? '');
   const [parsedJob, setParsedJob] = useState<JobVacancy | null>(initialData || null);
   const [isParsing, setIsParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,10 +98,14 @@ export function JobInput({
     setError(null);
 
     try {
+      const trimmedSourceUrl = sourceUrl.trim();
       const response = await fetch('/api/cv/job/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText, sourceUrl: sourceHint?.externalUrl }),
+        body: JSON.stringify({
+          rawText,
+          sourceUrl: trimmedSourceUrl || sourceHint?.externalUrl || undefined,
+        }),
       });
 
       const result = await response.json();
@@ -165,6 +170,7 @@ export function JobInput({
       location: data.location || undefined,
       employmentType: data.employmentType || undefined,
       rawText: parsedJob?.rawText || rawText,
+      sourceUrl: sourceUrl.trim() || parsedJob?.sourceUrl || null,
       compensation: hasCompensation ? compensation : undefined,
     };
     setParsedJob(updatedJob);
@@ -183,6 +189,7 @@ export function JobInput({
         requirements,
         keywords,
         compensation: hasCompensation ? compensation : undefined,
+        sourceUrl: sourceUrl.trim() || parsedJob.sourceUrl || null,
       });
     }
   };
@@ -271,6 +278,26 @@ export function JobInput({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="vacancy-url" className="flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5" />
+              Vacature URL (optioneel)
+            </Label>
+            <Input
+              id="vacancy-url"
+              type="url"
+              inputMode="url"
+              placeholder="https://www.linkedin.com/jobs/view/..."
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              We bewaren de link bij je CV, zodat je later de originele vacature
+              kunt terugvinden. Als de link openbaar bereikbaar is, halen we
+              automatisch de volledige tekst op.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="vacancy-text">{t('pasteVacancy')}</Label>
             <Textarea
@@ -403,6 +430,17 @@ export function JobInput({
                   <Clock className="h-3 w-3" />
                   {parsedJob.employmentType}
                 </span>
+              )}
+              {parsedJob.sourceUrl && (
+                <a
+                  href={parsedJob.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Originele vacature
+                </a>
               )}
               {parsedJob.industry && (
                 <Badge variant="secondary">{parsedJob.industry}</Badge>

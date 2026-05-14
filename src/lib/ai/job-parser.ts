@@ -96,7 +96,8 @@ export async function parseJobVacancy(
   rawText: string,
   provider: LLMProvider,
   apiKey: string,
-  model: string
+  model: string,
+  sourceUrl?: string | null,
 ): Promise<ParseJobResult> {
   const prompt = buildParsePrompt(rawText);
 
@@ -108,7 +109,7 @@ export async function parseJobVacancy(
       schema: jobVacancySchema,
       prompt,
       temperature: resolveTemperature(provider, model, 0.3),
-      normalize: (raw) => normalizeJobVacancy(raw, rawText),
+      normalize: (raw) => normalizeJobVacancy(raw, rawText, sourceUrl ?? null),
       logTag: 'Job Parser',
     });
 
@@ -122,7 +123,7 @@ export async function parseJobVacancy(
 // Normalize what the LLM returned into a fully-populated JobVacancy.
 // Mirrors the approach in cv-generator.ts — same intermittent Opus 4.7
 // structured-output failure modes ({}, {data: ...}, missing fields).
-function normalizeJobVacancy(rawInput: unknown, rawText: string): JobVacancy {
+function normalizeJobVacancy(rawInput: unknown, rawText: string, sourceUrl: string | null): JobVacancy {
   type RawShape = Partial<JobVacancy> & { data?: Partial<JobVacancy> };
   let raw = (rawInput ?? {}) as RawShape;
 
@@ -164,5 +165,6 @@ function normalizeJobVacancy(rawInput: unknown, rawText: string): JobVacancy {
     requiredEducation: raw.requiredEducation ?? undefined,
     requiredCertifications: raw.requiredCertifications ?? [],
     rawText,
+    sourceUrl: sourceUrl && sourceUrl.length > 0 ? sourceUrl : null,
   };
 }

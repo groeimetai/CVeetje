@@ -19,6 +19,7 @@ import {
   ChevronUp,
   Building2,
   MapPin,
+  ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -115,7 +116,7 @@ function getSeverityConfig(severity: FitWarningSeverity) {
   }
 }
 
-function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnalysis; jobVacancy?: Pick<import('@/types').JobVacancy, 'title' | 'company' | 'location'> | null }) {
+function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnalysis; jobVacancy?: Pick<import('@/types').JobVacancy, 'title' | 'company' | 'location' | 'sourceUrl'> | null }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const verdictConfig = getVerdictConfig(fitAnalysis.verdict);
 
@@ -161,6 +162,18 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
                   <MapPin className="h-3.5 w-3.5" />
                   {jobVacancy.location}
                 </span>
+              )}
+              {jobVacancy.sourceUrl && (
+                <a
+                  href={jobVacancy.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Originele vacature
+                </a>
               )}
             </div>
           )}

@@ -105,6 +105,7 @@ export function normalizedJobToJobVacancy(job: NormalizedJob): JobVacancy {
     location: job.location || undefined,
     employmentType: job.employmentType || undefined,
     rawText: job.description,
+    sourceUrl: job.url && job.url.length > 0 ? job.url : null,
     compensation:
       job.salaryMin || job.salaryMax
         ? {

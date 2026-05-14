@@ -157,6 +157,7 @@ export function CVWizard() {
           location: cached.location ?? undefined,
           employmentType: cached.employmentType ?? undefined,
           rawText: cached.description ?? '',
+          sourceUrl: typeof cached.url === 'string' && cached.url.length > 0 ? cached.url : null,
           compensation:
             cached.salaryMin || cached.salaryMax
               ? {

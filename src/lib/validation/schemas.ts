@@ -133,6 +133,7 @@ export const jobVacancySchema = z.object({
   location: z.string().max(MAX_LENGTHS.shortText).optional(),
   employmentType: z.string().max(100).optional(),
   rawText: z.string().max(MAX_LENGTHS.description).optional(),
+  sourceUrl: z.string().url().max(2048).nullable().optional(),
   compensation: jobCompensationSchema.optional(),
   salaryEstimate: salaryEstimateSchema.optional(),
 });

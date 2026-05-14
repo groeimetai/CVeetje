@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
         effectiveRawText,
         resolved.providerName,
         resolved.apiKey,
-        resolved.model
+        resolved.model,
+        typeof sourceUrl === 'string' ? sourceUrl.trim() || null : null,
       );
       vacancy = result.vacancy;
       usage = result.usage;

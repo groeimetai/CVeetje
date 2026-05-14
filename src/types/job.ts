@@ -42,6 +42,13 @@ export interface JobVacancy {
   location?: string;        // Job location
   employmentType?: string;  // Fulltime/parttime/freelance
   rawText?: string;         // Original vacancy text
+  /**
+   * Optional URL to the original vacancy posting (LinkedIn, employer site,
+   * Adzuna, etc.). Kept for archival so the user can find the source back when
+   * looking at the saved CV later. When set, also used as the seed for the
+   * server-side crawler in `/api/cv/job/parse`.
+   */
+  sourceUrl?: string | null;
   compensation?: JobCompensation; // Optional compensation details
   salaryEstimate?: SalaryEstimate; // AI-estimated salary for this role
 
