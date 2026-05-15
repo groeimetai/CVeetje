@@ -7,7 +7,7 @@ export default function NewCVPage() {
   const t = useTranslations('cvNew');
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="w-full">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="text-muted-foreground">
