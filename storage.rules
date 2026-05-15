@@ -1,14 +1,46 @@
 rules_version = '2';
 
+// Firebase Storage Security Rules voor CVeetje
+//
+// Patronen in gebruik:
+// - `avatars/{userId}/...`: profielfoto van de user. Server zet `makePublic()`
+//   in /api/cv/avatar zodat de URL embedded kan worden in PDF/preview.
+// - `feedback/{userId}/...`: feedback-screenshots. Server uploadt via Admin SDK +
+//   `makePublic()`; rules blokkeren directe client-toegang als defence-in-depth.
+// - `templates/{userId}/...`: user-uploaded DOCX templates. Server-only,
+//   uitgeleverd via signed URLs vanuit /api/templates.
+// - `global-templates/...`: admin-uploads, idem signed URL.
+//
+// `makePublic()` zet een bucket-level ACL die deze rules bypassed; deze rules
+// dienen als vangnet voor private paden en voor directe Firebase SDK reads.
+
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow authenticated users to read and write their own avatars
+
+    // Avatars — publiek leesbaar (embedded in PDF/preview).
+    // Schrijven alleen door de eigenaar.
     match /avatars/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Default: deny all other access
+    // Feedback screenshots — Admin SDK regelt upload + publiek-maken.
+    // Rules-niveau geblokkeerd voor directe client-access.
+    match /feedback/{userId}/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User-uploaded DOCX templates — alleen via Admin SDK + signed URL.
+    match /templates/{userId}/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Admin-uploaded global templates — alleen via Admin SDK + signed URL.
+    match /global-templates/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Default deny voor alle overige paden.
     match /{allPaths=**} {
       allow read, write: if false;
     }

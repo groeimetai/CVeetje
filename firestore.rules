@@ -1,26 +1,33 @@
 rules_version = '2';
 
+// Firestore Security Rules voor CVeetje
+//
+// Principes:
+// - Default deny: alles wat niet expliciet is toegestaan is geblokkeerd.
+// - User-data scoping: gebruikers kunnen alleen hun eigen documenten lezen/schrijven.
+// - Sensitive fields (credits, apiKey, role, disabled, ageConfirmed, email):
+//   alleen via server-side API routes met Admin SDK — Admin SDK bypast rules.
+// - Append-only logs: transacties + admin_audit_log zijn immutable (geen update/delete).
+// - Admin-acties die persoonsgegevens raken worden gelogd via
+//   src/lib/admin/audit-log.ts (AVG art. 32 lid 1 sub b/d).
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ============ Helper Functions ============
 
-    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Check if the authenticated user owns this resource
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Check if the authenticated user is an admin (via custom claims)
     function isAdmin() {
       return isAuthenticated() && request.auth.token.admin == true;
     }
 
-    // Check if a field exists and is not null
     function fieldExists(field) {
       return field != null;
     }
@@ -28,102 +35,97 @@ service cloud.firestore {
     // ============ Users Collection ============
     // /users/{userId}
     //
-    // SECURITY NOTE: Sensitive fields (credits, apiKey) are ONLY modified via Admin SDK
-    // Client-side updates are restricted to non-sensitive fields only
+    // Server-only velden (alleen via Admin SDK schrijfbaar):
+    //   credits, apiKey, role, disabled, disabledReason, email,
+    //   ageConfirmed, ageConfirmedAt, createdAt, lastLoginAt
+    //
+    // Client mag updaten: displayName, photoURL, updatedAt
+    //
+    // Creatie alleen via /api/auth/init-user (Admin SDK).
 
     match /users/{userId} {
-      // Users can read their own document; admins can read any user (for impersonation)
+      // Read: eigen doc of admin (voor impersonation / user-management)
       allow read: if isOwner(userId) || isAdmin();
 
-      // Users can create their own document (on signup)
-      // But cannot set credits or apiKey directly - these are set by Admin SDK
-      allow create: if isOwner(userId)
-        && !request.resource.data.keys().hasAny(['credits', 'apiKey', 'role']);
+      // Create: geblokkeerd voor clients — moet via Admin SDK (API /api/auth/init-user)
+      // Dit voorkomt dat een gebruiker zelf een doc maakt en daarbij velden invult
+      // die normaal alleen server-side worden gezet (credits, role, ageConfirmed).
+      allow create: if false;
 
-      // Users can update ONLY non-sensitive fields
-      // credits and apiKey can ONLY be modified via Admin SDK (server-side)
+      // Update: alleen eigenaar, en alleen op een strikte whitelist van velden
       allow update: if isOwner(userId) && isValidUserUpdate();
 
-      // Users cannot delete their own document from client
-      // (account deletion should go through API with Admin SDK)
+      // Delete: alleen via /api/settings/account (Admin SDK)
       allow delete: if false;
 
-      // Validation function for user updates
-      // BLOCKS any attempt to modify credits or apiKey from client
       function isValidUserUpdate() {
         let affectedKeys = request.resource.data.diff(resource.data).affectedKeys();
 
-        // These fields can NEVER be modified from client-side
-        // They are only modified via Admin SDK (server-side API routes)
-        let forbiddenFields = ['credits', 'apiKey', 'role'];
-
-        // Allowed fields that can be updated from client
+        // Strikte whitelist — alles wat hier niet in staat is server-only.
+        // (Belangrijk: dit gebruikt hasOnly, niet hasAny, zodat een gebruiker
+        // geen willekeurige nieuwe velden kan toevoegen zoals ageConfirmed.)
         let allowedFields = ['displayName', 'photoURL', 'updatedAt'];
 
-        // Ensure no forbidden fields are being modified
-        return !affectedKeys.hasAny(forbiddenFields);
+        return affectedKeys.hasOnly(allowedFields);
       }
 
       // ============ Transactions Subcollection ============
       // /users/{userId}/transactions/{transactionId}
+      // Append-only audit log voor credit-operaties (purchase, monthly_free,
+      // cv_generation, etc.). Alleen Admin SDK schrijft, gebruiker leest.
 
       match /transactions/{transactionId} {
-        // Users can read their own transactions; admins can read any (for impersonation)
         allow read: if isOwner(userId) || isAdmin();
-
-        // Transactions can ONLY be created via Admin SDK (server-side)
-        // This prevents users from creating fake purchase transactions
-        // All transaction logging happens in API routes using Admin SDK
-        allow create: if false;
-
-        // Transactions are immutable - no updates or deletes
-        allow update, delete: if false;
+        allow create, update, delete: if false; // Admin SDK only
       }
 
       // ============ CVs Subcollection ============
       // /users/{userId}/cvs/{cvId}
 
       match /cvs/{cvId} {
-        // Users can read their own CVs; admins can read any (for impersonation)
         allow read: if isOwner(userId) || isAdmin();
 
-        // Users can create CVs
+        // Create: eigenaar mag, mits minimale velden aanwezig zijn.
+        // Status moet op 'draft' beginnen (geen direct 'published' kunstgreep).
         allow create: if isOwner(userId) && validCVCreate();
 
-        // Users can update their own CVs
+        // Update: eigenaar — pdfUrl wordt server-side gezet maar
+        // we leggen geen veld-restrictie op om de wizard niet te breken.
         allow update: if isOwner(userId);
 
-        // Users can delete their own CVs
         allow delete: if isOwner(userId);
 
         function validCVCreate() {
           let data = request.resource.data;
-
-          // Required fields for CV creation
           return fieldExists(data.linkedInData)
             && fieldExists(data.template)
             && fieldExists(data.colorScheme)
-            && fieldExists(data.status);
+            && fieldExists(data.status)
+            && data.status == 'draft';
+        }
+
+        // ============ Disputes Subcollection ============
+        // /users/{userId}/cvs/{cvId}/disputes/{disputeId}
+        // Disputes flow gaat via /api/cv/[id]/dispute (Admin SDK) en
+        // /api/admin/disputes/.../resolve. Clients schrijven nooit direct.
+
+        match /disputes/{disputeId} {
+          allow read: if isOwner(userId) || isAdmin();
+          allow create, update, delete: if false; // Admin SDK only
         }
       }
 
       // ============ Applications Subcollection ============
       // /users/{userId}/applications/{applicationId}
       //
-      // Created via Admin SDK when a job application is sent to an ATS.
-      // Users can read and update their own applications (status, notes);
-      // creation and deletion of provider fields are locked to the Admin SDK.
+      // Created via Admin SDK (server records ATS submission).
+      // Users mogen status en notes updaten op hun eigen applications.
 
       match /applications/{applicationId} {
         allow read: if isOwner(userId) || isAdmin();
+        allow create: if false; // Admin SDK only
 
-        // Creation only via Admin SDK (server records the ATS submission)
-        allow create: if false;
-
-        // Users can update status and notes on their own applications
         allow update: if isOwner(userId) && isValidApplicationUpdate();
-
-        // Users can delete their own applications
         allow delete: if isOwner(userId);
 
         function isValidApplicationUpdate() {
@@ -137,64 +139,104 @@ service cloud.firestore {
       // /users/{userId}/profiles/{profileId}
 
       match /profiles/{profileId} {
-        // Users can read their own profiles; admins can read any (for impersonation)
         allow read: if isOwner(userId) || isAdmin();
-
-        // Users can create profiles
         allow create: if isOwner(userId) && validProfileCreate();
-
-        // Users can update their own profiles
         allow update: if isOwner(userId);
-
-        // Users can delete their own profiles
         allow delete: if isOwner(userId);
 
         function validProfileCreate() {
           let data = request.resource.data;
-
-          // Required fields for profile creation
-          return fieldExists(data.name)
-            && fieldExists(data.parsedData);
+          return fieldExists(data.name) && fieldExists(data.parsedData);
         }
+      }
+
+      // ============ User Templates Subcollection ============
+      // /users/{userId}/templates/{templateId}
+      // Upload/CRUD via /api/templates (Admin SDK schrijft naar Firestore +
+      // Storage). Clients lezen via API of via deze regel rechtstreeks.
+
+      match /templates/{templateId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update, delete: if false; // Admin SDK only
       }
     }
 
     // ============ Global Templates Collection ============
     // /globalTemplates/{templateId}
-    //
-    // Read: any authenticated user (they need to list assigned templates)
-    // Write: admin only (via Admin SDK, so blocked here for safety)
+    // Read: alle ingelogde users; Write: admin-only via Admin SDK.
 
     match /globalTemplates/{templateId} {
       allow read: if isAuthenticated();
-      allow write: if false; // Only via Admin SDK
+      allow write: if false;
     }
 
-    // ============ Jobs Collection ============
+    // ============ Jobs Cache Collection ============
     // /jobs/{jobSlug}
-    //
-    // Publicly readable cache of job vacancies fetched from external providers
-    // (Adzuna). Writes are restricted to the Admin SDK (server-side API routes).
+    // Public read (jobs board is publiek toegankelijk). Server writes only.
 
     match /jobs/{jobSlug} {
       allow read: if true;
-      allow write: if false; // Only via Admin SDK
+      allow write: if false;
+    }
+
+    // ============ Feedback Collection ============
+    // /feedback/{feedbackId}
+    // POST via /api/feedback (Admin SDK creëert + maakt GitHub issue).
+    // Gebruiker mag eigen feedback lezen voor de UI; admin alles.
+
+    match /feedback/{feedbackId} {
+      allow read: if isAdmin() ||
+                  (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create, update, delete: if false; // Admin SDK only
+    }
+
+    // ============ Kanban Collections ============
+    // /kanban_boards, /kanban_cards
+    // Admin-only feature; alle reads en writes via /api/admin/kanban/...
+    // routes (verifyAdminRequest + Admin SDK). Default-deny op rules
+    // niveau voor extra zekerheid.
+
+    match /kanban_boards/{boardId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /kanban_cards/{cardId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // ============ Admin Audit Log ============
     // /admin_audit_log/{entryId}
-    //
-    // AVG art. 32 lid 1 sub b/d — accountability trail van admin-acties op
-    // persoonsgegevens. Schrijf-only via Admin SDK; lezen alleen voor admins.
-    // Immutable: nooit updaten of verwijderen.
+    // AVG art. 32 — accountability trail. Read-only voor admins, immutable.
 
     match /admin_audit_log/{entryId} {
       allow read: if isAdmin();
       allow create, update, delete: if false; // Server-side only via Admin SDK
     }
 
+    // ============ Mail Queue ============
+    // /mail/{mailId}
+    // Firebase Trigger Email extension leest hier transactionele e-mails.
+    // Bevat e-mailadressen en inhoud van mails — gevoelig. Strikt server-only.
+
+    match /mail/{mailId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ============ Platform Config ============
+    // /platformConfig/{docId}
+    // Admin-managed configuratie (AI-modellen, credit-kosten). Server-side only.
+
+    match /platformConfig/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ============ Default Deny ============
-    // Deny all other access by default
+    // Belangrijk: deze match catches alle paden die hierboven niet zijn
+    // gedefinieerd. Voorkomt onbedoelde toegang bij nieuwe collecties.
 
     match /{document=**} {
       allow read, write: if false;
