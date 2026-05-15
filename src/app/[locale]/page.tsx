@@ -493,6 +493,7 @@ export default async function LandingPage({ params }: Props) {
                   { title: t('pricing.pack5.title'), price: t('pricing.pack5.price'), per: t('pricing.pack5.perDownload'), list: [t('pricing.pack5.neverExpire')], cta: t('pricing.pack5.cta'), variant: 'outline' as const },
                   { title: t('pricing.pack15.title'), price: t('pricing.pack15.price'), per: t('pricing.pack15.perDownload'), list: [t('pricing.pack15.save')], cta: t('pricing.pack15.cta'), variant: 'primary' as const, feat: true, badge: t('pricing.pack15.badge') },
                   { title: t('pricing.pack30.title'), price: t('pricing.pack30.price'), per: t('pricing.pack30.perDownload'), list: [t('pricing.pack30.save')], cta: t('pricing.pack30.cta'), variant: 'outline' as const },
+                  { title: t('pricing.packPower.title'), price: t('pricing.packPower.price'), per: t('pricing.packPower.perDownload'), list: [t('pricing.packPower.save')], cta: t('pricing.packPower.cta'), variant: 'outline' as const, badge: t('pricing.packPower.badge') },
                 ].map((tier) => (
                   <div key={tier.title} className={`price-card${tier.feat ? ' price-card--feat' : ''}`}>
                     <div className="price-card__header">

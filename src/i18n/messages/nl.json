@@ -307,7 +307,7 @@
       }
     },
     "pricing": {
-      "title": "Simpele Prijzen",
+      "title": "Vanaf €1 per CV",
       "subtitle": "Pay-as-you-go credits. Geen abonnement, credits vervallen niet.",
       "free": {
         "title": "Gratis",
@@ -321,31 +321,40 @@
         "cta": "Gratis Starten"
       },
       "pack5": {
-        "title": "Starter — 15 credits",
+        "title": "Starter — 30 credits",
         "description": "Eenmalige aankoop",
         "price": "€4,99",
-        "perDownload": "≈ €3,00 per CV",
+        "perDownload": "≈ €1,66 per CV",
         "neverExpire": "Credits vervallen niet",
         "cta": "Kopen"
       },
       "pack15": {
-        "title": "Populair — 50 credits",
+        "title": "Populair — 100 credits",
         "description": "Eenmalige aankoop",
         "badge": "Populair",
-        "price": "€14,99",
-        "perDownload": "≈ €2,70 per CV",
-        "save": "Bespaar 10% per credit",
+        "price": "€12,99",
+        "perDownload": "≈ €1,30 per CV",
+        "save": "Bespaar 22% per credit",
         "cta": "Kopen"
       },
       "pack30": {
-        "title": "Pro — 120 credits",
+        "title": "Pro — 300 credits",
         "description": "Eenmalige aankoop",
         "price": "€29,99",
-        "perDownload": "≈ €2,25 per CV",
-        "save": "Bespaar 25% per credit",
+        "perDownload": "≈ €1,00 per CV",
+        "save": "Bespaar 40% per credit",
         "cta": "Kopen"
       },
-      "paymentMethods": "Veilig betalen via Mollie (iDEAL, Creditcard en meer) — een volledig CV met vacature-match kost ~9 credits"
+      "packPower": {
+        "title": "Power — 600 credits",
+        "description": "Voor recruiters & coaches",
+        "badge": "Beste deal",
+        "price": "€59,99",
+        "perDownload": "≈ €1,00 per CV",
+        "save": "60 CVs in 1 pakket",
+        "cta": "Kopen"
+      },
+      "paymentMethods": "Veilig betalen via Mollie (iDEAL, Creditcard en meer) — een volledig CV met vacature-match kost 10 credits"
     },
     "cta": {
       "title": "Klaar met Priegelwerk?",
@@ -1669,7 +1678,7 @@
         "subtitle1": "4.1 Credit Systeem",
         "content1": "CVeetje werkt met een credit-systeem. Bij gebruik van Platform AI (zonder eigen API key) kosten AI-acties credits naar gelang hun grootte:\n\n• Elke gebruiker ontvangt 15 gratis credits per maand\n• Gratis credits worden op de eerste dag van elke maand gereset\n• Niet-gebruikte gratis credits vervallen aan het einde van de maand\n• Gekochte credits vervallen niet en worden opgeteld bij je saldo\n• PDF download is gratis (al inbegrepen in de CV-generatie)\n\nCredit-kosten per AI-actie (Platform mode):\n• Profiel parsen (LinkedIn/PDF): 2 credits\n• Vacature parsen: 1 credit\n• Match-analyse: 2 credits\n• CV-content genereren: 3 credits\n• Style/design genereren: 1 credit\n• Motivatiebrief (incl. humanizer): 3 credits\n• Template invullen (DOCX/PDF): 3 credits\n• Chat-bewerken: 1 credit per ~8.000 tekens\n\nEen volledig nieuw CV met vacature-match komt typisch op ~9 credits.\nMet je eigen API key kosten al deze acties 0 credits (je betaalt je AI-provider rechtstreeks).",
         "subtitle2": "4.2 Aankopen",
-        "content2": "Credits kunnen worden gekocht via Mollie, onze betalingsprovider. Beschikbare pakketten:\n\n• 15 credits voor €4,99 (Starter — ~1 CV)\n• 50 credits voor €14,99 (Populair — ~5 CVs, 10% korting)\n• 120 credits voor €29,99 (Pro — ~13 CVs, 25% korting)\n\nAlle prijzen zijn inclusief BTW. Betalingen worden verwerkt in euro's.",
+        "content2": "Credits kunnen worden gekocht via Mollie, onze betalingsprovider. Beschikbare pakketten (een volledig CV kost 10 credits):\n\n• 30 credits voor €4,99 (Starter — ~3 CVs, €1,66 per CV)\n• 100 credits voor €12,99 (Populair — ~10 CVs, €1,30 per CV)\n• 300 credits voor €29,99 (Pro — ~30 CVs, €1,00 per CV)\n• 600 credits voor €59,99 (Power — ~60 CVs, €1,00 per CV)\n\nAlle prijzen zijn inclusief BTW. Betalingen worden verwerkt in euro's.",
         "subtitle3": "4.3 Restitutiebeleid",
         "content3": "Wettelijk recht van herroeping (consumenten): Voor digitale inhoud die niet op een tastbare drager wordt geleverd geldt normaal gesproken een wettelijke bedenktijd van 14 dagen (art. 6:230o BW). Door bij de aankoop expliciet akkoord te gaan met de stelling \"ik wil dat de levering direct begint en ik doe afstand van mijn herroepingsrecht zodra credits zijn geleverd\" wordt het herroepingsrecht beëindigd zodra wij de credits aan je saldo toevoegen (art. 6:230p sub g BW).\n\nGekochte credits zijn daarom niet-restitueerbaar, behalve in de volgende gevallen:\n\n• Technische fouten aan onze kant die het gebruik van gekochte credits onmogelijk maken\n• Dubbele aanrekening door een betalingsfout\n• Onterechte afschrijving (niet door jou geautoriseerd)\n\nRestitutieverzoeken moeten binnen 14 dagen na aankoop worden ingediend via info@groeimetai.io. Restituties verlopen via Mollie naar dezelfde betaalmethode."
       },
