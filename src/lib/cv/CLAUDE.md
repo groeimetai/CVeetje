@@ -2,6 +2,8 @@
 
 HTML generation + style tokens + templates. **WYSIWYG single source of truth** voor preview én PDF.
 
+> **Wat doet de AI per creativity level, en welke tokens komen waar tot leven in de renderers?** → zie **`src/lib/ai/style-experts/STYLE-SYSTEM.md`**. Bevat per route (conservative/balanced/creative/experimental/editorial-paper) een complete inventaris van schema-velden, constraints, prompt-aanpak, history-rotatie en welke `bold.*`/`editorial.*` velden door welke renderer-archetype daadwerkelijk geconsumeerd worden.
+
 ## Hoofdentry
 
 `html-generator.ts` → `generateCVHTML(content, tokens, ...)` produceert dezelfde HTML voor browser-preview én PDF-render. Delegeert naar specialized renderers bij `creative` en `experimental` levels.

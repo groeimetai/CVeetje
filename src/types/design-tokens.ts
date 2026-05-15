@@ -140,7 +140,9 @@ export type EditorialLayoutArchetype =
   | 'editorial-spread'       // Asymmetric 2-col with margin-notes column (sidenotes / dates)
   | 'asymmetric-feature'     // Big hero band + offset main column, body content flows under
   | 'feature-sidebar'        // Magazine feature article: dense main + skill/cert sidebar
-  | 'manuscript-mono';       // Centered manuscript with optical proportions, no sidebar
+  | 'manuscript-mono'        // Centered manuscript with optical proportions, no sidebar
+  | 'cover-feature'          // Magazine cover with hero portrait, oversized title, lede on cover
+  | 'index-card';            // Library catalog / archive aesthetic — boxed sections, small caps tabs
 
 // Decorative element toggles. The AI picks which ones to layer on.
 export type EditorialDecorElement =
@@ -162,6 +164,56 @@ export type EditorialColorPolicy =
   | 'mono-accent'            // Classic editorial: one accent on neutral
   | 'duotone'                // Primary + accent are both used as design colors
   | 'tritone';               // Primary + secondaryColor + accent — true magazine palette
+
+// ============ v4: Editorial concept-first art direction ============
+//
+// Mirror of the experimental v4 redesign, adapted for editorial restraint.
+// The AI writes a one-sentence concept BEFORE picking other tokens. The
+// motif vocabulary is editorial-flavored (Kinfolk / Wallpaper / Frieze)
+// rather than experimental's avant-garde (MSCHF / Carson / Kruger).
+export type EditorialConceptMotif =
+  | 'kinfolk'        // Calm, generous whitespace, warm restraint
+  | 'wallpaper'      // Modernist, asymmetric, considered
+  | 'gentlewoman'    // Literary, italic, generous, slightly nostalgic
+  | 'frieze'         // Gallery-academic, dense, footnoted
+  | 'apartamento'    // Warm, slightly off-key, hand-set feel
+  | 'monocle'        // Corporate-luxury, italic kickers, dense pages
+  | 'cabinet'        // Antiquarian, sepia, marginalia-rich
+  | 'tech-review';   // Clean, infographic-adjacent, accent-driven
+
+// ============ v4: Editorial palette rules ============
+//
+// The AI picks a rule and then invents hex values that satisfy it. Replaces
+// the old "pick from a mood pool" approach. Editorial-flavored — none of
+// the loud avant-garde palettes from experimental.
+export type EditorialPaletteRule =
+  | 'ink-and-paper'        // Near-black + cream + one warm accent (Vignelli-quiet)
+  | 'kinfolk-calm'         // Bone + dusty greens/blues + warm accent
+  | 'literary-tritone'     // Primary + burgundy/oxblood + warm accent
+  | 'gallery-restraint'    // Muted, dusty, gallery-poster colors
+  | 'ochre-paper'          // Cream paper + ochre + deep ink
+  | 'modernist-clash'      // Primary + complementary accent (one tension point)
+  | 'tri-warmth'           // Three warm hues (ochre / terracotta / clay)
+  | 'tri-cool'             // Three cool hues (forest / teal / slate)
+  | 'riso-zine';           // Two saturated hues with print-zine energy (creative-leaning only)
+
+// ============ v4: Body density (editorial-flavored) ============
+//
+// Unlike experimental's shout/whisper, creative trades on restraint vs
+// generosity rather than loudness vs quietness.
+export type EditorialBodyDensity =
+  | 'whisper'              // Tight tracking + small leading — specimen/archive feel
+  | 'normal'               // Standard editorial body
+  | 'airy';                // Generous tracking + leading — Kinfolk-spacious
+
+// ============ v4: Asymmetry strength ============
+//
+// Editorial asymmetry is much more restrained than experimental's. Maxes
+// at 'considered' — not 'extreme'.
+export type EditorialAsymmetryStrength =
+  | 'none'                 // Symmetric, centered
+  | 'subtle'               // Slight offsets
+  | 'considered';          // Visible asymmetric tension — Wallpaper-modernist
 
 export interface EditorialTokens {
   // Existing primitives
@@ -187,6 +239,57 @@ export interface EditorialTokens {
   /** A small bag of decorative elements the renderer should layer on. Order
    *  doesn't matter — each entry toggles its own treatment. */
   decorElements?: EditorialDecorElement[];
+
+  // === v4: concept-first art direction ===
+  /** One-sentence art-direction statement. AI writes this BEFORE picking
+   *  other tokens. Everything downstream flows from this concept. */
+  conceptStatement?: string;
+  /** Controlled-vocab shorthand for the editorial visual world. */
+  conceptMotif?: EditorialConceptMotif;
+
+  // === v4: content-driven primitives ===
+  /** The actual pull quote text. When set, the renderer uses this instead
+   *  of falling back to experience[0].highlights[0]. AI picks the most
+   *  meaningful phrase from the candidate's content. */
+  pullQuoteText?: string;
+  /** Attribution line for the pull quote (e.g. "— Senior Strategist,
+   *  Stedelijk"). When unset, the renderer derives from experience[0]. */
+  pullQuoteAttribution?: string;
+  /** The actual letter to use for drop-cap. Defaults to first letter of
+   *  the dropCapSection target. Letting AI pick allows for typographic
+   *  moves like using initials or a deliberate consonant. */
+  dropCapLetter?: string;
+  /** The opening sentence rendered in display font when first-line-emphasis
+   *  is active. AI picks the most quotable opener from the candidate's
+   *  actual summary. Falls back to the first sentence of summary. */
+  ledeText?: string;
+  /** A Monocle-style tagline below the candidate's name. 2-6 words
+   *  describing the candidate's voice or angle, e.g. "Strategist, writer,
+   *  gardener". Rendered as small caps with separators. */
+  nameTagline?: string;
+  /** 3-7 keywords from the vacancy or candidate's experience that get
+   *  accent-color highlights in body text. Same semantics as experimental's
+   *  accentKeywords but tuned to editorial color tokens. */
+  accentKeywords?: string[];
+  /** Custom marginalia text — short phrases (period / company / locale /
+   *  pivot moment) that float into the editorial-spread gutter. When
+   *  unset, the renderer derives from experience.period. AI can pick
+   *  more meaningful labels ("Sabbatical", "Promotion", "Move to Berlin"). */
+  marginNoteCopy?: string[];
+
+  // === v4: palette generation ===
+  /** Palette-generation rule. Used to bias the AI toward a coherent
+   *  editorial palette; the renderer reads it for paletteSaturation defaults. */
+  paletteRule?: EditorialPaletteRule;
+
+  // === v4: typography rhythm ===
+  /** Continuous heading-to-body ratio. 1.2=modest, 1.6=comfortable,
+   *  2.0=poster, 2.5+=editorial-hero. Clamped to [1.0, 3.0]. */
+  headingScaleRatio?: number;
+  /** Body-text density. */
+  bodyDensity?: EditorialBodyDensity;
+  /** Strength of asymmetric composition (editorial-tame). */
+  asymmetryStrength?: EditorialAsymmetryStrength;
 }
 
 // ============ Bold Mode Primitives (experimental level) ============
@@ -273,7 +376,9 @@ export type BoldLayoutArchetype =
   | 'editorial-inversion'  // Lead paragraph up top, contact pushed to bottom, photo on the right
   | 'brutalist-grid'       // Hard rectilinear N-column grid, blocky bordered cells, no sidebar
   | 'vertical-rail'        // Name as a vertical strip running the full left edge
-  | 'mosaic';              // Asymmetric mosaic of colored blocks — no rigid columns
+  | 'mosaic'               // Asymmetric mosaic of colored blocks — no rigid columns
+  | 'typographic-poster'   // Type-only protest poster: name fills the upper half, everything else collapses to dense small print
+  | 'photo-montage';       // Photo-dominant magazine cover: portrait bleeds across 60% of the page with info overlaid in stacked cards
 
 // How many text columns the main content area uses. The renderer
 // clamps this based on archetype (e.g. mosaic ignores it; sidebar-canva
@@ -305,6 +410,83 @@ export type BoldPaletteSaturation =
   | 'duotone'              // 2 strong colors only, no neutrals
   | 'tri-tone'             // 3 strong colors used in equal weight
   | 'full-palette';        // Use all 5 palette colors freely
+
+// ============ NEW v4: Concept-first art direction ============
+//
+// The AI writes a single-sentence art-direction statement BEFORE picking
+// any tokens. The statement is a short brief — what visual world this CV
+// lives in. It primes downstream picks and is logged for debugging. The
+// motif is a controlled-vocab shorthand that further biases the renderer.
+export type BoldConceptMotif =
+  | 'archive'              // Library catalog / index card / specimen sheet
+  | 'broadcast'            // News broadcast / breaking-news ticker / dispatch
+  | 'manifesto'            // Activist poster / wheat-paste / pamphlet
+  | 'gallery'              // Museum poster / exhibition catalog / wall text
+  | 'specimen'             // Type specimen / foundry catalogue / wood type
+  | 'manuscript'           // Hand-set book / private press / colophon
+  | 'protest'              // Photocopy / zine / DIY anti-aesthetic
+  | 'editorial';           // Magazine spread / long-form journalism
+
+// ============ NEW v4: Content-driven primitives ============
+//
+// Where the previous version asked the AI to pick decorative *shapes*, this
+// version asks the AI to pick *which content* gets the loud treatment.
+// The renderer reads these and elevates the chosen content to art-directed
+// scale. The result: two CVs for the same archetype look genuinely
+// different because they emphasize different lines / words / numbers.
+
+export type BoldPosterLineSource =
+  | 'summary-first-sentence'  // The opening sentence of the summary
+  | 'summary-extract'         // A pulled phrase from anywhere in the summary
+  | 'role-title'              // The candidate's current or target role
+  | 'invented-tagline';       // A short tagline the AI writes for this CV
+
+// How to typeset the candidate's name. The AI picks based on which part of
+// the name carries the most cultural weight or rhythm.
+export type BoldNameTreatment =
+  | 'unified'                 // Treat the whole name as one block
+  | 'first-name-dominant'     // First name oversized, surname small caps below
+  | 'last-name-dominant'      // Surname oversized, first name small caps above
+  | 'stacked'                 // Each name part on its own line, equal scale
+  | 'separated-by-rule'       // Names with a horizontal rule between them
+  | 'first-letter-massive'    // First letter at display scale, rest at body scale
+  | 'inline-with-role';       // Name + role on one line, separated by a divider
+
+// ============ NEW v4: Typography rhythm ============
+//
+// Replaces the binary `scale` enum with a continuous control over the
+// heading-to-body ratio. Combined with bodyDensity + asymmetryStrength
+// these three knobs give the AI control over the *rhythm* of the page,
+// not just the colors.
+
+export type BoldBodyDensity =
+  | 'whisper'                 // Tight tracking + small leading — type specimen feel
+  | 'normal'                  // Standard editorial body
+  | 'shout';                  // Loose tracking + extra leading — protest poster feel
+
+export type BoldAsymmetryStrength =
+  | 'none'                    // Symmetric, centered
+  | 'subtle'                  // Slight offsets
+  | 'strong'                  // Visible asymmetry — clear left/right tension
+  | 'extreme';                // Off-balance to the point of discomfort (Carson)
+
+// ============ NEW v4: Palette generation ============
+//
+// Instead of picking from a fixed pool of 10 palettes, the AI picks a
+// palette *rule* and then fills in the actual hex values. The rule gives
+// the renderer enough info to apply paletteSaturation correctly and lets
+// the AI invent palettes that the curated pool never thought of.
+
+export type BoldPaletteRule =
+  | 'split-complement-clash'  // Primary + two split-complementaries — Toilet Paper energy
+  | 'mono-with-scream'        // Near-black + single screaming accent — Kruger / Vignelli
+  | 'analog-warm'             // 3 adjacent warm hues (terracotta / mustard / coral)
+  | 'analog-cool'             // 3 adjacent cool hues (teal / navy / sage)
+  | 'tri-clash'               // 3 mutually-clashing hues spread across the wheel
+  | 'duo-riso'                // 2 saturated hues that mis-register beautifully (pink + blue, red + teal)
+  | 'paper-and-ink'           // Bone/cream paper + carbon ink + one accent (Vignelli)
+  | 'fluorescent-pop'         // Neutral page + one neon hit (Kunsthalle)
+  | 'museum-restraint';       // Muted, dusty, gallery-poster colors
 
 export interface BoldTokens {
   headerLayout: BoldHeaderLayout;
@@ -343,6 +525,62 @@ export interface BoldTokens {
   /** When true, the summary/about section is rendered as a manifesto-
    *  style oversized opening statement (huge type, single block). */
   manifestoOpener?: boolean;
+
+  // ===== New v4 experimental primitives — concept-first + content-driven =====
+  //
+  // All optional. Legacy CVs without these render identically to v3. The
+  // expert always fills them for new generations.
+
+  /** Single-sentence art-direction statement the AI writes BEFORE picking
+   *  tokens. Example: "Riso-printed dispatch from a designer whose career
+   *  reads like a wheat-paste poster — loud, hand-set, urgent." Logged
+   *  for debugging, optionally rendered as a hidden comment in the HTML. */
+  conceptStatement?: string;
+
+  /** Controlled-vocab shorthand for the concept. Biases the renderer
+   *  toward a specific visual world independent of the archetype. */
+  conceptMotif?: BoldConceptMotif;
+
+  /** The single line of copy that becomes oversized poster-scale type
+   *  (in manifesto / magazine-cover / editorial-inversion / typographic-
+   *  poster archetypes). The AI picks this from the candidate's actual
+   *  content — it should read meaningfully, not be generic. */
+  posterLine?: string;
+
+  /** Tag for where posterLine came from. Helps the renderer decide where
+   *  to render it (top of page vs replacing the summary block). */
+  posterLineSource?: BoldPosterLineSource;
+
+  /** 3-7 keywords from the job vacancy or candidate's experience that
+   *  should get accent-color highlights wherever they appear in body text.
+   *  Case-insensitive substring match. The AI picks meaningful keywords,
+   *  not stop-words. */
+  accentKeywords?: string[];
+
+  /** When backgroundNumeral != 'none', this is the actual content the
+   *  renderer should use. If unset, the renderer derives from the field
+   *  (e.g. backgroundNumeral='year' → "2026"). Letting the AI supply the
+   *  literal value lets it pick the most meaningful anchor — "8" for "8
+   *  years of experience", a specific year, a name fragment, etc. */
+  heroNumeralValue?: string;
+
+  /** How the candidate's name is typeset. */
+  nameTreatment?: BoldNameTreatment;
+
+  /** Continuous heading-to-body ratio. 1.2 = modest, 1.6 = comfortable,
+   *  2.0 = poster, 3.0 = brutalist. Clamped to [1.0, 4.0] by normalize. */
+  headingScaleRatio?: number;
+
+  /** Body-text density. Affects line-height + letter-spacing. */
+  bodyDensity?: BoldBodyDensity;
+
+  /** Strength of asymmetric composition. */
+  asymmetryStrength?: BoldAsymmetryStrength;
+
+  /** Palette-generation rule. Used in the prompt to bias the AI toward a
+   *  coherent palette; also stored on the token so the renderer can apply
+   *  the rule-specific paletteSaturation defaults. */
+  paletteRule?: BoldPaletteRule;
 }
 
 // Custom decoration element (for experimental mode)

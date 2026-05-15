@@ -108,6 +108,25 @@ export async function POST(
     }
 
     const profileSummary = createLinkedInSummaryV2(cvData.linkedInData);
+
+    // Load the user's recent style history for anti-convergence rotation.
+    let styleHistory: import('@/types/design-tokens').CVDesignTokens[] = [];
+    try {
+      const recentCvs = await db.collection('users').doc(userId).collection('cvs')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .select('designTokens')
+        .get();
+      styleHistory = recentCvs.docs
+        .map(doc => doc.data()?.designTokens)
+        .filter(Boolean) as import('@/types/design-tokens').CVDesignTokens[];
+    } catch (e) {
+      console.warn('[admin dispute resolve] Could not fetch style history:', e);
+    }
+    if (styleHistory.length === 0 && cvData.designTokens) {
+      styleHistory = [cvData.designTokens];
+    }
+
     const styleResult = await generateDesignTokens(
       profileSummary,
       cvData.jobVacancy || null,
@@ -117,7 +136,7 @@ export async function POST(
       undefined,
       newLevel,
       !!cvData.avatarUrl,
-      cvData.designTokens ? [cvData.designTokens] : undefined,
+      styleHistory,
     );
     const cvResult = await generateCV(
       cvData.linkedInData,

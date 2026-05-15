@@ -121,7 +121,75 @@ function resolveEditorialTokens(tokens: CVDesignTokens): EditorialTokens {
     sectionNumbering: e?.sectionNumbering ?? true,
     pullQuoteSource: e?.pullQuoteSource,
     dropCapSection: e?.dropCapSection ?? 'summary',
+    // v4
+    conceptStatement: e?.conceptStatement,
+    conceptMotif: e?.conceptMotif,
+    pullQuoteText: e?.pullQuoteText,
+    pullQuoteAttribution: e?.pullQuoteAttribution,
+    dropCapLetter: e?.dropCapLetter,
+    ledeText: e?.ledeText,
+    nameTagline: e?.nameTagline,
+    accentKeywords: e?.accentKeywords,
+    marginNoteCopy: e?.marginNoteCopy,
+    paletteRule: e?.paletteRule,
+    headingScaleRatio: typeof e?.headingScaleRatio === 'number'
+      ? Math.max(1.0, Math.min(3.0, e.headingScaleRatio))
+      : 1.7,
+    bodyDensity: e?.bodyDensity ?? 'normal',
+    asymmetryStrength: e?.asymmetryStrength ?? 'subtle',
   };
+}
+
+// ============ v4 content-driven helpers ============
+
+function bodyDensityValues(d: 'whisper' | 'normal' | 'airy' | undefined): { leading: string; tracking: string } {
+  switch (d) {
+    case 'whisper': return { leading: '1.4', tracking: '0.005em' };
+    case 'airy':    return { leading: '1.7', tracking: '0.025em' };
+    case 'normal':
+    default:        return { leading: '1.55', tracking: '0.012em' };
+  }
+}
+
+function asymmetryValues(a: 'none' | 'subtle' | 'considered' | undefined): { offset: string } {
+  switch (a) {
+    case 'none':       return { offset: '0px' };
+    case 'considered': return { offset: '40px' };
+    case 'subtle':
+    default:           return { offset: '14px' };
+  }
+}
+
+/**
+ * Wrap any occurrence of one of the accentKeywords in body text with a
+ * <mark class="editorial-accent-hit"> span. Case-insensitive, longest-first.
+ * Operates on already-escaped text — caller is responsible for passing
+ * escapeHtml(plain) when the input isn't pre-escaped.
+ */
+function applyAccentHighlights(escapedText: string, keywords: string[] | undefined): string {
+  if (!keywords || keywords.length === 0) return escapedText;
+  const cleaned = keywords
+    .filter(k => k && k.trim().length >= 3)
+    .map(k => k.trim())
+    .sort((a, b) => b.length - a.length);
+  if (cleaned.length === 0) return escapedText;
+
+  let out = escapedText;
+  for (const kw of cleaned) {
+    const escapedKw = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = /[a-zA-Z0-9]/.test(kw)
+      ? new RegExp(`(?<![a-zA-Z0-9])(${escapedKw})(?![a-zA-Z0-9])`, 'gi')
+      : new RegExp(`(${escapedKw})`, 'gi');
+    out = out.replace(pattern, '<mark class="editorial-accent-hit">$1</mark>');
+  }
+  return out;
+}
+
+/** Pick the drop-cap letter — AI choice wins, else first letter of section content. */
+function resolveDropCapLetter(aiChoice: string | undefined, sourceText: string): string {
+  if (aiChoice && /[A-Za-z]/.test(aiChoice)) return aiChoice.trim().charAt(0).toUpperCase();
+  const firstChar = (sourceText || '').trim().charAt(0);
+  return firstChar ? firstChar.toUpperCase() : '';
 }
 
 function hasDecor(e: EditorialTokens, el: EditorialDecorElement): boolean {
@@ -169,6 +237,13 @@ function generateEditorialCSS(
   const archetypeCSS = getArchetypeCSS(e.layoutArchetype || 'magazine-column');
   const decorCSS = getDecorCSS(e, colors, sectionTitleColor, designColor, secondary);
 
+  // v4: typography rhythm values
+  const ratio = typeof e.headingScaleRatio === 'number'
+    ? Math.max(1.0, Math.min(3.0, e.headingScaleRatio))
+    : 1.7;
+  const bodyDensity = bodyDensityValues(e.bodyDensity);
+  const asym = asymmetryValues(e.asymmetryStrength);
+
   return `
     :root {
       --e-primary: ${colors.primary};
@@ -185,6 +260,11 @@ function generateEditorialCSS(
       --e-font-heading: ${fontConfig.heading.family};
       --e-font-body: ${fontConfig.body.family};
       ${scaleVars}
+      /* v4: rhythm vars */
+      --e-heading-scale: ${ratio.toFixed(2)};
+      --e-body-leading: ${bodyDensity.leading};
+      --e-body-tracking: ${bodyDensity.tracking};
+      --e-asym-offset: ${asym.offset};
     }
 
     * { box-sizing: border-box; }
@@ -196,9 +276,34 @@ function generateEditorialCSS(
       color: var(--e-text);
       font-family: var(--e-font-body);
       font-size: var(--e-body);
-      line-height: 1.55;
+      line-height: var(--e-body-leading);
+      letter-spacing: var(--e-body-tracking);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* v4: accent keyword highlights */
+    mark.editorial-accent-hit {
+      background: transparent;
+      color: var(--e-design);
+      font-weight: 600;
+      padding: 0;
+    }
+
+    /* v4: name tagline below name */
+    .editorial-header .name-tagline {
+      font-family: var(--e-font-body);
+      font-size: var(--e-kicker);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--e-muted);
+      margin: 10px 0 0;
+      font-weight: 500;
+    }
+    .editorial-header .name-tagline > span:not(:last-child)::after {
+      content: ' · ';
+      margin: 0 4px;
+      opacity: 0.5;
     }
 
     .editorial-cv {
@@ -665,10 +770,16 @@ function generateEditorialHeader(
     ? `<img class="portrait" src="${escapeHtml(avatarUrl!)}" alt="Portrait" />`
     : '';
 
+  // v4: Monocle-style tagline below the name — small caps with separators
+  const taglineHtml = e.nameTagline && e.nameTagline.trim().length > 0
+    ? `<p class="name-tagline">${e.nameTagline.split(/\s*[,·•|]\s*/).filter(Boolean).map(t => `<span>${escapeHtml(t)}</span>`).join('')}</p>`
+    : '';
+
   const coreBlock = `
     ${kicker}
     ${accentRule}
     ${nameHtml}
+    ${taglineHtml}
     ${accentBottom}
     ${headlineHtml}
     ${contactHtml}
@@ -682,6 +793,7 @@ function generateEditorialHeader(
             ${kicker}
             ${accentRule}
             ${nameHtml}
+            ${taglineHtml}
             ${headlineHtml}
           </div>
           <div class="header-side">
@@ -697,6 +809,7 @@ function generateEditorialHeader(
           ${portrait}
           ${kicker}
           ${nameHtml}
+          ${taglineHtml}
           ${headlineHtml}
           ${contactHtml}
         </header>
@@ -710,6 +823,7 @@ function generateEditorialHeader(
             ${kicker}
             ${accentRule}
             ${nameHtml}
+            ${taglineHtml}
             ${headlineHtml}
             ${contactHtml}
           </div>
@@ -899,21 +1013,48 @@ function renderSummary(
   // first-line-emphasis: split first paragraph into <span class="first-line"> + rest
   const wantsFirstLine = hasDecor(e, 'first-line-emphasis');
 
+  // v4: AI-chosen drop-cap letter overrides the derived one
+  const dropCapOverride = wantsDropCap ? resolveDropCapLetter(e.dropCapLetter, summary) : undefined;
+  const keywords = e.accentKeywords;
+
   const bodyHtml = paragraphs
     .map((p, i) => {
       const classes: string[] = [];
       if (i === 0 && wantsDropCap) classes.push('drop-cap-paragraph');
       const cls = classes.join(' ');
+
+      // v4: when AI supplied a dropCapLetter that differs from the natural
+      // first letter, render an explicit <span class="drop-cap-glyph"> +
+      // rest of paragraph (skipping the original first character).
+      if (i === 0 && wantsDropCap && dropCapOverride) {
+        const naturalFirst = p.trim().charAt(0).toUpperCase();
+        const rest = naturalFirst === dropCapOverride
+          ? p.trim().slice(1)  // glyph replaces the natural first letter
+          : p.trim();          // AI picked a different letter — prepend it
+        const highlighted = applyAccentHighlights(escapeHtml(rest), keywords);
+        return `<p class="${cls}" style="${style}"><span class="drop-cap-glyph">${escapeHtml(dropCapOverride)}</span>${highlighted}</p>`;
+      }
+
       if (i === 0 && wantsFirstLine) {
-        // Split on first sentence-ending punctuation (no /s flag — work
-        // line-by-line; paragraphs in summary are already split on \n).
+        // v4: AI-chosen ledeText takes priority over derived first sentence
+        if (e.ledeText && e.ledeText.trim().length > 0) {
+          const lede = e.ledeText.trim();
+          // Try to strip the lede from p if it matches the opening, else prepend
+          const trimmedP = p.trim();
+          const rest = trimmedP.toLowerCase().startsWith(lede.toLowerCase())
+            ? trimmedP.slice(lede.length).trim()
+            : trimmedP;
+          const restEscaped = applyAccentHighlights(escapeHtml(rest), keywords);
+          return `<p class="${cls} has-first-line-emphasis" style="${style}"><span class="first-line">${escapeHtml(lede)}</span> ${restEscaped}</p>`;
+        }
         const match = p.match(/^([\s\S]+?[.?!])(\s+)([\s\S]*)$/);
         if (match) {
-          return `<p class="${cls} has-first-line-emphasis" style="${i === 0 ? style : ''}"><span class="first-line">${escapeHtml(match[1])}</span> ${escapeHtml(match[3])}</p>`;
+          const restEscaped = applyAccentHighlights(escapeHtml(match[3]), keywords);
+          return `<p class="${cls} has-first-line-emphasis" style="${i === 0 ? style : ''}"><span class="first-line">${escapeHtml(match[1])}</span> ${restEscaped}</p>`;
         }
         return `<p class="${cls} has-first-line-emphasis" style="${i === 0 ? style : ''}"><span class="first-line">${escapeHtml(p)}</span></p>`;
       }
-      return `<p class="${cls}" style="${i === 0 ? style : ''}">${escapeHtml(p)}</p>`;
+      return `<p class="${cls}" style="${i === 0 ? style : ''}">${applyAccentHighlights(escapeHtml(p), keywords)}</p>`;
     })
     .join('');
 
@@ -937,15 +1078,25 @@ function renderExperience(
   const useMarginalia =
     e.layoutArchetype === 'editorial-spread' && hasDecor(e, 'marginalia');
 
+  // v4: AI-chosen pullQuoteText/Attribution take priority over the derived first-highlight
   let pullQuoteHtml = '';
   if (pullQuoteFromThisSection) {
-    // Pull the first highlight of the first experience item as a pull quote
     const first = experience[0];
-    const firstHighlight = first?.highlights?.[0];
-    if (firstHighlight) {
-      pullQuoteHtml = `<blockquote class="pull-quote">"${escapeHtml(firstHighlight)}"<cite>— ${escapeHtml(first.title)}, ${escapeHtml(first.company)}</cite></blockquote>`;
+    const aiText = e.pullQuoteText?.trim();
+    const quoteText = aiText && aiText.length > 0
+      ? aiText
+      : (first?.highlights?.[0] || '');
+    const aiAttribution = e.pullQuoteAttribution?.trim();
+    const attribution = aiAttribution && aiAttribution.length > 0
+      ? aiAttribution
+      : (first ? `— ${first.title}, ${first.company}` : '');
+    if (quoteText) {
+      pullQuoteHtml = `<blockquote class="pull-quote">"${escapeHtml(quoteText)}"${attribution ? `<cite>${escapeHtml(attribution.replace(/^—\s*/, '— '))}</cite>` : ''}</blockquote>`;
     }
   }
+
+  const keywords = e.accentKeywords;
+  const marginNotes = e.marginNoteCopy;
 
   const items = experience
     .map((exp, i) => {
@@ -957,19 +1108,23 @@ function renderExperience(
       let body = '';
       if (asParagraph && exp.description) {
         const descStyle = getOverrideStyle(getOverride(overrides, `exp-${i}-description`));
-        body = `<p style="${descStyle}">${escapeHtml(exp.description)}</p>`;
+        body = `<p style="${descStyle}">${applyAccentHighlights(escapeHtml(exp.description), keywords)}</p>`;
       } else if (exp.highlights?.length) {
         body = `<ul>${exp.highlights
-          .map((h, hi) => `<li style="${getOverrideStyle(getOverride(overrides, `exp-${i}-highlight-${hi}`))}">${escapeHtml(h)}</li>`)
+          .map((h, hi) => `<li style="${getOverrideStyle(getOverride(overrides, `exp-${i}-highlight-${hi}`))}">${applyAccentHighlights(escapeHtml(h), keywords)}</li>`)
           .join('')}</ul>`;
       }
 
-      // In the editorial-spread archetype with marginalia, the period+company
-      // float into the gutter on the left. We emit a <aside class="margin-note">
-      // sibling of the item and let CSS position it.
-      const marginNote = useMarginalia && exp.period
-        ? `<aside class="margin-note">${escapeHtml(exp.period)}${exp.location ? ` · ${escapeHtml(exp.location)}` : ''}</aside>`
-        : '';
+      // v4: AI-supplied marginNoteCopy wins over derived period+location
+      let marginNote = '';
+      if (useMarginalia) {
+        const aiNote = marginNotes && marginNotes[i] ? marginNotes[i] : '';
+        const derivedNote = exp.period
+          ? `${exp.period}${exp.location ? ` · ${exp.location}` : ''}`
+          : '';
+        const noteText = aiNote || derivedNote;
+        if (noteText) marginNote = `<aside class="margin-note">${escapeHtml(noteText)}</aside>`;
+      }
 
       return `
         <div class="item" data-id="experience-${i}">
@@ -1627,6 +1782,177 @@ function getArchetypeCSS(archetype: EditorialLayoutArchetype): string {
           left: 50%;
           transform: none;
           margin-left: -6px;
+        }
+      `;
+
+    // ============ v4: cover-feature ============
+    //
+    // Magazine cover with hero portrait, oversized title, lede on cover.
+    // The header scales up dramatically (uses --e-heading-scale), the
+    // portrait dominates one side, and the body sits beneath in a compact
+    // single column. Asymmetric offset on the name (--e-asym-offset) lifts
+    // the type away from the portrait.
+    case 'cover-feature':
+      return `
+        .editorial-archetype-cover-feature {
+          padding: 0;
+        }
+        .editorial-archetype-cover-feature .editorial-header {
+          padding: 56px 56px 28px;
+          border-bottom: 4px solid var(--e-primary);
+          position: relative;
+          margin-bottom: 36px;
+        }
+        .editorial-archetype-cover-feature .editorial-header .kicker {
+          font-size: var(--e-kicker);
+          letter-spacing: 0.28em;
+          margin-bottom: 18px;
+        }
+        .editorial-archetype-cover-feature .editorial-header .name,
+        .editorial-archetype-cover-feature .editorial-header .name-stack {
+          font-size: calc(var(--e-hero) * var(--e-heading-scale) / 1.7);
+          line-height: 0.92;
+          letter-spacing: -0.03em;
+          margin: 0;
+          padding-left: var(--e-asym-offset);
+        }
+        .editorial-archetype-cover-feature .editorial-header .name-tagline {
+          margin-top: 18px;
+          padding-left: var(--e-asym-offset);
+        }
+        .editorial-archetype-cover-feature .editorial-header .headline {
+          font-family: var(--e-font-heading);
+          font-size: calc(var(--e-body) * 1.4);
+          font-style: italic;
+          color: var(--e-design);
+          max-width: 56ch;
+          margin: 18px 0 0;
+          padding-left: var(--e-asym-offset);
+          line-height: 1.3;
+        }
+        .editorial-archetype-cover-feature .editorial-header .portrait {
+          position: absolute;
+          right: 56px;
+          top: 56px;
+          width: 180px;
+          height: 220px;
+          object-fit: cover;
+          border: 4px solid var(--e-primary);
+        }
+        .editorial-archetype-cover-feature .editorial-header .contact-strip {
+          margin-top: 24px;
+          padding-left: var(--e-asym-offset);
+        }
+        .editorial-archetype-cover-feature .editorial-body {
+          padding: 0 56px 56px;
+          max-width: 68ch;
+          margin: 0 auto;
+        }
+        .editorial-archetype-cover-feature .editorial-section {
+          margin-top: 32px;
+        }
+        .editorial-archetype-cover-feature .editorial-section .section-title {
+          font-size: calc(var(--e-h2) * 1.05);
+          border-top: 1px solid var(--e-rule);
+          padding-top: 14px;
+          margin-bottom: 14px;
+        }
+      `;
+
+    // ============ v4: index-card ============
+    //
+    // Library catalog aesthetic. Each section sits in its own boxed cell
+    // with small-caps tabs. Dense paragraph layouts, librarian feel. No
+    // sidebar — index cards stack. The body is wider than typical editorial
+    // to accommodate the tab affordance.
+    case 'index-card':
+      return `
+        .editorial-archetype-index-card {
+          padding: 36px 40px 40px;
+        }
+        .editorial-archetype-index-card .editorial-header {
+          margin-bottom: 28px;
+          padding: 20px 24px;
+          border: 2px solid var(--e-primary);
+          background: var(--e-page-bg);
+          position: relative;
+        }
+        .editorial-archetype-index-card .editorial-header::before {
+          content: '';
+          position: absolute;
+          left: 24px;
+          right: 24px;
+          top: -4px;
+          height: 2px;
+          background: var(--e-design);
+        }
+        .editorial-archetype-index-card .editorial-header .kicker {
+          margin-bottom: 8px;
+          font-size: var(--e-small);
+          letter-spacing: 0.22em;
+        }
+        .editorial-archetype-index-card .editorial-header .name,
+        .editorial-archetype-index-card .editorial-header .name-stack {
+          font-size: calc(var(--e-h1) * var(--e-heading-scale) / 1.7);
+          line-height: 1;
+          margin: 0;
+        }
+        .editorial-archetype-index-card .editorial-header .name-tagline {
+          margin-top: 6px;
+          font-size: var(--e-small);
+          letter-spacing: 0.18em;
+        }
+        .editorial-archetype-index-card .editorial-header .contact-strip {
+          margin-top: 14px;
+          font-size: var(--e-small);
+        }
+        .editorial-archetype-index-card .editorial-body {
+          display: block;
+        }
+        .editorial-archetype-index-card .editorial-section {
+          margin: 0 0 16px;
+          padding: 16px 20px 14px;
+          border: 1.5px solid var(--e-rule-strong);
+          background: var(--e-page-bg);
+          position: relative;
+        }
+        .editorial-archetype-index-card .editorial-section::before {
+          /* Tab affordance — small caps label glued to the top edge */
+          content: attr(data-section);
+          position: absolute;
+          top: -10px;
+          left: 18px;
+          background: var(--e-page-bg);
+          padding: 0 10px;
+          font-family: var(--e-font-body);
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          font-size: var(--e-small);
+          color: var(--e-muted);
+        }
+        .editorial-archetype-index-card .editorial-section .section-title {
+          display: none;
+        }
+        .editorial-archetype-index-card .editorial-section .item {
+          margin-bottom: 10px;
+        }
+        .editorial-archetype-index-card .editorial-section .item-title {
+          font-size: calc(var(--e-body) * 1.05);
+          margin: 0;
+        }
+        .editorial-archetype-index-card .editorial-section .item-subtitle,
+        .editorial-archetype-index-card .editorial-section .item-meta {
+          font-size: var(--e-small);
+          color: var(--e-muted);
+          margin: 0;
+        }
+        .editorial-archetype-index-card .editorial-section .item-body {
+          font-size: var(--e-small);
+          margin-top: 4px;
+        }
+        .editorial-archetype-index-card .editorial-section .item-body ul {
+          padding-left: 16px;
+          margin: 4px 0;
         }
       `;
   }

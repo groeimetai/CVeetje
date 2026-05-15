@@ -34,6 +34,9 @@ import type {
   BoldLayoutArchetype,
   BoldBackgroundNumeral,
   BoldMarginaliaStyle,
+  BoldNameTreatment,
+  BoldBodyDensity,
+  BoldAsymmetryStrength,
 } from '@/types/design-tokens';
 import { getFontUrls, fontPairings } from '../templates/themes';
 import { splitInterest } from '../interest-format';
@@ -136,6 +139,12 @@ function renderArchetypeBody(
     case 'mosaic':
       html = renderMosaic(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
       break;
+    case 'typographic-poster':
+      html = renderTypographicPoster(content, tokens, b, fullName, headline, overrides, contactInfo);
+      break;
+    case 'photo-montage':
+      html = renderPhotoMontage(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
+      break;
     case 'sidebar-canva':
     default:
       html = renderSidebarCanva(content, tokens, b, fullName, headline, avatarUrl, overrides, contactInfo);
@@ -188,7 +197,8 @@ function resolveBoldTokens(tokens: CVDesignTokens): Required<Pick<
   | 'surfaceTexture' | 'layoutArchetype' | 'columnCount'
   | 'backgroundNumeral' | 'marginalia' | 'paletteSaturation'
   | 'manifestoOpener'
->> {
+  | 'nameTreatment' | 'headingScaleRatio' | 'bodyDensity' | 'asymmetryStrength'
+>> & Pick<BoldTokens, 'posterLine' | 'posterLineSource' | 'accentKeywords' | 'heroNumeralValue' | 'conceptStatement' | 'conceptMotif' | 'paletteRule'> {
   const b = tokens.bold;
   return {
     headerLayout: b?.headerLayout ?? 'hero-band',
@@ -206,6 +216,20 @@ function resolveBoldTokens(tokens: CVDesignTokens): Required<Pick<
     marginalia: b?.marginalia ?? 'none',
     paletteSaturation: b?.paletteSaturation ?? 'duotone',
     manifestoOpener: b?.manifestoOpener ?? false,
+    // v4 content-driven primitives
+    nameTreatment: b?.nameTreatment ?? 'unified',
+    headingScaleRatio: typeof b?.headingScaleRatio === 'number'
+      ? Math.max(1.0, Math.min(4.0, b.headingScaleRatio))
+      : 1.8,
+    bodyDensity: b?.bodyDensity ?? 'normal',
+    asymmetryStrength: b?.asymmetryStrength ?? 'subtle',
+    posterLine: b?.posterLine,
+    posterLineSource: b?.posterLineSource,
+    accentKeywords: b?.accentKeywords,
+    heroNumeralValue: b?.heroNumeralValue,
+    conceptStatement: b?.conceptStatement,
+    conceptMotif: b?.conceptMotif,
+    paletteRule: b?.paletteRule,
   };
 }
 
@@ -226,6 +250,13 @@ function generateBoldCSS(
   const gradientDecl = buildGradient(b.gradientDirection, colors);
   const sidebarFill = buildSidebarFill(b.sidebarStyle, colors, gradientDecl);
 
+  // v4: typography rhythm CSS values derived from new tokens
+  const ratio = typeof b.headingScaleRatio === 'number'
+    ? Math.max(1.0, Math.min(4.0, b.headingScaleRatio))
+    : 1.8;
+  const bodyDensityCss = bodyDensityValues(b.bodyDensity ?? 'normal');
+  const asymCss = asymmetryValues(b.asymmetryStrength ?? 'subtle');
+
   return `
     :root {
       --b-primary: ${colors.primary};
@@ -239,6 +270,12 @@ function generateBoldCSS(
       --b-font-heading: ${fontConfig.heading.family};
       --b-font-body: ${fontConfig.body.family};
       --b-gradient: ${gradientDecl};
+      /* v4: typography rhythm — used by archetype CSS for heading sizing */
+      --b-heading-scale: ${ratio.toFixed(2)};
+      --b-body-leading: ${bodyDensityCss.leading};
+      --b-body-tracking: ${bodyDensityCss.tracking};
+      --b-asym-offset: ${asymCss.offset};
+      --b-asym-rotation: ${asymCss.rotation};
     }
 
     * { box-sizing: border-box; }
@@ -276,8 +313,14 @@ function generateBoldCSS(
     /* ================= Header variants ================= */
     ${getHeaderCSS(b, colors)}
 
+    /* ================= Name treatment + accent highlights (v4) ================= */
+    ${nameTreatmentCSS()}
+
     /* ================= Surface texture overlay ================= */
     ${getSurfaceTextureCSS(b.surfaceTexture, colors)}
+
+    /* ================= Body density applied to body text ================= */
+    body { line-height: var(--b-body-leading); letter-spacing: var(--b-body-tracking); }
 
     /* ================= Body split ================= */
 
@@ -1016,8 +1059,8 @@ function generateBoldMain(
   overrides?: CVElementOverrides | null,
 ): string {
   const sectionRenderers: Record<string, () => string> = {
-    summary: () => renderSummary(content.summary, overrides),
-    experience: () => renderExperience(content.experience, tokens, overrides),
+    summary: () => renderSummary(content.summary, overrides, b.accentKeywords),
+    experience: () => renderExperience(content.experience, tokens, overrides, b.accentKeywords),
     education: () => renderEducation(content.education, overrides),
     projects: () => renderProjects(content.projects, overrides),
   };
@@ -1057,13 +1100,17 @@ function sectionTitle(label: string): string {
   return `<h2 class="bold-section-title"><!--SECTION_NUMBER--><span class="section-title-text">${escapeHtml(label)}</span></h2>`;
 }
 
-function renderSummary(summary: string, overrides?: CVElementOverrides | null): string {
+function renderSummary(
+  summary: string,
+  overrides?: CVElementOverrides | null,
+  accentKeywords?: string[],
+): string {
   if (!summary) return '';
   if (getOverride(overrides, 'section-summary')?.hidden) return '';
   if (getOverride(overrides, 'summary')?.hidden) return '';
   const style = getOverrideStyle(getOverride(overrides, 'summary'));
   const paragraphs = summary.split('\n').filter(Boolean)
-    .map((p) => `<p style="${style}">${escapeHtml(p)}</p>`)
+    .map((p) => `<p style="${style}">${applyAccentHighlights(escapeHtml(p), accentKeywords)}</p>`)
     .join('');
   return `${sectionTitle('About')}<div class="bold-item-body">${paragraphs}</div>`;
 }
@@ -1072,6 +1119,7 @@ function renderExperience(
   experience: GeneratedCVContent['experience'],
   tokens: CVDesignTokens,
   overrides?: CVElementOverrides | null,
+  accentKeywords?: string[],
 ): string {
   if (!experience || experience.length === 0) return '';
   if (getOverride(overrides, 'section-experience')?.hidden) return '';
@@ -1086,10 +1134,10 @@ function renderExperience(
     let body = '';
     if (asParagraph && exp.description) {
       const descStyle = getOverrideStyle(getOverride(overrides, `exp-${i}-description`));
-      body = `<p style="${descStyle}">${escapeHtml(exp.description)}</p>`;
+      body = `<p style="${descStyle}">${applyAccentHighlights(escapeHtml(exp.description), accentKeywords)}</p>`;
     } else if (exp.highlights?.length) {
       body = `<ul>${exp.highlights.map((h, hi) =>
-        `<li style="${getOverrideStyle(getOverride(overrides, `exp-${i}-highlight-${hi}`))}">${escapeHtml(h)}</li>`
+        `<li style="${getOverrideStyle(getOverride(overrides, `exp-${i}-highlight-${hi}`))}">${applyAccentHighlights(escapeHtml(h), accentKeywords)}</li>`
       ).join('')}</ul>`;
     }
 
@@ -1782,6 +1830,187 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => map[c] || c);
 }
 
+// ============ v4 content-driven helpers ============
+
+function bodyDensityValues(d: BoldBodyDensity): { leading: string; tracking: string } {
+  switch (d) {
+    case 'whisper': return { leading: '1.35', tracking: '0.005em' };
+    case 'shout':   return { leading: '1.75', tracking: '0.04em' };
+    case 'normal':
+    default:        return { leading: '1.5', tracking: '0.01em' };
+  }
+}
+
+function asymmetryValues(a: BoldAsymmetryStrength): { offset: string; rotation: string } {
+  switch (a) {
+    case 'none':    return { offset: '0px', rotation: '0deg' };
+    case 'subtle':  return { offset: '12px', rotation: '0deg' };
+    case 'strong':  return { offset: '32px', rotation: '0deg' };
+    case 'extreme': return { offset: '56px', rotation: '-1.5deg' };
+    default:        return { offset: '12px', rotation: '0deg' };
+  }
+}
+
+/**
+ * Wrap any occurrence of one of the accentKeywords in body text with a
+ * <mark class="accent-hit"> span. Case-insensitive, longest-keyword-first
+ * to prevent shorter keywords cannibalising longer ones. Skips HTML tags
+ * (operates on plain text only — caller passes escaped text).
+ *
+ * The keywords are AI-picked from the vacancy or experience — they're
+ * the domain-words the recruiter will scan for. Highlighting them
+ * elevates the candidate's content into the visual language of the page.
+ */
+function applyAccentHighlights(escapedText: string, keywords: string[] | undefined): string {
+  if (!keywords || keywords.length === 0) return escapedText;
+  // Filter out tiny / problematic keywords + escape regex metachars
+  const cleaned = keywords
+    .filter(k => k && k.trim().length >= 3)
+    .map(k => k.trim())
+    .sort((a, b) => b.length - a.length); // longest first
+  if (cleaned.length === 0) return escapedText;
+
+  let out = escapedText;
+  for (const kw of cleaned) {
+    const escapedKw = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Use \b on alphanumeric boundaries; for keywords with spaces, allow
+    // adjacent whitespace as the boundary.
+    const pattern = /[a-zA-Z0-9]/.test(kw)
+      ? new RegExp(`(?<![a-zA-Z0-9])(${escapedKw})(?![a-zA-Z0-9])`, 'gi')
+      : new RegExp(`(${escapedKw})`, 'gi');
+    out = out.replace(pattern, '<mark class="accent-hit">$1</mark>');
+  }
+  return out;
+}
+
+/**
+ * Pick the line of copy that becomes oversized poster-scale type.
+ * Prefers the AI-chosen `posterLine`; falls back to first summary sentence.
+ */
+function resolvePosterLine(
+  aiChoice: string | undefined,
+  summary: string,
+  headline: string | null | undefined,
+  fullName: string,
+): string {
+  if (aiChoice && aiChoice.trim().length > 0) return aiChoice.trim();
+  // Fallbacks
+  const firstSentence = (summary || '').split(/[.!?]\s+/)[0];
+  if (firstSentence && firstSentence.length > 0) return firstSentence;
+  if (headline) return headline;
+  return fullName;
+}
+
+/**
+ * Render the candidate's name according to nameTreatment.
+ * The result is wrapped in a stable `<span data-id="header-name">` so
+ * downstream editing / overrides still work.
+ */
+function renderNameMarkup(
+  fullName: string,
+  treatment: BoldNameTreatment,
+  headline: string | null | undefined,
+): string {
+  const parts = fullName.trim().split(/\s+/);
+  const first = parts[0] || fullName;
+  const rest = parts.slice(1).join(' ');
+  const allCaps = (s: string) => escapeHtml(s.toUpperCase());
+
+  switch (treatment) {
+    case 'first-name-dominant':
+      return `<span data-id="header-name" class="name-first-dominant">
+        <span class="name-big">${allCaps(first)}</span>
+        ${rest ? `<span class="name-small">${allCaps(rest)}</span>` : ''}
+      </span>`;
+    case 'last-name-dominant':
+      return `<span data-id="header-name" class="name-last-dominant">
+        ${rest ? `<span class="name-small">${allCaps(first)}</span>` : ''}
+        <span class="name-big">${allCaps(rest || first)}</span>
+      </span>`;
+    case 'stacked':
+      return `<span data-id="header-name" class="name-stacked">
+        <span class="name-line">${allCaps(first)}</span>
+        ${rest ? `<span class="name-line">${allCaps(rest)}</span>` : ''}
+      </span>`;
+    case 'separated-by-rule':
+      return `<span data-id="header-name" class="name-separated">
+        <span class="name-line">${allCaps(first)}</span>
+        <span class="name-rule"></span>
+        ${rest ? `<span class="name-line">${allCaps(rest)}</span>` : ''}
+      </span>`;
+    case 'first-letter-massive': {
+      const firstLetter = (first[0] || '').toUpperCase();
+      const firstRest = first.slice(1);
+      return `<span data-id="header-name" class="name-letter-massive">
+        <span class="name-initial">${escapeHtml(firstLetter)}</span>
+        <span class="name-tail">${allCaps(firstRest)}${rest ? ' ' + allCaps(rest) : ''}</span>
+      </span>`;
+    }
+    case 'inline-with-role':
+      return `<span data-id="header-name" class="name-inline">
+        <span class="name-line">${allCaps(fullName)}</span>
+        ${headline ? `<span class="name-divider">—</span><span class="name-role">${escapeHtml(headline)}</span>` : ''}
+      </span>`;
+    case 'unified':
+    default:
+      return `<span data-id="header-name" class="name-unified">${allCaps(fullName)}</span>`;
+  }
+}
+
+/**
+ * CSS for all nameTreatment variants. Always emitted (cheap) so any treatment
+ * works in any archetype.
+ */
+function nameTreatmentCSS(): string {
+  return `
+    .name-unified { font-family: var(--b-font-heading); font-weight: 900; line-height: 0.92; letter-spacing: -0.02em; }
+    .name-first-dominant, .name-last-dominant {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+    }
+    .name-first-dominant .name-big, .name-last-dominant .name-big {
+      font-family: var(--b-font-heading); font-weight: 900; line-height: 0.9;
+      letter-spacing: -0.025em; font-size: calc(38pt * var(--b-heading-scale) / 1.8);
+    }
+    .name-first-dominant .name-small, .name-last-dominant .name-small {
+      font-family: var(--b-font-body); font-weight: 500; letter-spacing: 0.18em;
+      font-size: 11pt; opacity: 0.78;
+    }
+    .name-stacked, .name-separated, .name-inline { display: flex; flex-direction: column; gap: 6px; }
+    .name-stacked .name-line, .name-separated .name-line {
+      font-family: var(--b-font-heading); font-weight: 900;
+      line-height: 0.95; letter-spacing: -0.02em;
+      font-size: calc(34pt * var(--b-heading-scale) / 1.8);
+    }
+    .name-separated .name-rule {
+      display: block; width: 80px; height: 4px; background: currentColor; margin: 6px 0;
+    }
+    .name-letter-massive { display: flex; align-items: baseline; gap: 6px; }
+    .name-letter-massive .name-initial {
+      font-family: var(--b-font-heading); font-weight: 900;
+      font-size: calc(72pt * var(--b-heading-scale) / 1.8);
+      line-height: 0.8; letter-spacing: -0.04em;
+    }
+    .name-letter-massive .name-tail {
+      font-family: var(--b-font-body); font-weight: 600; letter-spacing: 0.16em;
+      font-size: 12pt;
+    }
+    .name-inline { flex-direction: row; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+    .name-inline .name-line {
+      font-family: var(--b-font-heading); font-weight: 900;
+      letter-spacing: -0.015em;
+      font-size: calc(26pt * var(--b-heading-scale) / 1.8);
+    }
+    .name-inline .name-divider { font-family: var(--b-font-heading); opacity: 0.55; }
+    .name-inline .name-role { font-family: var(--b-font-body); font-size: 12pt; opacity: 0.8; }
+
+    /* The accent-hit highlights wrap individual keywords in body text */
+    mark.accent-hit {
+      background: transparent; color: var(--b-accent);
+      font-weight: 700; padding: 0;
+    }
+  `;
+}
+
 // ============ Archetype CSS ============
 //
 // Each non-sidebar-canva archetype gets a self-contained CSS block. The
@@ -1821,6 +2050,12 @@ function generateArchetypeCSS(b: BoldTokens, tokens: CVDesignTokens): string {
       break;
     case 'mosaic':
       archetypeCss = mosaicCSS(b, colors);
+      break;
+    case 'typographic-poster':
+      archetypeCss = typographicPosterCSS(b, colors);
+      break;
+    case 'photo-montage':
+      archetypeCss = photoMontageCSS(b, colors);
       break;
     case 'sidebar-canva':
     default:
@@ -2586,12 +2821,16 @@ function backgroundNumeralContent(
   style: BoldBackgroundNumeral,
   fullName: string,
   content: GeneratedCVContent,
+  heroNumeralValue?: string,
 ): string {
+  // v4: if the AI supplied a literal value, prefer it (more meaningful than derived).
+  if (style !== 'none' && heroNumeralValue && heroNumeralValue.trim().length > 0) {
+    return heroNumeralValue.trim();
+  }
   switch (style) {
     case 'initials':
       return getInitials(fullName);
     case 'year': {
-      // Use the current calendar year — falls back to "2026" if anything fails.
       try {
         return String(new Date().getFullYear());
       } catch {
@@ -2620,8 +2859,8 @@ function renderManifesto(
 ): string {
   // Manifesto: opener (name + headline) → giant summary statement → grid of sections.
   const sectionRenderers: Record<string, () => string> = {
-    summary: () => renderSummary(content.summary, overrides),
-    experience: () => renderExperience(content.experience, tokens, overrides),
+    summary: () => renderSummary(content.summary, overrides, b.accentKeywords),
+    experience: () => renderExperience(content.experience, tokens, overrides, b.accentKeywords),
     education: () => renderEducation(content.education, overrides),
     projects: () => renderProjects(content.projects, overrides),
   };
@@ -2654,11 +2893,14 @@ function renderManifesto(
   // Skills / languages / certifications get a compact row at the bottom.
   const extras = renderManifestoExtras(content, b, overrides);
 
-  const statementHtml = useStatement
-    ? `<div class="manifesto-statement">${escapeHtml(content.summary.split('\n')[0] || content.summary)}</div>`
+  const statementText = useStatement
+    ? resolvePosterLine(b.posterLine, content.summary, content.headline, fullName)
+    : '';
+  const statementHtml = useStatement && statementText
+    ? `<div class="manifesto-statement">${applyAccentHighlights(escapeHtml(statementText), b.accentKeywords)}</div>`
     : '';
 
-  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content, b.heroNumeralValue);
   const numeralHtml = numeralText
     ? `<div class="bg-numeral bg-numeral-page">${escapeHtml(numeralText)}</div>`
     : '';
@@ -2722,8 +2964,8 @@ function renderMagazineCover(
   contactInfo: CVContactInfo | null | undefined,
 ): string {
   const sectionRenderers: Record<string, () => string> = {
-    summary: () => renderSummary(content.summary, overrides),
-    experience: () => renderExperience(content.experience, tokens, overrides),
+    summary: () => renderSummary(content.summary, overrides, b.accentKeywords),
+    experience: () => renderExperience(content.experience, tokens, overrides, b.accentKeywords),
     education: () => renderEducation(content.education, overrides),
     projects: () => renderProjects(content.projects, overrides),
   };
@@ -2746,19 +2988,21 @@ function renderMagazineCover(
     ? `<div class="cover-portrait"><img src="${escapeHtml(avatarUrl)}" alt="" /></div>`
     : '';
 
-  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content, b.heroNumeralValue);
   const numeralHtml = numeralText
     ? `<div class="bg-numeral bg-numeral-corner">${escapeHtml(numeralText)}</div>`
     : '';
   const year = new Date().getFullYear();
+
+  const coverHeadline = b.posterLine || headline || '';
 
   return `<div class="bold-cv archetype-magazine-cover">
     ${numeralHtml}
     <header class="cover-hero">
       <div>
         <div class="cover-kicker">Curriculum Vitae · ${year}</div>
-        <h1 class="cover-name" data-id="header-name">${escapeHtml(fullName)}</h1>
-        ${headline ? `<p class="cover-headline">${escapeHtml(headline)}</p>` : ''}
+        <h1 class="cover-name" data-id="header-name">${renderNameMarkup(fullName, b.nameTreatment ?? 'unified', headline)}</h1>
+        ${coverHeadline ? `<p class="cover-headline">${applyAccentHighlights(escapeHtml(coverHeadline), b.accentKeywords)}</p>` : ''}
       </div>
       <div class="cover-issue">№ ${String(year).slice(-2)} — Issue One</div>
       ${portrait}
@@ -2779,7 +3023,7 @@ function renderEditorialInversion(
   contactInfo: CVContactInfo | null | undefined,
 ): string {
   const sectionRenderers: Record<string, () => string> = {
-    experience: () => renderExperience(content.experience, tokens, overrides),
+    experience: () => renderExperience(content.experience, tokens, overrides, b.accentKeywords),
     education: () => renderEducation(content.education, overrides),
     projects: () => renderProjects(content.projects, overrides),
   };
@@ -2800,11 +3044,12 @@ function renderEditorialInversion(
     ? `<div class="inv-portrait"><img src="${escapeHtml(avatarUrl)}" alt="" /></div>`
     : '';
 
-  const lead = content.summary
+  const leadText = resolvePosterLine(b.posterLine, content.summary, content.headline, fullName).slice(0, 320);
+  const lead = (content.summary || b.posterLine)
     ? `<div class="inv-lead">
         <div>
           <div class="inv-kicker">A Curriculum Vitae</div>
-          <p class="inv-lead-text">${escapeHtml((content.summary.split('\n')[0] || content.summary).slice(0, 320))}</p>
+          <p class="inv-lead-text">${applyAccentHighlights(escapeHtml(leadText), b.accentKeywords)}</p>
         </div>
         ${portrait}
       </div>`
@@ -2823,7 +3068,7 @@ function renderEditorialInversion(
     contactItems.push(`<a href="${escapeHtml(href)}">${escapeHtml(contactInfo.website.replace(/^https?:\/\//, ''))}</a>`);
   }
 
-  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content, b.heroNumeralValue);
   const numeralHtml = numeralText
     ? `<div class="bg-numeral bg-numeral-corner">${escapeHtml(numeralText)}</div>`
     : '';
@@ -2852,8 +3097,8 @@ function renderBrutalistGrid(
   contactInfo: CVContactInfo | null | undefined,
 ): string {
   const sectionRenderers: Record<string, () => string> = {
-    summary: () => renderSummary(content.summary, overrides),
-    experience: () => renderExperience(content.experience, tokens, overrides),
+    summary: () => renderSummary(content.summary, overrides, b.accentKeywords),
+    experience: () => renderExperience(content.experience, tokens, overrides, b.accentKeywords),
     education: () => renderEducation(content.education, overrides),
     projects: () => renderProjects(content.projects, overrides),
   };
@@ -2886,7 +3131,7 @@ function renderBrutalistGrid(
     contactItems.push(`<a href="${escapeHtml(href)}">${escapeHtml(contactInfo.linkedinUrl.replace(/^https?:\/\/(www\.)?/, ''))}</a>`);
   }
 
-  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content);
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content, b.heroNumeralValue);
   const numeralHtml = numeralText
     ? `<div class="bg-numeral bg-numeral-corner">${escapeHtml(numeralText)}</div>`
     : '';
@@ -2918,8 +3163,8 @@ function renderVerticalRail(
   contactInfo: CVContactInfo | null | undefined,
 ): string {
   const sectionRenderers: Record<string, () => string> = {
-    summary: () => renderSummary(content.summary, overrides),
-    experience: () => renderExperience(content.experience, tokens, overrides),
+    summary: () => renderSummary(content.summary, overrides, b.accentKeywords),
+    experience: () => renderExperience(content.experience, tokens, overrides, b.accentKeywords),
     education: () => renderEducation(content.education, overrides),
     projects: () => renderProjects(content.projects, overrides),
   };
@@ -2975,8 +3220,8 @@ function renderMosaic(
   contactInfo: CVContactInfo | null | undefined,
 ): string {
   const sectionRenderers: Record<string, () => string> = {
-    summary: () => renderSummary(content.summary, overrides),
-    experience: () => renderExperience(content.experience, tokens, overrides),
+    summary: () => renderSummary(content.summary, overrides, b.accentKeywords),
+    experience: () => renderExperience(content.experience, tokens, overrides, b.accentKeywords),
     education: () => renderEducation(content.education, overrides),
     projects: () => renderProjects(content.projects, overrides),
   };
@@ -2998,7 +3243,7 @@ function renderMosaic(
 
   // Summary as a full-width tinted tile
   if (content.summary && !getOverride(overrides, 'section-summary')?.hidden) {
-    const summaryHtml = renderSummary(content.summary, overrides);
+    const summaryHtml = renderSummary(content.summary, overrides, b.accentKeywords);
     if (summaryHtml) {
       tiles.push(`<section class="tile tile-summary bold-section" data-section="summary">${summaryHtml.replace('<!--SECTION_NUMBER-->', '')}</section>`);
     }
@@ -3080,4 +3325,486 @@ function buildProtection(enabled: boolean, watermarkText: string): {
       </script>
     `,
   };
+}
+
+// ============================================================================
+//
+//                     v4: typographic-poster archetype
+//
+// Type-only protest poster. NO PHOTO. The candidate's name fills the upper
+// half of the page; the posterLine becomes a giant blockquote. Below: a
+// dense run of small-print sections that read like the credits at the end
+// of a film. Body text uses bodyDensity for tracking/leading. Asymmetry
+// strength controls how far the poster line is offset from centre.
+//
+// Best fits: designers, writers, strategists, activists, anyone with a
+// strong personal voice.
+//
+// ============================================================================
+
+function typographicPosterCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  return `
+    .archetype-typographic-poster {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+    }
+    .archetype-typographic-poster .tp-hero {
+      padding: 64px 56px 24px;
+      position: relative;
+      z-index: 2;
+    }
+    .archetype-typographic-poster .tp-name {
+      font-family: var(--b-font-heading);
+      font-size: calc(72pt * var(--b-heading-scale) / 1.8);
+      font-weight: 900;
+      line-height: 0.86;
+      letter-spacing: -0.035em;
+      color: ${colors.primary};
+      text-transform: uppercase;
+      margin: 0;
+      transform: translateX(var(--b-asym-offset)) rotate(var(--b-asym-rotation));
+      transform-origin: left top;
+    }
+    .archetype-typographic-poster .tp-kicker {
+      font-family: var(--b-font-body);
+      text-transform: uppercase;
+      letter-spacing: 0.32em;
+      font-size: 9.5pt;
+      color: ${colors.muted};
+      margin: 0 0 28px;
+    }
+    .archetype-typographic-poster .tp-poster-line {
+      margin: 36px 0 28px;
+      padding: 28px 56px 36px;
+      font-family: var(--b-font-heading);
+      font-size: calc(32pt * var(--b-heading-scale) / 1.8);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.015em;
+      color: ${colors.accent};
+      max-width: 720px;
+      position: relative;
+      z-index: 2;
+      border-top: 4px solid ${colors.primary};
+      border-bottom: 4px solid ${colors.primary};
+    }
+    .archetype-typographic-poster .tp-poster-line::before {
+      content: '⸻';
+      display: block;
+      font-family: var(--b-font-body);
+      font-size: 14pt;
+      color: ${colors.primary};
+      margin-bottom: 12px;
+    }
+    .archetype-typographic-poster .tp-credits {
+      padding: 12px 56px 48px;
+      column-count: 2;
+      column-gap: 36px;
+      column-rule: 1px solid ${colors.primary};
+      font-family: var(--b-font-body);
+      font-size: 9pt;
+      line-height: 1.55;
+      color: ${colors.text};
+    }
+    .archetype-typographic-poster .tp-credits > .bold-section {
+      break-inside: avoid;
+      margin: 0 0 18px;
+    }
+    .archetype-typographic-poster .tp-credits .bold-section-title {
+      font-family: var(--b-font-heading);
+      font-size: 11pt;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: ${colors.primary};
+      margin: 0 0 6px;
+      padding: 0;
+    }
+    .archetype-typographic-poster .tp-credits .bold-item {
+      padding: 0;
+      margin: 0 0 10px;
+      background: transparent;
+      border: 0;
+    }
+    .archetype-typographic-poster .tp-credits .bold-item-title {
+      font-size: 10pt;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .archetype-typographic-poster .tp-credits .bold-item-subtitle {
+      font-size: 9pt;
+      color: ${colors.muted};
+      margin: 0;
+    }
+    .archetype-typographic-poster .tp-credits .bold-item-period {
+      font-size: 8.5pt;
+      color: ${colors.muted};
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+    }
+    .archetype-typographic-poster .tp-credits ul {
+      margin: 4px 0 0;
+      padding: 0 0 0 14px;
+    }
+    .archetype-typographic-poster .tp-credits ul li {
+      margin: 0 0 3px;
+    }
+    .archetype-typographic-poster .tp-contact {
+      padding: 12px 56px 36px;
+      font-family: var(--b-font-body);
+      font-size: 8.5pt;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: ${colors.muted};
+      border-top: 1px solid ${colors.primary};
+    }
+    .archetype-typographic-poster .tp-contact a {
+      color: ${colors.primary};
+      text-decoration: none;
+      margin-right: 18px;
+    }
+    .archetype-typographic-poster .tp-numeral {
+      position: absolute;
+      top: 80px;
+      right: -40px;
+      font-family: var(--b-font-heading);
+      font-size: 320pt;
+      font-weight: 900;
+      line-height: 0.8;
+      color: ${colors.primary};
+      opacity: 0.06;
+      pointer-events: none;
+      z-index: 1;
+    }
+    /* Suppress unused-token warnings */
+    .archetype-typographic-poster[data-saturation="${b.paletteSaturation ?? 'duotone'}"] {}
+  `;
+}
+
+function renderTypographicPoster(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const posterLineText = resolvePosterLine(b.posterLine, content.summary, headline, fullName);
+  const numeralText = backgroundNumeralContent(b.backgroundNumeral ?? 'none', fullName, content, b.heroNumeralValue);
+
+  // Render dense credits-style sections
+  const sectionRenderers: Record<string, () => string> = {
+    experience: () => renderCredits('Experience', content.experience.map(e => ({
+      title: e.title,
+      subtitle: `${e.company}${e.location ? ` · ${e.location}` : ''}`,
+      period: e.period || '',
+      bullets: e.highlights || [],
+    })), overrides, b.accentKeywords),
+    education: () => renderCredits('Education', content.education.map(e => ({
+      title: e.degree,
+      subtitle: e.institution,
+      period: e.year || '',
+      bullets: [],
+    })), overrides),
+    projects: () => content.projects && content.projects.length > 0
+      ? renderCredits('Projects', content.projects.map(p => ({
+          title: p.title,
+          subtitle: (p.technologies || []).slice(0, 4).join(' · '),
+          period: p.period || '',
+          bullets: p.description ? [p.description] : [],
+        })), overrides, b.accentKeywords)
+      : '',
+  };
+
+  const credits = tokens.sectionOrder
+    .filter(n => sectionRenderers[n])
+    .map(n => sectionRenderers[n]())
+    .filter(Boolean)
+    .join('');
+
+  // Skills as a single inline line at the very bottom of the credits
+  const skillsLine = content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && !getOverride(overrides, 'section-skills')?.hidden
+    ? `<section class="bold-section" data-section="skills">
+        ${sectionTitle('Skills')}
+        <p style="margin: 0;">${[...content.skills.technical.slice(0, 12), ...content.skills.soft.slice(0, 6)].map(s => escapeHtml(s)).join(' · ')}</p>
+      </section>`
+    : '';
+
+  return `<div class="bold-cv archetype-typographic-poster">
+    ${numeralText ? `<div class="tp-numeral">${escapeHtml(numeralText)}</div>` : ''}
+    <header class="tp-hero">
+      <div class="tp-kicker">A Curriculum Vitae — ${new Date().getFullYear()}</div>
+      <h1 class="tp-name">${renderNameMarkup(fullName, b.nameTreatment ?? 'unified', headline)}</h1>
+    </header>
+    <div class="tp-poster-line">${applyAccentHighlights(escapeHtml(posterLineText), b.accentKeywords)}</div>
+    <div class="tp-credits">${credits}${skillsLine}</div>
+    <footer class="tp-contact">${buildSimpleContact(contactInfo)}</footer>
+  </div>`;
+}
+
+interface CreditEntry {
+  title: string;
+  subtitle: string;
+  period: string;
+  bullets: string[];
+}
+
+function renderCredits(
+  label: string,
+  entries: CreditEntry[],
+  overrides: CVElementOverrides | null | undefined,
+  accentKeywords?: string[],
+): string {
+  if (entries.length === 0) return '';
+  const items = entries.map((e, i) => `
+    <div class="bold-item" data-id="entry-${i}">
+      <p class="bold-item-title">${escapeHtml(e.title)}</p>
+      <p class="bold-item-subtitle">${escapeHtml(e.subtitle)}${e.period ? ` · <span class="bold-item-period">${escapeHtml(e.period)}</span>` : ''}</p>
+      ${e.bullets.length > 0 ? `<ul>${e.bullets.slice(0, 3).map(b => `<li>${applyAccentHighlights(escapeHtml(b), accentKeywords)}</li>`).join('')}</ul>` : ''}
+    </div>
+  `).filter(Boolean).join('');
+
+  return `<section class="bold-section" data-section="${label.toLowerCase()}">
+    ${sectionTitle(label)}
+    ${items}
+  </section>`;
+}
+
+// ============================================================================
+//
+//                       v4: photo-montage archetype
+//
+// Portrait-dominant magazine cover. Photo bleeds across ~60% of the page;
+// info is overlaid in stacked cards on top of (or alongside) the photo.
+// REQUIRES an uploaded photo — the normalize step downgrades to magazine-
+// cover when no photo is available.
+//
+// Best fits: performers, art directors, anyone whose face IS the brand.
+//
+// ============================================================================
+
+function photoMontageCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
+  return `
+    .archetype-photo-montage {
+      max-width: 820px;
+      margin: 0 auto;
+      background: var(--b-page-bg);
+      min-height: 1120px;
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+    }
+    .archetype-photo-montage .pm-cover {
+      position: relative;
+      height: 640px;
+      background: ${colors.primary};
+      color: #fff;
+      overflow: hidden;
+    }
+    .archetype-photo-montage .pm-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.05) saturate(1.1);
+    }
+    .archetype-photo-montage .pm-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg,
+        rgba(0,0,0,0.0) 0%,
+        rgba(0,0,0,0.05) 40%,
+        rgba(0,0,0,0.55) 100%);
+    }
+    .archetype-photo-montage .pm-cover-content {
+      position: absolute;
+      left: 36px;
+      right: 36px;
+      bottom: 32px;
+      z-index: 2;
+    }
+    .archetype-photo-montage .pm-issue {
+      font-family: var(--b-font-body);
+      font-size: 9.5pt;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+      margin: 0 0 8px;
+    }
+    .archetype-photo-montage .pm-name {
+      font-family: var(--b-font-heading);
+      font-size: calc(52pt * var(--b-heading-scale) / 1.8);
+      font-weight: 900;
+      line-height: 0.92;
+      letter-spacing: -0.025em;
+      color: #fff;
+      margin: 0;
+      text-transform: uppercase;
+    }
+    .archetype-photo-montage .pm-poster-line {
+      font-family: var(--b-font-heading);
+      font-size: 17pt;
+      font-weight: 600;
+      line-height: 1.2;
+      color: ${colors.accent};
+      max-width: 60ch;
+      margin: 14px 0 0;
+      padding: 12px 0 0;
+      border-top: 3px solid ${colors.accent};
+    }
+    .archetype-photo-montage .pm-cards {
+      padding: 32px 36px 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .archetype-photo-montage .pm-card {
+      background: var(--b-page-bg);
+      border-left: 4px solid ${colors.accent};
+      padding: 16px 18px;
+      box-shadow: 0 0 0 1px ${colors.primary}22;
+    }
+    .archetype-photo-montage .pm-card .bold-section-title {
+      font-family: var(--b-font-heading);
+      font-size: 10.5pt;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: ${colors.primary};
+      margin: 0 0 8px;
+    }
+    .archetype-photo-montage .pm-card .bold-item {
+      padding: 0;
+      margin: 0 0 10px;
+      background: transparent;
+      border: 0;
+    }
+    .archetype-photo-montage .pm-card .bold-item-title {
+      font-size: 10.5pt;
+      font-weight: 700;
+      margin: 0;
+    }
+    .archetype-photo-montage .pm-card .bold-item-subtitle {
+      font-size: 9pt;
+      color: ${colors.muted};
+      margin: 0;
+    }
+    .archetype-photo-montage .pm-card .bold-item-period {
+      font-size: 8.5pt;
+      color: ${colors.muted};
+    }
+    .archetype-photo-montage .pm-card ul {
+      margin: 4px 0 0;
+      padding: 0 0 0 14px;
+      font-size: 9pt;
+      line-height: 1.45;
+    }
+    .archetype-photo-montage .pm-card.pm-card-wide {
+      grid-column: 1 / -1;
+    }
+    .archetype-photo-montage .pm-contact {
+      padding: 0 36px 32px;
+      font-family: var(--b-font-body);
+      font-size: 9pt;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: ${colors.muted};
+    }
+    .archetype-photo-montage .pm-contact a {
+      color: ${colors.primary};
+      text-decoration: none;
+      margin-right: 16px;
+    }
+    /* Suppress unused-token warnings */
+    .archetype-photo-montage[data-saturation="${b.paletteSaturation ?? 'duotone'}"] {}
+  `;
+}
+
+function renderPhotoMontage(
+  content: GeneratedCVContent,
+  tokens: CVDesignTokens,
+  b: BoldTokens,
+  fullName: string,
+  headline: string | null | undefined,
+  avatarUrl: string | null | undefined,
+  overrides: CVElementOverrides | null | undefined,
+  contactInfo: CVContactInfo | null | undefined,
+): string {
+  const posterLineText = resolvePosterLine(b.posterLine, content.summary, headline, fullName);
+  const year = new Date().getFullYear();
+
+  // The cards: split sections into 2-column layout. Experience gets wide.
+  const sectionToCard: Record<string, () => string> = {
+    summary: () => {
+      if (!content.summary || getOverride(overrides, 'section-summary')?.hidden) return '';
+      return `<div class="pm-card pm-card-wide">
+        ${sectionTitle('About')}
+        <p style="font-size: 10pt; line-height: 1.55;">${applyAccentHighlights(escapeHtml(content.summary.split('\n').filter(Boolean).join(' ')), b.accentKeywords)}</p>
+      </div>`;
+    },
+    experience: () => {
+      if (!content.experience || content.experience.length === 0 || getOverride(overrides, 'section-experience')?.hidden) return '';
+      const items = content.experience.slice(0, 4).map((e, i) => `
+        <div class="bold-item" data-id="experience-${i}">
+          <p class="bold-item-title">${escapeHtml(e.title)}</p>
+          <p class="bold-item-subtitle">${escapeHtml(e.company)}${e.period ? ` · <span class="bold-item-period">${escapeHtml(e.period)}</span>` : ''}</p>
+          ${e.highlights && e.highlights.length > 0 ? `<ul>${e.highlights.slice(0, 2).map(h => `<li>${applyAccentHighlights(escapeHtml(h), b.accentKeywords)}</li>`).join('')}</ul>` : ''}
+        </div>
+      `).join('');
+      return `<div class="pm-card pm-card-wide">${sectionTitle('Experience')}${items}</div>`;
+    },
+    education: () => {
+      if (!content.education || content.education.length === 0 || getOverride(overrides, 'section-education')?.hidden) return '';
+      const items = content.education.slice(0, 3).map((e, i) => `
+        <div class="bold-item" data-id="education-${i}">
+          <p class="bold-item-title">${escapeHtml(e.degree)}</p>
+          <p class="bold-item-subtitle">${escapeHtml(e.institution)}${e.year ? ` · <span class="bold-item-period">${escapeHtml(e.year)}</span>` : ''}</p>
+        </div>
+      `).join('');
+      return `<div class="pm-card">${sectionTitle('Education')}${items}</div>`;
+    },
+    skills: () => {
+      if (!content.skills || (content.skills.technical.length === 0 && content.skills.soft.length === 0) || getOverride(overrides, 'section-skills')?.hidden) return '';
+      const pills = [...content.skills.technical.slice(0, 8), ...content.skills.soft.slice(0, 5)]
+        .map(s => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('');
+      return `<div class="pm-card">${sectionTitle('Skills')}<div class="skill-tags">${pills}</div></div>`;
+    },
+    languages: () => {
+      if (!content.languages || content.languages.length === 0 || getOverride(overrides, 'section-languages')?.hidden) return '';
+      const items = content.languages.map(l => `<p style="margin: 2px 0; font-size: 9.5pt;">${escapeHtml(l.language)}${l.level ? ` · <span style="color: var(--b-muted);">${escapeHtml(l.level)}</span>` : ''}</p>`).join('');
+      return `<div class="pm-card">${sectionTitle('Languages')}${items}</div>`;
+    },
+  };
+
+  const cards = tokens.sectionOrder
+    .filter(n => sectionToCard[n])
+    .map(n => sectionToCard[n]())
+    .filter(Boolean)
+    .join('');
+
+  const photoBlock = avatarUrl
+    ? `<img class="pm-photo" src="${escapeHtml(avatarUrl)}" alt="" />`
+    : `<div class="pm-photo" style="background: linear-gradient(135deg, ${tokens.colors.primary}, ${tokens.colors.accent});"></div>`;
+
+  return `<div class="bold-cv archetype-photo-montage">
+    <header class="pm-cover">
+      ${photoBlock}
+      <div class="pm-overlay"></div>
+      <div class="pm-cover-content">
+        <p class="pm-issue">Curriculum Vitae · ${year} · № ${String(year).slice(-2)}</p>
+        <h1 class="pm-name" data-id="header-name">${renderNameMarkup(fullName, b.nameTreatment ?? 'unified', headline)}</h1>
+        ${posterLineText ? `<p class="pm-poster-line">${applyAccentHighlights(escapeHtml(posterLineText), b.accentKeywords)}</p>` : ''}
+      </div>
+    </header>
+    <div class="pm-cards">${cards}</div>
+    <footer class="pm-contact">${buildSimpleContact(contactInfo)}</footer>
+  </div>`;
 }

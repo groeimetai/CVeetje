@@ -198,6 +198,24 @@ export async function POST(
     }
 
     // ========= Approved — regenerate the CV =========
+    // Load the user's recent style history so the anti-convergence rotation
+    // in the experimental expert can pick a different archetype + palette.
+    // Without this, dispute regenerations tend to converge on the same look
+    // as the original CV.
+    let styleHistory: import('@/types/design-tokens').CVDesignTokens[] = [];
+    try {
+      const recentCvs = await db.collection('users').doc(userId).collection('cvs')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .select('designTokens')
+        .get();
+      styleHistory = recentCvs.docs
+        .map(doc => doc.data()?.designTokens)
+        .filter(Boolean) as import('@/types/design-tokens').CVDesignTokens[];
+    } catch (e) {
+      console.warn('[dispute] Could not fetch style history, continuing without:', e);
+    }
+
     const regenResult = await regenerateCV(
       cvData as CV,
       newLevel,
@@ -205,6 +223,7 @@ export async function POST(
       resolved.providerName,
       resolved.apiKey,
       resolved.model,
+      styleHistory,
     );
 
     const disputeDoc: DisputeWrite = {
@@ -276,13 +295,19 @@ async function regenerateCV(
   providerName: string,
   apiKey: string,
   modelName: string,
+  styleHistory: import('@/types/design-tokens').CVDesignTokens[] = [],
 ): Promise<RegenResult> {
   const linkedIn = cv.linkedInData;
   const jobVacancy = cv.jobVacancy || null;
   const language = cv.language || 'nl';
 
-  // 1) New design tokens for the new creativity level
+  // 1) New design tokens for the new creativity level.
+  //    Combine the caller-supplied history with the previous CV tokens so
+  //    the rotation has something to work with even when history is empty.
   const profileSummary = createLinkedInSummaryV2(linkedIn);
+  const mergedHistory = styleHistory.length > 0
+    ? styleHistory
+    : (cv.designTokens ? [cv.designTokens] : undefined);
   const styleResult = await generateDesignTokens(
     profileSummary,
     jobVacancy,
@@ -292,7 +317,7 @@ async function regenerateCV(
     undefined,
     newLevel,
     !!cv.avatarUrl,
-    cv.designTokens ? [cv.designTokens] : undefined,
+    mergedHistory,
   );
 
   // 2) Regenerate CV content (same profile/job, different creativity level

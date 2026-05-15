@@ -67,7 +67,7 @@ Copy `.env.example` → `.env.local`. Required:
 | `src/components/admin/` | Admin sections + kanban | ✅ `src/components/admin/CLAUDE.md` |
 | `src/hooks/` | React hooks (wizard, chat, profiles) | ✅ `src/hooks/CLAUDE.md` |
 | `src/i18n/` | next-intl setup + translations | ✅ `src/i18n/CLAUDE.md` |
-| `src/lib/ai/` | AI generators, providers, style experts, platform-config | ✅ `src/lib/ai/CLAUDE.md` |
+| `src/lib/ai/` | AI generators, providers, style experts, platform-config | ✅ `src/lib/ai/CLAUDE.md` (+ `src/lib/ai/style-experts/STYLE-SYSTEM.md` voor volledige routekaart per creativity level) |
 | `src/lib/credits/` | Credits manager + monthly reset | ✅ `src/lib/credits/CLAUDE.md` |
 | `src/lib/cv/` | HTML generator + renderers + style templates | ✅ `src/lib/cv/CLAUDE.md` |
 | `src/lib/docx/` | DOCX template system (5 phases) | ✅ `src/lib/docx/CLAUDE.md` |
@@ -105,6 +105,7 @@ Copy `.env.example` → `.env.local`. Required:
 - **Compliance-pagina's** (`/privacy`, `/terms`, `/ai-transparency`, `/cookies`, `/sub-processors`, `/compliance`) zijn i18n via `src/i18n/messages/{nl,en}.json` — bij data-flow-wijzigingen ook deze syncen. Intern dossier in `docs/compliance/`.
 - **Admin audit log** — voor élke admin-actie die persoonsdata raakt: `logAdminAction()` uit `src/lib/admin/audit-log.ts` aanroepen ná de mutatie. Firestore Security Rules zijn read-admin-only + immutable.
 - **Leeftijdsverificatie** bij email/password-signup: required checkbox in `register-form.tsx`, doorgegeven via `registerWithEmail()` → `/api/auth/init-user` → `ageConfirmed` + `ageConfirmedAt` op user-doc.
+- **Style-system documentatie**: `src/lib/ai/style-experts/STYLE-SYSTEM.md` bevat de volledige routekaart van wat de AI per creativity level krijgt (schema-velden, constraints, prompt-aanpak, history-rotatie, welke renderer-archetypes welke tokens consumeren). **Werk dit document bij** wanneer je iets verandert aan: een style-expert (`conservative`/`balanced`/`creative`/`experimental`/`editorial-paper`), het `baseDesignTokensSchema`, een sub-schema (`editorialSchema`/`boldSchema`), `creativityConstraints` in `themes.ts`, een renderer (`bold.ts`/`editorial.ts`), de `industryProfiles` map, de `rotateLeastUsed` mechaniek, of een caller van `generateDesignTokens`. De checklist staat onderaan STYLE-SYSTEM.md (§8).
 
 ## Deployment
 
@@ -123,9 +124,10 @@ Copy `.env.example` → `.env.local`. Required:
 | Nieuwe creativity-level voor styles | `src/lib/ai/CLAUDE.md` (style experts) + `src/types/CLAUDE.md` |
 | Nieuwe API route | `src/app/api/CLAUDE.md` |
 | Nieuwe admin route | `src/app/api/CLAUDE.md` (admin sectie) + `src/lib/firebase/CLAUDE.md` |
-| CV-uiterlijk wijzigen (alle levels) | `src/lib/cv/CLAUDE.md` |
-| CV-uiterlijk wijzigen (creative/experimental) | `src/lib/cv/CLAUDE.md` (renderers sectie) |
-| Nieuw design token | `src/types/CLAUDE.md` + `src/lib/ai/CLAUDE.md` + `src/lib/cv/CLAUDE.md` |
+| CV-uiterlijk wijzigen (alle levels) | `src/lib/cv/CLAUDE.md` + `src/lib/ai/style-experts/STYLE-SYSTEM.md` |
+| CV-uiterlijk wijzigen (creative/experimental) | `src/lib/cv/CLAUDE.md` (renderers sectie) + `src/lib/ai/style-experts/STYLE-SYSTEM.md` (§4.3 / §4.5) |
+| Wat doet de AI per creativity level (prompts/tokens/constraints) | `src/lib/ai/style-experts/STYLE-SYSTEM.md` |
+| Nieuw design token | `src/types/CLAUDE.md` + `src/lib/ai/CLAUDE.md` + `src/lib/cv/CLAUDE.md` + `src/lib/ai/style-experts/STYLE-SYSTEM.md` |
 | Nieuwe DOCX template fill-fase | `src/lib/docx/CLAUDE.md` |
 | Nieuwe credit-cost operatie | `src/lib/ai/CLAUDE.md` + `src/lib/credits/CLAUDE.md` |
 | Motivatiebrief tone aanpassen | `src/lib/ai/CLAUDE.md` (motivation + humanizer) |
