@@ -4,6 +4,17 @@
 
 Laatst bijgewerkt: 2026-05-15
 
+## DPA-verificatiebewijs (sessie 2026-05-15)
+
+| Verwerker | Bewijsstuk | Bron |
+|---|---|---|
+| Google Cloud | Actieve billing account `01D5DB-6EA155-296B0F` onder org `groeimetai.io` (93461781721), EUR, services in `europe-west4`. Cloud Customer Agreement incorporeert DPA + EU SCC's by reference. | `gcloud billing accounts describe` + `gcloud organizations list` |
+| Anthropic | API-key valideert (HTTP 200), org-ID `0a423e70-1fb2-411b-a72e-481739d4a0d4` zichtbaar. Commercial Terms of Service (auto-acceptatie bij key-aanvraag) incorporeert DPA + EU SCC's module 2. **TODO:** ZDR activeren in console. | `curl https://api.anthropic.com/v1/messages` |
+| Mollie | Live API-key authenticeert (HTTP 403 op org-endpoint = profile-scope, niet auth-fout). Live mode = KYC + Algemene Voorwaarden + DPA geaccepteerd. | `curl https://api.mollie.com/v2/organizations/me` |
+| GitHub | Microsoft Products & Services DPA auto-actief bij GitHub-account. **OPMERKING:** huidige `github-token` secret levert 401 Bad credentials — token rotatie nodig (operationeel, niet legal). | `curl https://api.github.com/user` |
+| reCAPTCHA / Firebase extensies | Onder Google Cloud DPA-paraplu. | (impliciet) |
+
+
 ## Productie-subverwerkers
 
 ### 1 · Google Cloud Platform (Firebase Auth, Firestore, Cloud Storage, Cloud Run, Cloud Logging)

@@ -14,7 +14,8 @@
     "accept": "Accept",
     "decline": "Decline",
     "learnMore": "Learn more",
-    "close": "Close"
+    "close": "Close",
+    "manageSettings": "Cookie settings"
   },
   "theme": {
     "toggle": "Toggle theme",
@@ -106,7 +107,8 @@
       "notYetVerified": "Your email is not yet verified. Check your inbox and click the verification link.",
       "checkError": "Could not check verification status. Please try again later.",
       "checkSpam": "Also check your spam folder if you can't find the email."
-    }
+    },
+    "ageConfirmLabel": "I confirm that I am 16 years or older."
   },
   "validation": {
     "emailRequired": "Email is required",
@@ -115,7 +117,8 @@
     "passwordMin": "Password must be at least 6 characters",
     "passwordsNotMatch": "Passwords do not match",
     "nameRequired": "Name is required",
-    "nameMin": "Name must be at least 2 characters"
+    "nameMin": "Name must be at least 2 characters",
+    "ageRequired": "You must be 16 years or older to use CVeetje."
   },
   "landing": {
     "heroTitle": "Stop the Fiddling",
@@ -1766,7 +1769,7 @@
       },
       "cookies": {
         "title": "8. Cookies and Local Storage",
-        "content": "CVeetje makes limited use of cookies and local storage:\n\n• Essential cookies: For the functioning of the website and remembering your login status. These are strictly necessary and do not require consent.\n\n• Preferences: Your language preference and theme setting (light/dark) are stored locally in your browser.\n\n• Authentication: Firebase places cookies for managing your login session.\n\nWe do not use tracking cookies or advertising cookies. We do not share cookie data with third parties for marketing purposes.\n\nYou can block cookies via your browser settings, but this may limit the functionality of the website."
+        "content": "CVeetje uses cookies and local storage as little as possible:\n\n• Essential cookies: for the functioning of the website (sign-in, language preference, cookie consent). These are strictly necessary and require no consent (Dutch Telecom Act art. 11.7a(3)(a)(b)).\n\n• Analytics cookies (optional): for anonymous usage statistics via Google Analytics 4. Only loaded after explicit consent, with IP anonymisation and no advertising features.\n\nYou can withdraw consent at any time via the \"Cookie settings\" button in the footer or via our cookies page (/cookies). Under GDPR art. 7(3), withdrawing is as easy as giving.\n\nThe full list of cookies and retention periods is at /cookies."
       },
       "dataRetention": {
         "title": "9. Data Retention",
@@ -1782,11 +1785,11 @@
       },
       "security": {
         "title": "12. Security",
-        "content": "We take the security of your data seriously and have implemented appropriate technical and organisational measures:\n\n• Encryption in transit: all traffic via HTTPS/TLS 1.2+.\n• Encryption at rest: all Firestore and Storage data is encrypted at rest by Google (AES-256, Google-managed keys).\n• API keys: user-stored API keys are separately encrypted with AES-256-GCM (env key ENCRYPTION_KEY).\n• Authentication: Firebase Authentication with optional OAuth providers (Google, Apple); passwords are hashed by Firebase — we never see your password.\n• Access control: server-side admin routes explicitly check permissions via verifyAdminRequest(); Firestore Security Rules scope to user level.\n• Abuse detection: reCAPTCHA v3 on register/login; rate limiting on critical endpoints.\n• Breach procedure: notification within 72 hours to the Dutch DPA per GDPR art. 33; notification to data subjects in case of high risk (art. 34).\n\nDespite these measures we cannot guarantee 100% security. In case of a (suspected) data breach or security incident, please contact info@groeimetai.io immediately."
+        "content": "We take the security of your data seriously and have implemented appropriate technical and organisational measures:\n\n• Encryption in transit: all traffic via HTTPS/TLS 1.2+.\n• Encryption at rest: all Firestore and Storage data is encrypted at rest by Google (AES-256, Google-managed keys).\n• API keys: user-stored API keys are separately encrypted with AES-256-GCM (env key ENCRYPTION_KEY).\n• Authentication: Firebase Authentication with optional OAuth providers (Google, Apple); passwords are hashed by Firebase — we never see your password.\n• Access control: server-side admin routes explicitly check permissions via verifyAdminRequest(); Firestore Security Rules scope to user level.\n• Abuse detection: reCAPTCHA v3 on register/login; rate limiting on critical endpoints.\n• Admin audit log: every admin action that touches personal data (impersonation, credit changes, role updates, account deletion) is immutably logged in a separate Firestore collection with admin UID, target UID, IP and timestamp (GDPR art. 32(1)).\n• Responsible disclosure: see /.well-known/security.txt for the responsible disclosure procedure.\n• Breach procedure: notification within 72 hours to the Dutch DPA per GDPR art. 33; notification to data subjects in case of high risk (art. 34).\n\nDespite these measures we cannot guarantee 100% security. In case of a (suspected) data breach or security incident, please contact info@groeimetai.io immediately."
       },
       "children": {
         "title": "13. Children",
-        "content": "CVeetje is not intended for children under 16 years of age. We do not knowingly collect personal data from children under this age.\n\nIf you are a parent or guardian and discover that your child has provided us with data without your consent, please contact us. We will immediately delete the data."
+        "content": "CVeetje is not intended for children under the age of 16. We do not knowingly collect personal data from children under this age.\n\nWhen registering with email/password you must explicitly confirm that you are 16 years or older (GDPR art. 8). This confirmation is recorded in your account document as audit trail.\n\nFor registration via Google or Apple, those providers perform their own age verification according to their own terms.\n\nIf you are a parent or guardian and discover that your child has provided data to us, please contact info@groeimetai.io so we can delete the account."
       },
       "changes": {
         "title": "14. Changes to This Privacy Policy",

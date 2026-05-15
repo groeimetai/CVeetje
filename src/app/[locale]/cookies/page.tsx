@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Cookie } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BreadcrumbStructuredData } from '@/components/seo/structured-data';
+import { CookieSettingsButton } from '@/components/cookie-settings-button';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -210,14 +211,15 @@ export default async function CookiesPage({ params }: Props) {
             <Card className="mb-6">
               <CardContent className="pt-6">
                 <h2 className="font-semibold mb-3">
-                  {locale === 'nl' ? 'Toestemming intrekken' : 'Withdraw consent'}
+                  {locale === 'nl' ? 'Toestemming intrekken of wijzigen' : 'Withdraw or change consent'}
                 </h2>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-muted-foreground mb-4">
                   {locale === 'nl'
-                    ? 'Je kunt je analytics-toestemming op elk moment intrekken door de sleutel "cveetje-cookie-consent" uit je browser localStorage te verwijderen, of door alle cookies voor maakcveetje.nl te wissen. Bij het volgende bezoek krijg je de banner opnieuw.'
-                    : 'You can withdraw analytics consent at any time by deleting the "cveetje-cookie-consent" key from your browser localStorage, or by clearing all cookies for maakcveetje.nl. The banner will reappear on your next visit.'}
+                    ? 'Onder AVG art. 7 lid 3 moet intrekken van toestemming net zo makkelijk zijn als het geven ervan. Klik op de knop hieronder om de cookie-banner opnieuw te openen en je keuze te wijzigen.'
+                    : 'Under GDPR art. 7(3), withdrawing consent must be as easy as giving it. Click the button below to reopen the cookie banner and change your choice.'}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <CookieSettingsButton variant="outline" withIcon />
+                <p className="text-sm text-muted-foreground mt-4">
                   {locale === 'nl'
                     ? 'Daarnaast kun je via je browserinstellingen alle of specifieke cookies blokkeren. Houd er rekening mee dat essentiële cookies blokkeren kan betekenen dat inloggen of taalkeuze niet meer werkt.'
                     : 'You can also block all or specific cookies via your browser settings. Note that blocking essential cookies may break sign-in or language preference.'}

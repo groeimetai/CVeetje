@@ -181,6 +181,18 @@ service cloud.firestore {
       allow write: if false; // Only via Admin SDK
     }
 
+    // ============ Admin Audit Log ============
+    // /admin_audit_log/{entryId}
+    //
+    // AVG art. 32 lid 1 sub b/d — accountability trail van admin-acties op
+    // persoonsgegevens. Schrijf-only via Admin SDK; lezen alleen voor admins.
+    // Immutable: nooit updaten of verwijderen.
+
+    match /admin_audit_log/{entryId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false; // Server-side only via Admin SDK
+    }
+
     // ============ Default Deny ============
     // Deny all other access by default
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { IMPERSONATE_COOKIE_NAME } from '@/lib/auth/impersonation';
+import { logAdminAction, extractRequestContext } from '@/lib/admin/audit-log';
 
 async function verifyAdmin(token: string): Promise<string | null> {
   try {
@@ -78,6 +79,15 @@ export async function POST(request: NextRequest) {
     secure: process.env.NODE_ENV === 'production',
   });
 
+  // AVG art. 32 — log toegang tot persoonsgegevens van een andere gebruiker
+  logAdminAction({
+    adminUid,
+    action: 'impersonate.start',
+    targetUid: userId,
+    metadata: { targetEmail: targetData?.email || null },
+    ...extractRequestContext(request),
+  });
+
   return response;
 }
 
@@ -132,7 +142,20 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const adminUid = await verifyAdmin(token);
+  const impersonateUid = cookieStore.get(IMPERSONATE_COOKIE_NAME)?.value;
+
   const response = NextResponse.json({ success: true });
   response.cookies.delete(IMPERSONATE_COOKIE_NAME);
+
+  if (adminUid && impersonateUid) {
+    logAdminAction({
+      adminUid,
+      action: 'impersonate.stop',
+      targetUid: impersonateUid,
+      ...extractRequestContext(request),
+    });
+  }
+
   return response;
 }

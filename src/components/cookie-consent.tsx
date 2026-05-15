@@ -7,8 +7,20 @@ import { Link } from '@/i18n/navigation';
 import { Cookie, X } from 'lucide-react';
 
 const COOKIE_CONSENT_KEY = 'cveetje-cookie-consent';
+const COOKIE_CONSENT_EVENT = 'cveetje-cookie-consent-reset';
 
 type ConsentStatus = 'accepted' | 'declined' | null;
+
+/**
+ * Trigger to re-show the consent banner (AVG art. 7 lid 3 — intrekking moet
+ * net zo makkelijk zijn als geven). Wist de opgeslagen keuze en dispatch
+ * een event zodat de mounted banner direct opnieuw verschijnt.
+ */
+export function resetCookieConsent() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(COOKIE_CONSENT_KEY);
+  window.dispatchEvent(new Event(COOKIE_CONSENT_EVENT));
+}
 
 export function CookieConsent() {
   const t = useTranslations('cookieConsent');
@@ -29,6 +41,14 @@ export function CookieConsent() {
       // No consent yet, show banner
       setIsVisible(true);
     }
+
+    // Allow other components (footer, /cookies page) to re-trigger the banner
+    const onReset = () => {
+      setConsentStatus(null);
+      setIsVisible(true);
+    };
+    window.addEventListener(COOKIE_CONSENT_EVENT, onReset);
+    return () => window.removeEventListener(COOKIE_CONSENT_EVENT, onReset);
   }, []);
 
   const loadAnalytics = () => {

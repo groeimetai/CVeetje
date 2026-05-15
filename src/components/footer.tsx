@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Logo } from '@/components/ui/logo';
+import { CookieSettingsButton } from '@/components/cookie-settings-button';
 
 interface FooterProps {
   minimal?: boolean;
@@ -45,6 +46,7 @@ export function Footer({ minimal = false }: FooterProps) {
               <Link href="/compliance" className="hover:text-foreground">
                 Compliance
               </Link>
+              <CookieSettingsButton variant="link" className="!px-0 !py-0 h-auto text-xs text-muted-foreground hover:text-foreground" />
             </div>
           </div>
         </div>
@@ -90,6 +92,7 @@ export function Footer({ minimal = false }: FooterProps) {
               <Link href="/compliance" className="hover:text-foreground">
                 {locale === 'nl' ? 'Compliance (AVG + AI Act)' : 'Compliance (GDPR + AI Act)'}
               </Link>
+              <CookieSettingsButton variant="link" className="!px-0 !py-0 h-auto justify-start text-sm text-muted-foreground hover:text-foreground" />
               <a href="mailto:info@groeimetai.io" className="hover:text-foreground">
                 {locale === 'nl' ? 'Contact' : 'Contact'}
               </a>

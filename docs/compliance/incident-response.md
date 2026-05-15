@@ -112,4 +112,4 @@ Preferred-Languages: nl, en
 Policy: https://maakcveetje.nl/security
 ```
 
-> **TODO:** publiceren van `/.well-known/security.txt` toevoegen aan `public/`. Niet vereist door AVG, wel best practice.
+`/.well-known/security.txt` is gepubliceerd onder `public/.well-known/security.txt`. Contact is `info@groeimetai.io` (geen aparte security@ alias actief — info@ wordt door Niels van der Werf gemonitord).

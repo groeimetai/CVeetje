@@ -20,13 +20,20 @@ appleProvider.addScope('email');
 appleProvider.addScope('name');
 
 // Initialize user document via server API (Admin SDK bypasses Firestore rules)
-async function initUserDocument(firebaseUser: FirebaseUser): Promise<void> {
+async function initUserDocument(
+  firebaseUser: FirebaseUser,
+  opts?: { ageConfirmed?: boolean }
+): Promise<void> {
   const token = await firebaseUser.getIdToken();
   const response = await fetch('/api/auth/init-user', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      ageConfirmed: opts?.ageConfirmed === true,
+    }),
   });
 
   if (!response.ok) {
@@ -67,7 +74,8 @@ export async function registerWithEmail(
   email: string,
   password: string,
   displayName: string,
-  captchaToken?: string | null
+  captchaToken?: string | null,
+  ageConfirmed: boolean = false
 ): Promise<FirebaseUser> {
   // Verify reCAPTCHA first
   await verifyCaptcha(captchaToken || null, 'register');
@@ -77,8 +85,8 @@ export async function registerWithEmail(
   // Update display name
   await updateProfile(userCredential.user, { displayName });
 
-  // Create user document
-  await initUserDocument(userCredential.user);
+  // Create user document — record age confirmation for AVG art. 8 trail
+  await initUserDocument(userCredential.user, { ageConfirmed });
 
   // Send email verification
   await firebaseSendEmailVerification(userCredential.user, {

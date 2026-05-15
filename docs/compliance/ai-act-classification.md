@@ -80,5 +80,6 @@ Bij verzoek van een AI Act-toezichthouder kunnen we onmiddellijk leveren:
 - **Monitoring providers GPAI-status:** Anthropic kan onder art. 51 in een GPAI-with-systemic-risk-categorie vallen; dat beïnvloedt onze keuzes niet direct, maar we volgen Anthropic's compliance-publicaties.
 - **AI Act inwerkingtreding art. 50** is 2 aug 2026. Onze maatregelen zijn al toegepast (vroeg-naleving) om gebruikersvertrouwen te ondersteunen.
 - **Codes of Practice** (art. 56): we volgen de EU AI Office voor sectorale codes voor HR/recruitment AI, hoewel niet direct van toepassing op ons als consumer-tool.
+- **Anthropic Zero Data Retention (ZDR):** nog niet expliciet geverifieerd in `console.anthropic.com`. Optionele organisatie-instelling die het Schrems II-risico verder verlaagt. Te checken bij volgende review.
 
-Volgende review: **2027-05-14**.
+Volgende review: **2027-05-15**.

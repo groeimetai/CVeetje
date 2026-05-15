@@ -14,6 +14,7 @@
 | Feedback → GitHub issues | Zolang issue open + 2 jaar na sluiting | Gerechtvaardigd belang | Handmatige cleanup; eerder verwijderbaar op verzoek. |
 | Application logs (Cloud Logging) | 30 dagen | Gerechtvaardigd belang (debugging) | Cloud Logging retention policy. |
 | Security/audit logs | 90 dagen geïdentificeerd, daarna geanonimiseerd | Gerechtvaardigd belang | Cloud Logging retention + automatische anonimisatie. |
+| `admin_audit_log/*` (Firestore) | 5 jaar | Wettelijke verplichting (AVG art. 32) + gerechtvaardigd belang | Handmatige cleanup-job (toekomstig: Cloud Scheduler). Immutable: geen update/delete tussentijds. |
 | Anthropic-side prompt logs | Zero retention waar mogelijk; anders 30 dagen | Verwerkers­overeenkomst | Anthropic-side; we kunnen niet zelf wissen. |
 | Adzuna search queries | Geen permanent persisted aan onze kant | NVT | NVT. |
 | Cookie `_ga` (na consent) | 13 maanden | Toestemming | Auto-expiry door browser. |

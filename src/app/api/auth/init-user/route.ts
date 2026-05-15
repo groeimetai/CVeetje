@@ -27,6 +27,16 @@ export async function POST(request: NextRequest) {
     const decodedToken = await auth.verifyIdToken(token);
     const uid = decodedToken.uid;
 
+    // Optional body: { ageConfirmed: boolean } — recorded on first registration
+    // as audit trail for AVG art. 8 (verification of 16+ at consent time).
+    let ageConfirmed = false;
+    try {
+      const body = await request.json();
+      ageConfirmed = body?.ageConfirmed === true;
+    } catch {
+      // No body or invalid JSON — treat as not confirmed (OAuth flow today)
+    }
+
     const db = getAdminDb();
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
@@ -63,6 +73,8 @@ export async function POST(request: NextRequest) {
         lastFreeReset: Timestamp.now(),
       },
       role: 'user',
+      ageConfirmed,
+      ageConfirmedAt: ageConfirmed ? FieldValue.serverTimestamp() : null,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });

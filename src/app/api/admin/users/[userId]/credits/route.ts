@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   verifyAdminRequest,
   getUserById,
+  getUserIdFromToken,
   updateUserCredits,
 } from '@/lib/firebase/admin-utils';
+import { logAdminAction, extractRequestContext } from '@/lib/admin/audit-log';
 
 interface RouteParams {
   params: Promise<{ userId: string }>;
@@ -88,6 +90,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Update credits
     await updateUserCredits(userId, newFree, newPurchased);
+
+    const adminUid = await getUserIdFromToken(token);
+    if (adminUid) {
+      logAdminAction({
+        adminUid,
+        action: 'user.credits.update',
+        targetUid: userId,
+        metadata: {
+          before: { free: user.credits.free, purchased: user.credits.purchased },
+          after: { free: newFree, purchased: newPurchased },
+          request: { free, purchased, addFree, addPurchased },
+        },
+        ...extractRequestContext(request),
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -19,12 +19,13 @@ Geen Functionaris Gegevensbescherming (FG) verplicht — wij verwerken geen bijz
 | Doel | Een gebruikersaccount aanmaken, inloggen, factureren. |
 | Rechtsgrond | Art. 6 lid 1 sub b (uitvoering overeenkomst). |
 | Categorieën betrokkenen | Geregistreerde gebruikers (volwassenen, 16+). |
-| Categorieën gegevens | E-mailadres, naam, profielfoto (optioneel), wachtwoord (gehasht door Firebase), createdAt, llmMode, credits, isAdmin-flag. |
+| Categorieën gegevens | E-mailadres, naam, profielfoto (optioneel), wachtwoord (gehasht door Firebase), createdAt, llmMode, credits, isAdmin-flag, `ageConfirmed` + `ageConfirmedAt` (AVG art. 8 audit trail). |
 | Bijzondere categorieën | Geen. |
 | Ontvangers | Google Cloud (Firebase Auth, Firestore) — sub-processor. |
 | Doorgifte buiten EER | Geen primaire opslag buiten EER; supportgegevens kunnen door Google-engineers in de VS ingezien worden onder EU-US DPF + SCC's. |
 | Bewaartermijn | Zolang account actief; verwijdering binnen 30 dagen na deletion request. |
 | Beveiliging | TLS in transit, AES-256 at rest, Firebase Security Rules, MFA voor admin. |
+| Leeftijdscheck | Email/password registratie: required checkbox "16+" → opgeslagen in user-doc. OAuth (Google/Apple): leeftijdsverificatie via OAuth-provider, geen eigen check. |
 
 ## VA-2 · Profielen & CV's
 
@@ -108,6 +109,18 @@ Geen Functionaris Gegevensbescherming (FG) verplicht — wij verwerken geen bijz
 | Ontvangers | Google Cloud Logging. |
 | Bewaartermijn | 30 dagen application logs, 90 dagen security logs, daarna geanonimiseerd of verwijderd. |
 | Beveiliging | Toegang beperkt tot IAM-geautoriseerd personeel. |
+
+## VA-10 · Admin Audit Log
+
+| Veld | Waarde |
+|---|---|
+| Doel | Accountability voor admin-acties op persoonsgegevens (AVG art. 32 lid 1 sub b/d). |
+| Rechtsgrond | Art. 6 lid 1 sub c (wettelijke verplichting AVG art. 32) + sub f (gerechtvaardigd belang misbruikdetectie). |
+| Categorieën gegevens | adminUid, action, targetUid, metadata (vóór/na waardes bij credit-mutaties), IP, user-agent, timestamp. |
+| Ontvangers | Google Cloud (Firestore — collectie `admin_audit_log`). |
+| Bewaartermijn | 5 jaar (verantwoordingsbewijs onder AVG art. 5 lid 2 + AP-aanbeveling). |
+| Beveiliging | Immutable (Firestore Security Rules: alleen Admin SDK kan schrijven, geen update/delete). |
+| Implementatie | `src/lib/admin/audit-log.ts` — gebruikt door `/api/admin/impersonate` (start/stop), `/api/admin/users/[userId]` (role/disable/enable/delete), `/api/admin/users/[userId]/credits` (PATCH). |
 
 ## VA-9 · Cookies / Analytics
 

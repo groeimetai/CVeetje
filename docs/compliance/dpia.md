@@ -51,6 +51,9 @@ We doorlopen de negen criteria uit WP248 rev.01:
 | Account-takeover via phishing | Middel | Hoog | Firebase Auth incl. e-mail-verificatie; reCAPTCHA v3; password-reset flow; geen wachtwoord-resets per chat. |
 | Onbedoelde publicatie van CV-data | Laag | Hoog | Firestore Security Rules per `users/{uid}/...`; geen publieke shares zonder expliciete share-link (niet geïmplementeerd). |
 | Schending recht van betrokkene (vergetelheid, inzage) | Laag | Middel | DSR-procedure (`dsr-procedure.md`); self-service deletion + JSON-export. |
+| Onbevoegde admin-toegang tot user-data | Laag | Hoog | `verifyAdminRequest()` op alle admin-endpoints; immutable `admin_audit_log` Firestore-collectie met IP/UA/timestamp bij elke impersonation/role/credit/delete actie. |
+| Onvoldoende leeftijdsverificatie minderjarigen | Laag | Middel | Bij email/password-registratie verplichte checkbox 16+ met `ageConfirmed`+`ageConfirmedAt` opgeslagen. OAuth-providers borgen hun eigen leeftijdsregels. |
+| Toestemming niet makkelijk in te trekken | Laag | Laag-Middel | Cookie-settings knop in footer + cookies-pagina; `resetCookieConsent()` wist localStorage en re-toont banner direct. |
 
 ## 5 · Toezicht
 

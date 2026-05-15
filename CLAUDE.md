@@ -85,7 +85,9 @@ Copy `.env.example` → `.env.local`. Required:
 | `src/lib/security/` | rate-limiter, url-validator, error-sanitizer | (klein) |
 | `src/lib/template/` | `docx-to-image.ts` (screenshot voor AI vision) | (klein) |
 | `src/lib/validation/` | Shared Zod schemas | (klein) |
+| `src/lib/admin/` | `audit-log.ts` — AVG art. 32 audit-trail van admin-acties → Firestore `admin_audit_log` | (klein) |
 | `src/middleware.ts` | Locale prefix + auth route guards | – |
+| `docs/compliance/` | AVG + EU AI Act dossier (RoPA, DPIA, FRIA, TIA, DSR, incident-response, retention, vendor-review) | ✅ `docs/compliance/README.md` |
 
 ## Cross-cutting patterns
 
@@ -100,6 +102,9 @@ Copy `.env.example` → `.env.local`. Required:
 - **Admin auth** altijd server-side verifiëren via `verifyAdminRequest()`, niet alleen `useAuth().isAdmin`
 - **Firestore `settings()`** idempotent via `initializeFirestore` (zie commit `b2f23d4`)
 - **`ParsedLinkedIn.birthDate`** bestaat sinds issue #5 (2026-04-09); `nationality` is **niet** op `ParsedLinkedIn` — komt via `customValues`
+- **Compliance-pagina's** (`/privacy`, `/terms`, `/ai-transparency`, `/cookies`, `/sub-processors`, `/compliance`) zijn i18n via `src/i18n/messages/{nl,en}.json` — bij data-flow-wijzigingen ook deze syncen. Intern dossier in `docs/compliance/`.
+- **Admin audit log** — voor élke admin-actie die persoonsdata raakt: `logAdminAction()` uit `src/lib/admin/audit-log.ts` aanroepen ná de mutatie. Firestore Security Rules zijn read-admin-only + immutable.
+- **Leeftijdsverificatie** bij email/password-signup: required checkbox in `register-form.tsx`, doorgegeven via `registerWithEmail()` → `/api/auth/init-user` → `ageConfirmed` + `ageConfirmedAt` op user-doc.
 
 ## Deployment
 

@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   verifyAdminRequest,
   getUserById,
+  getUserIdFromToken,
   setUserRole,
   disableUser,
   enableUser,
   deleteUser,
 } from '@/lib/firebase/admin-utils';
+import { logAdminAction, extractRequestContext } from '@/lib/admin/audit-log';
 import type { UserRole } from '@/types';
 
 interface RouteParams {
@@ -89,6 +91,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       disabledReason?: string;
     };
 
+    const adminUid = await getUserIdFromToken(token);
+    const ctx = extractRequestContext(request);
+
     // Update role if provided
     if (role !== undefined) {
       if (role !== 'user' && role !== 'admin') {
@@ -98,14 +103,40 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         );
       }
       await setUserRole(userId, role);
+      if (adminUid) {
+        logAdminAction({
+          adminUid,
+          action: 'user.role.update',
+          targetUid: userId,
+          metadata: { role },
+          ...ctx,
+        });
+      }
     }
 
     // Update disabled status if provided
     if (disabled !== undefined) {
       if (disabled) {
         await disableUser(userId, disabledReason);
+        if (adminUid) {
+          logAdminAction({
+            adminUid,
+            action: 'user.disable',
+            targetUid: userId,
+            metadata: { reason: disabledReason ?? null },
+            ...ctx,
+          });
+        }
       } else {
         await enableUser(userId);
+        if (adminUid) {
+          logAdminAction({
+            adminUid,
+            action: 'user.enable',
+            targetUid: userId,
+            ...ctx,
+          });
+        }
       }
     }
 
@@ -159,7 +190,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const adminUid = await getUserIdFromToken(token);
     await deleteUser(userId);
+
+    if (adminUid) {
+      logAdminAction({
+        adminUid,
+        action: 'user.delete',
+        targetUid: userId,
+        ...extractRequestContext(request),
+      });
+    }
 
     return NextResponse.json({
       success: true,

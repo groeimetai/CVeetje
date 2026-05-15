@@ -20,6 +20,7 @@ type RegisterFormData = {
   email: string;
   password: string;
   confirmPassword: string;
+  ageConfirm: boolean;
 };
 
 export function RegisterForm() {
@@ -37,6 +38,9 @@ export function RegisterForm() {
     email: z.string().email(tValidation('emailInvalid')),
     password: z.string().min(6, tValidation('passwordMin')),
     confirmPassword: z.string(),
+    ageConfirm: z.boolean().refine((v) => v === true, {
+      message: tValidation('ageRequired'),
+    }),
   }).refine((data) => data.password === data.confirmPassword, {
     message: tValidation('passwordsNotMatch'),
     path: ['confirmPassword'],
@@ -68,7 +72,7 @@ export function RegisterForm() {
       // Get reCAPTCHA token
       const captchaToken = await executeRecaptcha('register');
 
-      await registerWithEmail(data.email, data.password, data.name, captchaToken);
+      await registerWithEmail(data.email, data.password, data.name, captchaToken, data.ageConfirm);
       // Redirect to verify email page instead of dashboard
       router.push('/verify-email');
     } catch (err: unknown) {
@@ -257,6 +261,27 @@ export function RegisterForm() {
             {errors.confirmPassword && (
               <p id="confirm-password-error" className="text-sm text-destructive">{errors.confirmPassword.message}</p>
             )}
+          </div>
+
+          <div className="flex items-start gap-2">
+            <input
+              id="ageConfirm"
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-input"
+              aria-invalid={!!errors.ageConfirm}
+              aria-describedby={errors.ageConfirm ? 'age-error' : undefined}
+              {...register('ageConfirm')}
+            />
+            <div className="text-sm">
+              <Label htmlFor="ageConfirm" className="font-normal cursor-pointer">
+                {t('ageConfirmLabel')}
+              </Label>
+              {errors.ageConfirm && (
+                <p id="age-error" className="text-sm text-destructive mt-1">
+                  {errors.ageConfirm.message}
+                </p>
+              )}
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

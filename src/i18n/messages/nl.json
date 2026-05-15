@@ -14,7 +14,8 @@
     "accept": "Accepteren",
     "decline": "Weigeren",
     "learnMore": "Meer informatie",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "manageSettings": "Cookie-instellingen"
   },
   "theme": {
     "toggle": "Thema wisselen",
@@ -106,7 +107,8 @@
       "notYetVerified": "Je email is nog niet geverifieerd. Controleer je inbox en klik op de verificatielink.",
       "checkError": "Kon verificatie status niet controleren. Probeer het later opnieuw.",
       "checkSpam": "Controleer ook je spam folder als je de email niet kunt vinden."
-    }
+    },
+    "ageConfirmLabel": "Ik bevestig dat ik 16 jaar of ouder ben."
   },
   "validation": {
     "emailRequired": "E-mail is verplicht",
@@ -115,7 +117,8 @@
     "passwordMin": "Wachtwoord moet minimaal 6 tekens bevatten",
     "passwordsNotMatch": "Wachtwoorden komen niet overeen",
     "nameRequired": "Naam is verplicht",
-    "nameMin": "Naam moet minimaal 2 tekens bevatten"
+    "nameMin": "Naam moet minimaal 2 tekens bevatten",
+    "ageRequired": "Je moet 16 jaar of ouder zijn om CVeetje te gebruiken."
   },
   "landing": {
     "heroTitle": "Stop het Priegelwerk",
@@ -1766,7 +1769,7 @@
       },
       "cookies": {
         "title": "8. Cookies en Lokale Opslag",
-        "content": "CVeetje maakt beperkt gebruik van cookies en lokale opslag:\n\n• Essentiële cookies: Voor het functioneren van de website en het onthouden van je inlogstatus. Deze zijn strikt noodzakelijk en vereisen geen toestemming.\n\n• Voorkeuren: Je taalvoorkeur en thema-instelling (licht/donker) worden lokaal opgeslagen in je browser.\n\n• Authenticatie: Firebase plaatst cookies voor het beheren van je inlogsessie.\n\nWij gebruiken geen tracking cookies of advertentiecookies. Wij delen geen cookie-data met derden voor marketingdoeleinden.\n\nJe kunt cookies blokkeren via je browserinstellingen, maar dit kan de functionaliteit van de website beperken."
+        "content": "CVeetje maakt beperkt gebruik van cookies en lokale opslag:\n\n• Essentiële cookies: Voor het functioneren van de website (inlog, taalkeuze, cookie-consent). Deze zijn strikt noodzakelijk en vereisen geen toestemming (Telecommunicatiewet art. 11.7a lid 3 sub a/b).\n\n• Analytics cookies (optioneel): Voor anonieme gebruiksstatistieken via Google Analytics 4. Alleen geladen na expliciete toestemming, met IP-anonimisering en zonder advertising-features.\n\nJe kunt je toestemming op elk moment intrekken via de knop \"Cookie-instellingen\" in de footer of via onze cookies-pagina (/cookies). Onder AVG art. 7 lid 3 is intrekken net zo makkelijk als geven.\n\nHet volledige overzicht van alle cookies en bewaartermijnen staat op /cookies."
       },
       "dataRetention": {
         "title": "9. Bewaartermijnen",
@@ -1782,11 +1785,11 @@
       },
       "security": {
         "title": "12. Beveiliging",
-        "content": "Wij nemen de beveiliging van je gegevens serieus en hebben passende technische en organisatorische maatregelen getroffen:\n\n• Versleuteling in transit: alle verkeer via HTTPS/TLS 1.2+.\n• Versleuteling at rest: alle Firestore- en Storage-data worden door Google encrypted-at-rest opgeslagen (AES-256, Google-managed keys).\n• API-sleutels: opgeslagen API-sleutels van gebruikers worden separately versleuteld met AES-256-GCM (env-key ENCRYPTION_KEY).\n• Authenticatie: Firebase Authentication met optionele OAuth providers (Google, Apple); wachtwoorden worden door Firebase gehashed opgeslagen — wij zien je wachtwoord nooit.\n• Toegangsbeperking: server-side admin-routes controleren expliciet rechten via verifyAdminRequest(); Firestore Security Rules op user-level scoping.\n• Misbruikdetectie: reCAPTCHA v3 bij registratie en login; rate limiting op kritieke endpoints.\n• Datalek-procedure: meldplicht binnen 72 uur aan de Autoriteit Persoonsgegevens conform AVG art. 33; melding aan betrokkenen indien hoog risico (art. 34).\n\nOndanks deze maatregelen kunnen wij geen 100% veiligheid garanderen. Bij een (vermoeden van) datalek of beveiligingsincident kun je ons direct bereiken via info@groeimetai.io."
+        "content": "Wij nemen de beveiliging van je gegevens serieus en hebben passende technische en organisatorische maatregelen getroffen:\n\n• Versleuteling in transit: alle verkeer via HTTPS/TLS 1.2+.\n• Versleuteling at rest: alle Firestore- en Storage-data worden door Google encrypted-at-rest opgeslagen (AES-256, Google-managed keys).\n• API-sleutels: opgeslagen API-sleutels van gebruikers worden separately versleuteld met AES-256-GCM (env-key ENCRYPTION_KEY).\n• Authenticatie: Firebase Authentication met optionele OAuth providers (Google, Apple); wachtwoorden worden door Firebase gehashed opgeslagen — wij zien je wachtwoord nooit.\n• Toegangsbeperking: server-side admin-routes controleren expliciet rechten via verifyAdminRequest(); Firestore Security Rules op user-level scoping.\n• Misbruikdetectie: reCAPTCHA v3 bij registratie en login; rate limiting op kritieke endpoints.\n• Admin audit log: elke admin-actie die persoonsgegevens raakt (impersonation, credit-mutatie, rol-wijziging, account-verwijdering) wordt onveranderlijk gelogd in een aparte Firestore-collectie met admin-UID, target-UID, IP en timestamp (AVG art. 32 lid 1).\n• Verantwoorde disclosure: zie /.well-known/security.txt voor responsible-disclosure procedure.\n• Datalek-procedure: meldplicht binnen 72 uur aan de Autoriteit Persoonsgegevens conform AVG art. 33; melding aan betrokkenen indien hoog risico (art. 34).\n\nOndanks deze maatregelen kunnen wij geen 100% veiligheid garanderen. Bij een (vermoeden van) datalek of beveiligingsincident kun je ons direct bereiken via info@groeimetai.io."
       },
       "children": {
         "title": "13. Kinderen",
-        "content": "CVeetje is niet bedoeld voor kinderen jonger dan 16 jaar. Wij verzamelen niet bewust persoonsgegevens van kinderen onder deze leeftijd.\n\nAls je ouder of voogd bent en ontdekt dat je kind gegevens aan ons heeft verstrekt zonder jouw toestemming, neem dan contact met ons op. Wij zullen de gegevens onmiddellijk verwijderen."
+        "content": "CVeetje is niet bedoeld voor kinderen jonger dan 16 jaar. Wij verzamelen niet bewust persoonsgegevens van kinderen onder deze leeftijd.\n\nBij registratie met e-mail/wachtwoord moet je expliciet bevestigen dat je 16 jaar of ouder bent (AVG art. 8). Deze bevestiging wordt opgeslagen in je account-document als bewijslast.\n\nVoor registratie via Google of Apple geldt dat deze providers eigen leeftijdsverificatie uitvoeren conform hun eigen voorwaarden.\n\nAls je ouder of voogd bent en ontdekt dat je kind gegevens aan ons heeft verstrekt, neem dan contact op via info@groeimetai.io zodat wij het account kunnen verwijderen."
       },
       "changes": {
         "title": "14. Wijzigingen in dit Privacybeleid",
