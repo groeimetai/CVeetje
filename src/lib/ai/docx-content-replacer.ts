@@ -33,6 +33,7 @@ const segmentFillSchema = z.object({
 export interface SegmentFillResult {
   fills: Record<string, string>;
   warnings: string[];
+  usage: { inputTokens: number; outputTokens: number };
 }
 
 // ==================== Main Fill Function ====================
@@ -145,7 +146,14 @@ ${isEn ? 'Fill all segments with the correct profile data. Return fills as { seg
       }
     }
 
-    return { fills, warnings };
+    return {
+      fills,
+      warnings,
+      usage: {
+        inputTokens: result.usage?.inputTokens ?? 0,
+        outputTokens: result.usage?.outputTokens ?? 0,
+      },
+    };
   } catch (error) {
     console.error('Error filling structured segments:', error);
     throw new Error('Failed to fill document with AI');

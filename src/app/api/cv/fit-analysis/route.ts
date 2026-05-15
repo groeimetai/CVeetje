@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getAdminAuth } from '@/lib/firebase/admin';
 import { analyzeFit } from '@/lib/ai/fit-analyzer';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type { ParsedLinkedIn, JobVacancy, FitAnalysisResponse } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -83,6 +84,17 @@ export async function POST(request: NextRequest) {
       }
       throw err;
     }
+
+    void recordOperationUsage({
+      userId,
+      cvId: null,
+      operation: 'fit-analysis',
+      usage: {
+        inputTokens: usage?.promptTokens ?? 0,
+        outputTokens: usage?.completionTokens ?? 0,
+      },
+      modelId: resolved.model,
+    });
 
     const response: FitAnalysisResponse = {
       success: true,

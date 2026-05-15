@@ -6,6 +6,7 @@ import { fillSmartTemplate } from '@/lib/docx/smart-template-filler';
 import { convertDocxToPdf } from '@/lib/docx/docx-to-pdf';
 import { addWatermarkToPdf } from '@/lib/pdf/add-watermark';
 import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
+import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 
 // POST - Fill a template with profile data
@@ -142,6 +143,8 @@ export async function POST(
     let filledCount = 0;
     let outputContentType = 'application/pdf';
     let outputFileName = `filled-${template.fileName}`;
+    let docxFillUsage: { inputTokens: number; outputTokens: number } | null = null;
+    let docxModelId: string | null = null;
 
     if (template.fileType === 'docx') {
       // DOCX template flow - AI fills everything
@@ -195,6 +198,8 @@ export async function POST(
       fillMethod = 'docx-ai';
       filledCount = fillResult.filledFields.length;
       filledFields = fillResult.filledFields;
+      docxFillUsage = fillResult.usage;
+      docxModelId = docxResolved.model;
     } else {
       // PDF template flow (existing logic)
       const hasFields = await hasFormFields(templateBytes);
@@ -248,6 +253,8 @@ export async function POST(
         llmProvider: null,
         llmModel: null,
         language: language || 'nl',
+        aiUsage: [],
+        aiUsageTotals: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -298,6 +305,17 @@ export async function POST(
         cvId: cvRef.id,
         createdAt: new Date(),
       });
+
+      // Record per-CV AI usage if this was a DOCX (AI-driven) fill.
+      if (docxFillUsage && docxModelId) {
+        void recordOperationUsage({
+          userId,
+          cvId: cvRef.id,
+          operation: 'template-fill',
+          usage: docxFillUsage,
+          modelId: docxModelId,
+        });
+      }
     }
 
     // Handle PDF conversion for DOCX templates if requested

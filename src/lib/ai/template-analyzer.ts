@@ -66,7 +66,7 @@ export async function analyzeTemplateBlueprint(
   provider: LLMProvider,
   apiKey: string,
   model: string,
-): Promise<TemplateBlueprint> {
+): Promise<{ blueprint: TemplateBlueprint; usage: { inputTokens: number; outputTokens: number } }> {
   const aiProvider = createAIProvider(provider, apiKey);
 
   const systemPrompt = `You are a DOCX template structure analyzer. You receive a structural map of a CV/resume template and must identify:
@@ -106,7 +106,13 @@ Analyze this template and identify all sections and repeating blocks. Return the
     })
   );
 
-  return result.object;
+  return {
+    blueprint: result.object,
+    usage: {
+      inputTokens: result.usage?.inputTokens ?? 0,
+      outputTokens: result.usage?.outputTokens ?? 0,
+    },
+  };
 }
 
 /**
@@ -125,7 +131,11 @@ export async function analyzeAndFillTemplate(
   provider: LLMProvider,
   apiKey: string,
   model: string,
-): Promise<{ blueprint: TemplateBlueprint; fills: Record<string, string> }> {
+): Promise<{
+  blueprint: TemplateBlueprint;
+  fills: Record<string, string>;
+  usage: { inputTokens: number; outputTokens: number };
+}> {
   const aiProvider = createAIProvider(provider, apiKey);
 
   const combinedSchema = z.object({
@@ -175,7 +185,14 @@ ${isEn
     fills[f.segmentId] = f.value;
   }
 
-  return { blueprint: result.object.blueprint, fills };
+  return {
+    blueprint: result.object.blueprint,
+    fills,
+    usage: {
+      inputTokens: result.usage?.inputTokens ?? 0,
+      outputTokens: result.usage?.outputTokens ?? 0,
+    },
+  };
 }
 
 // ==================== System Prompts ====================

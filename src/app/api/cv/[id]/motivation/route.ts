@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generateMotivationLetter } from '@/lib/ai/motivation-generator';
 import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
+import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type {
   CV,
   GeneratedCVContent,
@@ -128,6 +129,17 @@ export async function POST(
         motivationLetter: letter,
         updatedAt: new Date(),
       });
+
+    void recordOperationUsage({
+      userId,
+      cvId,
+      operation: 'motivation-letter',
+      usage: {
+        inputTokens: usage?.promptTokens ?? 0,
+        outputTokens: usage?.completionTokens ?? 0,
+      },
+      modelId: resolved.model,
+    });
 
     return NextResponse.json({
       success: true,

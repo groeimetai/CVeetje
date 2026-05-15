@@ -6,6 +6,7 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 import { createAIProvider } from '@/lib/ai/providers';
 import { parseLinkedInProfile } from '@/lib/linkedin/parser';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import { getCurrentDateContext } from '@/lib/ai/date-context';
 import type { ProfileInputSource, ParsedLinkedIn } from '@/types';
 
@@ -364,6 +365,17 @@ Be thorough about extracting what IS there. Be empty/null about what ISN'T there
         birthDate: object.contactInfo.birthDate || undefined,
         interests: (object.interests || []).map(i => i.trim()).filter(Boolean),
       };
+
+      void recordOperationUsage({
+        userId,
+        cvId: null,
+        operation: 'profile-parse',
+        usage: {
+          inputTokens: usage?.inputTokens ?? 0,
+          outputTokens: usage?.outputTokens ?? 0,
+        },
+        modelId: userModel,
+      });
 
       return NextResponse.json({
         success: true,

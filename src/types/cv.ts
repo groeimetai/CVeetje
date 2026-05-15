@@ -131,6 +131,26 @@ export interface CV {
   disputeCount?: number;
   creativityLevel?: StyleCreativityLevel;
   creativityLevelHistory?: StyleCreativityLevel[];
+
+  // Per-CV AI usage telemetry — populated by recordOperationUsage()
+  // so the admin/owner can see exactly which operations were billed and
+  // their token cost, and so pricing can be recalibrated from real data.
+  aiUsage?: CVAIUsageEntry[];
+  aiUsageTotals?: {
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number;
+  };
+
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+export interface CVAIUsageEntry {
+  operation: string;          // PlatformOperation, but stored as string for forward-compat
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  modelId: string;
+  timestamp: Date | Timestamp;
 }

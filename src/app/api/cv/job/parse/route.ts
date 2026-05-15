@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getAdminAuth } from '@/lib/firebase/admin';
 import { parseJobVacancy } from '@/lib/ai/job-parser';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import { crawlVacancy } from '@/lib/jobs/crawl';
 
 export const runtime = 'nodejs';
@@ -98,6 +99,17 @@ export async function POST(request: NextRequest) {
       }
       throw err;
     }
+
+    void recordOperationUsage({
+      userId,
+      cvId: null,
+      operation: 'job-parse',
+      usage: {
+        inputTokens: usage?.promptTokens ?? 0,
+        outputTokens: usage?.completionTokens ?? 0,
+      },
+      modelId: resolved.model,
+    });
 
     return NextResponse.json({
       success: true,

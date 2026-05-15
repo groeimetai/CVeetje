@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generateDesignTokens, createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -137,6 +138,17 @@ export async function POST(request: NextRequest) {
             );
             console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
 
+            void recordOperationUsage({
+              userId,
+              cvId: null,
+              operation: 'style-generate',
+              usage: {
+                inputTokens: usage?.promptTokens ?? 0,
+                outputTokens: usage?.completionTokens ?? 0,
+              },
+              modelId: resolved.model,
+            });
+
             // Send final result
             const result = JSON.stringify({
               type: 'complete',
@@ -196,6 +208,17 @@ export async function POST(request: NextRequest) {
       throw err;
     }
     console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
+
+    void recordOperationUsage({
+      userId,
+      cvId: null,
+      operation: 'style-generate',
+      usage: {
+        inputTokens: usage?.promptTokens ?? 0,
+        outputTokens: usage?.completionTokens ?? 0,
+      },
+      modelId: resolved.model,
+    });
 
     return NextResponse.json({
       success: true,

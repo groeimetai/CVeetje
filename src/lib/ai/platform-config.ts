@@ -62,7 +62,36 @@ export const CHAT_CHAR_LIMIT = 8_000;
 export const MONTHLY_FREE_CREDITS = 15;
 
 /**
- * Internal cost estimate per credit (EUR). Used for accounting / admin views.
- * NOT exposed to end-users (they see retail price per pack).
+ * Anthropic pricing (USD per 1M tokens) — source of truth for cost calculations.
+ *
+ * Keep in sync with https://docs.anthropic.com/en/docs/about-claude/pricing
+ *
+ * Cache columns map to Anthropic's tiered cache product:
+ *   - cache5m   = 5-minute ephemeral cache write
+ *   - cache1h   = 1-hour ephemeral cache write
+ *   - cacheHit  = read from any active cache (or refresh)
  */
-export const INTERNAL_COST_PER_CREDIT_EUR = 0.10;
+export const MODEL_PRICING_USD_PER_MTOK: Record<
+  string,
+  { input: number; cache5m: number; cache1h: number; cacheHit: number; output: number }
+> = {
+  'claude-opus-4-7':       { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
+  'claude-opus-4-7-1m':    { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
+  'claude-opus-4-6':       { input: 15,   cache5m: 18.75, cache1h: 30,   cacheHit: 1.5,  output: 75 },
+  'claude-opus-4-5':       { input: 15,   cache5m: 18.75, cache1h: 30,   cacheHit: 1.5,  output: 75 },
+  'claude-sonnet-4-7':     { input: 3,    cache5m: 3.75,  cache1h: 6,    cacheHit: 0.3,  output: 15 },
+  'claude-haiku-4-5':      { input: 1,    cache5m: 1.25,  cache1h: 2,    cacheHit: 0.1,  output: 5 },
+};
+
+/** Default fallback when a modelId is missing from the table */
+export const DEFAULT_MODEL_PRICING = MODEL_PRICING_USD_PER_MTOK['claude-opus-4-7'];
+
+/**
+ * Internal cost estimate per credit (EUR). Empirically calibrated for Opus 4.7.
+ * A 9-credit CV costs ~€0.35 in tokens → €0.039/credit.
+ * Rounded up to €0.05 to cover overhead (Cloud Run, Mollie fees, Firestore writes).
+ */
+export const INTERNAL_COST_PER_CREDIT_EUR = 0.05;
+
+/** USD → EUR conversion used in admin views. Update when FX drifts > 5%. */
+export const USD_TO_EUR = 0.93;

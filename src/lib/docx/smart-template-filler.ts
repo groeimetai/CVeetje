@@ -45,6 +45,8 @@ export interface FillResult {
   filledFields: string[];
   warnings: string[];
   mode: 'ai' | 'none';
+  /** Aggregated token usage across all AI calls (analyze + fill). */
+  usage: { inputTokens: number; outputTokens: number };
 }
 
 // ==================== S4Y Template Detection ====================
@@ -116,13 +118,17 @@ export async function fillSmartTemplate(
 
     // Phase 2: AI analyzes blueprint
     console.log('[smart-template-filler] Phase 2: AI analyzing template blueprint...');
-    const blueprint = await analyzeTemplateBlueprint(
+    const totalUsage = { inputTokens: 0, outputTokens: 0 };
+    const blueprintResult = await analyzeTemplateBlueprint(
       extraction.templateMap,
       profileCounts,
       options.aiProvider,
       options.aiApiKey,
       options.aiModel,
     );
+    const blueprint = blueprintResult.blueprint;
+    totalUsage.inputTokens += blueprintResult.usage.inputTokens;
+    totalUsage.outputTokens += blueprintResult.usage.outputTokens;
     console.log('[smart-template-filler] Blueprint:', JSON.stringify(blueprint, null, 2));
 
     // Phase 3: Duplicate blocks if needed
@@ -176,6 +182,8 @@ export async function fillSmartTemplate(
 
       fills = fillResult.fills;
       fillWarnings = fillResult.warnings;
+      totalUsage.inputTokens += fillResult.usage.inputTokens;
+      totalUsage.outputTokens += fillResult.usage.outputTokens;
 
       // Phase 5: Apply fills
       console.log(`[smart-template-filler] Phase 5: Applying ${Object.keys(fills).length} fills (${Object.keys(reExtraction.mergeGroups).length} merge groups)...`);
@@ -201,6 +209,8 @@ export async function fillSmartTemplate(
 
       fills = fillResult.fills;
       fillWarnings = fillResult.warnings;
+      totalUsage.inputTokens += fillResult.usage.inputTokens;
+      totalUsage.outputTokens += fillResult.usage.outputTokens;
 
       console.log(`[smart-template-filler] Applying ${Object.keys(fills).length} fills (${Object.keys(extraction.mergeGroups).length} merge groups)...`);
       docXml = applyStructuredFills(docXml, fills, extraction.segments, extraction.mergeGroups);
@@ -239,6 +249,8 @@ export async function fillSmartTemplate(
             customValues,
           );
 
+          totalUsage.inputTokens += hfResult.usage.inputTokens;
+          totalUsage.outputTokens += hfResult.usage.outputTokens;
           hfXml = applyStructuredFills(hfXml, hfResult.fills, hfExtraction.segments, hfExtraction.mergeGroups);
         }
 
@@ -267,6 +279,7 @@ export async function fillSmartTemplate(
       filledFields,
       warnings,
       mode: filledFields.length > 0 ? 'ai' : 'none',
+      usage: totalUsage,
     };
   } catch (error) {
     console.error('AI content replacement failed:', error);

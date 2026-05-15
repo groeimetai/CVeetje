@@ -1692,6 +1692,10 @@ export async function fillS4YTemplate(
       filledFields,
       warnings,
       mode: filledFields.length > 0 ? 'ai' as const : 'none' as const,
+      // S4Y filler doesn't bubble usage from fillDocumentWithAI yet — placeholder 0/0.
+      // The usage_log entry still records that the operation happened.
+      // TODO: thread usage through fillDocumentWithAI in s4y-template-filler.
+      usage: { inputTokens: 0, outputTokens: 0 },
     };
   } catch (aiError) {
     console.error('AI content replacement failed (S4Y legacy):', aiError);

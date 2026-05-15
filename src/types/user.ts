@@ -48,7 +48,8 @@ export type TransactionType =
   | 'cv_generation'
   | 'refund'
   | 'platform_ai'
-  | 'platform_ai_refund';
+  | 'platform_ai_refund'
+  | 'usage_log';        // audit-only, amount=0 — records actual token usage per AI call
 
 export interface CreditTransaction {
   id?: string;
@@ -58,6 +59,14 @@ export interface CreditTransaction {
   molliePaymentId: string | null;
   cvId: string | null;
   createdAt: Timestamp;
+
+  // Optional usage telemetry — populated on 'platform_ai' and 'usage_log' rows
+  // so we can later recompute pricing from real data instead of estimates.
+  operation?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  costUsd?: number;
+  modelId?: string;
 }
 
 // ============ Token Usage Types ============

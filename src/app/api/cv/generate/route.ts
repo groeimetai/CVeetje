@@ -8,6 +8,7 @@ import {
   getRequestIdentifier,
 } from '@/lib/security/rate-limiter';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
+import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type {
   ParsedLinkedIn,
   JobVacancy,
@@ -137,6 +138,13 @@ export async function POST(request: NextRequest) {
 
     // Create CV document in Firestore
     const db = getAdminDb();
+
+    // Seed aiUsageTotals so FieldValue.increment works on subsequent rollups.
+    const initialUsage = {
+      inputTokens: usage?.promptTokens ?? 0,
+      outputTokens: usage?.completionTokens ?? 0,
+    };
+
     const cvRef = await db.collection('users').doc(userId).collection('cvs').add({
       linkedInData,
       jobVacancy,
@@ -164,8 +172,20 @@ export async function POST(request: NextRequest) {
       creativityLevel: creativityLevel || 'balanced',
       creativityLevelHistory: [creativityLevel || 'balanced'],
       disputeCount: 0,
+      aiUsage: [],
+      aiUsageTotals: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
       createdAt: new Date(),
       updatedAt: new Date(),
+    });
+
+    // Record this generation against the new CV. Fire-and-forget telemetry —
+    // failures here must not block the response.
+    void recordOperationUsage({
+      userId,
+      cvId: cvRef.id,
+      operation: 'cv-generate',
+      usage: initialUsage,
+      modelId: resolved.model,
     });
 
     return NextResponse.json({
