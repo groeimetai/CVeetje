@@ -55,11 +55,12 @@ const LOG_TAG = 'Style Gen [creative]';
 // ============ Schema ============
 
 const editorialSchema = z.object({
-  // ===== CONCEPT-FIRST (v4) — AI writes this BEFORE everything else =====
-  conceptStatement: z.string().optional().describe(
-    `ONE-SENTENCE EDITORIAL ART-DIRECTION STATEMENT. Write this FIRST,
-    before any other token. Everything downstream — archetype, palette
-    rule, decor elements, pull-quote text, lede — should flow from it.
+  // ===== CONCEPT-FIRST (REQUIRED v4) — AI writes this BEFORE everything else =====
+  conceptStatement: z.string().min(30).max(400).describe(
+    `REQUIRED — ONE-SENTENCE EDITORIAL ART-DIRECTION STATEMENT (min 30 chars).
+    Write this FIRST, before any other token. Everything downstream —
+    archetype, palette rule, decor elements, pull-quote text, lede —
+    should flow from it.
 
     Strong concepts reference the candidate AND the visual world:
     - "Kinfolk-calm retrospective for a strategist who spends weekends
@@ -79,8 +80,8 @@ const editorialSchema = z.object({
   conceptMotif: z.enum([
     'kinfolk', 'wallpaper', 'gentlewoman', 'frieze',
     'apartamento', 'monocle', 'cabinet', 'tech-review',
-  ]).optional().describe(
-    `Controlled-vocab shorthand for the editorial visual world:
+  ]).describe(
+    `REQUIRED — Controlled-vocab shorthand for the editorial visual world:
     - kinfolk: calm, generous whitespace, warm restraint
     - wallpaper: modernist, asymmetric, considered
     - gentlewoman: literary, italic, generous, slightly nostalgic
@@ -91,12 +92,12 @@ const editorialSchema = z.object({
     - tech-review: clean, infographic-adjacent, accent-driven`,
   ),
 
-  // ===== TOP-LEVEL ARCHETYPE =====
+  // ===== TOP-LEVEL ARCHETYPE (REQUIRED) =====
   layoutArchetype: z.enum([
     'magazine-column', 'editorial-spread', 'asymmetric-feature',
     'feature-sidebar', 'manuscript-mono',
     'cover-feature', 'index-card',
-  ]).optional().describe(
+  ]).describe(
     `THE big page-skeleton decision:
     - magazine-column: single column, strong masthead, decorative dividers
     - editorial-spread: 2-col with margin-notes column (sidenotes / dates)
@@ -128,12 +129,13 @@ const editorialSchema = z.object({
     `Decorative elements to layer on. PICK 2-4 — too many fight for attention.`,
   ),
 
-  // ===== CONTENT-DRIVEN PRIMITIVES (v4) =====
-  pullQuoteText: z.string().optional().describe(
-    `The actual pull-quote text (max ~30 words). PICK FROM THE CANDIDATE'S
-    EXPERIENCE HIGHLIGHTS or SUMMARY — the most quotable, specific phrase.
-    When set, the renderer uses this instead of the default first-highlight.
-    NEVER generic ("Passionate about innovation") — specifics WIN.`,
+  // ===== CONTENT-DRIVEN PRIMITIVES (REQUIRED pullQuoteText for v4 engagement) =====
+  pullQuoteText: z.string().min(5).max(280).describe(
+    `REQUIRED — The actual pull-quote text (5-280 chars, max ~30 words).
+    PICK FROM THE CANDIDATE'S EXPERIENCE HIGHLIGHTS or SUMMARY — the most
+    quotable, specific phrase. The renderer uses this instead of the
+    default first-highlight. NEVER generic ("Passionate about innovation") —
+    specifics WIN.`,
   ),
   pullQuoteAttribution: z.string().optional().describe(
     `Attribution line for the pull quote. Example: "— Senior Strategist,
@@ -169,12 +171,12 @@ const editorialSchema = z.object({
     ("Berlin", "Sabbatical", "Promotion") instead of just dates.`,
   ),
 
-  // ===== PALETTE GENERATION (v4) =====
+  // ===== PALETTE GENERATION (REQUIRED v4) =====
   paletteRule: z.enum([
     'ink-and-paper', 'kinfolk-calm', 'literary-tritone', 'gallery-restraint',
     'ochre-paper', 'modernist-clash', 'tri-warmth', 'tri-cool', 'riso-zine',
-  ]).optional().describe(
-    `Palette-generation rule. Pick the rule, then fill hex values that
+  ]).describe(
+    `REQUIRED — Palette-generation rule. Pick the rule, then fill hex values that
     satisfy it. NEVER reach for Tailwind defaults.
     - ink-and-paper: near-black + cream + ONE warm accent
     - kinfolk-calm: bone + dusty greens/blues + warm accent
@@ -223,8 +225,10 @@ const editorialSchema = z.object({
 });
 
 const creativeSchema = baseDesignTokensSchema.extend({
-  editorial: editorialSchema.optional().describe(
-    'Editorial layout tokens — drive the magazine-style renderer.',
+  // REQUIRED — the AI MUST engage with v4 editorial tokens. Optional was the
+  // root cause of v4 silently falling back to fallback tokens.
+  editorial: editorialSchema.describe(
+    'REQUIRED — Editorial layout tokens. AI MUST fill conceptStatement, conceptMotif, layoutArchetype, paletteRule, pullQuoteText.',
   ),
   decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract']).optional(),
   layout: z.enum(['single-column', 'sidebar-left', 'sidebar-right']).optional(),
@@ -324,16 +328,22 @@ function readContextSignals(ctx: PromptContext) {
   const industry = (ctx.jobVacancy?.industry || '').toLowerCase();
   const prefs = (ctx.userPreferences || '').toLowerCase();
   const title = (ctx.jobVacancy?.title || '').toLowerCase();
-  const combined = `${industry} ${title} ${prefs}`;
+  // Include vacancy description + first 600 chars of profile so Dutch
+  // signals match — without this all Dutch CVs fell through to base.
+  const desc = (ctx.jobVacancy?.description || '').toLowerCase().slice(0, 800);
+  const profile = (ctx.linkedInSummary || '').toLowerCase().slice(0, 600);
+  const combined = `${industry} ${title} ${prefs} ${desc} ${profile}`;
 
+  // NL + EN keywords — without NL, ALL Dutch vacancies fell through to base
+  // "Editorial" fallback.
   return {
     industry,
-    wantsTwoColumn: /\b(two column|2 column|two-column|2-column|twee kolom|twee kolommen|sidebar|compact)\b/.test(combined),
-    wantsMinimal: /\b(minimal|minimalistisch|strak|clean|cleaner|subtle|subtiel)\b/.test(combined),
-    wantsLoud: /\b(bold|edgy|opvallend|statement|expressive|editorial|magazine)\b/.test(combined),
-    isCorporate: /\b(finance|bank|consult|consulting|legal|jurid|account|strategy|enterprise|b2b)\b/.test(combined),
-    isCreativeRole: /\b(creative|design|designer|marketing|brand|art|fashion|agency|copy|content|writer|editor|curator)\b/.test(combined),
-    isLiteraryRole: /\b(editor|writer|journalist|author|publish|literary|copy|content)\b/.test(combined),
+    wantsTwoColumn: /\b(two column|2 column|two-column|2-column|twee kolom|twee kolommen|sidebar|compact|tweekolomms)\b/.test(combined),
+    wantsMinimal: /\b(minimal|minimalistisch|strak|clean|cleaner|subtle|subtiel|rustig|ingetogen|kalm)\b/.test(combined),
+    wantsLoud: /\b(bold|edgy|opvallend|statement|expressive|editorial|magazine|gedurfd|expressief|krachtig)\b/.test(combined),
+    isCorporate: /\b(finance|financ|bank|banking|consult|consultancy|consulting|legal|jurid|account|strategy|strateg|enterprise|onderneming|b2b|advocaat|jurist|fiscaal|adviseur|director|directeur|coo|cfo|cto|ceo|controller|audit|accountant)\b/.test(combined),
+    isCreativeRole: /\b(creative|creatief|design|designer|ontwerper|ontwerp|marketing|brand|merk|art|kunst|fashion|mode|agency|bureau|copy|content|writer|schrijver|tekstschrijver|copywriter|editor|redacteur|curator|director|directeur|illustrator|vormgever|conceptmaker)\b/.test(combined),
+    isLiteraryRole: /\b(editor|redacteur|writer|schrijver|journalist|author|auteur|publish|uitgever|uitgeverij|literary|literair|copy|copywriter|tekstschrijver|content)\b/.test(combined),
   };
 }
 
@@ -1058,8 +1068,46 @@ function getContextualFallback(ctx: PromptContext): CVDesignTokens {
 
 function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
   const constraints = creativityConstraints.creative;
-  const fallback = getContextualFallback(ctx);
   const rawPartial = (raw ?? {}) as Partial<CVDesignTokens>;
+
+  // ===== STRICT v4 ENGAGEMENT CHECK =====
+  //
+  // Same architectural fix as experimental v4: throw when AI didn't fill
+  // the v4 editorial fields. Triggers retry chain via generateObjectResilient
+  // (Opus 4.6 fallback). Without this, partial AI output merges silently
+  // into fallback and the user gets the same deterministic CV every time.
+  const aiEditorial = (rawPartial.editorial || {}) as Partial<NonNullable<CVDesignTokens['editorial']>>;
+  const aiFilled = {
+    conceptStatement: typeof aiEditorial.conceptStatement === 'string' && aiEditorial.conceptStatement.trim().length >= 30,
+    conceptMotif: typeof aiEditorial.conceptMotif === 'string' && aiEditorial.conceptMotif.length > 0,
+    layoutArchetype: typeof aiEditorial.layoutArchetype === 'string' && aiEditorial.layoutArchetype.length > 0,
+    paletteRule: typeof aiEditorial.paletteRule === 'string' && aiEditorial.paletteRule.length > 0,
+    pullQuoteText: typeof aiEditorial.pullQuoteText === 'string' && aiEditorial.pullQuoteText.trim().length >= 5,
+    ledeText: typeof aiEditorial.ledeText === 'string' && aiEditorial.ledeText.trim().length > 0,
+    nameTagline: typeof aiEditorial.nameTagline === 'string' && aiEditorial.nameTagline.trim().length > 0,
+    accentKeywords: Array.isArray(aiEditorial.accentKeywords) && aiEditorial.accentKeywords.length >= 2,
+  };
+  const v4CoreFilled = (aiFilled.conceptStatement ? 1 : 0)
+    + (aiFilled.layoutArchetype ? 1 : 0)
+    + (aiFilled.paletteRule ? 1 : 0)
+    + (aiFilled.conceptMotif ? 1 : 0)
+    + (aiFilled.pullQuoteText ? 1 : 0);
+
+  const filledKeys = (Object.keys(aiFilled) as Array<keyof typeof aiFilled>)
+    .filter(k => aiFilled[k]);
+  console.log(
+    `[${LOG_TAG}] AI editorial fields filled (${filledKeys.length}/8): ${filledKeys.join(', ') || '(none)'}`,
+  );
+
+  if (v4CoreFilled < 4) {
+    const missing = (Object.keys(aiFilled) as Array<keyof typeof aiFilled>)
+      .filter(k => !aiFilled[k] && k !== 'accentKeywords' && k !== 'ledeText' && k !== 'nameTagline');
+    throw new Error(
+      `Style Gen [creative]: AI returned insufficient v4 output (${v4CoreFilled}/5 core fields filled, missing: ${missing.join(', ')}). Retrying with fallback model.`,
+    );
+  }
+
+  const fallback = getContextualFallback(ctx);
   const aiColors = rawPartial.colors || {};
   const tokens: CVDesignTokens = {
     ...fallback,

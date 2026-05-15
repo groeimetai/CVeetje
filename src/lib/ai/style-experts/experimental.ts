@@ -56,10 +56,11 @@ const LOG_TAG = 'Style Gen [experimental]';
 // ============ Schema ============
 
 const boldSchema = z.object({
-  // ===== CONCEPT-FIRST (the AI writes this BEFORE everything else) =====
-  conceptStatement: z.string().optional().describe(
-    `ONE-SENTENCE ART-DIRECTION STATEMENT. Write this FIRST, before any
-    other token. The whole rest of the object should flow from this idea.
+  // ===== CONCEPT-FIRST (REQUIRED — AI writes this BEFORE everything else) =====
+  conceptStatement: z.string().min(30).max(400).describe(
+    `REQUIRED — ONE-SENTENCE ART-DIRECTION STATEMENT (min 30 chars).
+    Write this FIRST, before any other token. The whole rest of the object
+    should flow from this idea.
     Examples of strong concepts:
     - "Riso-printed dispatch from a designer whose career reads like a
       wheat-paste poster — loud, urgent, hand-set."
@@ -74,8 +75,8 @@ const boldSchema = z.object({
   conceptMotif: z.enum([
     'archive', 'broadcast', 'manifesto', 'gallery',
     'specimen', 'manuscript', 'protest', 'editorial',
-  ]).optional().describe(
-    `Controlled-vocab shorthand of the concept. Picks the visual world:
+  ]).describe(
+    `REQUIRED — Controlled-vocab shorthand of the concept. Picks the visual world:
     - archive: library catalog / index card / specimen sheet
     - broadcast: news ticker / dispatch / breaking news
     - manifesto: activist poster / wheat-paste / pamphlet
@@ -86,12 +87,12 @@ const boldSchema = z.object({
     - editorial: magazine spread / long-form journalism`,
   ),
 
-  // ===== TOP-LEVEL ARCHETYPE =====
+  // ===== TOP-LEVEL ARCHETYPE (REQUIRED) =====
   layoutArchetype: z.enum([
     'sidebar-canva', 'manifesto', 'magazine-cover', 'editorial-inversion',
     'brutalist-grid', 'vertical-rail', 'mosaic',
     'typographic-poster', 'photo-montage',
-  ]).optional().describe(
+  ]).describe(
     `THE big page-skeleton decision — pick ONE first, then everything
     else layers on top:
     - sidebar-canva: classic Canva look. RESERVED for regulated roles only.
@@ -128,14 +129,15 @@ const boldSchema = z.object({
     'Renders the summary as an oversized opening statement.',
   ),
 
-  // ===== CONTENT-DRIVEN PRIMITIVES (new) =====
-  posterLine: z.string().optional().describe(
-    `The single LINE OF COPY (max ~14 words) that becomes oversized
-    poster-scale type on the page. PICK FROM THE CANDIDATE'S ACTUAL
-    CONTENT — the opening sentence of their summary, a quotable phrase
-    from their experience, or their role title. Or write a short tagline
-    that genuinely fits them. NEVER generic ("Driven Professional",
-    "Passionate about technology") — that fails the rejection test.`,
+  // ===== CONTENT-DRIVEN PRIMITIVES (REQUIRED for v4 engagement) =====
+  posterLine: z.string().min(5).max(200).describe(
+    `REQUIRED — The single LINE OF COPY (5-200 chars, max ~14 words) that
+    becomes oversized poster-scale type on the page. PICK FROM THE
+    CANDIDATE'S ACTUAL CONTENT — the opening sentence of their summary,
+    a quotable phrase from their experience, or their role title. Or
+    write a short tagline that genuinely fits them. NEVER generic
+    ("Driven Professional", "Passionate about technology") — that fails
+    the rejection test.`,
   ),
   posterLineSource: z.enum([
     'summary-first-sentence', 'summary-extract', 'role-title', 'invented-tagline',
@@ -179,12 +181,12 @@ const boldSchema = z.object({
     explicitly calls for it.`,
   ),
 
-  // ===== PALETTE GENERATION =====
+  // ===== PALETTE GENERATION (REQUIRED) =====
   paletteRule: z.enum([
     'split-complement-clash', 'mono-with-scream', 'analog-warm', 'analog-cool',
     'tri-clash', 'duo-riso', 'paper-and-ink', 'fluorescent-pop', 'museum-restraint',
-  ]).optional().describe(
-    `Palette-generation rule. Use this to invent a palette that fits
+  ]).describe(
+    `REQUIRED — Palette-generation rule. Use this to invent a palette that fits
     your concept — don't reach for default Tailwind colors.
     - split-complement-clash: primary + two split-complementaries (Toilet Paper)
     - mono-with-scream: near-black + single screaming accent (Kruger / Vignelli)
@@ -218,7 +220,9 @@ const boldSchema = z.object({
 });
 
 const experimentalSchema = baseDesignTokensSchema.extend({
-  bold: boldSchema.optional().describe('Bold layout tokens — drive the avant-garde renderer.'),
+  // REQUIRED — the AI MUST engage with v4 bold tokens. Optional was the
+  // root cause of v4 silently falling back to fallback tokens.
+  bold: boldSchema.describe('REQUIRED — Bold layout tokens — drive the avant-garde renderer. AI MUST fill conceptStatement, conceptMotif, layoutArchetype, posterLine, paletteRule.'),
   decorationTheme: z.enum(['geometric', 'organic', 'minimal', 'tech', 'creative', 'abstract']).optional(),
   layout: z.enum(['sidebar-left', 'sidebar-right']).optional(),
 });
@@ -306,15 +310,21 @@ function readContextSignals(ctx: PromptContext) {
   const industry = (ctx.jobVacancy?.industry || '').toLowerCase();
   const prefs = (ctx.userPreferences || '').toLowerCase();
   const title = (ctx.jobVacancy?.title || '').toLowerCase();
-  const combined = `${industry} ${title} ${prefs}`;
+  // Include vacancy description + candidate's headline + first 600 chars of
+  // profile summary so Dutch signals can actually match real content.
+  const desc = (ctx.jobVacancy?.description || '').toLowerCase().slice(0, 800);
+  const profile = (ctx.linkedInSummary || '').toLowerCase().slice(0, 600);
+  const combined = `${industry} ${title} ${prefs} ${desc} ${profile}`;
 
+  // NL + EN keywords — without NL, ALL Dutch vacancies fell through to base
+  // fallback (the root cause of "same Avant-garde styling every time").
   return {
     industry,
-    wantsMinimal: /\b(minimal|minimalistisch|clean|strak|subtle|subtiel|restrained|ingetogen)\b/.test(combined),
-    wantsLoud: /\b(bold|avant|avant-garde|edgy|opvallend|statement|experimental|poster)\b/.test(combined),
-    isCorporate: /\b(finance|bank|consult|consulting|legal|account|strategy|enterprise)\b/.test(combined),
-    isCreativeRole: /\b(creative|design|designer|marketing|brand|art|fashion|agency|content|writer|director)\b/.test(combined),
-    isPerformerRole: /\b(actor|performer|presenter|host|musician|artist|model|photograph|video|film|director)\b/.test(combined),
+    wantsMinimal: /\b(minimal|minimalistisch|clean|strak|subtle|subtiel|restrained|ingetogen|rust|rustig|kalm)\b/.test(combined),
+    wantsLoud: /\b(bold|avant|avant-garde|edgy|opvallend|statement|experimental|experimenteel|poster|gedurfd|krachtig|expressief)\b/.test(combined),
+    isCorporate: /\b(finance|financ|bank|banking|consult|consultancy|consulting|legal|jurid|account|strategy|strateg|enterprise|onderneming|bedrijfsleven|advocaat|jurist|fiscaal|adviseur|adviseuse|directeur|manager|coo|cfo|cto|ceo|controller|audit|accountant)\b/.test(combined),
+    isCreativeRole: /\b(creative|creatief|design|designer|ontwerper|ontwerp|marketing|brand|merk|art|kunst|fashion|mode|agency|bureau|content|writer|schrijver|tekstschrijver|copywriter|director|directeur|art director|illustrator|fotograaf|vormgever|conceptmaker)\b/.test(combined),
+    isPerformerRole: /\b(actor|acteur|performer|presenter|presentator|host|gastheer|musician|muzikant|artist|kunstenaar|model|photograph|fotograaf|video|videograaf|film|filmmaker|regisseur|cinematographer|cameraman|theater|toneel|danser|choreograaf)\b/.test(combined),
   };
 }
 
@@ -1040,8 +1050,50 @@ function rotateColumnCount(
 
 function normalize(raw: unknown, ctx: PromptContext): CVDesignTokens {
   const constraints = creativityConstraints.experimental;
-  const fallback = getContextualFallback(ctx);
   const rawPartial = (raw ?? {}) as Partial<CVDesignTokens>;
+
+  // ===== STRICT v4 ENGAGEMENT CHECK =====
+  //
+  // Even with REQUIRED Zod fields, the AI sometimes returns the bold object
+  // with stub-quality values (e.g. conceptStatement = "Avant-garde CV"). We
+  // throw here when the AI clearly didn't engage with v4 — this triggers the
+  // generateObjectResilient retry chain (Opus 4.6 fallback). Without this
+  // throw, partial AI output silently merges into fallback tokens and the
+  // user gets the same deterministic CV every time.
+  const aiBold = (rawPartial.bold || {}) as Partial<NonNullable<CVDesignTokens['bold']>>;
+  const aiFilled = {
+    conceptStatement: typeof aiBold.conceptStatement === 'string' && aiBold.conceptStatement.trim().length >= 30,
+    conceptMotif: typeof aiBold.conceptMotif === 'string' && aiBold.conceptMotif.length > 0,
+    layoutArchetype: typeof aiBold.layoutArchetype === 'string' && aiBold.layoutArchetype.length > 0,
+    posterLine: typeof aiBold.posterLine === 'string' && aiBold.posterLine.trim().length >= 5,
+    paletteRule: typeof aiBold.paletteRule === 'string' && aiBold.paletteRule.length > 0,
+    accentKeywords: Array.isArray(aiBold.accentKeywords) && aiBold.accentKeywords.length >= 2,
+    nameTreatment: typeof aiBold.nameTreatment === 'string' && aiBold.nameTreatment.length > 0,
+    heroNumeralValue: typeof aiBold.heroNumeralValue === 'string' && aiBold.heroNumeralValue.trim().length > 0,
+  };
+  const v4CoreFilled = (aiFilled.conceptStatement ? 1 : 0)
+    + (aiFilled.layoutArchetype ? 1 : 0)
+    + (aiFilled.posterLine ? 1 : 0)
+    + (aiFilled.paletteRule ? 1 : 0)
+    + (aiFilled.conceptMotif ? 1 : 0);
+
+  // Diagnostic log — visible in Cloud Run logs so we know what AI gave us
+  const filledKeys = (Object.keys(aiFilled) as Array<keyof typeof aiFilled>)
+    .filter(k => aiFilled[k]);
+  console.log(
+    `[${LOG_TAG}] AI bold fields filled (${filledKeys.length}/8): ${filledKeys.join(', ') || '(none)'}`,
+  );
+
+  // Require 4 of 5 core v4 fields. Anything less = AI didn't engage.
+  if (v4CoreFilled < 4) {
+    const missing = (Object.keys(aiFilled) as Array<keyof typeof aiFilled>)
+      .filter(k => !aiFilled[k] && k !== 'accentKeywords' && k !== 'nameTreatment' && k !== 'heroNumeralValue');
+    throw new Error(
+      `Style Gen [experimental]: AI returned insufficient v4 output (${v4CoreFilled}/5 core fields filled, missing: ${missing.join(', ')}). Retrying with fallback model.`,
+    );
+  }
+
+  const fallback = getContextualFallback(ctx);
   const aiColors = rawPartial.colors || {};
   const tokens: CVDesignTokens = {
     ...fallback,

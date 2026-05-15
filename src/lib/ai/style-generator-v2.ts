@@ -71,10 +71,17 @@ export async function generateDesignTokens(
       logTag: `Style Gen [${creativityLevel}]`,
     });
 
+    // Include the v4 differentiators (archetype, motif, paletteRule) in
+    // the log line so future debugging sees what the AI actually picked
+    // vs. what came from rotation / fallback.
+    const v4Bold = value.bold
+      ? ` | bold: arch=${value.bold.layoutArchetype}, motif=${value.bold.conceptMotif ?? '—'}, palette=${value.bold.paletteRule ?? '—'}, posterLine=${value.bold.posterLine ? `"${value.bold.posterLine.slice(0, 40)}…"` : '—'}, keywords=${value.bold.accentKeywords?.length ?? 0}`
+      : '';
+    const v4Editorial = value.editorial
+      ? ` | editorial: arch=${value.editorial.layoutArchetype}, motif=${value.editorial.conceptMotif ?? '—'}, palette=${value.editorial.paletteRule ?? '—'}, pullQuote=${value.editorial.pullQuoteText ? `"${value.editorial.pullQuoteText.slice(0, 40)}…"` : '—'}, keywords=${value.editorial.accentKeywords?.length ?? 0}`
+      : '';
     console.log(
-      `[Style Gen] level=${creativityLevel}, theme=${value.themeBase}, font=${value.fontPairing}, primary=${value.colors.primary}, ` +
-        (value.editorial ? `editorial.headerLayout=${value.editorial.headerLayout}, ` : '') +
-        (value.bold ? `bold.headerLayout=${value.bold.headerLayout}, bold.sidebarStyle=${value.bold.sidebarStyle}` : ''),
+      `[Style Gen] level=${creativityLevel}, theme=${value.themeBase}, font=${value.fontPairing}, primary=${value.colors.primary}${v4Bold}${v4Editorial}`,
     );
 
     return { tokens: value, usage };
