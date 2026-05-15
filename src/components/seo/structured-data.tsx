@@ -13,7 +13,7 @@ export function WebsiteStructuredData() {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'EUR',
-      description: 'Start gratis met 10 credits per maand',
+      description: 'Start gratis met 15 credits per maand — 1 volledig CV',
     },
     aggregateRating: {
       '@type': 'AggregateRating',
@@ -65,7 +65,7 @@ export function FAQStructuredData() {
         name: 'Is CVeetje gratis?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Je kunt gratis starten met 10 credits per maand. Voor meer CVs kun je extra credits kopen.',
+          text: 'Je kunt gratis starten met 15 credits per maand — genoeg voor 1 volledig CV. Voor meer CVs kun je extra credits kopen vanaf €4,99 voor 15 credits.',
         },
       },
       {

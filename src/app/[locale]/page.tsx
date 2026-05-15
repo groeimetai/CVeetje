@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 const MARQUEE_NL = [
   'maakcveetje.nl — een CV op maat voor élke vacature',
-  'nu gratis tot 5 downloads per maand',
+  'elke maand 15 gratis credits — 1 volledig CV gratis',
   '9 talen ondersteund',
   'jouw data blijft van jou',
   'ATS-vriendelijk, recruiter-proof',
@@ -51,7 +51,7 @@ const MARQUEE_NL = [
 ];
 const MARQUEE_EN = [
   'maakcveetje.nl — a CV tailored to every job',
-  'now free up to 5 downloads per month',
+  '15 free credits monthly — 1 complete CV every month',
   '9 languages supported',
   'your data stays yours',
   'ATS-friendly, recruiter-proof',
@@ -219,7 +219,7 @@ export default async function LandingPage({ params }: Props) {
               <div className="stat-ticker__item">
                 <span className="stat-ticker__label">{nl ? 'Prijs voor proberen' : 'Cost to try'}</span>
                 <span className="stat-ticker__value">€ <em>0</em></span>
-                <span className="stat-ticker__hint">{nl ? '5 gratis downloads / maand' : '5 free downloads / month'}</span>
+                <span className="stat-ticker__hint">{nl ? '15 gratis credits / maand — 1 volledig CV' : '15 free credits / month — 1 complete CV'}</span>
               </div>
             </div>
           </section>
@@ -441,13 +441,13 @@ export default async function LandingPage({ params }: Props) {
                   <span className="brand-badge brand-badge--primary">Platform AI</span>
                   <h3>{nl ? 'Klaar om te gebruiken' : 'Ready to use'}</h3>
                   <div className="ai-mode__price">
-                    <strong>1 credit</strong> {nl ? 'per AI-stap' : 'per AI step'}
+                    <strong>≈ 9 credits</strong> {nl ? 'per volledig CV' : 'per complete CV'}
                   </div>
                   <ul className="feat-card__list">
                     <li><Check className="h-4 w-4" />Claude Opus — {nl ? 'top-kwaliteit' : 'top quality'}</li>
-                    <li><Check className="h-4 w-4" />{nl ? '5 gratis credits per maand' : '5 free credits per month'}</li>
+                    <li><Check className="h-4 w-4" />{nl ? '15 gratis credits per maand (1 CV)' : '15 free credits per month (1 CV)'}</li>
+                    <li><Check className="h-4 w-4" />{nl ? 'PDF download gratis — al inbegrepen' : 'PDF download is free — already included'}</li>
                     <li><Check className="h-4 w-4" />{nl ? 'Geen API-key setup' : 'No API-key setup'}</li>
-                    <li><Check className="h-4 w-4" />{nl ? 'Direct beginnen' : 'Start immediately'}</li>
                   </ul>
                   <Link href="/register" className="brand-btn brand-btn--outline brand-btn--block">
                     {nl ? 'Probeer platform mode' : 'Try platform mode'}
@@ -458,12 +458,12 @@ export default async function LandingPage({ params }: Props) {
                   <span className="brand-badge brand-badge--accent">{nl ? 'Bring your own' : 'Bring your own'}</span>
                   <h3>{nl ? 'Eigen API-key' : 'Your own API key'}</h3>
                   <div className="ai-mode__price">
-                    <strong>€ 0</strong> {nl ? 'per AI-stap, je betaalt provider direct' : 'per AI step, you pay your provider directly'}
+                    <strong>0 credits</strong> {nl ? 'per AI-stap, je betaalt provider direct' : 'per AI step, you pay your provider directly'}
                   </div>
                   <ul className="feat-card__list">
                     <li><Check className="h-4 w-4" />9 {nl ? 'providers' : 'providers'}: OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, …</li>
-                    <li><Check className="h-4 w-4" />{nl ? 'Geen credits voor AI-stappen' : 'No credits for AI steps'}</li>
-                    <li><Check className="h-4 w-4" />{nl ? '1 credit alleen bij PDF download' : '1 credit only at PDF download'}</li>
+                    <li><Check className="h-4 w-4" />{nl ? 'Alle acties op CVeetje: 0 credits' : 'All CVeetje actions: 0 credits'}</li>
+                    <li><Check className="h-4 w-4" />{nl ? 'PDF download ook gratis' : 'PDF download is free too'}</li>
                     <li><Check className="h-4 w-4" />{nl ? 'Volledige controle over kosten' : 'Full control over costs'}</li>
                   </ul>
                   <Link href="/settings" className="brand-btn brand-btn--accent brand-btn--block">
@@ -531,8 +531,8 @@ export default async function LandingPage({ params }: Props) {
                 {nl ? <>Stop met je CV<br />elke keer <em>opnieuw</em> typen.</> : <>Stop retyping your<br /><em>whole</em> CV every time.</>}
               </h2>
               <p className="cta-big__sub">
-                {nl ? 'Maak in twee minuten een CV dat past bij de vacature. Eerste vijf gratis, geen creditcard nodig.' :
-                     "Build a CV that fits the job in two minutes. First five free, no credit card needed."}
+                {nl ? 'Maak in twee minuten een CV dat past bij de vacature. Eerste CV elke maand gratis, geen creditcard nodig.' :
+                     "Build a CV that fits the job in two minutes. First CV every month is free, no credit card needed."}
               </p>
               <div className="cta-big__cta">
                 <Link href="/register" className="brand-btn brand-btn--lg" style={{ background: 'var(--paper)', color: 'var(--ink)', borderColor: 'var(--paper)' }}>

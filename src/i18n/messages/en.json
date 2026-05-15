@@ -305,44 +305,44 @@
     },
     "pricing": {
       "title": "Simple Pricing",
-      "subtitle": "Only pay for downloads. No subscriptions.",
+      "subtitle": "Pay-as-you-go credits. No subscription, credits never expire.",
       "free": {
         "title": "Free",
         "description": "Every month again",
-        "amount": "10",
+        "amount": "15",
         "unit": "credits/month",
-        "cvDownloads": "CV downloads",
-        "jobTargeting": "Job targeting",
-        "motivationLetters": "Cover letters",
-        "unlimitedProfiles": "Unlimited profiles",
+        "cvDownloads": "≈ 1 complete CV with vacancy match",
+        "jobTargeting": "Job targeting included",
+        "motivationLetters": "PDF download is free",
+        "unlimitedProfiles": "Unlimited profile storage",
         "cta": "Start Free"
       },
       "pack5": {
-        "title": "5 Credits",
+        "title": "Starter — 15 credits",
         "description": "One-time purchase",
         "price": "€4.99",
-        "perDownload": "€1.00/download",
-        "neverExpire": "Never expire",
+        "perDownload": "≈ €3.00 per CV",
+        "neverExpire": "Credits never expire",
         "cta": "Buy"
       },
       "pack15": {
-        "title": "15 Credits",
+        "title": "Popular — 50 credits",
         "description": "One-time purchase",
         "badge": "Popular",
-        "price": "€12.99",
-        "perDownload": "€0.87/download",
-        "save": "Save 13%",
+        "price": "€14.99",
+        "perDownload": "≈ €2.70 per CV",
+        "save": "Save 10% per credit",
         "cta": "Buy"
       },
       "pack30": {
-        "title": "30 Credits",
+        "title": "Pro — 120 credits",
         "description": "One-time purchase",
-        "price": "€22.99",
-        "perDownload": "€0.77/download",
-        "save": "Save 23%",
+        "price": "€29.99",
+        "perDownload": "≈ €2.25 per CV",
+        "save": "Save 25% per credit",
         "cta": "Buy"
       },
-      "paymentMethods": "Secure payment via Mollie (iDEAL, Credit card and more)"
+      "paymentMethods": "Secure payment via Mollie (iDEAL, Credit card and more) — a complete CV with vacancy match costs ~9 credits"
     },
     "cta": {
       "title": "Done with Fiddling?",
@@ -1563,7 +1563,7 @@
     },
     "register": {
       "title": "Create Free Account",
-      "description": "Create a free CVeetje account and receive 10 credits per month. Start creating professional CVs with AI right away."
+      "description": "Create a free CVeetje account and receive 15 credits per month — enough for 1 complete CV. Start creating professional CVs with AI right away."
     },
     "dashboard": {
       "title": "Dashboard",
