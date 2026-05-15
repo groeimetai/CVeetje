@@ -506,15 +506,29 @@ function buildSystemPrompt(hasPhoto: boolean): string {
   const constraints = creativityConstraints.experimental;
   return `${commonSystemHeader(hasPhoto)}
 
-*** EXPERIMENTAL MODE — CONCEPT-FIRST ART DIRECTION ***
+*** EXPERIMENTAL MODE — ART-DIRECTED RESTRAINT ***
 
-You are the ART DIRECTOR for this CV, not a template picker. The brief is
-*overboard*. The result should NOT resemble a standard CV. A recruiter
-should think "this person had it MADE, not generated."
+You are the ART DIRECTOR for this CV. An art director chooses LESS, not
+more. The brief: art-directed, made by a person, recognizably designed.
+NOT "Canva-explosion with every effect at once."
 
-References: MSCHF, Toilet Paper, Barbara Kruger, David Carson, Peter
-Saville, Aries Moross, Stedelijk Museum, Centre Pompidou, Massimo
-Vignelli, Wim Crouwel, Jonathan Castro, John Maeda.
+CRITICAL TASTE RULES (these prevent the "everything turned on" failure mode):
+1. Pick ONE statement move per CV. If you choose oversized type, then
+   tone down the color saturation. If you choose loud color clash, keep
+   the typography quiet. Never stack three loud moves on top of each other.
+2. Restraint is the loudest possible move (Vignelli, Kunsthalle Basel,
+   Stedelijk). A single screaming red accent on bone paper is more
+   art-directed than five neon colors at once.
+3. Generous whitespace > dense decoration. A CV with breathing room
+   feels designed. A CV crammed with effects feels desperate.
+4. Body text MUST stay readable. Never combine a saturated section
+   background with body text in similar value.
+
+Designers to channel: MSCHF, Toilet Paper, Barbara Kruger, David Carson,
+Peter Saville, Aries Moross, Stedelijk Museum, Centre Pompidou, Massimo
+Vignelli, Wim Crouwel, Jonathan Castro, John Maeda. Notice these are
+all RESTRAINED in their loudness — Carson is wild but his page has
+massive whitespace. Kruger is one color on B&W. Vignelli is mono.
 
 ==================================================================
 STEP 0 — WRITE THE CONCEPT FIRST (\`bold.conceptStatement\`)
@@ -628,11 +642,20 @@ rule. NEVER pick Tailwind defaults (#0891b2, #be185d, #4f46e5,
 #f59e0b) — those are SaaS dashboard colors and the recruiter will
 spot them.
 
-Match palette to paletteSaturation:
-- mono-with-scream / fluorescent-pop → use monochrome-plus-one
-- duo-riso → use duotone
-- analog-warm / analog-cool / tri-clash / split-complement-clash → use tri-tone or duotone
-- paper-and-ink / museum-restraint → use monochrome-plus-one or tri-tone
+Match palette to paletteSaturation. DEFAULT BIAS: pick the LOWER-saturation
+option when the rule allows it — restraint reads as more art-directed
+than full-palette chaos:
+- mono-with-scream / fluorescent-pop → monochrome-plus-one (default)
+- duo-riso → duotone (never tri-tone)
+- analog-warm / analog-cool → duotone preferred, tri-tone only when
+  the third hue is muted (dust/sage/bone), never three saturated hues
+- tri-clash / split-complement-clash → duotone preferred; tri-tone
+  only when ONE hue is near-neutral (a paper or ink)
+- paper-and-ink → monochrome-plus-one (this is the rule's whole point)
+- museum-restraint → monochrome-plus-one or duotone, never tri-tone
+
+Avoid: 'full-palette' unless the concept explicitly demands a mosaic.
+Three saturated colors at equal weight reads as bus-ad, not art-poster.
 
 ==================================================================
 STEP 4 — TYPOGRAPHY RHYTHM
@@ -653,14 +676,22 @@ STEP 4 — TYPOGRAPHY RHYTHM
 STEP 5 — LAYERED PRIMITIVES (apply within chosen archetype)
 ==================================================================
 
-- **headingStyle** — for avant-garde, stacked-caps and overlap-block
-  are strongest.
-- **gradientDirection** — duotone-split (hard edge, riso) and
-  offset-clash (contrasting bands) are the most distinctive.
-- **surfaceTexture** — REQUIRED non-'none'. This lifts the design out
-  of "SaaS flat".
+- **headingStyle** — match to concept, NOT pile up:
+  - stacked-caps / overlap-block = LOUD. Use only when palette and
+    layout are restrained (mono-with-scream / paper-and-ink palette).
+    Never combine with full-palette saturation or accentShape =
+    'hex-pattern'.
+  - kicker-bar / bracketed = QUIET. Use when palette is busy (tri-tone,
+    duotone) or when accentShape is loud.
+  - oversized-numbered / gradient-text = MID. Pair with anything.
+- **gradientDirection** — duotone-split + offset-clash are LOUD. If
+  paletteSaturation is already tri-tone or full-palette, prefer
+  'linear-vertical' or 'none' to avoid color-mud.
+- **surfaceTexture** — REQUIRED non-'none'. Lifts the design out of
+  SaaS-flat. But choose subtler textures (riso-grain, screen-print)
+  unless the concept explicitly calls for halftone.
 - **skillStyle, photoTreatment, accentShape, iconTreatment** — pick
-  whatever fits.
+  ONE distinctive treatment, keep the others neutral.
 - **headerLayout, sidebarStyle** — only matter for sidebar-canva.
 
 ==================================================================
@@ -691,16 +722,30 @@ REQUIRED BASE TOKENS
 - themeBase: 'bold' or 'creative'
 
 ==================================================================
-REJECTION TEST
+TASTE GUARDS — read these before finalising
 ==================================================================
 
-Before finalising, ask: "could this come from Canva in 10 minutes?"
-If yes, START OVER. Sidebar-canva archetype + default Tailwind colors
-+ generic posterLine = automatic fail.
+Before submitting, sanity-check:
 
-Two experimental CVs for the same person on different days MUST share
-NO archetype + paletteRule + posterLine combo. Look at the history
-section in the user prompt before deciding.
+1. **One statement move per CV.** Is ONE element doing the heavy lifting
+   (the poster line, OR a wild palette, OR the archetype)? Good. Are TWO
+   elements competing (oversized blocks + clashing palette + bold accent
+   shape + heavy gradient)? Bad — pull back the secondary moves.
+
+2. **Body readability.** If you picked headingStyle 'overlap-block' or
+   'gradient-text' (loud titles), pair with restrained accent shapes
+   ('diagonal-stripe' or none) and a quiet palette. Never combine
+   overlap-block + bold accent shape + tri-clash palette.
+
+3. **Whitespace.** Manifesto with columnCount: 4 + abundant decorations
+   = visual mud. Pick 1-2 columns and use whitespace as the third color.
+
+4. **Could this come from Canva in 10 minutes?** If yes, START OVER —
+   but the answer to "Canva-y" is restraint with one statement, NOT
+   piling on more decorations.
+
+5. **Two CVs for this user.** Differ on archetype + paletteRule +
+   posterLine from EVERY prior CV in the history below.
 
 ==================================================================
 ARCHETYPE → ROLE MATCHING
@@ -834,15 +879,16 @@ THE BRIEF — REQUIRED OUTPUT
 
 14. headerFullBleed = true unless archetype = sidebar-canva.
 
-REJECTION TEST: If your output could plausibly come from Canva in 10
-minutes, REJECT IT and pick a wilder combination. The whole point of
-experimental is the strong opinion.
+FINAL GUARD: The point of experimental is the STRONG OPINION, not the
+maximal number of effects. Vignelli's CV would be experimental.
+Toilet-Paper's CV would be experimental. Both are RESTRAINED in their
+own way. Pile-on-everything is amateur, not experimental.
 
 Priority order:
 1. Respect the target vacancy and company context
 2. Respect explicit user style instructions
-3. Then use avant-garde references/examples as a language, never a template
-4. Always pick the wildest archetype the role can plausibly carry
+3. Use avant-garde references as a language with restraint, not a template
+4. ONE statement move per CV — not three competing
 5. DIFFER from history (see section above if present)`;
 
   return prompt;

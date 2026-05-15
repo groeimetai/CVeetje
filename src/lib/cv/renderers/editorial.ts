@@ -282,12 +282,19 @@ function generateEditorialCSS(
       -moz-osx-font-smoothing: grayscale;
     }
 
-    /* v4: accent keyword highlights */
+    /* v4: accent keyword highlights. Subtle band-underline so the
+       highlight reads on ANY background (light, tinted, paper) without
+       color-clashing. The previous treatment (color + bold weight)
+       became invisible on tritone backgrounds and bold-confused the
+       reading rhythm. */
     mark.editorial-accent-hit {
       background: transparent;
-      color: var(--e-design);
-      font-weight: 600;
-      padding: 0;
+      color: inherit;
+      font-weight: inherit;
+      padding: 0 1px;
+      background-image: linear-gradient(180deg, transparent 68%, var(--e-design) 68%, var(--e-design) 86%, transparent 86%);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
     }
 
     /* v4: name tagline below name */

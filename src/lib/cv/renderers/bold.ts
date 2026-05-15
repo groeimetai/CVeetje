@@ -865,28 +865,20 @@ function getPhotoCSS(treatment: BoldPhotoTreatment, colors: CVDesignTokens['colo
         }
       `;
     case 'badge-framed':
+      // Subtler badge frame — previous double-ring at 10px padding + 6px
+      // outer offset looked like a thick goud-clash band around the photo.
+      // Now a thin single border in accent, more like a passe-partout.
       return `${base}
         .portrait-badge-framed {
           width: 130px;
           height: 130px;
           background: ${colors.accent};
-          padding: 10px;
-          border-radius: 12px;
+          padding: 5px;
+          border-radius: 4px;
           position: relative;
         }
         .portrait-badge-framed img {
-          border-radius: 6px;
-        }
-        .portrait-badge-framed::before {
-          content: '';
-          position: absolute;
-          top: -6px;
-          left: -6px;
-          right: -6px;
-          bottom: -6px;
-          border: 2px solid ${colors.accent};
-          border-radius: 16px;
-          opacity: 0.4;
+          border-radius: 2px;
         }
       `;
   }
@@ -1509,40 +1501,41 @@ function getHeadingCSS(style: BoldHeadingStyle, colors: CVDesignTokens['colors']
         }
       `;
     case 'overlap-block':
-      // Title set against a colored block with an accent tab peeking out
-      // behind it (Kruger). Kept as an inline-block so the block sizes to
-      // the text (no clipping) and doesn't use negative margins that
-      // collided with neighboring content.
+      // Title sits on a small colored block with an accent tab peeking out
+      // behind it (Kruger). Restrained — previous treatment was 22pt and
+      // looked like an entire section-spanning banner. Now compact and
+      // proportional to the body text so the design feels art-directed,
+      // not banner-explosion.
       return `${base}
         .bold-section-title {
           display: block;
-          margin-bottom: 22px;
+          margin-bottom: 18px;
         }
         .bold-section-title .section-title-text {
-          font-size: 22pt;
-          font-weight: 900;
+          font-size: 14pt;
+          font-weight: 800;
           color: #fff;
           text-transform: uppercase;
-          letter-spacing: 0.02em;
+          letter-spacing: 0.06em;
           background: ${colors.primary};
-          padding: 8px 16px 6px;
+          padding: 4px 11px 3px;
           display: inline-block;
           position: relative;
-          line-height: 1.15;
+          line-height: 1.2;
         }
         .bold-section-title .section-title-text::before {
           content: '';
           position: absolute;
-          right: -10px;
-          bottom: -8px;
-          width: 32px;
-          height: 14px;
+          right: -8px;
+          bottom: -5px;
+          width: 22px;
+          height: 8px;
           background: ${colors.accent};
           z-index: -1;
         }
         .bold-section-title .section-number {
           color: ${colors.accent};
-          font-size: 14pt;
+          font-size: 11pt;
           font-weight: 900;
           margin-right: 6px;
           vertical-align: baseline;
@@ -2003,10 +1996,21 @@ function nameTreatmentCSS(): string {
     .name-inline .name-divider { font-family: var(--b-font-heading); opacity: 0.55; }
     .name-inline .name-role { font-family: var(--b-font-body); font-size: 12pt; opacity: 0.8; }
 
-    /* The accent-hit highlights wrap individual keywords in body text */
+    /* The accent-hit highlights wrap individual keywords in body text.
+       Use a subtle underline that works on ANY background (light or dark
+       section fills, gradients, textures) without color-clashing. The
+       previous treatment (color + font-weight: 700) became invisible on
+       primary-colored section backgrounds and bold-confused the layout. */
     mark.accent-hit {
-      background: transparent; color: var(--b-accent);
-      font-weight: 700; padding: 0;
+      background: transparent;
+      color: inherit;
+      font-weight: inherit;
+      padding: 0;
+      box-shadow: inset 0 -0.18em 0 ${'rgba(255,255,255,0)'};
+      background-image: linear-gradient(180deg, transparent 65%, var(--b-accent) 65%, var(--b-accent) 86%, transparent 86%);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      padding: 0 1px;
     }
   `;
 }
