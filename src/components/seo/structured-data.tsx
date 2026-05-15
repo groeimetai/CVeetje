@@ -157,3 +157,126 @@ export function BreadcrumbStructuredData({ items }: { items: { name: string; url
     />
   );
 }
+
+type ArticleProps = {
+  headline: string;
+  description: string;
+  url: string;
+  datePublished: string;
+  dateModified?: string;
+  authorName: string;
+  authorUrl?: string;
+  inLanguage?: string;
+  image?: string;
+  keywords?: string[];
+};
+
+export function ArticleStructuredData(p: ArticleProps) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cveetje.nl';
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: p.headline,
+    description: p.description,
+    inLanguage: p.inLanguage || 'nl-NL',
+    image: p.image || `${baseUrl}/opengraph-image`,
+    datePublished: p.datePublished,
+    dateModified: p.dateModified || p.datePublished,
+    keywords: p.keywords?.join(', '),
+    mainEntityOfPage: { '@type': 'WebPage', '@id': p.url.startsWith('http') ? p.url : `${baseUrl}${p.url}` },
+    author: {
+      '@type': 'Person',
+      name: p.authorName,
+      url: p.authorUrl,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'CVeetje',
+      logo: { '@type': 'ImageObject', url: `${baseUrl}/opengraph-image` },
+    },
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+type HowToStep = { name: string; text: string };
+type HowToProps = {
+  name: string;
+  description: string;
+  totalTimeMinutes?: number;
+  steps: HowToStep[];
+  inLanguage?: string;
+};
+
+export function HowToStructuredData(p: HowToProps) {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: p.name,
+    description: p.description,
+    inLanguage: p.inLanguage || 'nl-NL',
+    totalTime: p.totalTimeMinutes ? `PT${p.totalTimeMinutes}M` : undefined,
+    step: p.steps.map((s, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: s.name,
+      text: s.text,
+    })),
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+type FAQItem = { q: string; a: string };
+
+export function FAQPageStructuredData({ items, id }: { items: FAQItem[]; id?: string }) {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    '@id': id,
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
+type PersonProps = {
+  name: string;
+  url?: string;
+  description?: string;
+  jobTitle?: string;
+};
+
+export function PersonStructuredData(p: PersonProps) {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: p.name,
+    url: p.url,
+    description: p.description,
+    jobTitle: p.jobTitle,
+    worksFor: { '@type': 'Organization', name: 'CVeetje' },
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}

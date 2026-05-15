@@ -92,8 +92,9 @@ export default async function LandingPage({ params }: Props) {
               <div className="land-nav__links">
                 <a href="#hoe">{nl ? 'Hoe het werkt' : 'How it works'}</a>
                 <a href="#stijlen">{nl ? 'Stijlen' : 'Styles'}</a>
-                <a href="#features">Features</a>
                 <a href="#prijzen">{nl ? 'Prijzen' : 'Pricing'}</a>
+                <Link href="/blog">{nl ? 'Blog' : 'Blog'}</Link>
+                <Link href="/voor">{nl ? 'Voor jou' : 'For you'}</Link>
                 <Link href="/jobs">{nl ? 'Vacatures' : 'Jobs'}</Link>
               </div>
               <div className="land-nav__right">
@@ -565,13 +566,25 @@ export default async function LandingPage({ params }: Props) {
               </div>
               <div className="foot__col">
                 <h4>Resources</h4>
+                <Link href="/blog">{nl ? 'Blog' : 'Blog'}</Link>
+                <Link href="/voor">{nl ? 'Voor jou' : 'For you'}</Link>
+                <Link href="/faq">{nl ? 'Veelgestelde vragen' : 'FAQ'}</Link>
                 <Link href="/ai-transparency">{nl ? 'AI transparantie' : 'AI transparency'}</Link>
-                <a href="#features">Features</a>
+              </div>
+              <div className="foot__col">
+                <h4>{nl ? 'Voor jou' : 'For you'}</h4>
+                <Link href="/voor/werkzoekenden">{nl ? 'Werkzoekenden' : 'Job seekers'}</Link>
+                <Link href="/voor/recruiters">{nl ? 'Recruiters' : 'Recruiters'}</Link>
+                <Link href="/voor/loopbaancoaches">{nl ? 'Loopbaancoaches' : 'Career coaches'}</Link>
+                <Link href="/voor/zzp">{nl ? 'Zzp’ers' : 'Freelancers'}</Link>
+                <Link href="/voor/zij-instromers">{nl ? 'Zij-instromers' : 'Career switchers'}</Link>
               </div>
               <div className="foot__col">
                 <h4>{nl ? 'Juridisch' : 'Legal'}</h4>
                 <Link href="/privacy">Privacy</Link>
                 <Link href="/terms">{nl ? 'Voorwaarden' : 'Terms'}</Link>
+                <Link href="/compliance">Compliance</Link>
+                <Link href="/sub-processors">{nl ? 'Subverwerkers' : 'Sub-processors'}</Link>
               </div>
             </div>
             <div className="foot__bottom">

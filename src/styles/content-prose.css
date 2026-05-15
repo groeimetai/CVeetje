@@ -1,0 +1,273 @@
+/* CVeetje content-prose: typography for blog posts, persona pages, FAQ.
+   Self-contained — no @tailwindcss/typography dependency. */
+
+.cv-prose {
+  color: var(--ink, hsl(var(--foreground)));
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+.cv-prose > * + * {
+  margin-top: 1.25em;
+}
+
+.cv-prose h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-top: 2.5em;
+  margin-bottom: 0.6em;
+  scroll-margin-top: 6rem;
+  line-height: 1.25;
+}
+
+.cv-prose h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin-top: 2em;
+  margin-bottom: 0.4em;
+  scroll-margin-top: 6rem;
+}
+
+.cv-prose h4 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin-top: 1.8em;
+  margin-bottom: 0.3em;
+}
+
+.cv-prose p,
+.cv-prose li {
+  color: hsl(var(--muted-foreground, 215 16% 47%));
+}
+
+.cv-prose strong,
+.cv-prose b {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.cv-prose em,
+.cv-prose i {
+  font-style: italic;
+}
+
+.cv-prose a {
+  color: var(--primary, hsl(var(--primary)));
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  transition: opacity 0.15s;
+}
+.cv-prose a:hover {
+  opacity: 0.7;
+}
+
+.cv-prose ul,
+.cv-prose ol {
+  padding-left: 1.5em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+.cv-prose ul { list-style: disc; }
+.cv-prose ol { list-style: decimal; }
+
+.cv-prose li {
+  margin-top: 0.5em;
+  padding-left: 0.25em;
+}
+
+.cv-prose li::marker {
+  color: hsl(var(--muted-foreground, 215 16% 47%));
+}
+
+.cv-prose blockquote {
+  border-left: 3px solid var(--primary, hsl(var(--primary)));
+  padding: 0.25em 1.25em;
+  margin: 1.5em 0;
+  color: hsl(var(--foreground));
+  font-style: italic;
+  background: hsl(var(--muted, 0 0% 96%) / 0.3);
+}
+
+.cv-prose blockquote p { color: inherit; }
+
+.cv-prose code {
+  background: hsl(var(--muted, 0 0% 96%));
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  color: hsl(var(--foreground));
+}
+
+.cv-prose pre {
+  background: hsl(var(--muted, 0 0% 96%));
+  padding: 1em 1.25em;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.875em;
+  line-height: 1.6;
+  margin: 1.5em 0;
+}
+
+.cv-prose pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.cv-prose hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  margin: 3em 0;
+}
+
+.cv-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.95em;
+}
+
+.cv-prose th,
+.cv-prose td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.6em 0.9em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cv-prose th {
+  background: hsl(var(--muted, 0 0% 96%) / 0.5);
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.cv-prose figure {
+  margin: 2em 0;
+}
+
+.cv-prose figcaption {
+  font-size: 0.875em;
+  color: hsl(var(--muted-foreground, 215 16% 47%));
+  text-align: center;
+  margin-top: 0.5em;
+}
+
+/* Callout boxes */
+.cv-prose .callout {
+  border: 1px solid hsl(var(--border));
+  border-left: 4px solid var(--primary, hsl(var(--primary)));
+  background: hsl(var(--muted, 0 0% 96%) / 0.4);
+  padding: 1em 1.25em;
+  border-radius: 0.5rem;
+  margin: 1.5em 0;
+}
+
+.cv-prose .callout-title {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.4em;
+}
+
+.cv-prose .callout p {
+  margin-top: 0.3em;
+}
+
+.cv-prose .callout--warn {
+  border-left-color: var(--accent, hsl(20 91% 41%));
+}
+
+.cv-prose .callout--success {
+  border-left-color: var(--success, hsl(140 40% 30%));
+}
+
+/* TL;DR / lede */
+.cv-prose .lede {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  color: hsl(var(--foreground));
+  border-left: 3px solid var(--accent, hsl(20 91% 41%));
+  padding-left: 1em;
+  margin: 0 0 2em;
+}
+
+/* Key takeaways list */
+.cv-prose .key-takeaways {
+  background: hsl(var(--muted, 0 0% 96%) / 0.5);
+  border: 1px solid hsl(var(--border));
+  padding: 1.25em 1.5em;
+  border-radius: 0.75rem;
+  margin: 2em 0;
+}
+
+.cv-prose .key-takeaways h3 {
+  margin-top: 0;
+  margin-bottom: 0.6em;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground, 215 16% 47%));
+}
+
+.cv-prose .key-takeaways ul {
+  margin: 0;
+  list-style: none;
+  padding: 0;
+}
+
+.cv-prose .key-takeaways li {
+  padding-left: 1.5em;
+  position: relative;
+  color: hsl(var(--foreground));
+}
+
+.cv-prose .key-takeaways li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent, hsl(20 91% 41%));
+  font-weight: bold;
+}
+
+/* FAQ accordion-style on canonical pages */
+.cv-prose details {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  margin: 0.75em 0;
+  padding: 0;
+  background: hsl(var(--card, 0 0% 100%));
+}
+
+.cv-prose details > summary {
+  padding: 1em 1.25em;
+  cursor: pointer;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1em;
+}
+
+.cv-prose details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cv-prose details > summary::after {
+  content: "+";
+  font-size: 1.25em;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground, 215 16% 47%));
+  flex-shrink: 0;
+}
+
+.cv-prose details[open] > summary::after {
+  content: "−";
+}
+
+.cv-prose details > div,
+.cv-prose details > p {
+  padding: 0 1.25em 1.25em;
+  margin-top: 0;
+}

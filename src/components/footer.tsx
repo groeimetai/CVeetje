@@ -57,7 +57,7 @@ export function Footer({ minimal = false }: FooterProps) {
   return (
     <footer className="border-t py-8 mt-auto bg-muted/30">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo & Description */}
           <div className="space-y-3">
             <Logo size="sm" />
@@ -66,6 +66,39 @@ export function Footer({ minimal = false }: FooterProps) {
                 ? 'AI-ondersteunde CV generator voor professionele sollicitaties.'
                 : 'AI-powered CV generator for professional job applications.'}
             </p>
+          </div>
+
+          {/* Resources */}
+          <div className="space-y-3">
+            <h4 className="font-semibold text-sm">
+              {locale === 'nl' ? 'Resources' : 'Resources'}
+            </h4>
+            <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+              <Link href="/blog" className="hover:text-foreground">
+                {locale === 'nl' ? 'Blog' : 'Blog'}
+              </Link>
+              <Link href="/voor" className="hover:text-foreground">
+                {locale === 'nl' ? 'Voor jou' : 'For you'}
+              </Link>
+              <Link href="/faq" className="hover:text-foreground">
+                {locale === 'nl' ? 'Veelgestelde vragen' : 'FAQ'}
+              </Link>
+              <Link href="/jobs" className="hover:text-foreground">
+                {locale === 'nl' ? 'Vacatures' : 'Jobs'}
+              </Link>
+              <Link href="/voor/werkzoekenden" className="hover:text-foreground">
+                {locale === 'nl' ? 'Voor werkzoekenden' : 'For job seekers'}
+              </Link>
+              <Link href="/voor/recruiters" className="hover:text-foreground">
+                {locale === 'nl' ? 'Voor recruiters' : 'For recruiters'}
+              </Link>
+              <Link href="/voor/loopbaancoaches" className="hover:text-foreground">
+                {locale === 'nl' ? 'Voor loopbaancoaches' : 'For career coaches'}
+              </Link>
+              <Link href="/voor/zzp" className="hover:text-foreground">
+                {locale === 'nl' ? 'Voor zzp’ers' : 'For freelancers'}
+              </Link>
+            </div>
           </div>
 
           {/* Quick Links */}
