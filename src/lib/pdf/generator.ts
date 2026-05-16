@@ -79,6 +79,29 @@ export async function generatePDF(
     // print-specific A4 rules that introduce pagination and whitespace.
     await page.emulateMediaType('screen');
 
+    // SUPPRESS all break-* CSS in single-page mode. Even with explicit
+    // width/height, Puppeteer/Chrome PDF generation still honours
+    // `break-inside: avoid` on sections and items — when an element
+    // doesn't fit within a notional page-height boundary, it splits the
+    // PDF into multiple pages. Adding `break-* / page-break-*: auto`
+    // overrides as the LAST stylesheet kills this behaviour so the
+    // entire CV renders as one continuous tall page.
+    await page.addStyleTag({
+      content: `
+        *, *::before, *::after {
+          break-before: auto !important;
+          break-after: auto !important;
+          break-inside: auto !important;
+          page-break-before: auto !important;
+          page-break-after: auto !important;
+          page-break-inside: auto !important;
+        }
+        /* Remove any @page-derived size — explicit width/height in pdf()
+           options is the source of truth. */
+        @page { size: auto; margin: 0; }
+      `,
+    });
+
     // Single-page mode: size the PDF to the actual CV root instead of the
     // whole document. Measuring body/html caused pathological page heights,
     // which PDF viewers then rendered as a tiny CV floating in a massive page.
@@ -112,6 +135,7 @@ export async function generatePDF(
       height: `${heightMm}mm`,
       printBackground: true,
       margin: zeroMargin,
+      preferCSSPageSize: false,
     });
   } else {
     await page.emulateMediaType('print');
