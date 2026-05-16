@@ -511,6 +511,38 @@ function generateBoldCSS(
     /* ================= Skills variants ================= */
     ${getSkillsCSS(b.skillStyle, b.sidebarStyle, colors)}
 
+    /* Always-on base for .skill-pill + .skill-tags so that archetypes
+       which emit pill chips REGARDLESS of skillStyle (manifesto extras,
+       magazine-cover bottom skills row, photo-montage cards, etc.) still
+       render visible separated pills. Without this fallback, when the AI
+       picked skillStyle = bars-gradient / dots-rating / icon-tagged, the
+       archetype-emitted plain pills got NO styling — text concatenated
+       like "PythonRAG-architectuurVector databases..."  */
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+    .skill-pill {
+      display: inline-block;
+      background: ${colors.secondary};
+      color: ${colors.primary};
+      padding: 3px 11px;
+      border-radius: 999px;
+      font-size: 9pt;
+      font-weight: 500;
+      border: 1px solid ${colors.primary}22;
+    }
+
+    /* Contact-strip: flex + gap so items separate regardless of which
+       archetype owns the container. Works alongside the inline middle-dot
+       separator inserted by buildSimpleContact. */
+    .manifesto-contact, .cover-contact, .inv-contact, .rail-contact,
+    .tp-contact, .pm-contact, .brut-contact, .mosaic-contact,
+    .bold-cv [class$="-contact"] {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 14px;
+      align-items: baseline;
+    }
+    .contact-sep { opacity: 0.45; padding: 0 2px; }
+
     /* ================= Icons base ================= */
     ${getIconTreatmentCSS(b.iconTreatment, colors)}
 
@@ -539,6 +571,36 @@ function generateBoldCSS(
          sections caused entire sections to jump to the next A4 page when
          they didn't quite fit at the bottom, leaving large empty bands. */
       .bold-item { break-inside: avoid; }
+
+      /* Page-break defense for contact strips. The previous behaviour
+         pushed the contact footer alone onto page 2 when content slightly
+         overflowed A4 — wasting a whole sheet. Keeping it with the prior
+         section lets Puppeteer pull the contact back onto page 1 when
+         there's room. */
+      .manifesto-contact, .cover-contact, .inv-contact, .rail-contact,
+      .tp-contact, .pm-contact, .brut-contact, .mosaic-contact {
+        break-before: avoid;
+        break-inside: avoid;
+      }
+
+      /* Tighten archetype paddings in print so single-page CVs actually
+         fit on a single A4. Screen mode keeps generous spacing. */
+      .archetype-manifesto,
+      .archetype-magazine-cover,
+      .archetype-editorial-inversion,
+      .archetype-brutalist-grid,
+      .archetype-vertical-rail,
+      .archetype-mosaic,
+      .archetype-typographic-poster,
+      .archetype-photo-montage { padding-bottom: 12px !important; }
+
+      .archetype-manifesto .manifesto-grid,
+      .archetype-magazine-cover .cover-body,
+      .archetype-editorial-inversion .inv-body { padding-bottom: 10px !important; }
+
+      /* Section margins tighter in print to reclaim 60-100px overall */
+      .bold-section { margin-bottom: 18px !important; }
+      .bold-item { margin-bottom: 12px !important; }
     }
   `;
 }
@@ -1593,11 +1655,14 @@ function getAccentShapeCSS(shape: BoldAccentShape, colors: CVDesignTokens['color
         .bold-section-title .section-title-text {
           position: relative;
         }
+        /* Subtle chip behind item subtitle — at 10% bg this looked like
+           a Canva pill on every company line. 6% reads as "subtle accent
+           hint" instead of "chip". */
         .bold-item-subtitle {
           display: inline-block;
-          padding: 1px 8px;
-          background: ${colors.accent}1a;
-          border-radius: 4px;
+          padding: 1px 7px;
+          background: ${colors.accent}10;
+          border-radius: 3px;
         }
       `;
     case 'hex-pattern':
@@ -2169,6 +2234,9 @@ function marginaliaCSS(style: BoldMarginaliaStyle, colors: CVDesignTokens['color
 
 function backgroundNumeralCSS(style: BoldBackgroundNumeral, colors: CVDesignTokens['colors']): string {
   if (style === 'none') return '';
+  // Reduced sizes — at 320pt the numeral "AI" was bigger than a column
+  // and competed with body text. 180-220pt feels like a faded anchor,
+  // not a foreground element. Lower opacity (0.05) for the same reason.
   return `
     .bg-numeral {
       position: absolute;
@@ -2176,27 +2244,30 @@ function backgroundNumeralCSS(style: BoldBackgroundNumeral, colors: CVDesignToke
       font-family: var(--b-font-heading);
       font-weight: 900;
       color: ${colors.primary};
-      opacity: 0.07;
+      opacity: 0.045;
       line-height: 0.85;
       letter-spacing: -0.04em;
       z-index: 0;
       user-select: none;
+      white-space: nowrap;
+      max-width: 100%;
+      overflow: hidden;
     }
     .bg-numeral.bg-numeral-page {
-      font-size: 320pt;
-      top: 80px;
-      right: -40px;
+      font-size: 200pt;
+      bottom: 40px;
+      right: -10px;
     }
     .bg-numeral.bg-numeral-corner {
-      font-size: 220pt;
-      bottom: -60px;
-      left: -20px;
+      font-size: 150pt;
+      bottom: -30px;
+      left: -10px;
     }
     .bg-numeral.bg-numeral-section {
-      font-size: 180pt;
+      font-size: 130pt;
       right: -10px;
-      top: -40px;
-      opacity: 0.05;
+      top: -20px;
+      opacity: 0.04;
     }
   `;
 }
@@ -2755,9 +2826,22 @@ function mosaicCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
     }
     .archetype-mosaic .tile-section.tinted .bold-section-title,
     .archetype-mosaic .tile-section.tinted .bold-item-title,
+    .archetype-mosaic .tile-section.tinted .bold-item-subtitle,
+    .archetype-mosaic .tile-section.tinted .bold-item-period,
     .archetype-mosaic .tile-section.tinted p,
     .archetype-mosaic .tile-section.tinted li {
       color: #fff !important;
+    }
+    /* On tinted tiles drop the chip background on subtitles (it conflicts
+       with the tile fill) and make sure dates are bright enough to read.
+       Previously the period dates fell to the inherited muted color and
+       disappeared into the red/accent bg. */
+    .archetype-mosaic .tile-section.tinted .bold-item-subtitle {
+      background: rgba(255,255,255,0.14) !important;
+    }
+    .archetype-mosaic .tile-section.tinted .bold-item-period {
+      color: rgba(255,255,255,0.85) !important;
+      font-weight: 500;
     }
     .archetype-mosaic .tile-section.span-2 {
       grid-column: span 2;
@@ -2794,22 +2878,28 @@ function mosaicCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
 function buildSimpleContact(contact: CVContactInfo | null | undefined): string {
   if (!contact) return '';
   const items: string[] = [];
-  if (contact.email) items.push(`<span>${escapeHtml(contact.email)}</span>`);
-  if (contact.phone) items.push(`<span>${escapeHtml(contact.phone)}</span>`);
-  if (contact.location) items.push(`<span>${escapeHtml(contact.location)}</span>`);
+  if (contact.email) items.push(`<span class="contact-item">${escapeHtml(contact.email)}</span>`);
+  if (contact.phone) items.push(`<span class="contact-item">${escapeHtml(contact.phone)}</span>`);
+  if (contact.location) items.push(`<span class="contact-item">${escapeHtml(contact.location)}</span>`);
   if (contact.linkedinUrl) {
     const href = contact.linkedinUrl.startsWith('http') ? contact.linkedinUrl : 'https://' + contact.linkedinUrl;
-    items.push(`<a href="${escapeHtml(href)}">${escapeHtml(contact.linkedinUrl.replace(/^https?:\/\/(www\.)?/, ''))}</a>`);
+    items.push(`<a class="contact-item" href="${escapeHtml(href)}">${escapeHtml(contact.linkedinUrl.replace(/^https?:\/\/(www\.)?/, ''))}</a>`);
   }
   if (contact.website) {
     const href = contact.website.startsWith('http') ? contact.website : 'https://' + contact.website;
-    items.push(`<a href="${escapeHtml(href)}">${escapeHtml(contact.website.replace(/^https?:\/\//, ''))}</a>`);
+    items.push(`<a class="contact-item" href="${escapeHtml(href)}">${escapeHtml(contact.website.replace(/^https?:\/\//, ''))}</a>`);
   }
   if (contact.github) {
     const href = contact.github.startsWith('http') ? contact.github : 'https://github.com/' + contact.github;
-    items.push(`<a href="${escapeHtml(href)}">${escapeHtml(contact.github.replace(/^https?:\/\/(www\.)?github\.com\//, ''))}</a>`);
+    items.push(`<a class="contact-item" href="${escapeHtml(href)}">${escapeHtml(contact.github.replace(/^https?:\/\/(www\.)?github\.com\//, ''))}</a>`);
   }
-  return items.join('');
+  // Print-safe separator: explicit ' · ' text node between items. The
+  // previous `items.join('')` produced concatenated text (e.g.
+  // "NIELS@EMAIL.COM+31681739018APELDOORN, ...") because plain <span>
+  // elements have no inherent spacing and only some archetype CSS added
+  // margin-right to anchors. Adding the separator inline guarantees
+  // visible separation regardless of which archetype renders it.
+  return items.join('<span class="contact-sep" aria-hidden="true"> · </span>');
 }
 
 function getInitials(fullName: string): string {
