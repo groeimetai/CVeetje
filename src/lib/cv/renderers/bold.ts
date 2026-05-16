@@ -2965,23 +2965,55 @@ function renderManifesto(
   ]);
   if (useStatement) skipInGrid.add('summary');
 
+  // Content-aware span calculation:
+  //  - experience: ALWAYS full width (long entries with bullets)
+  //  - projects: full width when 3+ entries (each project has title + tech list
+  //    + paragraph → wraps heavily in narrow columns)
+  //  - summary (when not in opener): full width (paragraph text)
+  //  - education: stays in grid (usually short — 2-4 lines per entry)
+  // This avoids the 50%-narrow-column problem where Projects has 6 entries
+  // and Education has 2: prior to this, Projects got crammed into half-width
+  // while Education ended quickly leaving the right side empty.
+  const isLongSection = (name: string): boolean => {
+    if (name === 'experience') return true;
+    if (name === 'projects') return (content.projects?.length ?? 0) >= 3;
+    if (name === 'summary') return true;
+    return false;
+  };
+
+  // First pass: build sections, tag long ones as span-full
+  const builtSections: Array<{ name: string; html: string; longByContent: boolean }> = [];
   let idx = 0;
-  const gridSections = tokens.sectionOrder
-    .filter((n) => !skipInGrid.has(n) && sectionRenderers[n])
-    .map((n) => {
-      const html = sectionRenderers[n]();
-      if (!html) return '';
-      idx += 1;
-      const numberHint = b.marginalia === 'numbered'
-        ? `<span class="section-margin-number">${String(idx).padStart(2, '0')}</span>`
-        : '';
-      const kickerHint = b.marginalia === 'kicker-callouts'
-        ? `<span class="section-margin-kicker">Section ${String(idx).padStart(2, '0')} — ${escapeHtml(n.toUpperCase())}</span>`
-        : '';
-      const span = n === 'experience' ? 'span-full' : '';
-      return `<section class="bold-section ${span}" data-section="${n}">${numberHint}${kickerHint}${html.replace('<!--SECTION_NUMBER-->', '')}</section>`;
+  for (const n of tokens.sectionOrder) {
+    if (skipInGrid.has(n) || !sectionRenderers[n]) continue;
+    const html = sectionRenderers[n]();
+    if (!html) continue;
+    idx += 1;
+    const numberHint = b.marginalia === 'numbered'
+      ? `<span class="section-margin-number">${String(idx).padStart(2, '0')}</span>`
+      : '';
+    const kickerHint = b.marginalia === 'kicker-callouts'
+      ? `<span class="section-margin-kicker">Section ${String(idx).padStart(2, '0')} — ${escapeHtml(n.toUpperCase())}</span>`
+      : '';
+    builtSections.push({
+      name: n,
+      html: `${numberHint}${kickerHint}${html.replace('<!--SECTION_NUMBER-->', '')}`,
+      longByContent: isLongSection(n),
+    });
+  }
+
+  // Second pass: if only ONE short section remains in the grid (after
+  // pulling out the long ones), promote it to span-full too — otherwise
+  // it'd render as a half-width column with the other half empty (the
+  // grid-template-columns: repeat(cols, 1fr) reserves slots for them all).
+  const shortSections = builtSections.filter(s => !s.longByContent);
+  const forceAllSpanFull = shortSections.length === 1;
+
+  const gridSections = builtSections
+    .map(({ name, html, longByContent }) => {
+      const span = (longByContent || forceAllSpanFull) ? 'span-full' : '';
+      return `<section class="bold-section ${span}" data-section="${name}">${html}</section>`;
     })
-    .filter(Boolean)
     .join('');
 
   // Skills / languages / certifications get a compact row at the bottom.
