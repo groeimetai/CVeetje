@@ -98,6 +98,9 @@ export function Footer({ minimal = false }: FooterProps) {
               <Link href="/faq" className="hover:text-foreground">
                 {locale === 'nl' ? 'Veelgestelde vragen' : 'FAQ'}
               </Link>
+              <Link href="/about" className="hover:text-foreground">
+                {locale === 'nl' ? 'Over CVeetje' : 'About CVeetje'}
+              </Link>
               <Link href="/jobs" className="hover:text-foreground">
                 {locale === 'nl' ? 'Vacatures' : 'Jobs'}
               </Link>

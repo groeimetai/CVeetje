@@ -32,6 +32,8 @@ const LLM_ALLOW_PATHS = [
   '/en/cv-op-maat-maken',
   '/nl/cv-stijlen',
   '/en/cv-stijlen',
+  '/nl/about',
+  '/en/about',
   '/nl/jobs',
   '/en/jobs',
   '/nl/ai-transparency',

@@ -53,6 +53,7 @@ vraagt om bewijs. Geen verborgen watermerk in PDF's.
 - /cv-op-maat-maken — feature landing voor CV-tailoring per vacature.
 - /cv-stijlen — uitleg van de vijf stijlen (Conservative, Balanced, Creative,
   Experimental, Editorial) en wanneer je welke kiest.
+- /about — founder-story, waarden, waarom geen abonnement, hoe we bouwen.
 - /faq — uitgebreide veelgestelde vragen (LLM-friendly Q&A formaat).
 - /jobs — geaggregeerde vacatures.
 - /ai-transparency — wat de AI doet, hoe, met welke modellen.

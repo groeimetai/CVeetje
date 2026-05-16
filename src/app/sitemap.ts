@@ -19,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/motivatiebrief-generator', changeFrequency: 'monthly' as const, priority: 0.85 },
     { path: '/cv-op-maat-maken', changeFrequency: 'monthly' as const, priority: 0.85 },
     { path: '/cv-stijlen', changeFrequency: 'monthly' as const, priority: 0.8 },
+    { path: '/about', changeFrequency: 'monthly' as const, priority: 0.85 },
     { path: '/login', changeFrequency: 'monthly' as const, priority: 0.5 },
     { path: '/register', changeFrequency: 'monthly' as const, priority: 0.5 },
     { path: '/privacy', changeFrequency: 'yearly' as const, priority: 0.3 },

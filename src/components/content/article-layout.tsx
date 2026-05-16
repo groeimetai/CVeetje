@@ -77,6 +77,9 @@ export function ArticleLayout({
             <Link href="/faq" className="hover:text-foreground">
               FAQ
             </Link>
+            <Link href="/about" className="hover:text-foreground">
+              {nl ? 'Over' : 'About'}
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
