@@ -2293,6 +2293,29 @@ function manifestoCSS(b: BoldTokens, colors: CVDesignTokens['colors']): string {
       position: relative;
       z-index: 1;
     }
+    .archetype-manifesto .manifesto-opener.has-photo {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .archetype-manifesto .manifesto-opener.has-photo .manifesto-opener-text {
+      flex: 1;
+      min-width: 0;
+    }
+    .archetype-manifesto .manifesto-photo {
+      flex-shrink: 0;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 4px solid rgba(255,255,255,0.85);
+    }
+    .archetype-manifesto .manifesto-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
     .archetype-manifesto .manifesto-name {
       font-family: var(--b-font-heading);
       font-size: 48pt;
@@ -2584,6 +2607,23 @@ function brutalistGridCSS(b: BoldTokens, colors: CVDesignTokens['colors']): stri
       align-items: end;
       border-bottom: 8px solid ${colors.accent};
     }
+    .archetype-brutalist-grid .brut-header.has-photo {
+      grid-template-columns: auto 1fr auto;
+    }
+    .archetype-brutalist-grid .brut-photo {
+      width: 120px;
+      height: 120px;
+      overflow: hidden;
+      border: 4px solid ${colors.accent};
+      align-self: end;
+    }
+    .archetype-brutalist-grid .brut-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .archetype-brutalist-grid .brut-header-text { min-width: 0; }
     .archetype-brutalist-grid .brut-name {
       font-family: var(--b-font-heading);
       font-size: 44pt;
@@ -2701,6 +2741,30 @@ function verticalRailCSS(b: BoldTokens, colors: CVDesignTokens['colors']): strin
       padding: 40px 44px 32px;
       position: relative;
       min-height: 1120px;
+    }
+    .archetype-vertical-rail .rail-main-head {
+      margin-bottom: 6px;
+    }
+    .archetype-vertical-rail .rail-main-head.has-photo {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      margin-bottom: 14px;
+    }
+    .archetype-vertical-rail .rail-main-head-text { flex: 1; min-width: 0; }
+    .archetype-vertical-rail .rail-photo {
+      flex-shrink: 0;
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid ${colors.accent};
+    }
+    .archetype-vertical-rail .rail-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
     .archetype-vertical-rail .rail-headline {
       font-family: var(--b-font-heading);
@@ -3040,12 +3104,20 @@ function renderManifesto(
     b.marginalia === 'kicker-callouts' ? 'marginalia-kicker' : '',
   ].filter(Boolean).join(' ');
 
+  const showPhoto = tokens.showPhoto && !!avatarUrl;
+  const photoHtml = showPhoto
+    ? `<div class="manifesto-photo"><img src="${escapeHtml(avatarUrl!)}" alt="" /></div>`
+    : '';
+
   return `<div class="${wrapClass}">
     ${numeralHtml}
     ${marginaliaVert}
-    <header class="manifesto-opener">
-      <h1 class="manifesto-name" data-id="header-name">${escapeHtml(fullName)}</h1>
-      ${headline ? `<p class="manifesto-headline">${escapeHtml(headline)}</p>` : ''}
+    <header class="manifesto-opener${showPhoto ? ' has-photo' : ''}">
+      <div class="manifesto-opener-text">
+        <h1 class="manifesto-name" data-id="header-name">${escapeHtml(fullName)}</h1>
+        ${headline ? `<p class="manifesto-headline">${escapeHtml(headline)}</p>` : ''}
+      </div>
+      ${photoHtml}
     </header>
     ${statementHtml}
     <div class="manifesto-grid">${gridSections}</div>
@@ -3262,13 +3334,16 @@ function renderBrutalistGrid(
     ? `<div class="bg-numeral bg-numeral-corner">${escapeHtml(numeralText)}</div>`
     : '';
 
-  // Suppress unused params
-  void avatarUrl;
+  const showPhoto = tokens.showPhoto && !!avatarUrl;
+  const photoHtml = showPhoto
+    ? `<div class="brut-photo"><img src="${escapeHtml(avatarUrl!)}" alt="" /></div>`
+    : '';
 
   return `<div class="bold-cv archetype-brutalist-grid">
     ${numeralHtml}
-    <header class="brut-header">
-      <div>
+    <header class="brut-header${showPhoto ? ' has-photo' : ''}">
+      ${photoHtml}
+      <div class="brut-header-text">
         <h1 class="brut-name" data-id="header-name">${escapeHtml(fullName)}</h1>
         ${headline ? `<p class="brut-headline">${escapeHtml(headline)}</p>` : ''}
       </div>
@@ -3313,8 +3388,10 @@ function renderVerticalRail(
     ? `<section class="bold-section" data-section="skills">${sectionTitle('Skills')}<div class="skill-tags">${[...content.skills.technical.slice(0, 12), ...content.skills.soft.slice(0, 8)].map((s) => `<span class="skill-pill">${escapeHtml(s)}</span>`).join('')}</div></section>`
     : '';
 
-  // Suppress unused
-  void avatarUrl;
+  const showPhoto = tokens.showPhoto && !!avatarUrl;
+  const photoHtml = showPhoto
+    ? `<div class="rail-photo"><img src="${escapeHtml(avatarUrl!)}" alt="" /></div>`
+    : '';
 
   const wrapClass = [
     'bold-cv archetype-vertical-rail',
@@ -3327,8 +3404,13 @@ function renderVerticalRail(
       <div class="rail-bottom">CV / ${new Date().getFullYear()}</div>
     </aside>
     <main class="rail-main">
-      <div class="rail-kicker">Curriculum Vitae</div>
-      ${headline ? `<h2 class="rail-headline">${escapeHtml(headline)}</h2>` : ''}
+      <header class="rail-main-head${showPhoto ? ' has-photo' : ''}">
+        <div class="rail-main-head-text">
+          <div class="rail-kicker">Curriculum Vitae</div>
+          ${headline ? `<h2 class="rail-headline">${escapeHtml(headline)}</h2>` : ''}
+        </div>
+        ${photoHtml}
+      </header>
       <div class="rail-contact">${buildSimpleContact(contactInfo)}</div>
       <div class="rail-body">${body}${skillsHtml}</div>
     </main>
