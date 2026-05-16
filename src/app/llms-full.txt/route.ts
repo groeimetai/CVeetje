@@ -1,4 +1,5 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import type { ReactElement, ReactNode } from 'react';
+import { isValidElement } from 'react';
 import { listArticles } from '@/content/blog';
 import { listPersonas } from '@/content/personas';
 import { listRolePages } from '@/content/role-pages';
@@ -12,41 +13,71 @@ export const revalidate = 86400; // 24h
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://maakcveetje.nl';
 
 /**
- * Convert React JSX body to plain markdown-ish text for LLM consumption.
- * Not a full HTML-to-markdown converter — covers our content patterns:
- * <p>, <h2/3/4>, <ul/ol/li>, <details/summary>, <blockquote>, <table>, callouts.
+ * Recursively walk a React tree and produce markdown-ish text.
+ * Avoids react-dom/server (which Next.js 16 / Turbopack disallows in route
+ * handlers) by directly inspecting React elements.
+ *
+ * Covers our content patterns: <p>, <h2/3/4>, <ul/ol/li>, <details/summary>,
+ * <blockquote>, <table>, <strong>/<em>/<a>, plus invocation of functional
+ * components (so Body() etc. work transparently).
  */
-function jsxToMarkdown(node: React.ReactNode): string {
-  const html = renderToStaticMarkup(node as React.ReactElement);
-  return html
-    .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/g, '\n\n## $1\n\n')
-    .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/g, '\n\n### $1\n\n')
-    .replace(/<h4[^>]*>([\s\S]*?)<\/h4>/g, '\n\n#### $1\n\n')
-    .replace(/<li[^>]*>([\s\S]*?)<\/li>/g, '- $1\n')
-    .replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/g, '\n> $1\n')
-    .replace(/<summary[^>]*>([\s\S]*?)<\/summary>/g, '\n**Q: $1**\n')
-    .replace(/<\/?(ul|ol|details|div|table|thead|tbody|tr|th|td|article|section|figure|figcaption|hr)[^>]*>/g, '\n')
-    .replace(/<\/p>/g, '\n\n')
-    .replace(/<p[^>]*>/g, '')
-    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/g, '**$1**')
-    .replace(/<b[^>]*>([\s\S]*?)<\/b>/g, '**$1**')
-    .replace(/<em[^>]*>([\s\S]*?)<\/em>/g, '*$1*')
-    .replace(/<i[^>]*>([\s\S]*?)<\/i>/g, '*$1*')
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g, '[$2]($1)')
-    .replace(/<br\s*\/?>/g, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&apos;/g, "'")
-    .replace(/&#x27;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&euro;/g, '€')
-    .replace(/&eacute;/g, 'é')
-    .replace(/&uuml;/g, 'ü')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+function jsxToMarkdown(node: ReactNode): string {
+  if (node === null || node === undefined || node === false || node === true) return '';
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(jsxToMarkdown).join('');
+
+  if (!isValidElement(node)) return '';
+
+  const el = node as ReactElement<Record<string, unknown>>;
+  const props = (el.props ?? {}) as Record<string, unknown>;
+  const children = jsxToMarkdown(props.children as ReactNode);
+  const type = el.type;
+
+  // Functional / class component — invoke and render the result
+  if (typeof type === 'function') {
+    try {
+      const result = (type as (p: Record<string, unknown>) => ReactNode)(props);
+      return jsxToMarkdown(result);
+    } catch {
+      return children;
+    }
+  }
+
+  // Intrinsic HTML element — wrap in markdown
+  if (typeof type === 'string') {
+    switch (type) {
+      case 'h1': return `\n# ${children}\n\n`;
+      case 'h2': return `\n\n## ${children}\n\n`;
+      case 'h3': return `\n\n### ${children}\n\n`;
+      case 'h4': return `\n\n#### ${children}\n\n`;
+      case 'p': return `${children}\n\n`;
+      case 'li': return `- ${children}\n`;
+      case 'ul':
+      case 'ol': return `${children}\n`;
+      case 'strong':
+      case 'b': return `**${children}**`;
+      case 'em':
+      case 'i': return `*${children}*`;
+      case 'blockquote': return `\n> ${children}\n\n`;
+      case 'summary': return `\n**Q: ${children}**\n`;
+      case 'br': return '\n';
+      case 'hr': return '\n---\n\n';
+      case 'a': {
+        const href = typeof props.href === 'string' ? props.href : '';
+        return href ? `[${children}](${href})` : children;
+      }
+      // Container elements just unwrap to their children
+      default: return children;
+    }
+  }
+
+  // Fragments, portals, symbol-based types — unwrap
+  return children;
+}
+
+function cleanup(text: string): string {
+  return text.replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function renderArticleSection(locale: Locale): string {
@@ -245,7 +276,7 @@ export async function GET() {
     parts.push(renderFaqSection(locale));
   }
 
-  const body = parts.join('\n');
+  const body = cleanup(parts.join('\n'));
 
   return new Response(body, {
     status: 200,
