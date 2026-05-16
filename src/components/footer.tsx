@@ -77,6 +77,21 @@ export function Footer({ minimal = false }: FooterProps) {
               <Link href="/blog" className="hover:text-foreground">
                 {locale === 'nl' ? 'Blog' : 'Blog'}
               </Link>
+              <Link href="/cv-voorbeeld" className="hover:text-foreground">
+                {locale === 'nl' ? 'CV-voorbeelden per beroep' : 'CV examples per role'}
+              </Link>
+              <Link href="/cv-template" className="hover:text-foreground">
+                {locale === 'nl' ? 'CV-templates per situatie' : 'CV templates per situation'}
+              </Link>
+              <Link href="/motivatiebrief-generator" className="hover:text-foreground">
+                {locale === 'nl' ? 'Motivatiebrief generator' : 'Cover letter generator'}
+              </Link>
+              <Link href="/cv-op-maat-maken" className="hover:text-foreground">
+                {locale === 'nl' ? 'CV op maat maken' : 'Tailor your CV'}
+              </Link>
+              <Link href="/cv-stijlen" className="hover:text-foreground">
+                {locale === 'nl' ? 'CV stijlen' : 'CV styles'}
+              </Link>
               <Link href="/voor" className="hover:text-foreground">
                 {locale === 'nl' ? 'Voor jou' : 'For you'}
               </Link>
@@ -85,18 +100,6 @@ export function Footer({ minimal = false }: FooterProps) {
               </Link>
               <Link href="/jobs" className="hover:text-foreground">
                 {locale === 'nl' ? 'Vacatures' : 'Jobs'}
-              </Link>
-              <Link href="/voor/werkzoekenden" className="hover:text-foreground">
-                {locale === 'nl' ? 'Voor werkzoekenden' : 'For job seekers'}
-              </Link>
-              <Link href="/voor/recruiters" className="hover:text-foreground">
-                {locale === 'nl' ? 'Voor recruiters' : 'For recruiters'}
-              </Link>
-              <Link href="/voor/loopbaancoaches" className="hover:text-foreground">
-                {locale === 'nl' ? 'Voor loopbaancoaches' : 'For career coaches'}
-              </Link>
-              <Link href="/voor/zzp" className="hover:text-foreground">
-                {locale === 'nl' ? 'Voor zzp’ers' : 'For freelancers'}
               </Link>
             </div>
           </div>

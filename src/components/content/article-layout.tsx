@@ -65,14 +65,17 @@ export function ArticleLayout({
             <Link href="/blog" className="hover:text-foreground">
               {nl ? 'Blog' : 'Blog'}
             </Link>
+            <Link href="/cv-voorbeeld" className="hover:text-foreground">
+              {nl ? 'Voorbeelden' : 'Examples'}
+            </Link>
+            <Link href="/cv-template" className="hover:text-foreground">
+              {nl ? 'Templates' : 'Templates'}
+            </Link>
             <Link href="/voor" className="hover:text-foreground">
               {nl ? 'Voor jou' : 'For you'}
             </Link>
             <Link href="/faq" className="hover:text-foreground">
-              {nl ? 'Veelgestelde vragen' : 'FAQ'}
-            </Link>
-            <Link href="/jobs" className="hover:text-foreground">
-              {nl ? 'Vacatures' : 'Jobs'}
+              FAQ
             </Link>
           </div>
           <div className="flex items-center gap-2">

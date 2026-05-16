@@ -567,7 +567,8 @@ export default async function LandingPage({ params }: Props) {
               <div className="foot__col">
                 <h4>Resources</h4>
                 <Link href="/blog">{nl ? 'Blog' : 'Blog'}</Link>
-                <Link href="/voor">{nl ? 'Voor jou' : 'For you'}</Link>
+                <Link href="/cv-voorbeeld">{nl ? 'CV-voorbeelden' : 'CV examples'}</Link>
+                <Link href="/cv-template">{nl ? 'CV-templates' : 'CV templates'}</Link>
                 <Link href="/faq">{nl ? 'Veelgestelde vragen' : 'FAQ'}</Link>
                 <Link href="/ai-transparency">{nl ? 'AI transparantie' : 'AI transparency'}</Link>
               </div>
@@ -577,7 +578,7 @@ export default async function LandingPage({ params }: Props) {
                 <Link href="/voor/recruiters">{nl ? 'Recruiters' : 'Recruiters'}</Link>
                 <Link href="/voor/loopbaancoaches">{nl ? 'Loopbaancoaches' : 'Career coaches'}</Link>
                 <Link href="/voor/zzp">{nl ? 'Zzp’ers' : 'Freelancers'}</Link>
-                <Link href="/voor/zij-instromers">{nl ? 'Zij-instromers' : 'Career switchers'}</Link>
+                <Link href="/motivatiebrief-generator">{nl ? 'Motivatiebrief generator' : 'Cover letter generator'}</Link>
               </div>
               <div className="foot__col">
                 <h4>{nl ? 'Juridisch' : 'Legal'}</h4>

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { listArticles } from '@/content/blog';
 import { listPersonas } from '@/content/personas';
+import { listRolePages } from '@/content/role-pages';
 import { FAQ_GROUPS } from '@/content/faq';
 import { getAuthor } from '@/content/authors';
 import type { Locale } from '@/content/types';
@@ -121,6 +122,65 @@ function renderPersonaSection(locale: Locale): string {
   return lines.join('\n');
 }
 
+function renderRolePagesSection(locale: Locale): string {
+  const voorbeelden = listRolePages(locale, 'voorbeeld');
+  const templates = listRolePages(locale, 'template');
+  const lines: string[] = [];
+
+  if (voorbeelden.length > 0) {
+    lines.push(`\n\n# CV-voorbeelden per beroep (${locale.toUpperCase()})\n`);
+    lines.push(
+      locale === 'nl'
+        ? 'Per beroep een gerichte uitleg van wat op het CV hoort, concrete voorbeeld-bullets, valkuilen en aanbevolen stijl.\n'
+        : 'Per profession: focused guidance on what belongs on the CV, concrete bullet examples, pitfalls, and recommended style.\n',
+    );
+    for (const p of voorbeelden) {
+      lines.push(`\n---\n`);
+      lines.push(`## ${p.title}`);
+      lines.push(`Canonical: ${APP_URL}/${locale}/cv-voorbeeld/${p.slug}`);
+      lines.push(`Role: ${p.label} | Keywords: ${p.keywords.join(', ')}\n`);
+      lines.push(`${p.hero}\n`);
+      for (const b of p.blocks) {
+        lines.push(`### ${b.heading}`);
+        lines.push(`${b.body}\n`);
+      }
+      lines.push(`**Voorbeeld-bullets:**`);
+      for (const bul of p.exampleBullets) lines.push(`- ${bul}`);
+      lines.push(`\n**Valkuilen:**`);
+      for (const pf of p.pitfalls) lines.push(`- ${pf}`);
+      lines.push(`\n**Aanbevolen stijl:** ${p.recommendedStyle.style} — ${p.recommendedStyle.reason}`);
+      if (p.context) lines.push(`**Context:** ${p.context}`);
+    }
+  }
+
+  if (templates.length > 0) {
+    lines.push(`\n\n# CV-templates per situatie (${locale.toUpperCase()})\n`);
+    lines.push(
+      locale === 'nl'
+        ? 'Per situatie een CV-template-aanpak: zonder werkervaring, student, switcher, herintreder, 55+, expat, freelancer, part-time, remote, senior, stage, na ontslag.\n'
+        : 'Per situation: a CV template approach for no-experience, student, career changer, returner, 55+, expat, freelancer, part-time, remote, senior, internship, after redundancy.\n',
+    );
+    for (const p of templates) {
+      lines.push(`\n---\n`);
+      lines.push(`## ${p.title}`);
+      lines.push(`Canonical: ${APP_URL}/${locale}/cv-template/${p.slug}`);
+      lines.push(`Situation: ${p.label} | Keywords: ${p.keywords.join(', ')}\n`);
+      lines.push(`${p.hero}\n`);
+      for (const b of p.blocks) {
+        lines.push(`### ${b.heading}`);
+        lines.push(`${b.body}\n`);
+      }
+      lines.push(`**Voorbeelden:**`);
+      for (const bul of p.exampleBullets) lines.push(`- ${bul}`);
+      lines.push(`\n**Valkuilen:**`);
+      for (const pf of p.pitfalls) lines.push(`- ${pf}`);
+      lines.push(`\n**Aanbevolen stijl:** ${p.recommendedStyle.style} — ${p.recommendedStyle.reason}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
 function renderFaqSection(locale: Locale): string {
   const lines: string[] = [];
   lines.push(`\n\n# Veelgestelde vragen (${locale.toUpperCase()})\n`);
@@ -181,6 +241,7 @@ export async function GET() {
   for (const locale of ['nl', 'en'] as const) {
     parts.push(renderArticleSection(locale));
     parts.push(renderPersonaSection(locale));
+    parts.push(renderRolePagesSection(locale));
     parts.push(renderFaqSection(locale));
   }
 

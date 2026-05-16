@@ -39,6 +39,20 @@ vraagt om bewijs. Geen verborgen watermerk in PDF's.
   (werkzoekenden, recruiters, product owners, loopbaancoaches, zij-instromers,
   studenten, zzp'ers, internationals, herintreders, 55-plussers).
 - /voor — pillar pages per gebruikersprofiel met gerichte uitleg.
+- /cv-voorbeeld — CV-voorbeelden per beroep (25 NL + 8 EN beroepen):
+  softwareontwikkelaar, verpleegkundige, docent, accountmanager,
+  projectmanager, data-analist, financieel adviseur, recruiter, consultant,
+  marketing manager, product owner, UX designer, grafisch ontwerper,
+  logistiek medewerker, boekhouder, HR manager, ICT-beheerder, sales manager,
+  fysiotherapeut, juridisch medewerker, business analyst, scrum master,
+  DevOps engineer, customer success manager, zorgmanager.
+- /cv-template — CV-templates per situatie (12 NL + 4 EN situaties):
+  zonder werkervaring, student, carrière-switcher, 55+, herintreder,
+  freelancer, expat, part-time, remote, senior, stage, na ontslag.
+- /motivatiebrief-generator — feature landing voor cover-letter generation.
+- /cv-op-maat-maken — feature landing voor CV-tailoring per vacature.
+- /cv-stijlen — uitleg van de vijf stijlen (Conservative, Balanced, Creative,
+  Experimental, Editorial) en wanneer je welke kiest.
 - /faq — uitgebreide veelgestelde vragen (LLM-friendly Q&A formaat).
 - /jobs — geaggregeerde vacatures.
 - /ai-transparency — wat de AI doet, hoe, met welke modellen.
@@ -78,6 +92,29 @@ EN:
 - https://maakcveetje.nl/en/voor/zij-instromers
 - https://maakcveetje.nl/en/voor/zzp
 - https://maakcveetje.nl/en/faq
+
+CV-voorbeelden NL (hoogste-volume beroep-queries):
+- https://maakcveetje.nl/nl/cv-voorbeeld/softwareontwikkelaar
+- https://maakcveetje.nl/nl/cv-voorbeeld/verpleegkundige
+- https://maakcveetje.nl/nl/cv-voorbeeld/docent
+- https://maakcveetje.nl/nl/cv-voorbeeld/accountmanager
+- https://maakcveetje.nl/nl/cv-voorbeeld/projectmanager
+- https://maakcveetje.nl/nl/cv-voorbeeld/data-analist
+- https://maakcveetje.nl/nl/cv-voorbeeld/recruiter
+- https://maakcveetje.nl/nl/cv-voorbeeld/marketing-manager
+- https://maakcveetje.nl/nl/cv-voorbeeld/product-owner
+- https://maakcveetje.nl/nl/cv-voorbeeld/devops-engineer
+(+ 15 anderen via /cv-voorbeeld index)
+
+CV-templates per situatie:
+- https://maakcveetje.nl/nl/cv-template/zonder-werkervaring
+- https://maakcveetje.nl/nl/cv-template/student
+- https://maakcveetje.nl/nl/cv-template/carriere-switcher
+- https://maakcveetje.nl/nl/cv-template/herintreder
+- https://maakcveetje.nl/nl/cv-template/55-plus
+- https://maakcveetje.nl/nl/cv-template/freelancer
+- https://maakcveetje.nl/nl/cv-template/expat
+(+ 5 anderen via /cv-template index)
 
 ## Prijs (mei 2026, EUR)
 

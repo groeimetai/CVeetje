@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next';
 import { listRecentCachedJobSlugs } from '@/lib/jobs/cache';
 import { listAllSlugs as listAllBlogSlugs } from '@/content/blog';
 import { allPersonaSlugs } from '@/content/personas';
+import { allRolePageSlugs } from '@/content/role-pages';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://maakcveetje.nl';
@@ -13,6 +14,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/blog', changeFrequency: 'weekly' as const, priority: 0.9 },
     { path: '/voor', changeFrequency: 'monthly' as const, priority: 0.85 },
     { path: '/faq', changeFrequency: 'monthly' as const, priority: 0.85 },
+    { path: '/cv-voorbeeld', changeFrequency: 'weekly' as const, priority: 0.9 },
+    { path: '/cv-template', changeFrequency: 'weekly' as const, priority: 0.9 },
+    { path: '/motivatiebrief-generator', changeFrequency: 'monthly' as const, priority: 0.85 },
+    { path: '/cv-op-maat-maken', changeFrequency: 'monthly' as const, priority: 0.85 },
+    { path: '/cv-stijlen', changeFrequency: 'monthly' as const, priority: 0.8 },
     { path: '/login', changeFrequency: 'monthly' as const, priority: 0.5 },
     { path: '/register', changeFrequency: 'monthly' as const, priority: 0.5 },
     { path: '/privacy', changeFrequency: 'yearly' as const, priority: 0.3 },
@@ -46,6 +52,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.85,
   }));
 
+  const rolePageEntries: MetadataRoute.Sitemap = allRolePageSlugs().map((s) => ({
+    url: `${baseUrl}/${s.locale}/${s.kind === 'voorbeeld' ? 'cv-voorbeeld' : 'cv-template'}/${s.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.85,
+  }));
+
   let jobEntries: MetadataRoute.Sitemap = [];
   try {
     const jobs = await listRecentCachedJobSlugs(5000);
@@ -61,5 +74,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.warn('[sitemap] failed to list jobs', err);
   }
 
-  return [...staticEntries, ...blogEntries, ...personaEntries, ...jobEntries];
+  return [...staticEntries, ...blogEntries, ...personaEntries, ...rolePageEntries, ...jobEntries];
 }
