@@ -21,7 +21,10 @@ import {
 import type { GeneratedCVContent, CVElementOverrides, ElementOverride, EditableElementType, CVContactInfo, JobVacancy, ParsedLinkedIn, FitAnalysis } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { useAuth } from '@/components/auth/auth-context';
-import { renderCV } from '@/lib/cv-engine/dispatch';
+import { renderCV, isV2Tokens } from '@/lib/cv-engine/dispatch';
+import { getRecipeById } from '@/lib/cv-engine/recipes/registry';
+import { oklchToCSS } from '@/lib/cv-engine/render/css/oklch';
+import type { CVStyleTokensV2 } from '@/lib/cv-engine/tokens';
 import { fontPairings, typeScales, spacingScales, themeDefaults } from '@/lib/cv/templates/themes';
 import { CVContentEditor, type ElementColorOverrides } from './cv-content-editor';
 import { CVChatPanel } from './cv-chat-panel';
@@ -613,7 +616,8 @@ export function CVPreview({
                     </div>
                   )}
 
-                  {/* Style Info */}
+                  {/* Style Info — v1 fields */}
+                  {!isV2Tokens(tokens) && tokens?.colors && (
                   <div className="space-y-2 p-3 border rounded-lg bg-background">
                     <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                       <Palette className="h-4 w-4" />
@@ -628,13 +632,48 @@ export function CVPreview({
                           <div
                             key={key}
                             className="w-5 h-5 rounded border"
-                            style={{ backgroundColor: color }}
+                            style={{ backgroundColor: color as string }}
                             title={`${key}: ${color}`}
                           />
                         ))}
                       </div>
                     </div>
                   </div>
+                  )}
+
+                  {/* Style Info — v2 recipe */}
+                  {isV2Tokens(tokens) && (() => {
+                    const v2 = tokens as unknown as CVStyleTokensV2;
+                    const recipe = getRecipeById(v2.recipeId);
+                    if (!recipe) return null;
+                    const roles = ['ink', 'paper', 'accent', 'muted', 'surface'] as const;
+                    return (
+                      <div className="space-y-2 p-3 border rounded-lg bg-background">
+                        <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
+                          <Palette className="h-4 w-4" />
+                          Stijl
+                        </h4>
+                        <div className="space-y-1 text-sm">
+                          <p><span className="font-medium">Recipe:</span> {recipe.displayName}</p>
+                          <p><span className="font-medium">Shape:</span> {recipe.layoutShape}</p>
+                          <p><span className="font-medium">Density:</span> {recipe.density}</p>
+                          <div className="flex gap-1 mt-1">
+                            {roles.map(role => {
+                              const oklch = v2.paletteOverride?.[role] ?? recipe.palette[role].anchor;
+                              return (
+                                <div
+                                  key={role}
+                                  className="w-5 h-5 rounded border"
+                                  style={{ backgroundColor: oklchToCSS(oklch) }}
+                                  title={`${role}: ${oklchToCSS(oklch)}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Generated Content Stats */}
                   <div className="space-y-2 p-3 border rounded-lg bg-background">
