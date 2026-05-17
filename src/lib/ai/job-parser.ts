@@ -31,13 +31,26 @@ import type {
 //     `.optional()`: the AI can just omit the field, which is a simpler
 //     schema construct than `T | null | undefined`.
 
+// Anthropic Opus 4.7 has an undocumented optional-parameter ceiling
+// ("limit: 24"). To fit under it we make the always-present fields REQUIRED
+// (defaulting to "" or [] when the vacancy doesn't mention them — empty
+// is still honest), drop overlapping fields (bonusInfo → folded into notes,
+// currency/period assumed EUR/yearly, marketInsight folded into reasoning).
+//
+// Current count (must stay ≤ 24):
+//   Top-level optional: company, location, employmentType, requiredEducation,
+//     requiredCertifications, compensation, salaryEstimate, experienceRequired
+//     → 8
+//   compensation:    salaryMin, salaryMax, benefits, notes → 4
+//   salaryEstimate:  estimatedMin, estimatedMax, experienceLevel,
+//                    confidence, reasoning → 5
+//   experienceRequired: minYears, maxYears, level, isStrict → 4
+//   TOTAL: 21 optional fields ≤ 24 ✓
+
 const compensationSchema = z.object({
   salaryMin: z.number().optional(),
   salaryMax: z.number().optional(),
-  salaryCurrency: z.string().optional(),
-  salaryPeriod: z.string().optional(),
   benefits: z.array(z.string()).optional(),
-  bonusInfo: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -47,7 +60,6 @@ const salaryEstimateSchema = z.object({
   experienceLevel: z.string().optional(),
   confidence: z.string().optional(),
   reasoning: z.string().optional(),
-  marketInsight: z.string().optional(),
 });
 
 const experienceRequiredSchema = z.object({
@@ -58,19 +70,19 @@ const experienceRequiredSchema = z.object({
 });
 
 const jobVacancySchema = z.object({
-  title: z.string().optional(),
+  title: z.string(),
+  description: z.string(),
+  requirements: z.array(z.string()),
+  keywords: z.array(z.string()),
+  industry: z.string(),
+  mustHaveSkills: z.array(z.string()),
+  niceToHaveSkills: z.array(z.string()),
   company: z.string().optional(),
-  description: z.string().optional(),
-  requirements: z.array(z.string()).optional(),
-  keywords: z.array(z.string()).optional(),
-  industry: z.string().optional(),
   location: z.string().optional(),
   employmentType: z.string().optional(),
   compensation: compensationSchema.optional(),
   salaryEstimate: salaryEstimateSchema.optional(),
   experienceRequired: experienceRequiredSchema.optional(),
-  mustHaveSkills: z.array(z.string()).optional(),
-  niceToHaveSkills: z.array(z.string()).optional(),
   requiredEducation: z.string().optional(),
   requiredCertifications: z.array(z.string()).optional(),
 });
@@ -108,32 +120,37 @@ Extraheer ALLEEN wat de vacaturetekst expliciet noemt. Leid niets af uit functie
 - "Pré", "bonus", "bij voorkeur", "wenselijk", "is een plus" → niceToHaveSkills, NIET mustHaveSkills.
 - Must-have-signalen: "vereist", "minimaal", "must have", "noodzakelijk", "essentieel", "je hebt aantoonbare ervaring met", of vermelding onder kop "Eisen" / "Wat wij vragen" / "Functie-eisen".
 
-## Veld-uitleg en gesloten woordenschat
+## Verplichte velden (vul altijd in, lege array of "" is geldig)
 
-- **title**: functietitel.
-- **company**: bedrijfsnaam indien vermeld, laat anders weg.
-- **description**: samenvatting van de functie, max 200 woorden.
-- **requirements**: max 10 belangrijkste vereisten/kwalificaties.
-- **keywords**: max 15 relevante skills/technologieën/trefwoorden.
-- **industry**, **location**, **employmentType**: laat weg als niet vermeld.
-- **compensation.salaryPeriod**: één van \`yearly\` | \`monthly\` | \`hourly\`. Laat weg als niet vermeld.
-- **compensation.benefits**: lijst van secundaire arbeidsvoorwaarden (pensioen, auto, laptop, thuiswerken, opleidingsbudget, etc.) zoals genoemd in de vacature.
-- **salaryEstimate**: JOUW marktinschatting (NL, jaarbasis, EUR) op basis van functietitel + sector + locatie. Velden:
+- **title**: functietitel. Empty string als niet duidelijk vermeld.
+- **description**: samenvatting van de functie, max 200 woorden. Empty string mag als de vacature zo kort is dat er niets om samen te vatten valt.
+- **requirements**: max 10 belangrijkste vereisten/kwalificaties. Lege array \`[]\` mag.
+- **keywords**: max 15 relevante skills/technologieën/trefwoorden. Lege array mag.
+- **industry**: sector indien af te leiden uit functietitel/bedrijf, anders "".
+- **mustHaveSkills**: max 10, alleen skills die EXPLICIET als vereist worden genoemd. Lege array mag.
+- **niceToHaveSkills**: max 8, EXPLICIET als bonus/pré/bij voorkeur genoemd. Lege array mag.
+
+## Optionele velden (laat WEG als niet expliciet vermeld)
+
+- **company**: bedrijfsnaam.
+- **location**, **employmentType** (fulltime/parttime/freelance).
+- **compensation** (sub-object). Alleen invullen bij vermelding. Sub-velden:
+  - \`salaryMin\` / \`salaryMax\`: number (jaarbasis, EUR aangenomen — geef niets door als de vacature een andere valuta/periode noemt).
+  - \`benefits\`: lijst (pensioen, auto, laptop, thuiswerken, opleidingsbudget, etc.).
+  - \`notes\`: vrije tekst over bonus/variabel/compensatie-opmerkingen.
+- **salaryEstimate** (sub-object): JOUW marktinschatting (NL, jaarbasis, EUR) — vul altijd in als je een redelijke inschatting kunt maken. Sub-velden:
   - \`estimatedMin\` / \`estimatedMax\`: number.
   - \`experienceLevel\`: één van \`junior\` | \`medior\` | \`senior\` | \`lead\` | \`executive\`.
   - \`confidence\`: één van \`low\` | \`medium\` | \`high\`.
-  - \`reasoning\`: max 100 woorden onderbouwing.
-  - \`marketInsight\`: hoe verhoudt deze functie zich tot de markt?
-- **experienceRequired**: ALLEEN invullen als er LETTERLIJKE jaren in de tekst staan. Geen letterlijke jaren → laat het hele veld weg. Leid GEEN jaren af uit "Senior" / "Lead" in de titel of uit seniority-taal. Velden:
+  - \`reasoning\`: max 100 woorden onderbouwing, inclusief eventueel marktinzicht (schaarse skill? groeiende sector?).
+- **experienceRequired** (sub-object): ALLEEN bij LETTERLIJKE jaren in de tekst. Geen letterlijke jaren → laat het hele veld weg. Leid GEEN jaren af uit "Senior" / "Lead" in de titel. Sub-velden:
   - \`minYears\`: number, letterlijk genoemd minimum.
   - \`maxYears\`: number, alleen bij ranges (3–5 jaar).
   - \`level\`: één van \`junior\` | \`medior\` | \`senior\` | \`lead\` | \`executive\`.
   - \`isStrict\`: boolean, hard ("vereist"/"minimaal") of flexibel ("bij voorkeur").
-- **mustHaveSkills**: max 10, alleen skills die expliciet als vereist worden genoemd.
-- **niceToHaveSkills**: max 8, expliciet als bonus/pré/bij voorkeur genoemd.
-- **requiredEducation**, **requiredCertifications**: alleen als expliciet vereist, niet bij "bij voorkeur".
+- **requiredEducation**, **requiredCertifications**: alleen als EXPLICIET vereist, niet bij "bij voorkeur".
 
-Bij twijfel: laat het veld weg.
+Bij twijfel: lege string/array bij verplichte velden, helemaal weglaten bij optionele.
 
 ## Vacaturetekst
 
