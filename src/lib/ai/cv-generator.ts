@@ -901,7 +901,21 @@ Scan everything you've generated and verify:
 - [ ] The summary doesn't claim more years of experience than the pre-computed unique career duration above.
 - [ ] No fabricated achievement (e.g. "winner of...", "speaker at...", "published in...") unless explicitly in the profile.
 
-When in doubt about a single item, REMOVE IT. A shorter, fully truthful CV beats a longer one with a fabricated detail every time.`;
+When in doubt about a single item, REMOVE IT. A shorter, fully truthful CV beats a longer one with a fabricated detail every time.
+
+## REQUIRED OUTPUT — non-empty fields
+
+The profile above contains real experience, skills, and education. You MUST
+generate a non-empty CV:
+- \`summary\` MUST be 2-3 sentences of actual content. Never return an empty
+  string or just whitespace.
+- \`experience\` MUST contain at least one entry copied/reframed from the
+  profile's experience list (it always has entries). Never return [].
+- \`skills.technical\` and \`skills.soft\` MUST each contain at least 3
+  items drawn from the profile.
+
+Returning empty arrays/strings while the profile has data is a contract
+violation, not a safety default. Fill the fields with what's in the profile.`;
 
   return prompt;
 }

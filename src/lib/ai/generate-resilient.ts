@@ -54,6 +54,22 @@ function isRecoverableStructuredError(err: unknown): boolean {
   );
 }
 
+/**
+ * Distinguishes "model returned an empty payload" from "model returned a
+ * malformed payload". An empty-payload failure on Anthropic Opus 4.7 is
+ * deterministic — the same prompt + schema produces the same `{}` again,
+ * so retrying the same model just burns ~1.5 minutes for nothing. When we
+ * see this we skip the duplicate-model retry and go straight to the
+ * Anthropic 4.6 fallback in the chain.
+ *
+ * Malformed-payload failures (schema mismatch, invalid JSON) ARE flaky
+ * and worth retrying on the same model — leave those alone.
+ */
+function isEmptyResponseError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /leeg antwoord|no object generated/i.test(message);
+}
+
 export async function generateObjectResilient<TSchema extends z.ZodTypeAny, TResult>(
   opts: ResilientGenerateOptions<TSchema, TResult>,
 ): Promise<ResilientGenerateResult<TResult>> {
@@ -114,6 +130,24 @@ export async function generateObjectResilient<TSchema extends z.ZodTypeAny, TRes
       // Non-structural errors (auth, network etc.) bubble up immediately —
       // no point in burning through the fallback chain if our API key is bad.
       if (!recoverable) throw err;
+
+      // Fast-fallback: if a non-fallback model returned an EMPTY payload,
+      // skip the second attempt on the same model and jump straight to the
+      // fallback. Empty-response failures on Opus 4.7 are deterministic for
+      // a given prompt+schema (the model decides to under-fill), so a same-
+      // model retry just burns ~1.5 minutes for the same result. We still
+      // retry on schema/JSON failures, which ARE genuinely flaky.
+      const nextAttemptModelId = modelChain[attemptIndex + 1];
+      if (
+        !isFallbackModel &&
+        isEmptyResponseError(err) &&
+        nextAttemptModelId === attemptModelId
+      ) {
+        console.warn(
+          `[${logTag}] Empty payload on ${attemptModelId} — skipping duplicate retry, jumping to fallback`,
+        );
+        attemptIndex++; // skip the duplicate-model attempt
+      }
     }
   }
 
