@@ -2612,7 +2612,11 @@ function brutalistGridCSS(b: BoldTokens, colors: CVDesignTokens['colors']): stri
       border-bottom: 8px solid ${colors.accent};
     }
     .archetype-brutalist-grid .brut-header.has-photo {
-      grid-template-columns: auto 1fr auto;
+      /* minmax on the middle track ensures the name always has at least
+         ~340px to lay out — without this the global flex rule on the
+         contact strip lets contact eat the entire width, crushing the
+         name into 100-200px and forcing per-word/per-letter wrapping. */
+      grid-template-columns: auto minmax(340px, 1fr) minmax(200px, max-content);
     }
     .archetype-brutalist-grid .brut-photo {
       width: 120px;
@@ -2630,13 +2634,19 @@ function brutalistGridCSS(b: BoldTokens, colors: CVDesignTokens['colors']): stri
     .archetype-brutalist-grid .brut-header-text { min-width: 0; }
     .archetype-brutalist-grid .brut-name {
       font-family: var(--b-font-heading);
-      font-size: 44pt;
+      font-size: 40pt;
       font-weight: 900;
       line-height: 0.92;
       letter-spacing: -0.03em;
       margin: 0;
       color: #fff;
       text-transform: uppercase;
+      /* Prevent the global accent-hit underline from carrying over into
+         the name. Also forbid per-letter break — let the browser only
+         break on word boundaries so a long name like "Niels van der Werf"
+         flows as 1-2 readable lines, not letter-stacked. */
+      word-break: normal;
+      overflow-wrap: normal;
     }
     .archetype-brutalist-grid .brut-headline {
       font-family: var(--b-font-body);
@@ -2645,18 +2655,27 @@ function brutalistGridCSS(b: BoldTokens, colors: CVDesignTokens['colors']): stri
       margin: 12px 0 0;
       max-width: 56ch;
     }
+    /* Override the global flex rule that turns *-contact into a wide
+       horizontal flex container. In the brutalist-grid header we want
+       the contact to be a vertical block stack on the right (each line
+       its own row), not max-content flex sized. The !important is
+       needed because the global selector is more specific via attribute
+       matching combined with the .bold-cv ancestor. */
     .archetype-brutalist-grid .brut-contact {
+      display: block !important;
       font-family: var(--b-font-body);
       font-size: 9pt;
       color: rgba(255,255,255,0.9);
       text-align: right;
       letter-spacing: 0.06em;
       line-height: 1.5;
+      max-width: 320px;
     }
     .archetype-brutalist-grid .brut-contact a {
       color: #fff;
       text-decoration: none;
       display: block;
+      word-break: break-all;
     }
     .archetype-brutalist-grid .brut-grid {
       display: grid;
@@ -3305,6 +3324,11 @@ function renderBrutalistGrid(
     projects: () => renderProjects(content.projects, overrides),
   };
   let idx = 0;
+  // Content-aware span: Projects with 3+ entries gets span-full so it
+  // doesn't get crammed into a single narrow column when the grid has
+  // 3 cols. With <3 projects, single-column treatment is fine. Same
+  // logic protects Experience (always span-full) and Summary (span-2).
+  const projectsCount = content.projects?.length ?? 0;
   const sections = tokens.sectionOrder
     .filter((n) => sectionRenderers[n] && !['languages', 'certifications', 'interests'].includes(n))
     .map((n) => {
@@ -3313,7 +3337,13 @@ function renderBrutalistGrid(
       idx += 1;
       // Every 4th block gets the tinted accent treatment (gallery rhythm)
       const tinted = idx % 4 === 0 ? 'tinted' : '';
-      const span = n === 'experience' ? 'span-full' : (n === 'summary' ? 'span-2' : '');
+      const span = n === 'experience'
+        ? 'span-full'
+        : n === 'summary'
+          ? 'span-2'
+          : n === 'projects' && projectsCount >= 3
+            ? 'span-full'
+            : '';
       return `<section class="bold-section ${span} ${tinted}" data-section="${n}">${html.replace('<!--SECTION_NUMBER-->', '')}</section>`;
     })
     .filter(Boolean)
