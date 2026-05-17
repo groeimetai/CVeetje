@@ -28,7 +28,7 @@ type DisputeWrite = Omit<import('@/types').CVDispute, 'id' | 'createdAt' | 'reso
 const MAX_DISPUTES = 3;
 const MIN_REASON_LENGTH = 20;
 
-const VALID_LEVELS: StyleCreativityLevel[] = ['conservative', 'balanced', 'creative', 'experimental'];
+const VALID_LEVELS: StyleCreativityLevel[] = ['conservative', 'balanced', 'creative', 'experimental', 'editorial-paper'];
 
 export async function POST(
   request: NextRequest,

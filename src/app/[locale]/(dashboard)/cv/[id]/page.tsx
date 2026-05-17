@@ -532,6 +532,8 @@ export default function CVDetailPage() {
           pdfDownloaded={pdfDownloaded}
           elementOverrides={cv.elementOverrides}
           onUpdateOverrides={handleUpdateOverrides}
+          disputeCount={cv.disputeCount ?? 0}
+          currentCreativityLevel={cv.creativityLevel ?? 'balanced'}
           onDisputeApproved={fetchCV}
         />
       ) : (

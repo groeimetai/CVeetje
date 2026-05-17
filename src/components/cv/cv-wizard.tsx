@@ -19,6 +19,7 @@ import { NoApiKeyAlert } from './wizard/no-api-key-alert';
 import { WizardProgress } from './wizard/wizard-progress';
 import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
 import { useAuth } from '@/components/auth/auth-context';
+import { getCV } from '@/lib/firebase/firestore';
 import { useWizardPersistence, type WizardStep } from '@/hooks/use-wizard-persistence';
 import type {
   ParsedLinkedIn,
@@ -55,7 +56,7 @@ export function CVWizard() {
   const searchParams = useSearchParams();
   const jobIdParam = searchParams?.get('jobId') ?? null;
   const t = useTranslations('cvWizard');
-  const { userData, credits, refreshCredits, hasAIAccess, llmMode } = useAuth();
+  const { userData, credits, refreshCredits, hasAIAccess, llmMode, effectiveUserId } = useAuth();
 
   // Draft persistence
   const { hasDraft, draft, saveDraft, clearDraft, isLoading: isDraftLoading } = useWizardPersistence();
@@ -72,7 +73,7 @@ export function CVWizard() {
   // from the user's alternatives. Updated when the style is (re)generated
   // and kept in sync via the creativityLevel field stored on the CV doc.
   const [selectedCreativityLevel, setSelectedCreativityLevel] = useState<StyleCreativityLevel>('balanced');
-  const [disputeCount] = useState<number>(0);
+  const [disputeCount, setDisputeCount] = useState<number>(0);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<GeneratedCVContent | null>(null);
   const [editedContent, setEditedContent] = useState<GeneratedCVContent | null>(null);
@@ -622,6 +623,32 @@ export function CVWizard() {
     setDesignTokens(tokens);
   }, []);
 
+  // After a dispute is approved the server regenerated content + tokens in
+  // Firestore. Pull the fresh CV doc so the preview reflects the new look
+  // instead of the stale local state from before the dispute.
+  const handleDisputeApproved = useCallback(async () => {
+    if (!effectiveUserId || !cvId) return;
+    try {
+      const fresh = await getCV(effectiveUserId, cvId);
+      if (!fresh) return;
+      if (fresh.generatedContent) {
+        setGeneratedContent(fresh.generatedContent);
+        setEditedContent(fresh.generatedContent);
+      }
+      if (fresh.designTokens) {
+        setDesignTokens(fresh.designTokens);
+      }
+      if (fresh.creativityLevel) {
+        setSelectedCreativityLevel(fresh.creativityLevel);
+      }
+      setDisputeCount(fresh.disputeCount ?? 0);
+      setEditedColors(null);
+      setElementColors({});
+    } catch (err) {
+      console.error('[wizard] failed to refresh CV after dispute approve', err);
+    }
+  }, [effectiveUserId, cvId]);
+
   const handleDownload = async (pageMode: PDFPageMode = 'multi-page') => {
     if (!cvId || (!pdfDownloaded && credits < 1)) return;
 
@@ -1057,6 +1084,7 @@ export function CVWizard() {
           onTokensChange={handleTokensChange}
           currentCreativityLevel={selectedCreativityLevel}
           disputeCount={disputeCount}
+          onDisputeApproved={handleDisputeApproved}
         />
       )}
 
