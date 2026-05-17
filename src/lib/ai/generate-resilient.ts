@@ -43,15 +43,25 @@ export interface ResilientGenerateResult<TResult> {
 
 /**
  * Returns true for errors we should retry / fall back on — empty responses,
- * schema mismatches, type validation, invalid JSON. Does NOT retry auth
+ * schema mismatches, type validation, invalid JSON, Anthropic schema-too-
+ * complex (pre-flight validation, Opus 4.7-specific). Does NOT retry auth
  * errors, rate limits (those are handled by withRetry upstream), etc.
  */
 function isRecoverableStructuredError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
   if (/401|403|unauthorized|forbidden|invalid api key/i.test(message)) return false;
-  return /did not match schema|type validation|no object generated|invalid json|response did not|leeg antwoord/i.test(
+  return /did not match schema|type validation|no object generated|invalid json|response did not|leeg antwoord|schema is too complex/i.test(
     message,
   );
+}
+
+/** Anthropic Opus 4.7 sometimes 400's on schemas that 4.6 accepts ("Schema
+ *  is too complex"). When we see this on the primary attempts, skip the
+ *  duplicate-retry and jump straight to the 4.6 fallback — same as we do
+ *  for empty responses. */
+function isSchemaTooComplexError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /schema is too complex/i.test(message);
 }
 
 /**
@@ -140,11 +150,12 @@ export async function generateObjectResilient<TSchema extends z.ZodTypeAny, TRes
       const nextAttemptModelId = modelChain[attemptIndex + 1];
       if (
         !isFallbackModel &&
-        isEmptyResponseError(err) &&
+        (isEmptyResponseError(err) || isSchemaTooComplexError(err)) &&
         nextAttemptModelId === attemptModelId
       ) {
+        const reason = isSchemaTooComplexError(err) ? 'schema-too-complex' : 'empty payload';
         console.warn(
-          `[${logTag}] Empty payload on ${attemptModelId} — skipping duplicate retry, jumping to fallback`,
+          `[${logTag}] ${reason} on ${attemptModelId} — skipping duplicate retry, jumping to fallback`,
         );
         attemptIndex++; // skip the duplicate-model attempt
       }
