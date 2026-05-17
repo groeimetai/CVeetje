@@ -1,0 +1,74 @@
+cv-engine — Per-file attribution for vendored open-design content
+=================================================================
+
+This directory contains design specifications and prompt-composition patterns
+vendored from nexu-io/open-design (https://github.com/nexu-io/open-design),
+Copyright 2026 Open Design contributors, licensed under the Apache License,
+Version 2.0. The full license text lives in /licenses/LICENSE-APACHE-2.0.
+
+Each vendored file also carries its own attribution block (either as Markdown
+frontmatter `source:` keys for SKILL.md / DESIGN.md files, or as a top-of-file
+comment for TypeScript ports).
+
+--------------------------------------------------------------------------------
+Verbatim copies (source.type: 'vendored')
+--------------------------------------------------------------------------------
+
+recipes/_vendor/resume-modern/SKILL.md
+recipes/_vendor/article-magazine/SKILL.md
+recipes/_vendor/field-notes-editorial-template/SKILL.md
+recipes/_vendor/after-hours-editorial-template/SKILL.md
+recipes/_vendor/editorial-burgundy-principles-template/SKILL.md
+recipes/_vendor/digits-fintech-swiss-template/SKILL.md
+recipes/_vendor/apple-hig/SKILL.md
+recipes/_vendor/poster-hero/SKILL.md
+
+Origin: https://github.com/nexu-io/open-design/tree/main/skills/<name>
+Modifications: none (verbatim). Files in this directory MUST NOT be modified —
+adaptations live under their target recipe folder (e.g. recipes/balanced/studio/)
+with `source.type: 'adapted'` and a `source.modifications` summary.
+
+--------------------------------------------------------------------------------
+Adapted recipes (source.type: 'adapted')
+--------------------------------------------------------------------------------
+
+recipes/safe/monolith/         — adapted from _vendor/apple-hig
+recipes/safe/clerk/            — adapted from _vendor/digits-fintech-swiss-template
+recipes/balanced/studio/       — adapted from _vendor/resume-modern
+recipes/balanced/press/        — adapted from _vendor/editorial-burgundy-principles-template
+recipes/creative/kinfolk/      — adapted from _vendor/field-notes-editorial-template
+recipes/creative/wallpaper/    — adapted from _vendor/article-magazine
+recipes/creative/gentlewoman/  — adapted from _vendor/after-hours-editorial-template
+recipes/experimental/manifesto/ — adapted from _vendor/poster-hero
+
+Each adapted recipe's SKILL.md frontmatter lists the specific modifications
+required by Apache 2.0 §4 (b).
+
+--------------------------------------------------------------------------------
+Original recipes (source.type: 'original')
+--------------------------------------------------------------------------------
+
+recipes/safe/plate/
+recipes/balanced/grid/
+recipes/experimental/gallery/
+recipes/experimental/broadcast/
+
+These recipes are written from scratch in the open-design SKILL.md format.
+They derive their palette baselines from the visual-direction TypeScript ports
+under recipes/_visual-directions/ but contain no copied content.
+
+--------------------------------------------------------------------------------
+Ported patterns
+--------------------------------------------------------------------------------
+
+ai/compose-system-prompt.ts
+   Ported from apps/daemon/src/prompts/system.ts in nexu-io/open-design.
+   Layered concatenation pattern with `\n\n---\n\n` separators and
+   composeSystemPrompt() function shape. CVeetje-specific layer set;
+   the stack ordering and separator convention are preserved.
+
+recipes/_visual-directions/{editorial-monocle,modern-minimal,tech-utility,brutalist,soft-warm}.ts
+   The 5 baseline visual directions from open-design's web app, ported to
+   TypeScript constants with OKLch palette tokens and Google Fonts font stacks.
+   Original color values and font choices preserved; only the data shape
+   (Markdown → TS constant) is changed.

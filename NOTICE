@@ -1,0 +1,30 @@
+CVeetje — maakcveetje.nl
+Copyright 2024-2026 Niels van der Werf
+
+================================================================================
+
+This product includes software and design specifications developed by third
+parties. Their licenses are included in the licenses/ directory. Detailed
+per-file attribution for vendored content lives in src/lib/cv-engine/NOTICE.
+
+--------------------------------------------------------------------------------
+nexu-io/open-design
+--------------------------------------------------------------------------------
+
+This product includes design specifications, skill definitions, and prompt-
+composition patterns vendored from the open-design project
+(https://github.com/nexu-io/open-design), Copyright 2026 Open Design
+contributors, licensed under the Apache License, Version 2.0 (see
+licenses/LICENSE-APACHE-2.0).
+
+The vendored material lives under src/lib/cv-engine/recipes/_vendor/ and
+src/lib/cv-engine/recipes/_visual-directions/. Files derived from this material
+(adaptations) are marked in their frontmatter with source.type='adapted' and
+list the modifications made. Verbatim copies are marked source.type='vendored'.
+The prompt-composition pattern ported from apps/daemon/src/prompts/system.ts
+lives in src/lib/cv-engine/ai/compose-system-prompt.ts and carries an inline
+attribution header.
+
+No NOTICE file existed in the upstream open-design distribution at the time of
+vendoring; this NOTICE file therefore provides the attribution required by
+Apache 2.0 §4 (c) and (d) for our derivative use.
