@@ -20,6 +20,7 @@ import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 import { buildProfileSummary, buildJobSummary, buildFitAnalysisSummary } from '@/lib/ai/docx-content-replacer';
 import type { FillOptions, FillResult } from './smart-template-filler';
 import { replaceProfileImage } from './image-replacer';
+import { mergeAdjacentRunsInDocument } from './xml-normalizer';
 
 // ==================== Section Types ====================
 
@@ -1531,6 +1532,133 @@ ${prompts.instructions}`;
  * This is the original filling logic that was proven to work for S4Y templates.
  * It uses paragraph-based segment extraction + indexed AI filling + label:value alignment.
  */
+// ==================== Defensive Post-Passes ====================
+
+// Words that, when returned as a fill value, almost always mean the AI just
+// echoed a section label back. Lowercase, no punctuation.
+const SECTION_LABEL_ECHO_WORDS = new Set([
+  'talen', 'languages', 'vervoer', 'transport', 'beschikbaarheid', 'availability',
+  'vaardigheden', 'skills', 'opleidingen', 'opleiding', 'education',
+  'werkervaring', 'werk ervaring', 'work experience', 'experience',
+  'cursussen', 'courses', 'certificeringen', 'certifications', 'certificaten',
+  'persoonsgegevens', 'personal information', 'contactgegevens', 'contact',
+  'profiel', 'profile', 'samenvatting', 'summary',
+  'naam', 'voornaam', 'achternaam', 'name', 'first name', 'last name',
+  'geboortedatum', 'date of birth', 'nationaliteit', 'nationality',
+  'woonplaats', 'city', 'location', 'email', 'e-mail', 'telefoon', 'phone',
+  'functie', 'function', 'bedrijf', 'company', 'werkgever', 'employer',
+  'werkzaamheden', 'tasks', 'description', 'periode', 'period',
+  'school', 'diploma', 'degree', 'bijzonderheden',
+]);
+
+function normalizeForEchoCheck(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/&amp;/g, '&')
+    .replace(/[:\-–—]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Drop fills where the AI just echoed the surrounding label/section heading.
+ * Mutates filledSegments in place.
+ */
+function dropLabelEchoFills(
+  filledSegments: Record<string, string>,
+  segments: { index: number; text: string }[],
+): void {
+  for (const [idxStr, value] of Object.entries(filledSegments)) {
+    const normValue = normalizeForEchoCheck(value);
+    if (!normValue) continue;
+    if (SECTION_LABEL_ECHO_WORDS.has(normValue)) {
+      delete filledSegments[idxStr];
+      continue;
+    }
+    // Also drop fills that exactly match their own segment's original text
+    // (case-insensitive, ignoring colons/whitespace).
+    const idx = parseInt(idxStr, 10);
+    const seg = segments.find((s) => s.index === idx);
+    if (seg && normalizeForEchoCheck(seg.text) === normValue) {
+      delete filledSegments[idxStr];
+    }
+  }
+}
+
+/**
+ * Repair common period-string corruptions emitted by the AI when it was
+ * shown fragmented period segments. The run-merger pre-pass eliminates
+ * most causes, but legacy templates may still trigger these.
+ *
+ *   "26Heden"      → "2026-Heden"
+ *   "22-2024"      → "2022-2024"
+ *   "2224"         → "2022-2024"  (only when both halves look like years)
+ *   "256-2026"     → "2025-2026"  (drop the dangling month digit)
+ *
+ * Only touches values that are mostly period-shaped; leaves rich values
+ * (with tabs, words other than Heden/Present/Now) untouched.
+ */
+function repairPeriodFills(filledSegments: Record<string, string>): void {
+  const presentWord = '(Heden|Present|Nu|Now|present|nu)';
+
+  for (const [idx, raw] of Object.entries(filledSegments)) {
+    // Only operate on the "label" half of a tab-separated period fill.
+    // The value half ("Bedrijf - Functie") may contain anything.
+    const tabIdx = raw.indexOf('\t');
+    const labelHalf = tabIdx >= 0 ? raw.slice(0, tabIdx) : raw;
+    const valueHalf = tabIdx >= 0 ? raw.slice(tabIdx) : '';
+
+    let fixed = labelHalf;
+
+    // "26Heden" / "26Present"  → "2026-Heden"
+    fixed = fixed.replace(
+      new RegExp(`^(\\d{2})(${presentWord})$`, 'i'),
+      (_m, yr, w) => `20${yr}-${properCase(w)}`,
+    );
+
+    // "26-Heden" / "26-Present" with 2-digit year → "2026-Heden"
+    fixed = fixed.replace(
+      new RegExp(`^(\\d{2})[-–—]\\s*(${presentWord})$`, 'i'),
+      (_m, yr, w) => `20${yr}-${properCase(w)}`,
+    );
+
+    // "22-2024" → "2022-2024"
+    fixed = fixed.replace(/^(\d{2})[-–—](\d{4})$/, (_m, a, b) => `20${a}-${b}`);
+
+    // "2224" (4 digits, no separator) → "2022-2024" — only when both halves
+    // form plausible recent years.
+    fixed = fixed.replace(/^(\d{2})(\d{2})$/, (m, a, b) => {
+      const ya = parseInt(`20${a}`, 10);
+      const yb = parseInt(`20${b}`, 10);
+      if (ya >= 1900 && ya <= 2099 && yb >= 1900 && yb <= 2099 && ya <= yb) {
+        return `20${a}-20${b}`;
+      }
+      return m;
+    });
+
+    // "256-2026" (3-digit start, probably "25" + month "6") → "2025-2026"
+    fixed = fixed.replace(/^(\d{2})\d[-–—](\d{4})$/, (_m, a, b) => `20${a}-${b}`);
+
+    // "2025-26" → "2025-2026"
+    fixed = fixed.replace(/^(\d{4})[-–—](\d{2})$/, (_m, a, b) => {
+      const ya = parseInt(a, 10);
+      const yb = parseInt(`20${b}`, 10);
+      if (yb >= ya && yb <= 2099) return `${a}-20${b}`;
+      return `${a}-${b}`;
+    });
+
+    if (fixed !== labelHalf) {
+      filledSegments[idx] = fixed + valueHalf;
+    }
+  }
+}
+
+function properCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+// ==================== Main entrypoint ====================
+
 export async function fillS4YTemplate(
   docxBuffer: ArrayBuffer,
   profileData: ParsedLinkedIn,
@@ -1552,6 +1680,13 @@ export async function fillS4YTemplate(
   }
 
   let docXml = await documentXmlFile.async('string');
+
+  // Pre-pass: merge adjacent same-style runs in each paragraph. Word splits
+  // periods like "2016-2021" across 4 separate runs ("20"/"16"/"-20"/"21");
+  // the AI then fills each fragment independently and produces garbage like
+  // "2224" or "256-2026". Merging at the XML level lets the AI see the whole
+  // period as one segment.
+  docXml = mergeAdjacentRunsInDocument(docXml);
 
   try {
     // ==== WORK EXPERIENCE BLOCK DUPLICATION ====
@@ -1614,6 +1749,18 @@ export async function fillS4YTemplate(
         delete aiResult.filledSegments[idx];
       }
     }
+
+    // Defensive post-pass #1: drop label-as-value fills.
+    // The AI sometimes echoes a section label like "Talen", "Vaardigheden",
+    // "Vervoer" back into an empty value slot adjacent to that label —
+    // producing output like "Talen: Talen". We detect this by checking
+    // whether the fill text equals the surrounding paragraph's existing
+    // (label-only) text, normalized.
+    dropLabelEchoFills(aiResult.filledSegments, segments);
+
+    // Defensive post-pass #2: repair malformed period strings ("26Heden",
+    // "256-2026", "22-2024") that escaped the run-merger pre-pass.
+    repairPeriodFills(aiResult.filledSegments);
 
     // Apply filled segments
     docXml = applyFilledSegments(docXml, aiResult.filledSegments, segments);
