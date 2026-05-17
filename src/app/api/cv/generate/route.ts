@@ -159,6 +159,11 @@ export async function POST(request: NextRequest) {
       // for backwards-compatible reads of older Firestore docs.
       styleConfig: null,
       designTokens,
+      // Snapshot the AI-generated tokens so the live design-tweaks panel
+      // can offer a Reset that returns to this baseline. Deep clone so a
+      // later in-place mutation on `designTokens` doesn't drift the
+      // snapshot.
+      originalDesignTokens: JSON.parse(JSON.stringify(designTokens)) as typeof designTokens,
       avatarUrl: avatarUrl || null,
       generatedContent: content,
       pdfUrl: null,

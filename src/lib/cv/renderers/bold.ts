@@ -40,12 +40,15 @@ import type {
 } from '@/types/design-tokens';
 import { getFontUrls, fontPairings } from '../templates/themes';
 import { splitInterest } from '../interest-format';
+import { buildEditBridgeMarkup } from '../edit-bridge';
 
 // ============ Public API ============
 
 export interface BoldHTMLOptions {
   previewProtection?: boolean;
   watermarkText?: string;
+  /** PDF mode — skip click-to-edit bridge (contenteditable + hover outlines). */
+  forPdf?: boolean;
 }
 
 export function generateBoldHTML(
@@ -102,6 +105,7 @@ export function generateBoldHTML(
   ${protection.watermark}
   ${body}
   ${protection.script}
+  ${buildEditBridgeMarkup({ forPdf: options?.forPdf })}
 </body>
 </html>`;
 }

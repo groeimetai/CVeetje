@@ -48,7 +48,9 @@ export async function generatePDF(
   // Use provided tokens or default
   const effectiveTokens = tokens || getDefaultTokens();
 
-  // Generate HTML
+  // Generate HTML with forPdf=true so the click-to-edit bridge (contenteditable
+  // + hover outlines) is NOT injected into the rendered PDF. The preview iframe
+  // uses the same generator without this flag to enable inline editing.
   const html = generateCVHTML(
     content,
     effectiveTokens,
@@ -56,7 +58,8 @@ export async function generatePDF(
     avatarUrl,
     headline,
     overrides,
-    contactInfo
+    contactInfo,
+    { forPdf: true },
   );
 
   const browser = await getBrowser();

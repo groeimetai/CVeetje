@@ -1019,6 +1019,11 @@ export function CVWizard() {
         <CVPreview
           content={editedContent || generatedContent}
           tokens={designTokens}
+          // In the wizard flow the freshly-generated tokens are also the
+          // baseline for Reset — they haven't been tweaked yet. If the user
+          // navigates away and returns via /cv/[id] the page-level loader
+          // passes through cv.originalDesignTokens from Firestore.
+          originalDesignTokens={designTokens}
           fullName={editedHeader?.fullName ?? linkedInData.fullName}
           headline={editedHeader?.headline ?? (editedContent || generatedContent).headline ?? linkedInData.headline}
           avatarUrl={avatarUrl}

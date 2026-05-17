@@ -244,9 +244,20 @@ export async function POST(
 
     // Apply regenerated content to the CV
     const hadPaidPdf = cvData.status === 'pdf_ready';
+    // If the user had manually tweaked the prior design tokens via the
+    // live tweaks panel, those tweaks are now discarded — the new AI
+    // tokens win and the snapshot is refreshed so future Resets return
+    // to this new baseline. The flag is surfaced in the response so the
+    // UI can toast the user.
+    const priorTokens = cvData.designTokens || null;
+    const priorOriginal = cvData.originalDesignTokens || null;
+    const hadTweaks = priorTokens && priorOriginal
+      && JSON.stringify(priorTokens) !== JSON.stringify(priorOriginal);
+
     await cvRef.update({
       generatedContent: regenResult.content,
       designTokens: regenResult.tokens,
+      originalDesignTokens: JSON.parse(JSON.stringify(regenResult.tokens)) as typeof regenResult.tokens,
       creativityLevel: newLevel,
       creativityLevelHistory: FieldValue.arrayUnion(newLevel),
       disputeCount: FieldValue.increment(1),
@@ -269,6 +280,7 @@ export async function POST(
       attempt,
       remainingAttempts: MAX_DISPUTES - attempt,
       newLevel,
+      tweaksDiscarded: !!hadTweaks,
     });
   } catch (error) {
     console.error('[Dispute] Unexpected error:', error);

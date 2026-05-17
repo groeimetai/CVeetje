@@ -109,6 +109,15 @@ export function CVDisputeDialog({
       });
 
       if (data.status === 'approved') {
+        // Server signals whether the user's manual tweaks were discarded by
+        // the regenerate. If so, surface a toast so they know why their
+        // earlier color/font choices are gone.
+        if (data.tweaksDiscarded) {
+          // Toast import is intentional here instead of at the top because
+          // this is a rarely-used branch — keeps the bundle lean.
+          const { toast } = await import('sonner');
+          toast.info('Je tweaks zijn vervangen door de nieuwe AI-stijl');
+        }
         onApproved?.();
       }
     } catch (err) {

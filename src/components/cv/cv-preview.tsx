@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, RefreshCw, FileText, Coins, Sparkles, Maximize2, Minimize2, Pencil, ChevronDown, Briefcase, User, Building2, TrendingUp, Palette, Target, DollarSign, MapPin, Clock, Award, Lightbulb, MessageSquare, Scale } from 'lucide-react';
+import { Download, RefreshCw, FileText, Coins, Sparkles, Maximize2, Minimize2, Pencil, ChevronDown, Briefcase, User, Building2, TrendingUp, Palette, Target, DollarSign, MapPin, Clock, Award, Lightbulb, MessageSquare, Scale, Wand2 } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -27,6 +27,8 @@ import { CVContentEditor, type ElementColorOverrides } from './cv-content-editor
 import { CVChatPanel } from './cv-chat-panel';
 import { CVDisputeDialog } from './cv-dispute-dialog';
 import { MotivationLetterSection } from './motivation-letter-section';
+import { DesignTweaksSheet } from './design-tweaks/design-tweaks-sheet';
+import { isCVContentEditMessage } from '@/lib/cv/edit-bridge';
 import type { OutputLanguage, TokenUsage } from '@/types';
 
 interface HeaderInfo {
@@ -37,9 +39,102 @@ interface HeaderInfo {
 
 export type PDFPageMode = 'multi-page' | 'single-page';
 
+// ============ Inline edit-bridge helpers ============
+//
+// Map a data-id from the postMessage payload back to the matching field
+// in GeneratedCVContent and return a new content object. Returns the
+// SAME object reference when the id doesn't match anything (so the
+// caller can skip an unnecessary state update).
+function applyContentEdit(
+  content: GeneratedCVContent,
+  id: string,
+  text: string,
+): GeneratedCVContent {
+  if (id === 'summary') {
+    if (content.summary === text) return content;
+    return { ...content, summary: text };
+  }
+  // Experience fields: exp-{i}-{title|company|period|description|highlight-{j}|location}
+  let m = id.match(/^exp-(\d+)-(title|company|period|description|location)$/);
+  if (m) {
+    const i = Number(m[1]);
+    const field = m[2] as 'title' | 'company' | 'period' | 'description' | 'location';
+    if (!content.experience[i]) return content;
+    const exp = { ...content.experience[i], [field]: text };
+    const nextExp = content.experience.slice();
+    nextExp[i] = exp;
+    return { ...content, experience: nextExp };
+  }
+  m = id.match(/^exp-(\d+)-highlight-(\d+)$/);
+  if (m) {
+    const i = Number(m[1]);
+    const j = Number(m[2]);
+    if (!content.experience[i] || !content.experience[i].highlights?.[j]) return content;
+    const highlights = content.experience[i].highlights!.slice();
+    highlights[j] = text;
+    const nextExp = content.experience.slice();
+    nextExp[i] = { ...content.experience[i], highlights };
+    return { ...content, experience: nextExp };
+  }
+  // Education fields: edu-{i}-{degree|institution|year}
+  m = id.match(/^edu-(\d+)-(degree|institution|year)$/);
+  if (m) {
+    const i = Number(m[1]);
+    const field = m[2] as 'degree' | 'institution' | 'year';
+    if (!content.education[i]) return content;
+    const edu = { ...content.education[i], [field]: text };
+    const nextEdu = content.education.slice();
+    nextEdu[i] = edu;
+    return { ...content, education: nextEdu };
+  }
+  // Skills: skill-tech-{i} / skill-soft-{i}
+  m = id.match(/^skill-(tech|soft)-(\d+)$/);
+  if (m) {
+    const group = m[1] === 'tech' ? 'technical' : 'soft';
+    const i = Number(m[2]);
+    const list = (content.skills?.[group] || []).slice();
+    if (i < 0 || i >= list.length) return content;
+    list[i] = text;
+    return {
+      ...content,
+      skills: { ...content.skills, [group]: list },
+    };
+  }
+  return content;
+}
+
+// Module-level debounce: one timeout per cvId, fire-and-forget PATCH
+// to /api/cv/[id]/content with the latest content. The user's blur on
+// successive elements coalesces into a single network call.
+const contentSaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+function debouncedSaveContent(cvId: string | null | undefined, content: GeneratedCVContent) {
+  if (!cvId) return;
+  const existing = contentSaveTimers.get(cvId);
+  if (existing) clearTimeout(existing);
+  const t = setTimeout(async () => {
+    contentSaveTimers.delete(cvId);
+    try {
+      await fetch(`/api/cv/${cvId}/content`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generatedContent: content }),
+      });
+    } catch (err) {
+      console.error('[cv-preview] content save failed', err);
+    }
+  }, 500);
+  contentSaveTimers.set(cvId, t);
+}
+
 interface CVPreviewProps {
   content: GeneratedCVContent;
   tokens: CVDesignTokens;
+  /**
+   * Snapshot of the original AI-generated tokens. Used by the live
+   * design-tweaks panel as the Reset target. When null/undefined, the
+   * Reset button is hidden.
+   */
+  originalDesignTokens?: CVDesignTokens | null;
   fullName: string;
   headline?: string | null;
   avatarUrl?: string | null;
@@ -82,6 +177,7 @@ interface CVPreviewProps {
 export function CVPreview({
   content,
   tokens,
+  originalDesignTokens,
   fullName,
   headline,
   avatarUrl,
@@ -125,8 +221,13 @@ export function CVPreview({
     headline,
     contactInfo,
   });
-  const [editedColors, setEditedColors] = useState<CVDesignTokens['colors']>(tokens.colors);
+  // Full tokens state — previously just `editedColors`. Live tweaks-panel
+  // updates many more fields than just colors (fontPairing, paletteSaturation,
+  // accentKeywords, etc.) so we need the entire tokens object as the
+  // editing target. Old color-only path still works via `editedTokens.colors`.
+  const [editedTokens, setEditedTokens] = useState<CVDesignTokens>(tokens);
   const [elementColors, setElementColors] = useState<ElementColorOverrides>({});
+  const [isTweaksOpen, setIsTweaksOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Update local overrides when prop changes
@@ -146,10 +247,57 @@ export function CVPreview({
     setEditedHeader({ fullName, headline, contactInfo });
   }, [fullName, headline, contactInfo]);
 
-  // Update edited colors when tokens change
+  // Sync tokens prop changes (e.g. dispute regenerate brings fresh tokens)
   useEffect(() => {
-    setEditedColors(tokens.colors);
-  }, [tokens.colors]);
+    setEditedTokens(tokens);
+  }, [tokens]);
+
+  // ============ Click-to-edit on preview (postMessage from iframe) ============
+  //
+  // The edit-bridge script (injected into the iframe HTML) makes every
+  // element with a `data-id` contenteditable. On blur/Enter the iframe
+  // postMessages `{ type: 'cv-content-edit', id, text }` to this parent.
+  // We map the id back to the matching field in `editedContent` /
+  // `editedHeader` and update state. The new content drives the useMemo
+  // → generateCVHTML → iframe srcDoc cycle for live re-render.
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      const msg = event.data;
+      if (!isCVContentEditMessage(msg)) return;
+
+      const { id, text } = msg;
+
+      // Header path
+      if (id === 'header-name') {
+        setEditedHeader(prev => {
+          const next = { ...prev, fullName: text };
+          onHeaderChange?.(next);
+          return next;
+        });
+        return;
+      }
+      if (id === 'header-headline') {
+        setEditedHeader(prev => {
+          const next = { ...prev, headline: text };
+          onHeaderChange?.(next);
+          return next;
+        });
+        return;
+      }
+
+      // Content paths
+      setEditedContent(prev => {
+        const next = applyContentEdit(prev, id, text);
+        if (next === prev) return prev;
+        onContentChange?.(next);
+        // Debounced content-PATCH to Firestore — fire-and-forget
+        debouncedSaveContent(cvId, next);
+        return next;
+      });
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [cvId, onContentChange, onHeaderChange]);
 
   // Handle content changes
   const handleContentChange = useCallback((newContent: GeneratedCVContent) => {
@@ -163,11 +311,23 @@ export function CVPreview({
     onHeaderChange?.(newHeader);
   }, [onHeaderChange]);
 
-  // Handle colors changes
+  // Legacy colors-only callback for cv-content-editor — wraps the full
+  // tokens update path so old callsites keep working.
   const handleColorsChange = useCallback((newColors: CVDesignTokens['colors']) => {
-    setEditedColors(newColors);
+    setEditedTokens(prev => ({ ...prev, colors: newColors }));
     onColorsChange?.(newColors);
   }, [onColorsChange]);
+
+  // New live-tweaks handler: replaces the whole tokens object atomically.
+  const handleTokensTweak = useCallback((newTokens: CVDesignTokens) => {
+    setEditedTokens(newTokens);
+    onTokensChange?.(newTokens);
+    // Mirror palette into the legacy onColorsChange so any downstream
+    // listener that only watches colors stays in sync.
+    if (JSON.stringify(newTokens.colors) !== JSON.stringify(editedTokens.colors)) {
+      onColorsChange?.(newTokens.colors);
+    }
+  }, [onTokensChange, onColorsChange, editedTokens.colors]);
 
   // Handle element color changes
   const handleElementColorChange = useCallback((elementId: string, color: string | undefined) => {
@@ -183,11 +343,9 @@ export function CVPreview({
     });
   }, [onElementColorsChange]);
 
-  // Build tokens with edited colors
-  const effectiveTokens = useMemo(() => ({
-    ...tokens,
-    colors: editedColors,
-  }), [tokens, editedColors]);
+  // The editedTokens state IS the effective tokens — the tweaks panel
+  // edits the entire object directly. No more colors-only carve-out.
+  const effectiveTokens = editedTokens;
 
   // Build element overrides from elementColors for HTML generator
   const effectiveOverrides = useMemo(() => {
@@ -229,16 +387,16 @@ export function CVPreview({
     [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides]
   );
 
-  // Check if content, header, colors, or element colors have been edited
+  // Check if content, header, tokens, or element colors have been edited
   const hasEdits = useMemo(() => {
     const contentChanged = JSON.stringify(content) !== JSON.stringify(editedContent);
     const headerChanged = fullName !== editedHeader.fullName ||
       headline !== editedHeader.headline ||
       JSON.stringify(contactInfo) !== JSON.stringify(editedHeader.contactInfo);
-    const colorsChanged = JSON.stringify(tokens.colors) !== JSON.stringify(editedColors);
+    const tokensChanged = JSON.stringify(tokens) !== JSON.stringify(editedTokens);
     const elementColorsChanged = Object.keys(elementColors).length > 0;
-    return contentChanged || headerChanged || colorsChanged || elementColorsChanged;
-  }, [content, editedContent, fullName, headline, contactInfo, editedHeader, tokens.colors, editedColors, elementColors]);
+    return contentChanged || headerChanged || tokensChanged || elementColorsChanged;
+  }, [content, editedContent, fullName, headline, contactInfo, editedHeader, tokens, editedTokens, elementColors]);
 
   // Auto-resize iframe to content height
   useEffect(() => {
@@ -306,6 +464,14 @@ export function CVPreview({
                 <MessageSquare className="h-4 w-4" />
               </Button>
             )}
+            <Button
+              variant={isTweaksOpen ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => setIsTweaksOpen(true)}
+              title="Tweaks — kleuren, fonts en stijl aanpassen"
+            >
+              <Wand2 className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -496,8 +662,8 @@ export function CVPreview({
               <TabsTrigger value="preview" className="text-xs sm:text-sm">Preview</TabsTrigger>
               <TabsTrigger value="edit" className="flex items-center gap-1 text-xs sm:text-sm">
                 <Pencil className="h-3 w-3" />
-                <span className="hidden sm:inline">Bewerken</span>
-                <span className="sm:hidden">Edit</span>
+                <span className="hidden sm:inline">Structuur</span>
+                <span className="sm:hidden">Struct.</span>
                 {hasEdits && <span className="ml-1 h-2 w-2 rounded-full bg-primary" />}
               </TabsTrigger>
               <TabsTrigger value="style" className="text-xs sm:text-sm">
@@ -529,13 +695,25 @@ export function CVPreview({
             </TabsContent>
 
             <TabsContent value="edit" className="space-y-4">
-              {/* Content Editor */}
+              {/* Inline-edit guidance — primary path for text edits is now
+                  click-on-preview. This tab remains as a back-up + for
+                  structural ops (add/remove/reorder items) that don't fit
+                  the inline flow yet. */}
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground">Tip: tekst wijzigen?</p>
+                <p className="mt-1">
+                  Klik direct op de tekst in de preview (naam, titel, bullets, samenvatting…) en typ je
+                  aanpassing. Gebruik dit paneel voor structurele edits zoals items toevoegen of
+                  verwijderen. Voor kleuren, fonts en stijl: gebruik de <strong>Tweaks</strong>-knop
+                  rechtsboven.
+                </p>
+              </div>
               <CVContentEditor
                 content={editedContent}
                 onContentChange={handleContentChange}
                 headerInfo={editedHeader}
                 onHeaderChange={handleHeaderChange}
-                colors={editedColors}
+                colors={editedTokens.colors}
                 onColorsChange={handleColorsChange}
                 elementColors={elementColors}
                 onElementColorChange={handleElementColorChange}
@@ -547,7 +725,7 @@ export function CVPreview({
                   onClick={() => {
                     setEditedContent(content);
                     setEditedHeader({ fullName, headline, contactInfo });
-                    setEditedColors(tokens.colors);
+                    setEditedTokens(tokens);
                     setElementColors({});
                   }}
                   disabled={!hasEdits}
@@ -840,6 +1018,18 @@ export function CVPreview({
           currentLevel={currentCreativityLevel}
           disputeCount={disputeCount}
           onApproved={onDisputeApproved}
+        />
+      )}
+
+      {cvId && (
+        <DesignTweaksSheet
+          open={isTweaksOpen}
+          onOpenChange={setIsTweaksOpen}
+          tokens={editedTokens}
+          originalTokens={originalDesignTokens ?? null}
+          creativityLevel={currentCreativityLevel}
+          cvId={cvId}
+          onTokensChange={handleTokensTweak}
         />
       )}
     </div>

@@ -507,6 +507,7 @@ export default function CVDetailPage() {
         <CVPreview
           content={cv.generatedContent as GeneratedCVContent}
           tokens={tokens}
+          originalDesignTokens={cv.originalDesignTokens ?? cv.designTokens ?? null}
           fullName={cv.linkedInData.fullName}
           headline={(cv.generatedContent as GeneratedCVContent).headline ?? cv.linkedInData.headline}
           avatarUrl={cv.avatarUrl}

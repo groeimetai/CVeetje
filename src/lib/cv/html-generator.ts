@@ -36,6 +36,7 @@ import { contactIcons, contactIconsCSS } from './templates/icons';
 import { generateEditorialHTML } from './renderers/editorial';
 import { generateBoldHTML } from './renderers/bold';
 import { splitInterest } from './interest-format';
+import { buildEditBridgeMarkup } from './edit-bridge';
 
 // ============ Helper Functions ============
 
@@ -158,6 +159,12 @@ export interface CVHTMLOptions {
   previewProtection?: boolean;
   /** Custom watermark text */
   watermarkText?: string;
+  /**
+   * When true: PDF-generation mode. Skips the click-to-edit bridge
+   * (contenteditable markup + outline-on-hover styles) so the rendered
+   * PDF doesn't show editor affordances.
+   */
+  forPdf?: boolean;
 }
 
 export function generateCVHTML(
@@ -390,6 +397,7 @@ export function generateCVHTML(
     ${bodyContent}
   </div>
   ${protectionScript}
+  ${buildEditBridgeMarkup({ forPdf: options?.forPdf })}
 </body>
 </html>`;
 }

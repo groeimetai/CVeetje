@@ -30,12 +30,15 @@ import type {
 import { getFontUrls } from '../templates/themes';
 import { fontPairings } from '../templates/themes';
 import { splitInterest } from '../interest-format';
+import { buildEditBridgeMarkup } from '../edit-bridge';
 
 // ============ Public API ============
 
 export interface EditorialHTMLOptions {
   previewProtection?: boolean;
   watermarkText?: string;
+  /** PDF mode — skip click-to-edit bridge (contenteditable + hover outlines). */
+  forPdf?: boolean;
 }
 
 export function generateEditorialHTML(
@@ -94,6 +97,7 @@ export function generateEditorialHTML(
     ${body}
   </div>
   ${protection.script}
+  ${buildEditBridgeMarkup({ forPdf: options?.forPdf })}
 </body>
 </html>`;
 }

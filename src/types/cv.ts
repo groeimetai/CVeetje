@@ -115,6 +115,14 @@ export interface CV {
   /** @deprecated Legacy field. New CVs are written with `styleConfig: null` and rely on `designTokens` instead. */
   styleConfig: CVStyleConfig | null;
   designTokens?: CVDesignTokens | null;
+  /**
+   * Snapshot of the AI-generated design tokens at the moment of creation
+   * (or last regeneration). Used by the live design-tweaks panel as the
+   * "Reset" target so a user can revert their manual tweaks. Overwritten
+   * when the AI regenerates style (dispute approval, style re-run) so
+   * Reset always returns to the most recent AI baseline.
+   */
+  originalDesignTokens?: CVDesignTokens | null;
   avatarUrl: string | null;
   generatedContent: GeneratedCVContent | null;
   elementOverrides?: CVElementOverrides | null;
