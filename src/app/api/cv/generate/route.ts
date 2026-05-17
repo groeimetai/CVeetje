@@ -145,15 +145,24 @@ export async function POST(request: NextRequest) {
       outputTokens: usage?.completionTokens ?? 0,
     };
 
+    // Legacy `colorScheme` mirror — only meaningful for v1 tokens which have
+    // flat hex `colors.{primary,secondary,accent}`. v2 (cv-engine) tokens
+    // store palette as OKLch ranges + paletteOverride, so we leave the
+    // mirror null — nothing in the current codebase reads it for v2 docs.
+    const isV2Tokens = (designTokens as { engineVersion?: string })?.engineVersion === 'v2';
+    const colorScheme = isV2Tokens
+      ? null
+      : {
+          primary: designTokens.colors.primary,
+          secondary: designTokens.colors.secondary,
+          accent: designTokens.colors.accent,
+        };
+
     const cvRef = await db.collection('users').doc(userId).collection('cvs').add({
       linkedInData,
       jobVacancy,
       template: 'dynamic',  // Mark as dynamic style CV
-      colorScheme: {        // Extract basic colors for backwards compatibility
-        primary: designTokens.colors.primary,
-        secondary: designTokens.colors.secondary,
-        accent: designTokens.colors.accent,
-      },
+      colorScheme,
       brandStyle: null,
       // styleConfig stays null for new CVs — legacy field kept on the CV type
       // for backwards-compatible reads of older Firestore docs.

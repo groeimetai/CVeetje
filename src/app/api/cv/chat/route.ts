@@ -38,7 +38,29 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
 `
     : '';
 
-  const styleSection = currentTokens
+  // v2 (cv-engine) tokens have a completely different shape — no `colors`,
+  // `themeBase`, `headerVariant` etc. The v1 prompt + style-tools below
+  // don't apply to v2 CVs. Show a minimal v2 summary so the chat still has
+  // context, but skip the v1 style tools (the chat falls back to content-
+  // editing tools only for v2 docs).
+  const isV2Tokens = currentTokens &&
+    (currentTokens as { engineVersion?: string }).engineVersion === 'v2';
+  const v2 = isV2Tokens ? (currentTokens as unknown as {
+    recipeId: string;
+    fontOverride?: string;
+    pageMode?: string;
+    emphasis?: Record<string, unknown>;
+  }) : null;
+
+  const styleSection = v2
+    ? `
+## Huidige CV Styling (cv-engine v2)
+- **Recipe:** ${v2.recipeId}
+- **Font override:** ${v2.fontOverride ?? 'recipe-default'}
+- **Page mode:** ${v2.pageMode ?? 'a4-paged'}
+- **Style tools (update_header_variant, update_colors, etc.) zijn voor v2-CVs niet beschikbaar — verwijs de gebruiker naar de Stijl-tweaks-knop in de preview voor visuele aanpassingen.**
+`
+    : currentTokens
     ? `
 ## Huidige CV Styling
 - **Theme:** ${currentTokens.themeBase}
@@ -58,7 +80,11 @@ ${jobVacancy.industry ? `- **Industry:** ${jobVacancy.industry}` : ''}
 `
     : '';
 
-  const styleToolsSection = currentTokens
+  // Style tools below operate on legacy v1 token fields (themeBase, colors,
+  // headerVariant, etc.). For v2 (cv-engine) CVs these tools would write to
+  // fields the renderer doesn't read — so we don't advertise them. The chat
+  // keeps only content-edit tools active for v2 docs.
+  const styleToolsSection = currentTokens && !isV2Tokens
     ? `
 ## Style Tools
 - update_header_variant: Wijzig de header layout (simple, accented, banner, split, asymmetric)
