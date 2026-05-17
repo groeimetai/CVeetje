@@ -16,7 +16,7 @@ import { resolveTemperature } from '@/lib/ai/temperature';
 import { generateObjectResilient } from '@/lib/ai/generate-resilient';
 import type { JobVacancy, LLMProvider, StyleCreativityLevel, TokenUsage } from '@/types';
 import type { CVStyleTokensV2 } from '../tokens';
-import { EmphasisSchema, PaletteOverrideSchema } from '../tokens';
+import { PaletteOverrideSchema } from '../tokens';
 import { FontPairingIdSchema, type DesignSpec } from '../spec';
 import { listRecipesByRoute, getRecipeById } from '../recipes/registry';
 import { creativityLevelToRoute } from './level-map';
@@ -52,12 +52,30 @@ export interface OrchestratorResult {
 }
 
 // ============ AI output schema ============
+//
+// Intentionally permissive — no length limits on emphasis strings. The AI
+// SDK's `generateObject` validates with this schema, so any too-strict
+// constraint here turns a recoverable overflow ("AI wrote a 200-char hero
+// numeral instead of a 12-char one") into a hard schema-mismatch error +
+// 3 wasted retries. We truncate to the canonical max lengths inside
+// `normalizeTokens()` (see normalize.ts) — those limits live in
+// `EmphasisSchema` which validates on Firestore write.
+
+const PermissiveEmphasisSchema = z.object({
+  pullQuoteText: z.string().optional(),
+  pullQuoteAttribution: z.string().optional(),
+  accentKeywords: z.array(z.string()).optional(),
+  nameTagline: z.string().optional(),
+  dropCapLetter: z.string().optional(),
+  posterLine: z.string().optional(),
+  heroNumeralValue: z.string().optional(),
+});
 
 const AIOutputSchema = z.object({
   recipeId: z.string(),
   paletteOverride: PaletteOverrideSchema.optional(),
   fontOverride: FontPairingIdSchema.optional(),
-  emphasis: EmphasisSchema.optional(),
+  emphasis: PermissiveEmphasisSchema.optional(),
   sectionOrder: z.array(z.string()).optional(),
   hiddenSections: z.array(z.string()).optional(),
 });

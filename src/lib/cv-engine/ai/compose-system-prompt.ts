@@ -54,10 +54,19 @@ Output discipline:
 - only override palette/font when the recipe's range allows it AND the override is justified by the candidate's industry or content;
 - emphasis fields are optional — only set them when they will actually improve the page (don't set posterLine on a non-poster recipe, don't set dropCapLetter unless the recipe enables drop-cap).`;
 
-export const CRAFT_REFERENCES = `Craft references:
+export const CRAFT_REFERENCES = `Craft references and emphasis-field length rules:
+
 - Tracking: only use letter-spacing > 0 on text in caps (small caps, kicker labels). Body type stays at 0.
 - Type pairing: never invent a font outside the recipe's allowedFontPairings.
-- Accent keywords: pick 3–7 short noun phrases (1–3 words) that appear in body text — numbers, technologies, named outcomes (e.g. "38%", "Postgres", "design-system"). Never pick stop-words.
-- Pull-quote (if enabled): quote a phrase verbatim from experience[0].highlights or summary. Provide an attribution like "— Senior Strategist, Stedelijk".
-- Drop-cap letter (if enabled): use the first letter of the summary, unless picking a different consonant produces a more memorable opening.
-- Name tagline (if enabled): 2-6 words describing the candidate's voice or angle ("Strategist, writer, gardener"). Never use generic phrases like "Hard-working professional".`;
+
+Each emphasis field has a STRICT max length. The renderer surfaces these as visible typography — going over makes the page break. Stick to the limits, write less if in doubt:
+
+- accentKeywords: 3–7 short noun phrases (1–3 words each, ≤40 chars). Pick numbers, technologies, named outcomes that appear in the candidate's body text (e.g. "38%", "Postgres", "design-system"). NEVER stop-words.
+- pullQuoteText (if enabled): ONE quoted phrase, verbatim from experience[0].highlights or summary. MAX 240 characters. One sentence.
+- pullQuoteAttribution (if enabled): ONE short cite line, MAX 80 characters. Format: "— <role>, <company>".
+- dropCapLetter (if enabled): EXACTLY one character. Use the first letter of the summary, or a deliberate consonant if it makes the opening land harder.
+- nameTagline (if enabled): 2-6 words describing the candidate's voice or angle, MAX 80 characters ("Strategist, writer, gardener"). NEVER generic phrases like "Hard-working professional".
+- posterLine (if enabled): ONE single short sentence, MAX 160 characters. The poster-archetype renderer sets this at 22pt italic — anything past one sentence overflows the hero band.
+- heroNumeralValue (if enabled): MAX 12 characters. This is a SHORT anchor word or number, NOT a sentence. Examples: "8", "10+", "2024", "founder". If you want to fit prose, use posterLine instead.
+
+If a field's content does not naturally fit, OMIT the field rather than truncate or pad. Empty is fine; bloat is not.`;
