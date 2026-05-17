@@ -432,7 +432,7 @@ export function useCVChat({ context, onContentChange, onTokensChange }: UseCVCha
 
   // Ref for addToolOutput — needed inside onToolCall which is defined before useChat returns
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const addToolOutputRef = useRef<(args: any) => Promise<void>>(undefined);
+  const addToolOutputRef = useRef<(args: any) => void | PromiseLike<void>>(undefined);
 
   // Create transport with context + chargedCredits in body
   // chargedCredits uses a getter so the transport always reads the latest ref value
