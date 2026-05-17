@@ -443,9 +443,14 @@ export default function CVDetailPage() {
     );
   }
 
-  // Get tokens - use stored tokens if available, convert from styleConfig, or use defaults
+  // Get tokens — prefer the doc's `designTokens` (v1 or v2 shape). The
+  // dispatcher in renderCV handles both shapes; CVPreview's internal v1/v2
+  // gates do the same. Fall back to a converted styleConfig (very legacy
+  // docs) or to v1 defaults so the page never crashes on a missing field.
   let tokens: CVDesignTokens;
-  if (cv.tokens) {
+  if (cv.designTokens) {
+    tokens = cv.designTokens as CVDesignTokens;
+  } else if (cv.tokens) {
     tokens = cv.tokens;
   } else if (cv.styleConfig) {
     tokens = styleConfigToTokens(cv.styleConfig as CVStyleConfig);
