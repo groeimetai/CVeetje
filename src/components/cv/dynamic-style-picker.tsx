@@ -24,7 +24,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-context';
 import { cn } from '@/lib/utils';
-import { generateCVHTML } from '@/lib/cv/html-generator';
+import { renderCV, isV2Tokens } from '@/lib/cv-engine/dispatch';
+import { getRecipeById } from '@/lib/cv-engine/recipes/registry';
+import type { CVStyleTokensV2 } from '@/lib/cv-engine/tokens';
+import { oklchToCSS } from '@/lib/cv-engine/render/css/oklch';
 import { typeScales } from '@/lib/cv/templates/themes';
 import type {
   ParsedLinkedIn,
@@ -73,7 +76,7 @@ function StylePreviewFrame({
   fullName,
   avatarUrl,
 }: {
-  tokens: CVDesignTokens;
+  tokens: CVDesignTokens | CVStyleTokensV2;
   fullName: string;
   avatarUrl?: string | null;
 }) {
@@ -81,7 +84,7 @@ function StylePreviewFrame({
   const [scale, setScale] = useState(0.5);
 
   const html = useMemo(
-    () => generateCVHTML(SAMPLE_CONTENT, tokens, fullName, avatarUrl),
+    () => renderCV(SAMPLE_CONTENT, tokens, { fullName, avatarUrl }),
     [tokens, fullName, avatarUrl]
   );
 
@@ -189,12 +192,9 @@ export function DynamicStylePicker({
       icon: Zap,
       desc: 'Maximale visuele impact'
     },
-    {
-      value: 'editorial-paper' as StyleCreativityLevel,
-      label: 'Editorial Paper',
-      icon: Sparkles,
-      desc: 'Cveetje-look: cream paper + ink + clay'
-    },
+    // 'editorial-paper' is intentionally omitted — in the cv-engine its
+    // brand palette lives in `balanced/press`. Legacy CVs that used it still
+    // render via the v1 renderer.
   ];
 
   const handleGenerateStyle = useCallback(async () => {
@@ -445,7 +445,43 @@ export function DynamicStylePicker({
         {/* Style Preview */}
         {tokens && (
           <div className="space-y-4">
-            {/* Style Name & Rationale */}
+            {/* v2 (cv-engine) info card */}
+            {isV2Tokens(tokens) && (() => {
+              const v2 = tokens as unknown as CVStyleTokensV2;
+              const recipe = getRecipeById(v2.recipeId);
+              if (!recipe) return null;
+              return (
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-lg truncate">{recipe.displayName}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{recipe.id}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1 justify-end">
+                      <Badge variant="secondary">{recipe.layoutShape}</Badge>
+                      <Badge variant="outline">{recipe.density}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{recipe.description}</p>
+                  <div className="flex gap-1.5 pt-1">
+                    {(['ink', 'paper', 'accent', 'muted', 'surface'] as const).map(role => {
+                      const oklch = v2.paletteOverride?.[role] ?? recipe.palette[role].anchor;
+                      return (
+                        <div
+                          key={role}
+                          className="h-7 flex-1 rounded-md border"
+                          style={{ backgroundColor: oklchToCSS(oklch) }}
+                          title={`${role}: ${oklchToCSS(oklch)}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Legacy v1 preview blocks — only render for v1 tokens */}
+            {!isV2Tokens(tokens) && (
             <div className="rounded-lg border p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg">{tokens.styleName}</h3>
@@ -456,8 +492,10 @@ export function DynamicStylePicker({
               <p className="text-sm text-muted-foreground">{tokens.styleRationale}</p>
               <Badge variant="outline">{tokens.industryFit}</Badge>
             </div>
+            )}
 
-            {/* Color Preview */}
+            {!isV2Tokens(tokens) && (<>
+            {/* Color Preview — v1 only */}
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4 text-muted-foreground" />
@@ -643,7 +681,9 @@ export function DynamicStylePicker({
               </div>
             </div>
 
-            {/* Real CV Preview (iframe with generateCVHTML) */}
+            </>)}
+
+            {/* Real CV Preview (iframe — dispatcher renders both v1 + v2) */}
             <StylePreviewFrame
               tokens={tokens}
               fullName={linkedInData.fullName}
