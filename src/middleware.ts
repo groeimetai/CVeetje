@@ -108,6 +108,25 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Next.js metadata routes (opengraph-image.tsx / twitter-image.tsx) live on
+  // the app root and are not locale-aware. Without intervention next-intl
+  // would 307 `/opengraph-image` → `/nl/opengraph-image` (which 404s — the
+  // metadata file only exists at the root). We do two things here:
+  // 1. Skip the intl middleware entirely when the request is already at
+  //    `/opengraph-image` so it gets served directly.
+  // 2. Rewrite any locale-prefixed variant (`/nl/opengraph-image`) to the
+  //    root path so crawlers like bingbot that follow the previous 307
+  //    still resolve to a 200.
+  const metadataMatch = pathname.match(/^\/(nl|en)\/(opengraph-image|twitter-image)$/);
+  if (metadataMatch) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${metadataMatch[2]}`;
+    return NextResponse.rewrite(url);
+  }
+  if (pathname === '/opengraph-image' || pathname === '/twitter-image') {
+    return NextResponse.next();
+  }
+
   // Check for authentication token
   const token = request.cookies.get('firebase-token')?.value;
   const hasAuth = !!token;

@@ -106,17 +106,30 @@ function applyContentEdit(
 // Module-level debounce: one timeout per cvId, fire-and-forget PATCH
 // to /api/cv/[id]/content with the latest content. The user's blur on
 // successive elements coalesces into a single network call.
+//
+// `getToken` is passed in by the component so we can force-refresh the
+// Firebase ID token before each PATCH — the `firebase-token` cookie
+// expires after 55 minutes, so any long-open preview tab without an
+// Authorization header would hit 401.
 const contentSaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
-function debouncedSaveContent(cvId: string | null | undefined, content: GeneratedCVContent) {
+function debouncedSaveContent(
+  cvId: string | null | undefined,
+  content: GeneratedCVContent,
+  getToken: () => Promise<string | null>,
+) {
   if (!cvId) return;
   const existing = contentSaveTimers.get(cvId);
   if (existing) clearTimeout(existing);
   const t = setTimeout(async () => {
     contentSaveTimers.delete(cvId);
     try {
+      const token = await getToken();
       await fetch(`/api/cv/${cvId}/content`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ generatedContent: content }),
       });
     } catch (err) {
@@ -207,7 +220,7 @@ export function CVPreview({
   currentCreativityLevel = 'balanced',
   onDisputeApproved,
 }: CVPreviewProps) {
-  const { llmMode } = useAuth();
+  const { llmMode, refreshToken } = useAuth();
   const [activeTab, setActiveTab] = useState('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -291,13 +304,13 @@ export function CVPreview({
         if (next === prev) return prev;
         onContentChange?.(next);
         // Debounced content-PATCH to Firestore — fire-and-forget
-        debouncedSaveContent(cvId, next);
+        debouncedSaveContent(cvId, next, refreshToken);
         return next;
       });
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [cvId, onContentChange, onHeaderChange]);
+  }, [cvId, onContentChange, onHeaderChange, refreshToken]);
 
   // Handle content changes
   const handleContentChange = useCallback((newContent: GeneratedCVContent) => {

@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useAuth } from '@/components/auth/auth-context';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { StyleCreativityLevel } from '@/types';
 import {
@@ -77,6 +78,7 @@ export function DesignTweaksSheet({
   cvId,
   onTokensChange,
 }: DesignTweaksSheetProps) {
+  const { refreshToken } = useAuth();
   const fields = useMemo(() => getVisibleFields(creativityLevel), [creativityLevel]);
   const grouped = useMemo(() => fieldsByTab(fields), [fields]);
 
@@ -94,9 +96,17 @@ export function DesignTweaksSheet({
     debounceRef.current = setTimeout(async () => {
       setSaveState('saving');
       try {
+        // The `firebase-token` cookie expires after 55 min so a long-open
+        // preview tab will hit 401 without a fresh token. Force-refresh
+        // and send as Authorization header to match the project-wide auth
+        // pattern (see cv-dispute-dialog).
+        const token = await refreshToken();
         const res = await fetch(`/api/cv/${cvId}/tokens`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({ designTokens: next }),
         });
         if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -109,7 +119,7 @@ export function DesignTweaksSheet({
         toast.error('Tweak kon niet worden opgeslagen — probeer opnieuw');
       }
     }, 500);
-  }, [cvId]);
+  }, [cvId, refreshToken]);
 
   // Cleanup pending debounce on unmount
   useEffect(() => {
