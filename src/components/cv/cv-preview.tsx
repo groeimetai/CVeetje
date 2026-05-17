@@ -796,7 +796,9 @@ export function CVPreview({
             </TabsContent>
 
             <TabsContent value="style" className="space-y-4">
-              {/* Style tokens display */}
+              {/* Style tokens display — v1 (legacy) layout */}
+              {!isV2Tokens(tokens) && tokens?.colors && (
+              <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Theme & Colors */}
                 <div className="space-y-3 p-4 border rounded-lg">
@@ -927,6 +929,87 @@ export function CVPreview({
                 </h3>
                 <p className="text-sm text-muted-foreground">{tokens.styleRationale}</p>
               </div>
+              </>
+              )}
+
+              {/* Style tokens display — v2 (cv-engine) layout */}
+              {isV2Tokens(tokens) && (() => {
+                const v2 = tokens as unknown as CVStyleTokensV2;
+                const recipe = getRecipeById(v2.recipeId);
+                if (!recipe) {
+                  return (
+                    <div className="p-4 border rounded-lg bg-muted/30 text-sm text-muted-foreground">
+                      Recipe <code>{v2.recipeId}</code> niet gevonden in registry.
+                    </div>
+                  );
+                }
+                const roles = ['ink', 'paper', 'accent', 'muted', 'surface'] as const;
+                return (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-3 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          Recipe & Palet
+                        </h3>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Recipe</span>
+                            <Badge variant="outline">{recipe.displayName}</Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Route</span>
+                            <span className="text-sm text-muted-foreground">{recipe.route}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          {roles.map(role => {
+                            const oklch = v2.paletteOverride?.[role] ?? recipe.palette[role].anchor;
+                            return (
+                              <div
+                                key={role}
+                                className="w-8 h-8 rounded border"
+                                style={{ backgroundColor: oklchToCSS(oklch) }}
+                                title={`${role}: ${oklchToCSS(oklch)}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="space-y-3 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          Layout & Typografie
+                        </h3>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Shape</span>
+                            <Badge variant="outline">{recipe.layoutShape}</Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Density</span>
+                            <Badge variant="outline">{recipe.density}</Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Font</span>
+                            <span className="text-sm text-muted-foreground">
+                              {v2.fontOverride ?? recipe.allowedFontPairings[0]}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Page mode</span>
+                            <Badge variant="outline">{v2.pageMode ?? 'a4-paged'}</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4 border rounded-lg bg-muted/30">
+                      <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
+                        Recipe-brief
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{recipe.description}</p>
+                    </div>
+                  </>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="html" className="space-y-4">
