@@ -2,65 +2,97 @@ import { z } from 'zod';
 import { resolveTemperature } from './temperature';
 import { generateObjectResilient } from './generate-resilient';
 import { getCurrentDateContext } from './date-context';
-import type { JobVacancy, LLMProvider, TokenUsage } from '@/types';
+import type {
+  ConfidenceLevel,
+  ExperienceLevel,
+  JobCompensation,
+  JobVacancy,
+  LLMProvider,
+  SalaryEstimate,
+  ExperienceRequired,
+  TokenUsage,
+} from '@/types';
 
-// Schema for compensation/benefits
-const compensationSchema = z.object({
-  salaryMin: z.number().nullable().describe('Minimum salaris (jaarbasis) indien vermeld, anders null'),
-  salaryMax: z.number().nullable().describe('Maximum salaris (jaarbasis) indien vermeld, anders null'),
-  salaryCurrency: z.string().nullable().describe('Valuta (EUR, USD) indien vermeld, anders null'),
-  salaryPeriod: z.enum(['yearly', 'monthly', 'hourly']).nullable().describe('Salaris periode indien vermeld, anders null'),
-  benefits: z.array(z.string()).describe('Lijst van secundaire arbeidsvoorwaarden/benefits die in de vacature worden genoemd (bijv. pensioen, auto, laptop, thuiswerken, opleidingsbudget, etc.)'),
-  bonusInfo: z.string().nullable().describe('Informatie over bonus/variabele beloning indien vermeld, anders null'),
-  notes: z.string().nullable().describe('Overige opmerkingen over compensatie/arbeidsvoorwaarden indien vermeld, anders null'),
-}).nullable();
-
-// Schema for market salary estimate (AI analysis)
-const salaryEstimateSchema = z.object({
-  estimatedMin: z.number().describe('Geschatte minimum jaarsalaris voor deze functie in Nederland (EUR)'),
-  estimatedMax: z.number().describe('Geschatte maximum jaarsalaris voor deze functie in Nederland (EUR)'),
-  experienceLevel: z.enum(['junior', 'medior', 'senior', 'lead', 'executive']).describe('Geschat ervaringsniveau dat gevraagd wordt'),
-  confidence: z.enum(['low', 'medium', 'high']).describe('Betrouwbaarheid van de schatting: low (weinig info), medium (redelijke info), high (duidelijke indicatoren)'),
-  reasoning: z.string().describe('Korte onderbouwing van de schatting (max 100 woorden): welke factoren zijn meegenomen?'),
-  marketInsight: z.string().describe('Marktinzicht: hoe verhoudt deze functie zich tot de markt? Is het een schaarse skill? Groeiende sector?'),
-});
-
-// Schema for experience requirements (for fit analysis)
-// Het hele object is nullable: als de vacature geen LETTERLIJKE jaren noemt,
-// MOET de AI null teruggeven. Niet afleiden uit functietitel.
-const experienceRequiredSchema = z.object({
-  minYears: z.number().describe('Letterlijk genoemd minimum aantal jaren ervaring uit de vacaturetekst. Geen letterlijke jaren → retourneer null voor het hele experienceRequired-veld.'),
-  maxYears: z.number().nullable().describe('Letterlijk genoemd maximum aantal jaren (alleen bij ranges zoals "3-5 jaar"), anders null'),
-  level: z.enum(['junior', 'medior', 'senior', 'lead', 'executive']).describe('Niveau dat gevraagd wordt op basis van letterlijke termen in de tekst'),
-  isStrict: z.boolean().describe('Is de eis hard vermeld (signaalwoorden "vereist"/"minimaal") of flexibel ("bij voorkeur")?'),
-}).nullable();
-
-// Schema for parsed job vacancy.
+// ============ Schema notes ============
 //
-// Top-level fields are OPTIONAL for the same reason as cv-generator:
-// Claude Opus 4.7 structured output intermittently returns `{}` or wraps
-// the payload in `{data: ...}`. We parse leniently, then validate and fill
-// defaults in normalizeJobVacancy() so downstream code always sees a
-// fully-populated JobVacancy.
-const jobVacancySchema = z.object({
-  title: z.string().optional().describe('De functietitel/job title'),
-  company: z.string().nullable().optional().describe('Bedrijfsnaam indien vermeld, anders null'),
-  description: z.string().optional().describe('Korte samenvatting van de functie in max 200 woorden'),
-  requirements: z.array(z.string()).optional().describe('Belangrijkste vereisten en kwalificaties (max 10 items)'),
-  keywords: z.array(z.string()).optional().describe('Relevante skills, technologieën en trefwoorden (max 15 items)'),
-  industry: z.string().nullable().optional().describe('Sector/industrie indien af te leiden, anders null'),
-  location: z.string().nullable().optional().describe('Werklocatie indien vermeld, anders null'),
-  employmentType: z.string().nullable().optional().describe('Dienstverband type (fulltime/parttime/freelance) indien vermeld, anders null'),
-  compensation: compensationSchema.optional().describe('Compensatie en secundaire arbeidsvoorwaarden indien vermeld in de vacature'),
-  salaryEstimate: salaryEstimateSchema.optional().describe('AI-inschatting van het marktsalaris voor deze functie'),
+// Anthropic Opus 4.7's tool/structured-output validation rejects schemas
+// over a (undocumented) complexity ceiling with `400 "Schema is too complex"`.
+// The earlier shape — 3 nested objects, many `z.enum()`, every field with a
+// long Dutch `.describe()` — tripped that limit.
+//
+// Mitigations applied here:
+//   - All instructions live in the prompt body (`buildParsePrompt`); the
+//     Zod schema is a thin type contract, no `.describe()` prose.
+//   - Nested-object enums (`salaryPeriod`, `experienceLevel`, `confidence`,
+//     `level`) are typed as `z.string()` here and re-validated to the strict
+//     enum values inside `normalizeJobVacancy`. The AI still gets the closed
+//     vocabulary from the prompt — wrong values are normalized away.
+//   - `.nullable()` replaced by `.optional()` everywhere it appears with
+//     `.optional()`: the AI can just omit the field, which is a simpler
+//     schema construct than `T | null | undefined`.
 
-  // Fields for fit analysis
-  experienceRequired: experienceRequiredSchema.optional().describe('Vereiste werkervaring: jaren en niveau'),
-  mustHaveSkills: z.array(z.string()).optional().describe('Skills die EXPLICIET als vereist/must-have worden genoemd (max 10)'),
-  niceToHaveSkills: z.array(z.string()).optional().describe('Skills die als "nice to have", "bonus", "pré" of "bij voorkeur" worden genoemd (max 8)'),
-  requiredEducation: z.string().nullable().optional().describe('Minimale opleiding indien expliciet vereist'),
-  requiredCertifications: z.array(z.string()).optional().describe('Specifieke certificeringen die als vereist worden genoemd'),
+const compensationSchema = z.object({
+  salaryMin: z.number().optional(),
+  salaryMax: z.number().optional(),
+  salaryCurrency: z.string().optional(),
+  salaryPeriod: z.string().optional(),
+  benefits: z.array(z.string()).optional(),
+  bonusInfo: z.string().optional(),
+  notes: z.string().optional(),
 });
+
+const salaryEstimateSchema = z.object({
+  estimatedMin: z.number().optional(),
+  estimatedMax: z.number().optional(),
+  experienceLevel: z.string().optional(),
+  confidence: z.string().optional(),
+  reasoning: z.string().optional(),
+  marketInsight: z.string().optional(),
+});
+
+const experienceRequiredSchema = z.object({
+  minYears: z.number().optional(),
+  maxYears: z.number().optional(),
+  level: z.string().optional(),
+  isStrict: z.boolean().optional(),
+});
+
+const jobVacancySchema = z.object({
+  title: z.string().optional(),
+  company: z.string().optional(),
+  description: z.string().optional(),
+  requirements: z.array(z.string()).optional(),
+  keywords: z.array(z.string()).optional(),
+  industry: z.string().optional(),
+  location: z.string().optional(),
+  employmentType: z.string().optional(),
+  compensation: compensationSchema.optional(),
+  salaryEstimate: salaryEstimateSchema.optional(),
+  experienceRequired: experienceRequiredSchema.optional(),
+  mustHaveSkills: z.array(z.string()).optional(),
+  niceToHaveSkills: z.array(z.string()).optional(),
+  requiredEducation: z.string().optional(),
+  requiredCertifications: z.array(z.string()).optional(),
+});
+
+const VALID_EXPERIENCE_LEVELS: ExperienceLevel[] = ['junior', 'medior', 'senior', 'lead', 'executive'];
+const VALID_CONFIDENCE_LEVELS: ConfidenceLevel[] = ['low', 'medium', 'high'];
+const VALID_SALARY_PERIODS = ['yearly', 'monthly', 'hourly'] as const;
+
+function asExperienceLevel(v: unknown): ExperienceLevel | undefined {
+  if (typeof v !== 'string') return undefined;
+  return (VALID_EXPERIENCE_LEVELS as string[]).includes(v) ? (v as ExperienceLevel) : undefined;
+}
+
+function asConfidenceLevel(v: unknown): ConfidenceLevel | undefined {
+  if (typeof v !== 'string') return undefined;
+  return (VALID_CONFIDENCE_LEVELS as string[]).includes(v) ? (v as ConfidenceLevel) : undefined;
+}
+
+function asSalaryPeriod(v: unknown): JobCompensation['salaryPeriod'] {
+  if (typeof v !== 'string') return undefined;
+  return (VALID_SALARY_PERIODS as readonly string[]).includes(v) ? (v as JobCompensation['salaryPeriod']) : undefined;
+}
 
 function buildParsePrompt(rawText: string): string {
   return `Je bent een expert in het analyseren van vacatureteksten. Extraheer wat letterlijk in de tekst staat — niets meer.
@@ -71,15 +103,37 @@ ${getCurrentDateContext('nl')}
 
 Extraheer ALLEEN wat de vacaturetekst expliciet noemt. Leid niets af uit functietitel, vergelijkbare vacatures uit je trainingsdata, of context.
 
-- Lege array of \`null\` is een geldig (en vaak correct) antwoord. Liever leeg dan verzonnen.
+- Lege array of weggelaten veld is een geldig (en vaak correct) antwoord. Liever leeg dan verzonnen.
 - Werktools ("we gebruiken Slack/Jira/X"), teamcultuur en "over ons"-info zijn GEEN eisen aan de kandidaat.
-- "Pré", "bonus", "bij voorkeur", "wenselijk", "is een plus" → nice-to-have, NIET must-have.
+- "Pré", "bonus", "bij voorkeur", "wenselijk", "is een plus" → niceToHaveSkills, NIET mustHaveSkills.
 - Must-have-signalen: "vereist", "minimaal", "must have", "noodzakelijk", "essentieel", "je hebt aantoonbare ervaring met", of vermelding onder kop "Eisen" / "Wat wij vragen" / "Functie-eisen".
-- **experienceRequired**: ALLEEN invullen als er LETTERLIJKE jaren in de tekst staan. Geen letterlijke jaren → \`null\` voor het hele veld. Leid GEEN jaren af uit "Senior" / "Lead" in de titel of uit seniority-taal.
-- **requiredEducation** / **requiredCertifications**: alleen als expliciet vereist, niet bij "bij voorkeur".
-- **salaryEstimate**: jouw inschatting van het marktsalaris (NL, jaarbasis, EUR) op basis van functietitel, sector en locatie. Geef confidence aan en onderbouw kort.
 
-Vul alle overige velden volgens de beschrijvingen in het schema. Bij twijfel: leeg/null.
+## Veld-uitleg en gesloten woordenschat
+
+- **title**: functietitel.
+- **company**: bedrijfsnaam indien vermeld, laat anders weg.
+- **description**: samenvatting van de functie, max 200 woorden.
+- **requirements**: max 10 belangrijkste vereisten/kwalificaties.
+- **keywords**: max 15 relevante skills/technologieën/trefwoorden.
+- **industry**, **location**, **employmentType**: laat weg als niet vermeld.
+- **compensation.salaryPeriod**: één van \`yearly\` | \`monthly\` | \`hourly\`. Laat weg als niet vermeld.
+- **compensation.benefits**: lijst van secundaire arbeidsvoorwaarden (pensioen, auto, laptop, thuiswerken, opleidingsbudget, etc.) zoals genoemd in de vacature.
+- **salaryEstimate**: JOUW marktinschatting (NL, jaarbasis, EUR) op basis van functietitel + sector + locatie. Velden:
+  - \`estimatedMin\` / \`estimatedMax\`: number.
+  - \`experienceLevel\`: één van \`junior\` | \`medior\` | \`senior\` | \`lead\` | \`executive\`.
+  - \`confidence\`: één van \`low\` | \`medium\` | \`high\`.
+  - \`reasoning\`: max 100 woorden onderbouwing.
+  - \`marketInsight\`: hoe verhoudt deze functie zich tot de markt?
+- **experienceRequired**: ALLEEN invullen als er LETTERLIJKE jaren in de tekst staan. Geen letterlijke jaren → laat het hele veld weg. Leid GEEN jaren af uit "Senior" / "Lead" in de titel of uit seniority-taal. Velden:
+  - \`minYears\`: number, letterlijk genoemd minimum.
+  - \`maxYears\`: number, alleen bij ranges (3–5 jaar).
+  - \`level\`: één van \`junior\` | \`medior\` | \`senior\` | \`lead\` | \`executive\`.
+  - \`isStrict\`: boolean, hard ("vereist"/"minimaal") of flexibel ("bij voorkeur").
+- **mustHaveSkills**: max 10, alleen skills die expliciet als vereist worden genoemd.
+- **niceToHaveSkills**: max 8, expliciet als bonus/pré/bij voorkeur genoemd.
+- **requiredEducation**, **requiredCertifications**: alleen als expliciet vereist, niet bij "bij voorkeur".
+
+Bij twijfel: laat het veld weg.
 
 ## Vacaturetekst
 
@@ -123,8 +177,24 @@ export async function parseJobVacancy(
 // Normalize what the LLM returned into a fully-populated JobVacancy.
 // Mirrors the approach in cv-generator.ts — same intermittent Opus 4.7
 // structured-output failure modes ({}, {data: ...}, missing fields).
+//
+// Plus: the simplified Zod schema accepts `z.string()` for the four enum
+// fields (salaryPeriod, salaryEstimate.experienceLevel/confidence,
+// experienceRequired.level). We validate them against the closed vocab here;
+// invalid values are dropped (the corresponding field becomes `undefined`).
 function normalizeJobVacancy(rawInput: unknown, rawText: string, sourceUrl: string | null): JobVacancy {
-  type RawShape = Partial<JobVacancy> & { data?: Partial<JobVacancy> };
+  type RawCompensation = Omit<JobCompensation, 'salaryPeriod'> & { salaryPeriod?: unknown };
+  type RawEstimate = Omit<SalaryEstimate, 'experienceLevel' | 'confidence'> & {
+    experienceLevel?: unknown;
+    confidence?: unknown;
+  };
+  type RawExpReq = Omit<ExperienceRequired, 'level'> & { level?: unknown };
+  type RawShape = Omit<Partial<JobVacancy>, 'compensation' | 'salaryEstimate' | 'experienceRequired'> & {
+    compensation?: RawCompensation;
+    salaryEstimate?: RawEstimate;
+    experienceRequired?: RawExpReq;
+    data?: RawShape;
+  };
   let raw = (rawInput ?? {}) as RawShape;
 
   if (
@@ -148,6 +218,42 @@ function normalizeJobVacancy(rawInput: unknown, rawText: string, sourceUrl: stri
     );
   }
 
+  const compensation: JobCompensation | undefined = raw.compensation
+    ? {
+        salaryMin: raw.compensation.salaryMin,
+        salaryMax: raw.compensation.salaryMax,
+        salaryCurrency: raw.compensation.salaryCurrency,
+        salaryPeriod: asSalaryPeriod(raw.compensation.salaryPeriod),
+        benefits: raw.compensation.benefits ?? [],
+        bonusInfo: raw.compensation.bonusInfo,
+        notes: raw.compensation.notes,
+      }
+    : undefined;
+
+  const salaryEstimate: SalaryEstimate | undefined =
+    raw.salaryEstimate &&
+    typeof raw.salaryEstimate.estimatedMin === 'number' &&
+    typeof raw.salaryEstimate.estimatedMax === 'number'
+      ? {
+          estimatedMin: raw.salaryEstimate.estimatedMin,
+          estimatedMax: raw.salaryEstimate.estimatedMax,
+          experienceLevel: asExperienceLevel(raw.salaryEstimate.experienceLevel) ?? 'medior',
+          confidence: asConfidenceLevel(raw.salaryEstimate.confidence) ?? 'low',
+          reasoning: raw.salaryEstimate.reasoning ?? '',
+          marketInsight: raw.salaryEstimate.marketInsight ?? '',
+        }
+      : undefined;
+
+  const experienceRequired: ExperienceRequired | undefined =
+    raw.experienceRequired && typeof raw.experienceRequired.minYears === 'number'
+      ? {
+          minYears: raw.experienceRequired.minYears,
+          maxYears: raw.experienceRequired.maxYears,
+          level: asExperienceLevel(raw.experienceRequired.level) ?? 'medior',
+          isStrict: !!raw.experienceRequired.isStrict,
+        }
+      : undefined;
+
   return {
     title: raw.title ?? '',
     company: raw.company ?? null,
@@ -157,9 +263,9 @@ function normalizeJobVacancy(rawInput: unknown, rawText: string, sourceUrl: stri
     industry: raw.industry ?? undefined,
     location: raw.location ?? undefined,
     employmentType: raw.employmentType ?? undefined,
-    compensation: raw.compensation ?? undefined,
-    salaryEstimate: raw.salaryEstimate ?? undefined,
-    experienceRequired: raw.experienceRequired ?? undefined,
+    compensation,
+    salaryEstimate,
+    experienceRequired,
     mustHaveSkills: raw.mustHaveSkills ?? [],
     niceToHaveSkills: raw.niceToHaveSkills ?? [],
     requiredEducation: raw.requiredEducation ?? undefined,
