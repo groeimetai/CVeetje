@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -86,6 +86,13 @@ export function CVWizard() {
   const [elementColors, setElementColors] = useState<Record<string, string | undefined>>({});
   const [cvId, setCvId] = useState<string | null>(null);
   const [outputLanguage, setOutputLanguage] = useState<OutputLanguage>('nl');
+  // True zodra de gebruiker de taal expliciet heeft gekozen of een draft heeft
+  // teruggehaald. Auto-detect uit jobVacancy overschrijft alleen vóór die wijziging.
+  const languageWasUserSetRef = useRef<boolean>(false);
+  const handleSetOutputLanguage = useCallback((lang: OutputLanguage) => {
+    languageWasUserSetRef.current = true;
+    setOutputLanguage(lang);
+  }, []);
   // CV options — pre-generate preferences. Default ON if the profile actually
   // has interests; otherwise OFF (no point asking the AI to render nothing).
   const [showInterestsOnCV, setShowInterestsOnCV] = useState<boolean>(false);
@@ -125,6 +132,21 @@ export function CVWizard() {
       setDraftChecked(true);
     }
   }, [isDraftLoading, hasDraft, draftChecked]);
+
+  // Auto-detect output language from the job vacancy.
+  // Runs only if the user hasn't already set a language preference (via selector
+  // click or a restored draft). Pure heuristic — no AI call, no network.
+  useEffect(() => {
+    if (languageWasUserSetRef.current) return;
+    if (!jobVacancy?.description) return;
+    void (async () => {
+      const { detectLanguageFromText } = await import('@/lib/ai/language-detect');
+      const detected = detectLanguageFromText(jobVacancy.description);
+      if (detected.confidence !== 'low' && detected.language !== outputLanguage) {
+        setOutputLanguage(detected.language);
+      }
+    })();
+  }, [jobVacancy?.description, outputLanguage]);
 
   // Prefill jobVacancy from ?jobId= deeplink (from the public /jobs board)
   const [deeplinkAttempted, setDeeplinkAttempted] = useState(false);
@@ -228,6 +250,8 @@ export function CVWizard() {
       setDesignTokens(draft.designTokens);
       setAvatarUrl(draft.avatarUrl);
       setOutputLanguage(draft.outputLanguage);
+      // Een teruggehaalde draft = de gebruiker had hiermee al gekozen.
+      languageWasUserSetRef.current = true;
       setShowInterestsOnCV(
         draft.showInterestsOnCV ?? !!(draft.linkedInData?.interests && draft.linkedInData.interests.length > 0)
       );
@@ -906,7 +930,7 @@ export function CVWizard() {
 
       {currentStep === 'template-style' && linkedInData && (
         <div className="space-y-6">
-          <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
+          <LanguageSelector value={outputLanguage} onChange={handleSetOutputLanguage} />
 
           <TemplateStylePicker
             linkedInData={linkedInData}
@@ -921,7 +945,7 @@ export function CVWizard() {
 
       {currentStep === 'style' && linkedInData && (
         <div className="space-y-6">
-          <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
+          <LanguageSelector value={outputLanguage} onChange={handleSetOutputLanguage} />
 
           {(() => {
             const interestsCount = linkedInData.interests?.length ?? 0;
@@ -963,7 +987,7 @@ export function CVWizard() {
 
       {currentStep === 'template' && linkedInData && (
         <div className="space-y-6">
-          <LanguageSelector value={outputLanguage} onChange={setOutputLanguage} />
+          <LanguageSelector value={outputLanguage} onChange={handleSetOutputLanguage} />
 
           <TemplateSelector
             profileData={linkedInData}

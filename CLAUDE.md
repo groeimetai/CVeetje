@@ -12,7 +12,7 @@ Bundelt naast CV-generation:
 - **Disputes** flow (AI gatekeeper → regenerate)
 - **Feedback** flow met auto GitHub issues
 - Admin-only **kanban**
-- Multi-modal **DOCX template fill** (incl. profile-photo replacement)
+- Multi-modal **template fill** voor DOCX én PDF — flat PDFs zonder formvelden gaan door een AI-vision hybrid (overlay tenzij overflow → HTML-reconstructie), incl. profile-photo replacement en auto-translate naar vacaturetaal
 
 ## Commands
 

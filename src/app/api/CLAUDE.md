@@ -34,7 +34,7 @@ Alle protected routes verifiëren tokens via Firebase Admin SDK:
 | `templates/route.ts` | GET/POST | List + create (`users/{uid}/templates`) |
 | `templates/[id]/route.ts` | GET/PATCH/DELETE | Per-template CRUD |
 | `templates/[id]/analyze/route.ts` | POST | DOCX structure + style analyse |
-| `templates/[id]/fill/route.ts` | POST | Vul template (Phase 1-6) — zie `src/lib/docx/CLAUDE.md` |
+| `templates/[id]/fill/route.ts` | POST | Vul template. DOCX: 6-fase AI pipeline (`src/lib/docx/CLAUDE.md`). PDF: AcroForm → coordinates → AI-vision hybrid (`src/lib/pdf/CLAUDE.md`). Credit-aftrek via `resolveProvider({operation:'template-fill'})` voor AI-paden, flat `chargePlatformCredits` voor AcroForm/coords. |
 | `templates/motivation/route.ts` + `download/` | POST/GET | Motivatiebrief template-flow |
 
 ## Profiles & input parsing

@@ -58,9 +58,20 @@ Orchestrator (`generateDesignTokens` in `style-generator-v2.ts`) zoekt expert op
 |---|---|
 | `template-analyzer.ts` | `analyzeTemplateBlueprint(templateMap, ...)` — Phase 1: sections + repeating blocks (Zod schema). `analyzeAndFillTemplate(...)` combined call. |
 | `template-style-extractor.ts` | `extractStyleFromTemplate(imageBase64, ...)` — AI-vision style extraction uit screenshot. `getTemplateStyleFallbackTokens()` als vision faalt. |
-| `docx-content-replacer.ts` | `fillStructuredSegments(...)` — Phase 2: vul segment IDs met profile data. Helpers: `buildProfileSummary`, `buildJobSummary`, `buildFitAnalysisSummary`. |
+| `docx-content-replacer.ts` | `fillStructuredSegments(...)` — Phase 2: vul segment IDs met profile data. Helpers: `buildProfileSummary`, `buildJobSummary`, `buildFitAnalysisSummary` (ook hergebruikt door de PDF-flow). |
 
 Voor de volledige DOCX flow zie `src/lib/docx/CLAUDE.md`.
+
+## Template AI (PDF) — hybrid
+
+| File | Doel |
+|---|---|
+| `pdf-template-analyzer.ts` | `analyzePDFTemplate({ pages, profileCounts, ... })` — AI-vision blueprint met **boxes** (x/y/width/height, top-left origin, PDF points), font-hints, sectie-classificatie, `repeatingBlocks`, optioneel `photoSlot`. Zod-schema `pdfBlueprintSchema`. |
+| `pdf-content-replacer.ts` | `fillPDFFields({ blueprint, profileData, ... })` — geeft per `fieldId` een waarde, vertaalt naar vacaturetaal. Hergebruikt `buildProfileSummary`/`buildJobSummary`/`buildFitAnalysisSummary` uit `docx-content-replacer.ts`. |
+| `pdf-html-reconstructor.ts` | `reconstructPDFFromBlueprint(...)` — fallback voor templates waar overlay overflowt. AI bouwt semantische HTML+Tailwind op basis van page-images + blueprint, Puppeteer → PDF. |
+| `language-detect.ts` | `detectLanguageFromText(text)` — heuristische taaldetectie (NL/EN stopwoorden). Pure synchroon, geen AI-call. Pre-vult `LanguageSelector` in de wizard zodra `jobVacancy.description` binnenkomt. |
+
+Orchestrator + drempel-logica zit in `src/lib/pdf/smart-pdf-filler.ts` (zie `src/lib/pdf/CLAUDE.md`).
 
 ## Belangrijke patronen
 

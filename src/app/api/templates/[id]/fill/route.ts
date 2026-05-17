@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { fillPDFTemplateAuto, fillPDFTemplate, hasFormFields } from '@/lib/pdf/template-filler';
+import { smartFillPDF, type FillMethod as PDFFillMethod } from '@/lib/pdf/smart-pdf-filler';
 import { fillSmartTemplate } from '@/lib/docx/smart-template-filler';
 import { convertDocxToPdf } from '@/lib/docx/docx-to-pdf';
 import { addWatermarkToPdf } from '@/lib/pdf/add-watermark';
@@ -138,13 +139,14 @@ export async function POST(
     const templateBytes = new Uint8Array(templateBuffer);
 
     let filledBytes: Uint8Array;
-    let fillMethod: 'form' | 'coordinates' | 'docx-ai' | 'none' = 'none';
+    let fillMethod: 'form' | 'coordinates' | 'docx-ai' | 'none' | PDFFillMethod = 'none';
     let filledFields: string[] = [];
     let filledCount = 0;
     let outputContentType = 'application/pdf';
     let outputFileName = `filled-${template.fileName}`;
-    let docxFillUsage: { inputTokens: number; outputTokens: number } | null = null;
-    let docxModelId: string | null = null;
+    let aiFillUsage: { inputTokens: number; outputTokens: number } | null = null;
+    let aiModelId: string | null = null;
+    let pdfFillWarnings: string[] = [];
 
     if (template.fileType === 'docx') {
       // DOCX template flow - AI fills everything
@@ -198,24 +200,51 @@ export async function POST(
       fillMethod = 'docx-ai';
       filledCount = fillResult.filledFields.length;
       filledFields = fillResult.filledFields;
-      docxFillUsage = fillResult.usage;
-      docxModelId = docxResolved.model;
+      aiFillUsage = fillResult.usage;
+      aiModelId = docxResolved.model;
     } else {
-      // PDF template flow (existing logic)
+      // PDF template flow:
+      //  1. If the PDF has interactive AcroForm fields → free, deterministic fill via field names.
+      //  2. If the template has pre-configured coordinate fields → free coordinate fill (legacy).
+      //  3. Otherwise → AI-vision flow (smartFillPDF): renders pages, detects boxes, fills, overlays
+      //     (or falls back to HTML reconstruction when content does not fit).
       const hasFields = await hasFormFields(templateBytes);
 
       if (hasFields) {
-        // Try auto-filling form fields first
         const autoResult = await fillPDFTemplateAuto(
           templateBytes,
           profileData,
           customValues
         );
         filledBytes = autoResult.pdfBytes;
-        fillMethod = autoResult.method;
+        fillMethod = autoResult.method === 'form' ? 'pdf-acroform' : autoResult.method;
         filledFields = autoResult.filledFields || [];
+        filledCount = filledFields.length;
+
+        // If AcroForm matched zero fields, fall through to AI flow rather than returning a useless PDF.
+        if (filledCount === 0) {
+          const aiResult = await runSmartFillPDF({
+            userId,
+            skipCredit,
+            templateBytes,
+            profileData,
+            customValues,
+            jobVacancy,
+            language,
+            fitAnalysis,
+            customInstructions,
+            avatarUrl,
+          });
+          filledBytes = aiResult.pdfBytes;
+          fillMethod = aiResult.method;
+          filledCount = aiResult.filledCount;
+          filledFields = []; // AI flow doesn't track field names
+          aiFillUsage = aiResult.usage;
+          aiModelId = aiResult.modelId;
+          pdfFillWarnings = aiResult.warnings;
+        }
       } else if (template.fields && template.fields.length > 0) {
-        // Fall back to coordinate-based filling if template has configured fields
+        // Pre-configured coordinate fields — free path, useful for admin-tuned templates.
         filledBytes = await fillPDFTemplate(
           templateBytes,
           template,
@@ -224,18 +253,36 @@ export async function POST(
         );
         fillMethod = 'coordinates';
       } else {
-        // No form fields and no configured coordinates
-        return NextResponse.json(
-          { error: 'Template has no fillable form fields and no coordinate fields configured.' },
-          { status: 400 }
-        );
+        // Flat PDF, no AcroForm, no pre-configured coords → AI-vision flow.
+        const aiResult = await runSmartFillPDF({
+          userId,
+          skipCredit,
+          templateBytes,
+          profileData,
+          customValues,
+          jobVacancy,
+          language,
+          fitAnalysis,
+          customInstructions,
+          avatarUrl,
+        });
+        filledBytes = aiResult.pdfBytes;
+        fillMethod = aiResult.method;
+        filledCount = aiResult.filledCount;
+        filledFields = [];
+        aiFillUsage = aiResult.usage;
+        aiModelId = aiResult.modelId;
+        pdfFillWarnings = aiResult.warnings;
       }
     }
 
     // Save CV record (only on initial fill, not on PDF re-conversion).
     // Credit handling:
-    //  - DOCX flow: credits already deducted by resolveProvider({operation: 'template-fill'})
-    //  - PDF flow:  no AI calls, so charge a flat template-fill credit-cost here
+    //  - DOCX + PDF AI flows: credits already deducted by resolveProvider({operation: 'template-fill'})
+    //    inside the respective fill branches.
+    //  - PDF AcroForm / coordinate flow: no AI calls, so charge a flat template-fill credit-cost here.
+    const pdfWentThroughAi = template.fileType !== 'docx' && (fillMethod === 'pdf-overlay' || fillMethod === 'pdf-html-reconstruct');
+
     if (!skipCredit) {
       const cvRef = await db.collection('users').doc(userId).collection('cvs').add({
         linkedInData: profileData,
@@ -259,9 +306,9 @@ export async function POST(
         updatedAt: new Date(),
       });
 
-      // PDF templates skip the AI path → charge the template-fill cost manually here.
-      // DOCX templates already paid via resolveProvider above.
-      if (template.fileType !== 'docx') {
+      // PDF AcroForm / coordinate flow skipped the AI path → charge the flat template-fill cost.
+      // DOCX + PDF AI flows already paid via resolveProvider in their respective branches.
+      if (template.fileType !== 'docx' && !pdfWentThroughAi) {
         const { chargePlatformCredits } = await import('@/lib/ai/platform-provider');
         const userDocCheck = await db.collection('users').doc(userId).get();
         const isPlatformMode = (userDocCheck.data()?.llmMode || 'own-key') === 'platform';
@@ -284,7 +331,7 @@ export async function POST(
 
       let methodDescription: string;
       switch (fillMethod) {
-        case 'form':
+        case 'pdf-acroform':
           methodDescription = `(auto-filled ${filledFields.length} form fields)`;
           break;
         case 'docx-ai':
@@ -293,8 +340,17 @@ export async function POST(
         case 'coordinates':
           methodDescription = '(coordinate-based)';
           break;
+        case 'pdf-overlay':
+          methodDescription = `(PDF + AI overlay, ${filledCount} fields)`;
+          break;
+        case 'pdf-html-reconstruct':
+          methodDescription = `(PDF + AI HTML reconstruction, ${filledCount} fields)`;
+          break;
         default:
           methodDescription = '';
+      }
+      if (pdfFillWarnings.length > 0) {
+        console.warn('[template-fill] PDF warnings:', pdfFillWarnings);
       }
       // Log the CV creation alongside the AI deduction transaction (already logged by resolveProvider).
       await db.collection('users').doc(userId).collection('transactions').add({
@@ -306,14 +362,14 @@ export async function POST(
         createdAt: new Date(),
       });
 
-      // Record per-CV AI usage if this was a DOCX (AI-driven) fill.
-      if (docxFillUsage && docxModelId) {
+      // Record per-CV AI usage for any AI-driven fill (DOCX or PDF AI flow).
+      if (aiFillUsage && aiModelId) {
         void recordOperationUsage({
           userId,
           cvId: cvRef.id,
           operation: 'template-fill',
-          usage: docxFillUsage,
-          modelId: docxModelId,
+          usage: aiFillUsage,
+          modelId: aiModelId,
         });
       }
     }
@@ -351,10 +407,72 @@ export async function POST(
       },
     });
   } catch (error) {
+    if (error instanceof ProviderError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Error filling template:', error);
     return NextResponse.json(
       { error: 'Failed to fill template' },
       { status: 500 }
     );
   }
+}
+
+// ==================== Helpers ====================
+
+interface RunSmartFillPDFArgs {
+  userId: string;
+  skipCredit: boolean;
+  templateBytes: Uint8Array;
+  profileData: ParsedLinkedIn;
+  customValues?: Record<string, string>;
+  jobVacancy?: JobVacancy;
+  language?: OutputLanguage;
+  fitAnalysis?: FitAnalysis;
+  customInstructions?: string;
+  avatarUrl?: string | null;
+}
+
+interface RunSmartFillPDFResult {
+  pdfBytes: Uint8Array;
+  method: PDFFillMethod;
+  filledCount: number;
+  warnings: string[];
+  usage: { inputTokens: number; outputTokens: number };
+  modelId: string;
+}
+
+/**
+ * Resolve provider (deducts template-fill credits unless skipCredit), then run smartFillPDF.
+ * Throws ProviderError (caught upstream) on credit / config issues.
+ */
+async function runSmartFillPDF(args: RunSmartFillPDFArgs): Promise<RunSmartFillPDFResult> {
+  const resolved = await resolveProvider({
+    userId: args.userId,
+    operation: 'template-fill',
+    skipCreditDeduction: args.skipCredit,
+  });
+
+  const result = await smartFillPDF({
+    templateBytes: args.templateBytes,
+    profileData: args.profileData,
+    customValues: args.customValues,
+    jobVacancy: args.jobVacancy,
+    language: args.language ?? 'nl',
+    fitAnalysis: args.fitAnalysis,
+    customInstructions: args.customInstructions,
+    avatarUrl: args.avatarUrl,
+    provider: resolved.providerName,
+    apiKey: resolved.apiKey,
+    model: resolved.model,
+  });
+
+  return {
+    pdfBytes: result.pdfBytes,
+    method: result.method,
+    filledCount: result.filledCount,
+    warnings: result.warnings,
+    usage: result.usage,
+    modelId: resolved.model,
+  };
 }

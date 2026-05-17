@@ -13,8 +13,15 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname),
   },
 
-  // Configure for puppeteer/chromium
-  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  // Configure for puppeteer/chromium + native PDF render deps.
+  // @napi-rs/canvas has a native .node binding; pdfjs-dist ships large legacy
+  // build files. Both must stay external so bundlers don't try to embed them.
+  serverExternalPackages: [
+    "@sparticuz/chromium",
+    "puppeteer-core",
+    "@napi-rs/canvas",
+    "pdfjs-dist",
+  ],
 
   // Security headers
   headers: async () => [
