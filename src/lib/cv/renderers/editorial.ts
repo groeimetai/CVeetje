@@ -1,5 +1,10 @@
 /**
- * Editorial CV Renderer
+ * Editorial CV Renderer — Legacy v1 (creative level).
+ *
+ * @deprecated New creative CVs render via `cv-engine` (recipes:
+ * `creative/kinfolk`, `creative/wallpaper`, `creative/gentlewoman`). This
+ * module continues to render legacy v1 docs through the dispatcher in
+ * `src/lib/cv-engine/dispatch.ts`.
  *
  * Self-contained renderer for creative-level CVs. Produces editorial/magazine
  * layouts with real typographic hierarchy, multi-color palettes, asymmetric

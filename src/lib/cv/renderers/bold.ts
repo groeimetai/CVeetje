@@ -1,5 +1,10 @@
 /**
- * Bold CV Renderer
+ * Bold CV Renderer — Legacy v1 (experimental level).
+ *
+ * @deprecated New experimental CVs render via `cv-engine` (recipes:
+ * `experimental/manifesto`, `experimental/gallery`, `experimental/broadcast`).
+ * This module continues to render legacy v1 docs through the dispatcher in
+ * `src/lib/cv-engine/dispatch.ts`.
  *
  * Self-contained renderer for experimental-level CVs. Produces Canva/Linear/
  * Notion-inspired layouts with saturated colors, gradients, iconography,

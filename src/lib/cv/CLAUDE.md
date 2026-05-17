@@ -1,8 +1,10 @@
-# CV rendering — `src/lib/cv/`
+# CV rendering — `src/lib/cv/` (LEGACY v1)
 
-HTML generation + style tokens + templates. **WYSIWYG single source of truth** voor preview én PDF.
+> ⚠️ **Legacy renderer.** Nieuwe CV-generaties gaan via `src/lib/cv-engine/` (recipe-based). Deze folder blijft alleen actief voor docs met `engineVersion !== 'v2'` (oudere Firestore CV's). De dispatcher `src/lib/cv-engine/dispatch.ts` kiest tussen v1/v2 op basis van `tokens.engineVersion`. Voor nieuwe code: zie `src/lib/cv-engine/CLAUDE.md`.
 
-> **Wat doet de AI per creativity level, en welke tokens komen waar tot leven in de renderers?** → zie **`src/lib/ai/style-experts/STYLE-SYSTEM.md`**. Bevat per route (conservative/balanced/creative/experimental/editorial-paper) een complete inventaris van schema-velden, constraints, prompt-aanpak, history-rotatie en welke `bold.*`/`editorial.*` velden door welke renderer-archetype daadwerkelijk geconsumeerd worden.
+HTML generation + style tokens + templates voor legacy v1 documents. **WYSIWYG single source of truth** voor preview én PDF van legacy docs.
+
+> **Wat doet de AI per creativity level, en welke tokens komen waar tot leven in de renderers?** → zie **`src/lib/ai/style-experts/STYLE-SYSTEM.md`** (eveneens legacy referentie). Bevat per route (conservative/balanced/creative/experimental/editorial-paper) een complete inventaris van schema-velden, constraints, prompt-aanpak, history-rotatie en welke `bold.*`/`editorial.*` velden door welke renderer-archetype daadwerkelijk geconsumeerd worden.
 
 ## Hoofdentry
 

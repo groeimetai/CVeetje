@@ -1,6 +1,10 @@
-# Style System — volledige routekaart
+# Style System — Legacy v1 reference
 
-> **Doel van dit document**: een volgende agent of ontwikkelaar moet hier alles vinden om te begrijpen wat de AI per creativity level krijgt aangereikt en wat de renderer er daadwerkelijk mee doet. Geen onderzoek meer hoeven herhalen.
+> ⚠️ **DEPRECATED.** Nieuwe CV-generaties gebruiken `src/lib/cv-engine/` (recipe-based, 12 visual directions, 4 layout shapes). Dit document is bewaard als referentie voor legacy v1 CV-docs (`engineVersion !== 'v2'`) die nog via `src/lib/cv/renderers/{bold,editorial}.ts` renderen.
+>
+> Voor nieuwe routekaart van het v2 systeem: zie `src/lib/cv-engine/CLAUDE.md`.
+
+> **Doel van dit document (historisch)**: een volgende agent of ontwikkelaar moet hier alles vinden om te begrijpen wat de AI per creativity level krijgt aangereikt en wat de renderer er daadwerkelijk mee doet. Geen onderzoek meer hoeven herhalen.
 >
 > **Onderhoudsregel** (uit root `CLAUDE.md`): elke wijziging in een style-expert, het base-schema, een renderer, of de constraints/industry-profile maps moet hier worden bijgewerkt. Zie sectie "Wanneer bijwerken" onderaan.
 

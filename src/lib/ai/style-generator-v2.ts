@@ -1,5 +1,9 @@
 /**
- * Style Generator v2 — orchestrator.
+ * Style Generator v2 — Legacy orchestrator.
+ *
+ * @deprecated New CV generations go through `src/lib/cv-engine/ai/orchestrator.ts`
+ * (`generateStyleTokensV2`). This module remains the regen path for legacy
+ * v1 CVs in dispute flows (see `src/app/api/cv/[id]/dispute/route.ts`).
  *
  * The heavy lifting per creativity level lives in src/lib/ai/style-experts/
  * (one file per expert). This orchestrator just looks up the expert, builds
@@ -9,6 +13,9 @@
  *
  * The public API (generateDesignTokens + createLinkedInSummaryV2) is
  * unchanged; callers don't need to know about the expert architecture.
+ *
+ * Note: `createLinkedInSummaryV2` is also imported by the new cv-engine
+ * orchestrator — keep this export available even after the rest is retired.
  */
 
 import { getModelId } from './providers';

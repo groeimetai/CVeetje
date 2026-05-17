@@ -27,10 +27,13 @@ Alle AI-aanroepen. Vercel AI SDK (`ai` v6, `generateObject`/`streamText`) + Zod 
 | `fit-analyzer.ts` | `analyzeFit(linkedIn, jobVacancy, ...)` | Profile vs vacancy match-score + verdict + advice. UI helpers `getVerdictColor`, `getSeverityColor`. |
 | `dispute-gatekeeper.ts` | `runDisputeGatekeeper(...)` | LLM-judge: `{ verdict: 'approved'\|'rejected', rationale }` |
 
-## Style system (`style-experts/`)
+## Style system (`style-experts/`) — LEGACY v1
 
-> **Volledige routekaart per creativity level** — wat de AI per route krijgt aangereikt, welke tools (tokens), welke renderer-quirks, en bekende convergentie-drivers: zie **`src/lib/ai/style-experts/STYLE-SYSTEM.md`**.
-> Bij elke wijziging aan een expert, het base-schema, een renderer, `creativityConstraints` of een industry-profile: werk STYLE-SYSTEM.md óók bij (zie checklist onderaan dat document).
+> ⚠️ **Legacy.** Nieuwe CV-generaties gebruiken `src/lib/cv-engine/ai/orchestrator.ts` (`generateStyleTokensV2`). De style-experts hier blijven actief voor regen-paths van legacy v1 docs (dispute-routes branchen op source `engineVersion`).
+>
+> Voor de nieuwe routekaart: zie **`src/lib/cv-engine/CLAUDE.md`**.
+
+> **Volledige legacy routekaart per creativity level** — wat de AI per route krijgt aangereikt, welke tools (tokens), welke renderer-quirks, en bekende convergentie-drivers: zie **`src/lib/ai/style-experts/STYLE-SYSTEM.md`**.
 
 Een expert per `StyleCreativityLevel` (`conservative`, `balanced`, `creative`, `experimental`, `editorial-paper`). Elk implementeert `StyleExpert` interface (`schema`, `buildPrompt`, `normalize`, `getFallback`, `preferredTemperature`).
 

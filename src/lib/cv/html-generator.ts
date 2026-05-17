@@ -1,13 +1,13 @@
 /**
- * HTML Generator - Token-Based CV Generation
+ * HTML Generator — Legacy v1 token renderer.
  *
- * Generates HTML from CVDesignTokens and GeneratedCVContent.
+ * @deprecated Use `src/lib/cv-engine/render/compose.ts` for new code. This
+ * module is kept for backward compatibility — `engineVersion !== 'v2'` docs
+ * (legacy) continue rendering here via the dispatcher in `cv-engine/dispatch.ts`.
  *
- * Features:
- * - 100% print-safe CSS (no transforms, clip-path, hover effects)
- * - CSS Custom Properties for easy theming
- * - Template-based styling (header variants, section styles, skills display)
- * - WYSIWYG: identical output in browser preview and PDF
+ * Generates HTML from `CVDesignTokens` + `GeneratedCVContent`. 100% print-safe
+ * CSS (no transforms / clip-path / hover effects). WYSIWYG: identical output
+ * in browser preview and PDF.
  */
 
 import type { GeneratedCVContent, CVElementOverrides, ElementOverride, CVContactInfo } from '@/types';

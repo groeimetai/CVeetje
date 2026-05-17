@@ -69,7 +69,8 @@ Copy `.env.example` → `.env.local`. Required:
 | `src/i18n/` | next-intl setup + translations | ✅ `src/i18n/CLAUDE.md` |
 | `src/lib/ai/` | AI generators, providers, style experts, platform-config | ✅ `src/lib/ai/CLAUDE.md` (+ `src/lib/ai/style-experts/STYLE-SYSTEM.md` voor volledige routekaart per creativity level) |
 | `src/lib/credits/` | Credits manager + monthly reset | ✅ `src/lib/credits/CLAUDE.md` |
-| `src/lib/cv/` | HTML generator + renderers + style templates | ✅ `src/lib/cv/CLAUDE.md` |
+| `src/lib/cv-engine/` | **Active CV style engine (v2)** — recipes, OKLch palettes, 4 layout shapes, AI orchestrator | ✅ `src/lib/cv-engine/CLAUDE.md` |
+| `src/lib/cv/` | **Legacy** HTML generator + renderers + style templates (v1 docs only) | ✅ `src/lib/cv/CLAUDE.md` |
 | `src/lib/docx/` | DOCX template system (5 phases) | ✅ `src/lib/docx/CLAUDE.md` |
 | `src/lib/firebase/` | Admin + client SDK, auth helpers, collecties | ✅ `src/lib/firebase/CLAUDE.md` |
 | `src/lib/jobs/` | Jobs board + ATS providers + applications | ✅ `src/lib/jobs/CLAUDE.md` |
@@ -124,10 +125,11 @@ Copy `.env.example` → `.env.local`. Required:
 | Nieuwe creativity-level voor styles | `src/lib/ai/CLAUDE.md` (style experts) + `src/types/CLAUDE.md` |
 | Nieuwe API route | `src/app/api/CLAUDE.md` |
 | Nieuwe admin route | `src/app/api/CLAUDE.md` (admin sectie) + `src/lib/firebase/CLAUDE.md` |
-| CV-uiterlijk wijzigen (alle levels) | `src/lib/cv/CLAUDE.md` + `src/lib/ai/style-experts/STYLE-SYSTEM.md` |
-| CV-uiterlijk wijzigen (creative/experimental) | `src/lib/cv/CLAUDE.md` (renderers sectie) + `src/lib/ai/style-experts/STYLE-SYSTEM.md` (§4.3 / §4.5) |
+| CV-uiterlijk wijzigen (nieuwe v2 engine) | `src/lib/cv-engine/CLAUDE.md` — recipes, shapes, primitives, decorators |
+| CV-uiterlijk wijzigen (legacy v1 docs) | `src/lib/cv/CLAUDE.md` + `src/lib/ai/style-experts/STYLE-SYSTEM.md` (allebei legacy referentie) |
 | Wat doet de AI per creativity level (prompts/tokens/constraints) | `src/lib/ai/style-experts/STYLE-SYSTEM.md` |
-| Nieuw design token | `src/types/CLAUDE.md` + `src/lib/ai/CLAUDE.md` + `src/lib/cv/CLAUDE.md` + `src/lib/ai/style-experts/STYLE-SYSTEM.md` |
+| Nieuw design token (v2) | `src/lib/cv-engine/CLAUDE.md` — `spec.ts` + `tokens.ts` |
+| Nieuw design token (v1, legacy) | `src/types/CLAUDE.md` + `src/lib/ai/CLAUDE.md` + `src/lib/cv/CLAUDE.md` + `src/lib/ai/style-experts/STYLE-SYSTEM.md` |
 | Nieuwe DOCX template fill-fase | `src/lib/docx/CLAUDE.md` |
 | Nieuwe credit-cost operatie | `src/lib/ai/CLAUDE.md` + `src/lib/credits/CLAUDE.md` |
 | Motivatiebrief tone aanpassen | `src/lib/ai/CLAUDE.md` (motivation + humanizer) |
