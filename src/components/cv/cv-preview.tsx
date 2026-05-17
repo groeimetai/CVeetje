@@ -388,21 +388,26 @@ export function CVPreview({
   }, [elementColors, localOverrides]);
 
   // Render HTML — dispatcher picks legacy (v1) vs cv-engine (v2) on tokens.engineVersion.
-  const cvHTML = useMemo(() =>
-    renderCV(
-      editedContent,
-      effectiveTokens,
-      {
-        fullName: editedHeader.fullName,
-        avatarUrl,
-        headline: editedHeader.headline,
-        overrides: effectiveOverrides,
-        contactInfo: editedHeader.contactInfo,
-        legacyOptions: { previewProtection: true, watermarkText: 'CVeetje PREVIEW' },
-      },
-    ),
-    [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides]
-  );
+  // Wrapped in try/catch so a render failure doesn't crash the whole page.
+  const cvHTML = useMemo(() => {
+    try {
+      return renderCV(
+        editedContent,
+        effectiveTokens,
+        {
+          fullName: editedHeader.fullName,
+          avatarUrl,
+          headline: editedHeader.headline,
+          overrides: effectiveOverrides,
+          contactInfo: editedHeader.contactInfo,
+          legacyOptions: { previewProtection: true, watermarkText: 'CVeetje PREVIEW' },
+        },
+      );
+    } catch (err) {
+      console.error('[cv-preview] renderCV failed:', err);
+      return `<!doctype html><html><body style="font-family:system-ui;padding:40px;color:#a00"><h2>Preview render error</h2><pre>${err instanceof Error ? err.message : String(err)}</pre></body></html>`;
+    }
+  }, [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides]);
 
   // Check if content, header, tokens, or element colors have been edited
   const hasEdits = useMemo(() => {
@@ -441,11 +446,16 @@ export function CVPreview({
     return () => iframe.removeEventListener('load', handleLoad);
   }, [cvHTML]);
 
-  // Get style summary from tokens
-  const fontConfig = fontPairings[tokens.fontPairing];
-  const typeScale = typeScales[tokens.scale];
-  const spacingScale = spacingScales[tokens.spacing];
-  const themeConfig = themeDefaults[tokens.themeBase];
+  // Get style summary from tokens — legacy v1 path only. v2 tokens have
+  // none of these fields, so the derived configs become undefined; we wrap
+  // each lookup in optional access so downstream JSX (guarded by isV2Tokens)
+  // never tries to read .name / .primary / etc. on undefined.
+  const fontConfig = tokens?.fontPairing ? fontPairings[tokens.fontPairing] : undefined;
+  const typeScale = tokens?.scale ? typeScales[tokens.scale] : undefined;
+  const spacingScale = tokens?.spacing ? spacingScales[tokens.spacing] : undefined;
+  const themeConfig = tokens?.themeBase ? themeDefaults[tokens.themeBase] : undefined;
+  // Touch _spacing/_theme/_font so linters don't flag them as unused on the v2 branch.
+  void [fontConfig, spacingScale, themeConfig];
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background p-4' : ''}`}>
@@ -860,11 +870,11 @@ export function CVPreview({
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Name Size</span>
-                      <span className="text-sm text-muted-foreground">{typeScale.name}pt</span>
+                      <span className="text-sm text-muted-foreground">{typeScale?.name ?? '—'}pt</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Body Size</span>
-                      <span className="text-sm text-muted-foreground">{typeScale.body}pt</span>
+                      <span className="text-sm text-muted-foreground">{typeScale?.body ?? '—'}pt</span>
                     </div>
                   </div>
                 </div>
