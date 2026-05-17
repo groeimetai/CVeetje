@@ -19,6 +19,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { getEffectiveUserId } from '@/lib/auth/impersonation';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import { CVStyleTokensV2Schema, type CVStyleTokensV2 } from '@/lib/cv-engine/tokens';
 
 export const runtime = 'nodejs';
 
@@ -30,9 +31,25 @@ function isValidHex(v: unknown): v is string {
   return typeof v === 'string' && /^#[0-9A-Fa-f]{6}$/.test(v);
 }
 
-function validateTokens(raw: unknown): { ok: true; tokens: CVDesignTokens } | { ok: false; error: string } {
+type TokensValidationResult =
+  | { ok: true; engine: 'v1'; tokens: CVDesignTokens }
+  | { ok: true; engine: 'v2'; tokens: CVStyleTokensV2 }
+  | { ok: false; error: string };
+
+function validateTokens(raw: unknown): TokensValidationResult {
   if (!isPlainObject(raw)) return { ok: false, error: 'designTokens must be an object' };
-  // Colors object with 5 hex fields
+
+  // Discriminate v2 by engineVersion === 'v2'. Falls through to legacy v1
+  // validation otherwise so existing CVs keep working.
+  if (raw.engineVersion === 'v2') {
+    const parsed = CVStyleTokensV2Schema.safeParse(raw);
+    if (!parsed.success) {
+      return { ok: false, error: `v2 tokens invalid: ${parsed.error.issues[0]?.message ?? 'unknown'}` };
+    }
+    return { ok: true, engine: 'v2', tokens: parsed.data };
+  }
+
+  // Legacy v1 validation — colors object with 5 hex fields.
   const colors = raw.colors;
   if (!isPlainObject(colors)) return { ok: false, error: 'colors required' };
   for (const k of ['primary', 'secondary', 'accent', 'text', 'muted']) {
@@ -50,7 +67,7 @@ function validateTokens(raw: unknown): { ok: true; tokens: CVDesignTokens } | { 
       return { ok: false, error: 'sectionOrder must be string[]' };
     }
   }
-  return { ok: true, tokens: raw as unknown as CVDesignTokens };
+  return { ok: true, engine: 'v1', tokens: raw as unknown as CVDesignTokens };
 }
 
 export async function PATCH(
@@ -83,15 +100,18 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  await ref.update({
+  const updates: Record<string, unknown> = {
     designTokens: validation.tokens,
-    // Mirror primary palette into the legacy colorScheme field so downstream
-    // code that still reads from there sees the latest values.
-    'colorScheme.primary': validation.tokens.colors.primary,
-    'colorScheme.secondary': validation.tokens.colors.secondary,
-    'colorScheme.accent': validation.tokens.colors.accent,
     updatedAt: FieldValue.serverTimestamp(),
-  });
+  };
+  // Legacy colorScheme mirror only applies to v1 tokens — v2 derives colors
+  // from the recipe and any paletteOverride, no flat hex equivalent.
+  if (validation.engine === 'v1') {
+    updates['colorScheme.primary'] = validation.tokens.colors.primary;
+    updates['colorScheme.secondary'] = validation.tokens.colors.secondary;
+    updates['colorScheme.accent'] = validation.tokens.colors.accent;
+  }
+  await ref.update(updates);
 
   return NextResponse.json({ ok: true });
 }

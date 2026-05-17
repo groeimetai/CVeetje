@@ -3,6 +3,7 @@ import chromium from '@sparticuz/chromium';
 import type { GeneratedCVContent, CVElementOverrides, CVContactInfo } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { generateCVHTML, getDefaultTokens } from '@/lib/cv/html-generator';
+import { renderCV, isV2Tokens } from '@/lib/cv-engine/dispatch';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -45,21 +46,25 @@ export async function generatePDF(
   contactInfo?: CVContactInfo | null,
   pageMode: PDFPageMode = 'multi-page'
 ): Promise<Buffer> {
-  // Use provided tokens or default
+  // Use provided tokens or default (legacy default — v2 tokens always come
+  // through the caller; v1 docs fall back to legacy defaults).
   const effectiveTokens = tokens || getDefaultTokens();
 
-  // Generate HTML with forPdf=true so the click-to-edit bridge (contenteditable
-  // + hover outlines) is NOT injected into the rendered PDF. The preview iframe
-  // uses the same generator without this flag to enable inline editing.
-  const html = generateCVHTML(
+  // Generate HTML via dispatcher — branches on engineVersion. Legacy path gets
+  // `forPdf: true` so click-to-edit bridge isn't injected. v2 uses `pageMode`
+  // to map our internal single-page / multi-page output.
+  const html = renderCV(
     content,
     effectiveTokens,
-    fullName,
-    avatarUrl,
-    headline,
-    overrides,
-    contactInfo,
-    { forPdf: true },
+    {
+      fullName,
+      avatarUrl,
+      headline,
+      overrides,
+      contactInfo,
+      legacyOptions: { forPdf: true },
+      pageMode: pageMode === 'single-page' ? 'single-long' : 'a4-paged',
+    },
   );
 
   const browser = await getBrowser();

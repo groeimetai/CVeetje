@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { generateDesignTokens, createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
+import { createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
+import { generateStyleTokensV2 } from '@/lib/cv-engine/ai/orchestrator';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type {
   ParsedLinkedIn,
   JobVacancy,
   StyleCreativityLevel,
-  CVDesignTokens,
 } from '@/types';
 
 // Reduced from 120s since we only make 1 API call now (was 12+)
@@ -83,24 +83,28 @@ export async function POST(request: NextRequest) {
 
     const db = getAdminDb();
 
-    // Fetch recent style history for variety rotation. Balanced benefits too:
-    // without history it tends to converge on the same clean-modern combo.
-    let styleHistory: CVDesignTokens[] = [];
-    if (creativityLevel === 'balanced' || creativityLevel === 'creative' || creativityLevel === 'experimental') {
-      try {
-        const recentCvs = await db.collection('users').doc(userId).collection('cvs')
-          .orderBy('createdAt', 'desc')
-          .limit(10)
-          .select('designTokens')
-          .get();
+    // Recent recipe-usage history for rotation. We only count v2 docs — legacy
+    // docs don't carry a `recipeId` so they contribute nothing to convergence
+    // drift between v2 generations.
+    let recipeUsageHistory: string[] = [];
+    try {
+      const recentCvs = await db.collection('users').doc(userId).collection('cvs')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .select('designTokens')
+        .get();
 
-        styleHistory = recentCvs.docs
-          .map(doc => doc.data()?.designTokens)
-          .filter(Boolean) as CVDesignTokens[];
-        console.log(`[Style Gen v2] Loaded ${styleHistory.length} style history entries for variety rotation`);
-      } catch (e) {
-        console.warn('[Style Gen v2] Could not fetch style history, continuing without:', e);
-      }
+      recipeUsageHistory = recentCvs.docs
+        .map(doc => {
+          const tokens = doc.data()?.designTokens;
+          return typeof tokens?.recipeId === 'string' && tokens?.engineVersion === 'v2'
+            ? tokens.recipeId
+            : null;
+        })
+        .filter((id): id is string => !!id);
+      console.log(`[cv-engine] Loaded ${recipeUsageHistory.length} recipe-history entries for rotation`);
+    } catch (e) {
+      console.warn('[cv-engine] Could not fetch recipe history, continuing without:', e);
     }
 
     // Create a summary of LinkedIn data for style generation (v2)
@@ -119,24 +123,24 @@ export async function POST(request: NextRequest) {
               step: 1,
               totalSteps: 1,
               stepName: 'Generating style tokens',
-              message: 'AI analyseert je profiel en genereert een gepersonaliseerde stijl...',
+              message: 'AI analyseert je profiel en kiest een passende visual direction...',
             });
             controller.enqueue(encoder.encode(`data: ${startProgress}\n\n`));
 
-            // Generate design tokens with single LLM call
-            console.log(`[Style Gen v2] Generating tokens: creativity=${creativityLevel}, hasPhoto=${hasPhoto}`);
-            const { tokens, usage } = await generateDesignTokens(
+            // Generate design tokens with single LLM call (cv-engine v2).
+            console.log(`[cv-engine] generating tokens: creativity=${creativityLevel}, hasPhoto=${hasPhoto}`);
+            const { tokens, usage, pickedRecipe } = await generateStyleTokensV2({
               linkedInSummary,
               jobVacancy,
-              resolved.providerName,
-              resolved.apiKey,
-              resolved.model,
-              userPreferences,
               creativityLevel,
+              provider: resolved.providerName,
+              apiKey: resolved.apiKey,
+              model: resolved.model,
+              userPreferences,
               hasPhoto,
-              styleHistory
-            );
-            console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
+              recipeUsageHistory,
+            });
+            console.log(`[cv-engine] complete: recipe=${pickedRecipe.id}, font=${tokens.fontOverride ?? pickedRecipe.allowedFontPairings[0]}`);
 
             void recordOperationUsage({
               userId,
@@ -184,30 +188,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Non-streaming response
-    console.log(`[Style Gen v2] Generating tokens: creativity=${creativityLevel}, hasPhoto=${hasPhoto}`);
+    console.log(`[cv-engine] generating tokens: creativity=${creativityLevel}, hasPhoto=${hasPhoto}`);
     let tokens;
     let usage;
+    let pickedRecipeId: string;
     try {
-      const result = await generateDesignTokens(
+      const result = await generateStyleTokensV2({
         linkedInSummary,
         jobVacancy,
-        resolved.providerName,
-        resolved.apiKey,
-        resolved.model,
-        userPreferences,
         creativityLevel,
+        provider: resolved.providerName,
+        apiKey: resolved.apiKey,
+        model: resolved.model,
+        userPreferences,
         hasPhoto,
-        styleHistory
-      );
+        recipeUsageHistory,
+      });
       tokens = result.tokens;
       usage = result.usage;
+      pickedRecipeId = result.pickedRecipe.id;
     } catch (err) {
       if (resolved.mode === 'platform') {
         await refundPlatformCredits(userId, 'style-generate');
       }
       throw err;
     }
-    console.log(`[Style Gen v2] Complete: theme=${tokens.themeBase}, style="${tokens.styleName}", showPhoto=${tokens.showPhoto}`);
+    console.log(`[cv-engine] complete: recipe=${pickedRecipeId}, font=${tokens.fontOverride ?? '—'}`);
 
     void recordOperationUsage({
       userId,

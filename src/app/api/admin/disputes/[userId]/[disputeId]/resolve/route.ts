@@ -4,6 +4,8 @@ import { verifyAdminRequest } from '@/lib/firebase/admin-utils';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import { generateDesignTokens, createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
+import { generateStyleTokensV2 } from '@/lib/cv-engine/ai/orchestrator';
+import type { CVStyleTokensV2 } from '@/lib/cv-engine/tokens';
 import { generateCV } from '@/lib/ai/cv-generator';
 import type { CV, StyleCreativityLevel } from '@/types';
 
@@ -109,35 +111,70 @@ export async function POST(
 
     const profileSummary = createLinkedInSummaryV2(cvData.linkedInData);
 
-    // Load the user's recent style history for anti-convergence rotation.
-    let styleHistory: import('@/types/design-tokens').CVDesignTokens[] = [];
+    // Branch regeneration on the source CV's engineVersion.
+    const sourceTokens = cvData.designTokens as
+      | (import('@/types/design-tokens').CVDesignTokens & { engineVersion?: string })
+      | (CVStyleTokensV2 & { engineVersion?: string })
+      | null
+      | undefined;
+    const sourceIsV2 = sourceTokens?.engineVersion === 'v2';
+
+    // Load history (token shape varies — we narrow per branch below).
+    let rawHistory: Array<Record<string, unknown> | null> = [];
     try {
       const recentCvs = await db.collection('users').doc(userId).collection('cvs')
         .orderBy('createdAt', 'desc')
         .limit(10)
         .select('designTokens')
         .get();
-      styleHistory = recentCvs.docs
-        .map(doc => doc.data()?.designTokens)
-        .filter(Boolean) as import('@/types/design-tokens').CVDesignTokens[];
+      rawHistory = recentCvs.docs.map(doc => (doc.data()?.designTokens ?? null) as Record<string, unknown> | null);
     } catch (e) {
       console.warn('[admin dispute resolve] Could not fetch style history:', e);
     }
-    if (styleHistory.length === 0 && cvData.designTokens) {
-      styleHistory = [cvData.designTokens];
-    }
 
-    const styleResult = await generateDesignTokens(
-      profileSummary,
-      cvData.jobVacancy || null,
-      resolved.providerName as Parameters<typeof generateDesignTokens>[2],
-      resolved.apiKey,
-      resolved.model,
-      undefined,
-      newLevel,
-      !!cvData.avatarUrl,
-      styleHistory,
-    );
+    let regenTokens: import('@/types/design-tokens').CVDesignTokens | CVStyleTokensV2;
+
+    if (sourceIsV2) {
+      const recipeUsageHistory = rawHistory
+        .filter((t): t is Record<string, unknown> => !!t && t.engineVersion === 'v2' && typeof t.recipeId === 'string')
+        .map(t => t.recipeId as string);
+      const currentRecipeId = (sourceTokens as CVStyleTokensV2).recipeId;
+      if (currentRecipeId && !recipeUsageHistory.includes(currentRecipeId)) {
+        recipeUsageHistory.unshift(currentRecipeId);
+      }
+      const result = await generateStyleTokensV2({
+        linkedInSummary: profileSummary,
+        jobVacancy: cvData.jobVacancy || null,
+        creativityLevel: newLevel,
+        provider: resolved.providerName as Parameters<typeof generateStyleTokensV2>[0]['provider'],
+        apiKey: resolved.apiKey,
+        model: resolved.model,
+        hasPhoto: !!cvData.avatarUrl,
+        recipeUsageHistory,
+      });
+      regenTokens = result.tokens;
+    } else {
+      const legacyHistory = rawHistory
+        .filter((t): t is Record<string, unknown> => !!t && t.engineVersion !== 'v2')
+        .map(t => t as unknown as import('@/types/design-tokens').CVDesignTokens);
+      const styleHistory = legacyHistory.length > 0
+        ? legacyHistory
+        : (cvData.designTokens
+          ? [cvData.designTokens as import('@/types/design-tokens').CVDesignTokens]
+          : []);
+      const styleResult = await generateDesignTokens(
+        profileSummary,
+        cvData.jobVacancy || null,
+        resolved.providerName as Parameters<typeof generateDesignTokens>[2],
+        resolved.apiKey,
+        resolved.model,
+        undefined,
+        newLevel,
+        !!cvData.avatarUrl,
+        styleHistory,
+      );
+      regenTokens = styleResult.tokens;
+    }
     const cvResult = await generateCV(
       cvData.linkedInData,
       cvData.jobVacancy || null,
@@ -152,7 +189,7 @@ export async function POST(
 
     await cvRef.update({
       generatedContent: cvResult.content,
-      designTokens: styleResult.tokens,
+      designTokens: regenTokens,
       creativityLevel: newLevel,
       creativityLevelHistory: FieldValue.arrayUnion(newLevel),
       status: 'generated',

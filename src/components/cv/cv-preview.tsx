@@ -21,7 +21,7 @@ import {
 import type { GeneratedCVContent, CVElementOverrides, ElementOverride, EditableElementType, CVContactInfo, JobVacancy, ParsedLinkedIn, FitAnalysis } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { useAuth } from '@/components/auth/auth-context';
-import { generateCVHTML } from '@/lib/cv/html-generator';
+import { renderCV } from '@/lib/cv-engine/dispatch';
 import { fontPairings, typeScales, spacingScales, themeDefaults } from '@/lib/cv/templates/themes';
 import { CVContentEditor, type ElementColorOverrides } from './cv-content-editor';
 import { CVChatPanel } from './cv-chat-panel';
@@ -384,18 +384,19 @@ export function CVPreview({
     };
   }, [elementColors, localOverrides]);
 
-  // Generate HTML using v2 generator (use edited values)
-  // Enable preview protection (watermark, copy protection) for preview mode
+  // Render HTML — dispatcher picks legacy (v1) vs cv-engine (v2) on tokens.engineVersion.
   const cvHTML = useMemo(() =>
-    generateCVHTML(
+    renderCV(
       editedContent,
       effectiveTokens,
-      editedHeader.fullName,
-      avatarUrl,
-      editedHeader.headline,
-      effectiveOverrides,
-      editedHeader.contactInfo,
-      { previewProtection: true, watermarkText: 'CVeetje PREVIEW' }
+      {
+        fullName: editedHeader.fullName,
+        avatarUrl,
+        headline: editedHeader.headline,
+        overrides: effectiveOverrides,
+        contactInfo: editedHeader.contactInfo,
+        legacyOptions: { previewProtection: true, watermarkText: 'CVeetje PREVIEW' },
+      },
     ),
     [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides]
   );

@@ -5,6 +5,8 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import { runDisputeGatekeeper } from '@/lib/ai/dispute-gatekeeper';
 import { generateDesignTokens } from '@/lib/ai/style-generator-v2';
+import { generateStyleTokensV2 } from '@/lib/cv-engine/ai/orchestrator';
+import type { CVStyleTokensV2 } from '@/lib/cv-engine/tokens';
 import { generateCV } from '@/lib/ai/cv-generator';
 import { createLinkedInSummaryV2 } from '@/lib/ai/style-generator-v2';
 import type {
@@ -297,7 +299,7 @@ type ResolvedProvider = Awaited<ReturnType<typeof resolveProvider>>['provider'];
 
 interface RegenResult {
   content: GeneratedCVContent;
-  tokens: import('@/types/design-tokens').CVDesignTokens;
+  tokens: import('@/types/design-tokens').CVDesignTokens | CVStyleTokensV2;
 }
 
 async function regenerateCV(
@@ -312,28 +314,59 @@ async function regenerateCV(
   const linkedIn = cv.linkedInData;
   const jobVacancy = cv.jobVacancy || null;
   const language = cv.language || 'nl';
-
-  // 1) New design tokens for the new creativity level.
-  //    Combine the caller-supplied history with the previous CV tokens so
-  //    the rotation has something to work with even when history is empty.
   const profileSummary = createLinkedInSummaryV2(linkedIn);
-  const mergedHistory = styleHistory.length > 0
-    ? styleHistory
-    : (cv.designTokens ? [cv.designTokens] : undefined);
-  const styleResult = await generateDesignTokens(
-    profileSummary,
-    jobVacancy,
-    providerName as Parameters<typeof generateDesignTokens>[2],
-    apiKey,
-    modelName,
-    undefined,
-    newLevel,
-    !!cv.avatarUrl,
-    mergedHistory,
-  );
 
-  // 2) Regenerate CV content (same profile/job, different creativity level
-  //    may produce subtly different wording via the AI's temperature variance)
+  // Branch on the source CV's engineVersion. v2 docs regenerate through
+  // cv-engine (recipe rotation); legacy docs keep the legacy expert pipeline.
+  const sourceTokens = cv.designTokens as
+    | (import('@/types/design-tokens').CVDesignTokens & { engineVersion?: string })
+    | (CVStyleTokensV2 & { engineVersion?: string })
+    | null
+    | undefined;
+  const sourceIsV2 = sourceTokens?.engineVersion === 'v2';
+
+  let regenTokens: RegenResult['tokens'];
+  if (sourceIsV2) {
+    // Extract recipeIds from style history (only v2 docs contribute).
+    const recipeUsageHistory = styleHistory
+      .map(t => (t as unknown as { recipeId?: string; engineVersion?: string }))
+      .filter(t => t.engineVersion === 'v2' && typeof t.recipeId === 'string')
+      .map(t => t.recipeId as string);
+    // Always include the current cv's recipe so rotation moves away from it.
+    const currentRecipeId = (sourceTokens as CVStyleTokensV2).recipeId;
+    if (currentRecipeId && !recipeUsageHistory.includes(currentRecipeId)) {
+      recipeUsageHistory.unshift(currentRecipeId);
+    }
+    const result = await generateStyleTokensV2({
+      linkedInSummary: profileSummary,
+      jobVacancy,
+      creativityLevel: newLevel,
+      provider: providerName as Parameters<typeof generateStyleTokensV2>[0]['provider'],
+      apiKey,
+      model: modelName,
+      hasPhoto: !!cv.avatarUrl,
+      recipeUsageHistory,
+    });
+    regenTokens = result.tokens;
+  } else {
+    const mergedHistory = styleHistory.length > 0
+      ? styleHistory
+      : (cv.designTokens ? [cv.designTokens as import('@/types/design-tokens').CVDesignTokens] : undefined);
+    const styleResult = await generateDesignTokens(
+      profileSummary,
+      jobVacancy,
+      providerName as Parameters<typeof generateDesignTokens>[2],
+      apiKey,
+      modelName,
+      undefined,
+      newLevel,
+      !!cv.avatarUrl,
+      mergedHistory,
+    );
+    regenTokens = styleResult.tokens;
+  }
+
+  // Regenerate CV content (same profile/job; engine-agnostic).
   const cvResult = await generateCV(
     linkedIn,
     jobVacancy,
@@ -348,6 +381,6 @@ async function regenerateCV(
 
   return {
     content: cvResult.content,
-    tokens: styleResult.tokens,
+    tokens: regenTokens,
   };
 }
