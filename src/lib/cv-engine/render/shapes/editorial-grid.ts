@@ -51,10 +51,12 @@ function renderEditorialHeader(fullName: string, headline: string, tagline?: str
 
 function renderMarginalia(content: GeneratedCVContent): string {
   if (!content.experience?.length) return '';
+  // Only render the period as a vertical date-timeline next to the
+  // experience entries. Company/location are already in the main column —
+  // re-listing them in the margin felt duplicated to users.
   const items = content.experience.map(e => {
     return `<li class="cv-margin-note">
   <div class="cv-margin-period">${escHtml(e.period)}</div>
-  <div class="cv-margin-where">${escHtml(e.company)}${e.location ? ` · ${escHtml(e.location)}` : ''}</div>
 </li>`;
   }).join('');
   return `<aside class="cv-margin"><ul class="cv-margin-list">${items}</ul></aside>`;

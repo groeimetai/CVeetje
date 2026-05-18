@@ -47,6 +47,7 @@ function headerCSS(v: HeaderVariant): string {
   width: 92pt;
   height: 92pt;
   object-fit: cover;
+  object-position: center top;
   border-radius: 50%;
   border: 2px solid color-mix(in oklch, var(--color-accent) 60%, var(--color-paper));
 }
@@ -451,7 +452,9 @@ function sidebarShapeBaseCSS(): string {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
-  border-radius: 4pt;
+  object-position: center top;
+  border-radius: 50%;
+  border: 2px solid color-mix(in oklch, var(--color-accent) 50%, var(--color-paper));
 }
 `;
 }
@@ -549,6 +552,7 @@ function editorialGridShapeCSS(): string {
   width: 96pt;
   height: 96pt;
   object-fit: cover;
+  object-position: center top;
   border-radius: 50%;
   border: 2px solid color-mix(in oklch, var(--color-accent) 70%, var(--color-paper));
 }
@@ -643,6 +647,7 @@ function posterShapeCSS(): string {
   width: 70pt;
   height: 70pt;
   object-fit: cover;
+  object-position: center top;
   border-radius: 50%;
   border: 3px solid var(--color-accent);
 }
