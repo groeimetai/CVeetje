@@ -70,6 +70,25 @@ function renderInterests(items: string[]): string {
     .join('')}</div>`;
 }
 
+function renderProjects(items: NonNullable<GeneratedCVContent['projects']>): string {
+  return items
+    .map(
+      p => `<article class="cv-experience-item">
+  <div class="cv-role-line">
+    <span class="cv-role-title">${escHtml(p.title)}</span>
+    <span class="cv-role-period">${escHtml(p.period)}</span>
+  </div>
+  <p class="cv-experience-desc">${escHtml(p.description)}</p>
+  ${
+    p.highlights && p.highlights.length
+      ? `<ul class="cv-highlights">${p.highlights.map(h => `<li>${escHtml(h)}</li>`).join('')}</ul>`
+      : ''
+  }
+</article>`,
+    )
+    .join('');
+}
+
 function deriveDefaultPullQuote(content: GeneratedCVContent): { text: string; attribution?: string } | null {
   const first = content.experience?.[0];
   const firstHighlight = first?.highlights?.[0];
@@ -132,11 +151,14 @@ export function renderSidebarShape(rs: ResolvedSpec, input: SidebarShapeInput): 
         if (!content.interests?.length) break;
         mainSections.push(renderSection(rs.spec.primitives.section, labelFor(locale, 'interests'), renderInterests(content.interests)));
         break;
+      case 'projects':
+        if (!content.projects?.length) break;
+        mainSections.push(renderSection(rs.spec.primitives.section, labelFor(locale, 'projects'), renderProjects(content.projects)));
+        break;
       // skills, languages, certifications live in the sidebar — skip here.
       case 'skills':
       case 'languages':
       case 'certifications':
-      case 'projects': // Projects → main if Phase 2 wants it
         break;
       default:
         break;

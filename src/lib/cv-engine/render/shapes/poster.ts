@@ -61,6 +61,9 @@ export function renderPoster(rs: ResolvedSpec, input: PosterInput): string {
   const educationCredits = (content.education ?? []).map(e => {
     return `<span class="cv-credit-period">${escHtml(e.year)}</span> <span class="cv-credit-role">${escHtml(e.degree)}</span> <span class="cv-credit-where">${escHtml(e.institution)}</span>`;
   });
+  const projectCredits = (content.projects ?? []).map(p => {
+    return `<span class="cv-credit-period">${escHtml(p.period)}</span> <span class="cv-credit-role">${escHtml(p.title)}</span> <span class="cv-credit-where">${escHtml(p.description)}</span>`;
+  });
   const skillsCredits = content.skills
     ? [...content.skills.technical, ...content.skills.soft].map(s => escHtml(s))
     : [];
@@ -75,6 +78,7 @@ export function renderPoster(rs: ResolvedSpec, input: PosterInput): string {
     `<section class="cv-poster-summary"><p>${applyAccentHighlights(escHtml(content.summary), accentKeywords)}</p></section>`,
     renderCreditsBlock(labelFor(locale, 'experience'), experienceCredits),
     renderCreditsBlock(labelFor(locale, 'education'), educationCredits),
+    renderCreditsBlock(labelFor(locale, 'projects'), projectCredits),
     renderCreditsBlock(labelFor(locale, 'skills'), skillsCredits),
     renderCreditsBlock(labelFor(locale, 'languages'), languagesCredits),
     renderCreditsBlock(locale === 'en' ? 'Contact' : 'Contact', contactCredits),

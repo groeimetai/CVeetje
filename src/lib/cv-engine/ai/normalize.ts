@@ -23,6 +23,23 @@ const DEFAULT_SECTION_ORDER = [
   'interests',
 ];
 
+const VALID_SECTIONS = new Set(DEFAULT_SECTION_ORDER);
+
+/** AI sometimes returns sectionOrder with hallucinated names ("basics") or
+ *  drops standard sections. We:
+ *    1. keep only known section names (drops "basics" etc.),
+ *    2. append any standard section the AI omitted at the end, so projects
+ *       / interests / etc. never silently disappear.
+ *  If the AI gave nothing usable, fall back to DEFAULT_SECTION_ORDER. */
+function sanitizeSectionOrder(input?: string[]): string[] {
+  const cleaned = (input ?? []).filter(s => typeof s === 'string' && VALID_SECTIONS.has(s));
+  const seen = new Set(cleaned);
+  for (const s of DEFAULT_SECTION_ORDER) {
+    if (!seen.has(s)) cleaned.push(s);
+  }
+  return cleaned.length > 0 ? cleaned : DEFAULT_SECTION_ORDER;
+}
+
 /** Permissive AI emphasis shape — strings without length limits. Same field
  *  names as the strict `Emphasis` but we don't reject overflow at the AI-SDK
  *  schema layer; we truncate to the canonical limits here instead. */
@@ -64,7 +81,7 @@ export function normalizeTokens(input: NormalizeInput): CVStyleTokensV2 {
     paletteOverride: paletteOverride && Object.keys(paletteOverride).length > 0 ? paletteOverride : undefined,
     fontOverride,
     emphasis: truncateEmphasis(input.emphasis),
-    sectionOrder: input.sectionOrder?.length ? input.sectionOrder : DEFAULT_SECTION_ORDER,
+    sectionOrder: sanitizeSectionOrder(input.sectionOrder),
     hiddenSections: input.hiddenSections?.length ? input.hiddenSections : undefined,
   };
 }
