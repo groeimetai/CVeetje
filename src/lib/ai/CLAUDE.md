@@ -35,6 +35,8 @@ Alle AI-aanroepen. Vercel AI SDK (`ai` v6, `generateObject`/`streamText`) + Zod 
 
 > **Volledige legacy routekaart per creativity level** — wat de AI per route krijgt aangereikt, welke tools (tokens), welke renderer-quirks, en bekende convergentie-drivers: zie **`src/lib/ai/style-experts/STYLE-SYSTEM.md`**.
 
+Folder-overzicht + nieuw-expert checklist: zie **`src/lib/ai/style-experts/CLAUDE.md`** en **`src/lib/ai/style-experts/shared/CLAUDE.md`**.
+
 Een expert per `StyleCreativityLevel` (`conservative`, `balanced`, `creative`, `experimental`, `editorial-paper`). Elk implementeert `StyleExpert` interface (`schema`, `buildPrompt`, `normalize`, `getFallback`, `preferredTemperature`).
 
 Orchestrator (`generateDesignTokens` in `style-generator-v2.ts`) zoekt expert op via `getStyleExpert(level)`, roept dan `expert.buildPrompt` + `generateObjectResilient` + `expert.normalize` aan, fallback naar `expert.getFallback`.

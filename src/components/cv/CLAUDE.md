@@ -23,7 +23,7 @@ State wordt gepersisteerd in localStorage (key `cveetje_wizard_draft`, 24h expir
 
 | Bestand | Doel |
 |---|---|
-| `cv-wizard.tsx` | Hoofdwizard (9 stappen, state in localStorage) |
+| `cv-wizard.tsx` | Hoofdwizard (10 stappen, state in localStorage) |
 | `cv-preview.tsx` | Live preview met inline editing |
 | `element-editor.tsx` | Inline rich-text editor voor elementen |
 | `cv-content-editor.tsx` | Side panel voor content editing |
@@ -51,6 +51,11 @@ State wordt gepersisteerd in localStorage (key `cveetje_wizard_draft`, 24h expir
 - Nieuwe wizard-stap: extend `WizardStep` in `use-wizard-persistence.ts` + voeg state + render-tak toe in `cv-wizard.tsx`
 - Inline edits in preview produceren `CVElementOverrides` die naast `GeneratedCVContent` worden bewaard
 - Dispute trigger zit op de preview en gebruikt `cv-dispute-dialog.tsx`; flow naar `/api/cv/[id]/dispute` (zie `src/lib/ai/CLAUDE.md`)
+
+## Subfolders
+
+- **`wizard/`** — stateless helper-componenten voor de hoofdwizard (LanguageSelector, NoApiKeyAlert, ResumeDraftDialog, WizardProgress). Zie `src/components/cv/wizard/CLAUDE.md`.
+- **`design-tweaks/`** — live tweak-panel in de preview (v1 + v2 sheets, control-primitives, tweak-schema). Zie `src/components/cv/design-tweaks/CLAUDE.md`.
 
 ## Related hooks
 

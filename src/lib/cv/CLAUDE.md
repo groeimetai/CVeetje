@@ -19,6 +19,8 @@ Alle renderers zijn **print-safe**: geen transforms, clip-path, of hover-effects
 | `editorial.ts` — `generateEditorialHTML(...)` | Creative-level: magazine layouts met drop caps, pull quotes, numbered sections |
 | `bold.ts` — `generateBoldHTML(...)` | Experimental-level: Canva/Linear-style met sidebars, skill bars, gradients |
 
+Subfolder-CLAUDE.md: **`src/lib/cv/renderers/CLAUDE.md`**.
+
 ## Style system layers
 
 Drie style-lagen co-existeren:
@@ -38,6 +40,8 @@ Drie style-lagen co-existeren:
 | `icons.ts` | `contactIcons`, `contactIconsCSS` — inline SVG icons voor contact info |
 | `color-utils.ts` | Color manipulation (brightness, contrast checks) |
 | `adapter.ts` | `tokensToStyleConfig`, `styleConfigToTokens` — Legacy ↔ v2 bridge |
+
+Subfolder-CLAUDE.md: **`src/lib/cv/templates/CLAUDE.md`**.
 
 ## Belangrijke patronen
 

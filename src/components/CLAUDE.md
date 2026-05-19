@@ -16,13 +16,7 @@ UI components, grotendeels gestructureerd per domein.
 | `profiles/` | `profile-card`, `profile-edit-form`, `profile-enrich-drawer`, `linkedin-export-dialog` | – |
 | `seo/` | `structured-data`, `job-posting-structured-data` | – |
 | `templates/` | `template-selector`, `template-configurator`, `template-list`, `templates-page`, `style-or-template-choice` (+ barrel `index.ts`) | – |
-| `ui/` | shadcn-style primitives (Radix-based) | – |
-
-## UI primitives (`src/components/ui/`)
-
-shadcn/Radix-based: accordion, alert(-dialog), avatar, badge, button, card, dialog, dropdown-menu, form, input, label, logo, progress, select, separator, sheet, slider, sonner, switch, table, tabs, textarea.
-
-Geconfigureerd via `components.json` (root).
+| `ui/` | shadcn-style primitives (Radix-based) | ✅ `src/components/ui/CLAUDE.md` |
 
 ## Top-level
 

@@ -19,16 +19,7 @@ UI voor admin-only routes onder `(dashboard)/admin/`.
 
 ## Kanban (`src/components/admin/kanban/`)
 
-`@dnd-kit`-powered task board. Top-level Firestore collecties `kanban_boards` + `kanban_cards` (denormalized `boardId`).
-
-| Bestand | Doel |
-|---|---|
-| `kanban-board.tsx` | Hoofd-board component met DnD context |
-| `kanban-column.tsx` | Kolom (status) met droppable area |
-| `kanban-card.tsx` | Draggable kaart |
-| `card-dialog.tsx` | Card-edit dialog |
-| `board-list.tsx` | Lijst van boards (sidebar) |
-| `board-settings-dialog.tsx` | Board settings |
+`@dnd-kit`-powered task board. Top-level Firestore collecties `kanban_boards` + `kanban_cards` (denormalized `boardId`). Voor details + DnD-flow zie **`src/components/admin/kanban/CLAUDE.md`**.
 
 ## Belangrijke patronen
 

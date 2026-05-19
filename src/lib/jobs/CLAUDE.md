@@ -25,6 +25,12 @@ Plus:
 - `registry.ts` — `getCompanies()`, `getProvider()` registry van bekende companies per ATS
 - `types.ts` — `NormalizedJob`, `JobSearchParams`, `JobSearchResult`, `ApplyQuestion`, `JobSourceProvider`, `buildSlug` helper
 
+Subfolder-CLAUDE.md: **`src/lib/jobs/providers/CLAUDE.md`** (interface + slug-format + nieuwe provider checklist).
+
+## Crawl fallback (`crawl/`)
+
+Wanneer een provider geen volledige job-description in z'n search-response geeft, valt `/api/jobs/[slug]` terug op `crawlJobDetail(url)` — HTTP-first met Puppeteer fallback voor JS-rendered ATS-pages, gecached in Firestore (`jobs_cache`, 24u TTL). Subfolder-CLAUDE.md: **`src/lib/jobs/crawl/CLAUDE.md`**.
+
 ## Applications tracker
 
 Per-user job applications onder `users/{uid}/applications`. Statuses: `applied | interview | offer | rejected | accepted | withdrawn`.

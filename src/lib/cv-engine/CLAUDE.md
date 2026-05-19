@@ -76,6 +76,12 @@ src/lib/cv-engine/
 └── CLAUDE.md                    (this file)
 ```
 
+## Sub-CLAUDE.md's (lazy loaded)
+
+- **`ai/CLAUDE.md`** — orchestrator-flow, recipe-shortlist per route, prompt-stack.
+- **`recipes/CLAUDE.md`** — tier-folders, `SKILL.md` + `spec.ts` patroon, recipe-toevoegen checklist.
+- **`render/CLAUDE.md`** — compose pipeline, shape/primitive dispatch, print-safe constraints, Google Fonts injectie.
+
 ## De 12 recipes
 
 | Route | Recipe | Shape | Karakter | Source |
