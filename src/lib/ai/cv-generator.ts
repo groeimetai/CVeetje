@@ -1060,6 +1060,39 @@ function periodsOverlap(a: string | null | undefined, b: string | null | undefin
   return na === nb || na.includes(nb) || nb.includes(na);
 }
 
+// Are two project titles likely the same project? Used by both the safety net
+// (so we don't append a mechanical dup when the LLM already has the item under
+// a reframed title) and the dedup pass (so we drop the dup if both somehow
+// slipped through). Tokenize → strip punctuation, lowercase, drop tokens <3
+// chars. Strict by default to avoid false positives on generic words like
+// "social", "media", "platform": for sets of >3 tokens we require ≥3 shared
+// tokens; for shorter sets we require ≥2 shared tokens AND period-overlap
+// (period must be supplied — if you can't, pass empty strings and a 2-token
+// match will not be accepted).
+function projectTitlesLikelyMatch(
+  titleA: string,
+  titleB: string,
+  periodA: string | null | undefined,
+  periodB: string | null | undefined,
+): boolean {
+  const setA = tokenSet(titleA);
+  const setB = tokenSet(titleB);
+  if (setA.size < 2 || setB.size < 2) return false;
+  let shared = 0;
+  for (const t of setA) if (setB.has(t)) shared++;
+  if (shared < 2) return false;
+  const shortest = Math.min(setA.size, setB.size);
+  if (shared / shortest < 0.5) return false;
+  if (shortest > 3) {
+    // Long titles: 3+ shared tokens is strong enough on its own.
+    return shared >= 3;
+  }
+  // Short titles (≤3 meaningful tokens): require period-overlap as anti-FP.
+  // Prevents merging "Social Media Strat Agent" with "Automated Social Media
+  // Comments" just because they share "social" + "media".
+  return periodsOverlap(periodA, periodB);
+}
+
 // Walk the user's required-items selection and append any pinned item the LLM
 // dropped. Match permissively (case-insensitive substring on the most
 // identifying field per category) — the LLM is allowed to reframe titles
@@ -1102,20 +1135,18 @@ function enforceRequiredItems(
     }
   }
 
-  // PROJECTS — match on title substring
+  // PROJECTS — token-based match against the source title (reframings allowed)
   for (const idx of required.projectIndices ?? []) {
     const src = linkedIn.projects?.[idx];
     if (!src) continue;
-    const srcTitle = norm(src.title);
-    const present = (filled.projects ?? []).some((p) => {
-      const t = norm(p.title);
-      return t.length > 0 && (t.includes(srcTitle) || srcTitle.includes(t));
-    });
+    const srcPeriod = src.startDate || src.endDate
+      ? `${src.startDate ?? ''}${src.endDate ? ` – ${src.endDate}` : ''}`.trim()
+      : '';
+    const present = (filled.projects ?? []).some((p) =>
+      projectTitlesLikelyMatch(src.title, p.title, srcPeriod, p.period),
+    );
     if (!present) {
       console.warn(`[CV Gen] Required project missing from LLM output — appending mechanically: "${src.title}"`);
-      const period = src.startDate || src.endDate
-        ? `${src.startDate ?? ''}${src.endDate ? ` – ${src.endDate}` : ''}`.trim()
-        : '';
       filled.projects = [
         ...(filled.projects ?? []),
         {
@@ -1123,7 +1154,7 @@ function enforceRequiredItems(
           description: src.description ?? '',
           technologies: src.technologies ?? [],
           url: src.url,
-          period,
+          period: srcPeriod,
           highlights: [],
         },
       ];
@@ -1185,25 +1216,10 @@ function deduplicateCVContent(filled: GeneratedCVContent): void {
     const kept: typeof filled.projects = [];
     for (const p of filled.projects) {
       const pUrl = p.url?.trim().toLowerCase() ?? '';
-      const pTokens = tokenSet(p.title);
       const dup = kept.find((k) => {
-        // 1. URL match — strongest signal
         const kUrl = k.url?.trim().toLowerCase() ?? '';
         if (pUrl.length > 0 && pUrl === kUrl) return true;
-
-        // 2. Token overlap on the title. Need both sides to have ≥2
-        //    meaningful tokens; require ≥2 shared tokens and ≥50% overlap of
-        //    the smaller set. Short titles fall back to a period-overlap
-        //    check so we don't merge two distinct 3-token projects that
-        //    happen to share a brand prefix.
-        const kTokens = tokenSet(k.title);
-        if (pTokens.size < 2 || kTokens.size < 2) return false;
-        let shared = 0;
-        for (const t of pTokens) if (kTokens.has(t)) shared++;
-        const shortest = Math.min(pTokens.size, kTokens.size);
-        if (shared < 2 || shared / shortest < 0.5) return false;
-        if (shortest <= 3) return periodsOverlap(p.period, k.period);
-        return true;
+        return projectTitlesLikelyMatch(p.title, k.title, p.period, k.period);
       });
       if (dup) {
         console.warn(`[CV Gen] Dropped duplicate project: "${p.title}" (matches kept "${dup.title}")`);
