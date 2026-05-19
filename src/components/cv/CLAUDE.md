@@ -4,17 +4,18 @@ UI voor de CV-wizard, preview, en motivatiebrief.
 
 ## CV Generation Flow
 
-De wizard in `cv-wizard.tsx` orchestreert 9 stappen (`WizardStep` in `src/hooks/use-wizard-persistence.ts`):
+De wizard in `cv-wizard.tsx` orchestreert 10 stappen (`WizardStep` in `src/hooks/use-wizard-persistence.ts`):
 
 1. **`linkedin`** — multi-modal profile input (text, image, PDF) → AI parses to `ParsedLinkedIn`
 2. **`job`** — vacancy text → AI parses to `JobVacancy` met keywords
 3. **`fit-analysis`** — score profile vs vacancy (`analyzeFit`)
-4. **`style-choice`** — user picks: AI-generated tokens OF upload DOCX template
-5. **`style`** — AI generates `CVDesignTokens` (via style-expert voor gekozen creativity level)
-6. **`template-style`** — alternatieve path: extract style tokens uit uploaded template image
-7. **`template`** — fill uploaded DOCX template (Phases 1-6) met user data
-8. **`generating`** — `/api/cv/generate` → AI genereert `GeneratedCVContent` met Zod schema validation
-9. **`preview`** — `cv-preview.tsx` met inline element editing, dispute trigger, PDF export
+4. **`required-items`** — user pinnt experiences/projects/education/certifications die de AI gegarandeerd op het CV moet zetten (override van de AI's "OR omit" instructie). Skipbaar; default = AI beslist zelf. Wordt alleen bezocht als er een `jobVacancy` is — zonder vacature wordt de stap geskipt en gaat de wizard direct van `job` naar `style-choice`.
+5. **`style-choice`** — user picks: AI-generated tokens OF upload DOCX template
+6. **`style`** — AI generates `CVDesignTokens` (via style-expert voor gekozen creativity level)
+7. **`template-style`** — alternatieve path: extract style tokens uit uploaded template image
+8. **`template`** — fill uploaded DOCX template (Phases 1-6) met user data
+9. **`generating`** — `/api/cv/generate` → AI genereert `GeneratedCVContent` met Zod schema validation
+10. **`preview`** — `cv-preview.tsx` met inline element editing, dispute trigger, PDF export
 
 State wordt gepersisteerd in localStorage (key `cveetje_wizard_draft`, 24h expiry) via `use-wizard-persistence.ts`.
 
@@ -30,6 +31,7 @@ State wordt gepersisteerd in localStorage (key `cveetje_wizard_draft`, 24h expir
 | `linkedin-input.tsx` | LinkedIn URL input |
 | `job-input.tsx` | Job vacancy input |
 | `fit-analysis-card.tsx` | Fit analysis card |
+| `required-items-selector.tsx` | Stap 4 — gebruiker pint must-include items per categorie (experiences/projects/education/certifications). State leeft in `cv-wizard.tsx` als `requiredSelection: RequiredItemsSelection \| undefined` en wordt mee verzonden naar `/api/cv/generate`. |
 | `style-picker.tsx` | Style picker (legacy `CVStyleConfig`) |
 | `dynamic-style-picker.tsx` | Style picker (v2 `CVDesignTokens`) |
 | `template-style-picker.tsx` | Template style picker |

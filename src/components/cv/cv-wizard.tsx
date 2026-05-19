@@ -9,6 +9,7 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { ProfileInput } from './profile-input';
 import { JobInput } from './job-input';
 import { FitAnalysisCard } from './fit-analysis-card';
+import { RequiredItemsSelector } from './required-items-selector';
 import { DynamicStylePicker } from './dynamic-style-picker';
 import { TemplateStylePicker } from './template-style-picker';
 import { CVPreview, type PDFPageMode } from './cv-preview';
@@ -33,6 +34,7 @@ import type {
   StyleCreativityLevel,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import type { RequiredItemsSelection } from '@/types/cv';
 import type { ApplyQuestion } from '@/lib/jobs/providers/types';
 import { ApplyForm } from '@/components/jobs/apply-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -96,6 +98,9 @@ export function CVWizard() {
   // CV options — pre-generate preferences. Default ON if the profile actually
   // has interests; otherwise OFF (no point asking the AI to render nothing).
   const [showInterestsOnCV, setShowInterestsOnCV] = useState<boolean>(false);
+  // User-specified MUST-INCLUDE items per category. AI may still add others.
+  // undefined / empty arrays = AI decides freely (backwards-compatible default).
+  const [requiredSelection, setRequiredSelection] = useState<RequiredItemsSelection | undefined>(undefined);
 
   // Model info for file upload support
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -229,16 +234,17 @@ export function CVWizard() {
         avatarUrl,
         outputLanguage,
         showInterestsOnCV,
+        requiredSelection,
       });
     }
-  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, showInterestsOnCV, saveDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, showInterestsOnCV, requiredSelection, saveDraft]);
 
   // Auto-save draft on state changes (debounced by the effect dependencies)
   useEffect(() => {
     if (draftChecked && !showResumeDialog && currentStep !== 'generating' && currentStep !== 'preview') {
       saveCurrentDraft();
     }
-  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, showInterestsOnCV, draftChecked, showResumeDialog, saveCurrentDraft]);
+  }, [currentStep, linkedInData, jobVacancy, fitAnalysis, designTokens, avatarUrl, outputLanguage, showInterestsOnCV, requiredSelection, draftChecked, showResumeDialog, saveCurrentDraft]);
 
   // Resume from draft
   const handleResumeDraft = () => {
@@ -255,6 +261,7 @@ export function CVWizard() {
       setShowInterestsOnCV(
         draft.showInterestsOnCV ?? !!(draft.linkedInData?.interests && draft.linkedInData.interests.length > 0)
       );
+      setRequiredSelection(draft.requiredSelection);
     }
     setShowResumeDialog(false);
   };
@@ -360,6 +367,7 @@ export function CVWizard() {
     { id: 'linkedin', label: t('steps.profile') },
     { id: 'job', label: t('steps.job') },
     { id: 'fit-analysis', label: t('steps.fitAnalysis') },
+    { id: 'required-items', label: t('steps.requiredItems') },
     { id: 'style-choice', label: t('steps.styleChoice') },
     getStyleStepConfig(),
     { id: 'generating', label: t('steps.generating') },
@@ -388,6 +396,16 @@ export function CVWizard() {
   };
 
   const handleFitAnalysisContinue = () => {
+    setCurrentStep('required-items');
+  };
+
+  const handleRequiredItemsComplete = (selection: RequiredItemsSelection) => {
+    setRequiredSelection(Object.keys(selection).length > 0 ? selection : undefined);
+    setCurrentStep('style-choice');
+  };
+
+  const handleRequiredItemsSkip = () => {
+    setRequiredSelection(undefined);
     setCurrentStep('style-choice');
   };
 
@@ -546,6 +564,7 @@ export function CVWizard() {
           fitAnalysis,
           creativityLevel: creativityLevel || selectedCreativityLevel,
           includeInterests: showInterestsOnCV,
+          requiredSelection,
         }),
       });
 
@@ -593,6 +612,7 @@ export function CVWizard() {
           language: outputLanguage,
           fitAnalysis,
           includeInterests: showInterestsOnCV,
+          requiredSelection,
         }),
       });
 
@@ -792,14 +812,16 @@ export function CVWizard() {
 
     // Determine which style step to use
     const styleStep: WizardStep = useTemplateStyleMode ? 'template-style' : 'style';
-    const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'style-choice', styleStep, 'preview'];
+    const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'required-items', 'style-choice', styleStep, 'preview'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
-      // Skip fit-analysis when going back if there's no job vacancy
-      if (stepOrder[currentIndex - 1] === 'fit-analysis' && !jobVacancy) {
+      const prev = stepOrder[currentIndex - 1];
+      // Skip required-items and fit-analysis when going back if there's no job vacancy —
+      // those steps are only reachable forward when a vacancy is set.
+      if ((prev === 'fit-analysis' || prev === 'required-items') && !jobVacancy) {
         setCurrentStep('job');
       } else {
-        setCurrentStep(stepOrder[currentIndex - 1]);
+        setCurrentStep(prev);
       }
     }
   };
@@ -809,6 +831,7 @@ export function CVWizard() {
     // Reset job, style, and content - but keep profile data (linkedInData, avatarUrl)
     setJobVacancy(null);
     setFitAnalysis(null);
+    setRequiredSelection(undefined);
     setDesignTokens(null);
     setGeneratedContent(null);
     setEditedContent(null);
@@ -917,6 +940,16 @@ export function CVWizard() {
           onCreditsRefresh={refreshCredits}
           onAnalysisComplete={setFitAnalysis}
           initialAnalysis={fitAnalysis}
+        />
+      )}
+
+      {currentStep === 'required-items' && linkedInData && (
+        <RequiredItemsSelector
+          linkedInData={linkedInData}
+          initialSelection={requiredSelection}
+          onComplete={handleRequiredItemsComplete}
+          onSkip={handleRequiredItemsSkip}
+          onBack={goBack}
         />
       )}
 

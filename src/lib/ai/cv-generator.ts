@@ -14,6 +14,7 @@ import type {
   FitAnalysis,
 } from '@/types';
 import type { CVDesignTokens, ExperienceDescriptionFormat } from '@/types/design-tokens';
+import type { RequiredItemsSelection } from '@/types/cv';
 
 // Schema for structured CV output.
 //
@@ -460,6 +461,61 @@ function stripUnsupportedYearClaims(
   return result.replace(/\s{2,}/g, ' ').replace(/^[|,\-:\s]+|[|,\-:\s]+$/g, '').trim();
 }
 
+// Compose the user-specified MUST-INCLUDE section. The user picked these
+// items in the wizard's required-items step; the LLM must include them on
+// the final CV even if their relevance score would otherwise let it omit or
+// trim them. AI may still add OTHER relevant items from the profile — this
+// only sets the floor, never the ceiling.
+function buildMandatoryItemsSection(
+  linkedIn: ParsedLinkedIn,
+  required?: RequiredItemsSelection,
+): string {
+  if (!required) return '';
+
+  const expIdx = required.experienceIndices ?? [];
+  const projIdx = required.projectIndices ?? [];
+  const eduIdx = required.educationIndices ?? [];
+  const certIdx = required.certificationIndices ?? [];
+
+  if (expIdx.length + projIdx.length + eduIdx.length + certIdx.length === 0) return '';
+
+  const expLines = expIdx
+    .map((i) => linkedIn.experience?.[i])
+    .filter((e): e is NonNullable<typeof e> => Boolean(e))
+    .map((e) => `- "${e.title}" at "${e.company}" (${e.startDate}${e.endDate ? ` – ${e.endDate}` : ' – Present'})`);
+
+  const projLines = projIdx
+    .map((i) => linkedIn.projects?.[i])
+    .filter((p): p is NonNullable<typeof p> => Boolean(p))
+    .map((p) => `- "${p.title}"`);
+
+  const eduLines = eduIdx
+    .map((i) => linkedIn.education?.[i])
+    .filter((e): e is NonNullable<typeof e> => Boolean(e))
+    .map((e) => {
+      const degree = [e.degree, e.fieldOfStudy].filter(Boolean).join(' in ');
+      return `- "${degree || 'Studie'}" at "${e.school}"`;
+    });
+
+  const certLines = certIdx
+    .map((i) => linkedIn.certifications?.[i])
+    .filter((c): c is NonNullable<typeof c> => Boolean(c))
+    .map((c) => `- "${c.name}"${c.issuer ? ` — ${c.issuer}` : ''}`);
+
+  if (expLines.length + projLines.length + eduLines.length + certLines.length === 0) return '';
+
+  let section = `\n\n## === MANDATORY ITEMS (must appear in output) ===\n\nThe candidate has marked the following items as REQUIRED — they MUST appear in the generated CV. You may still add OTHER relevant items from the profile, but you may NOT omit any of these. These items OVERRIDE any earlier guidance about omitting low-relevance roles or trimming the CV for length — even a Score-1 item on this list must appear (use the minimum bullet count if needed, but never omit).\n\n`;
+
+  if (expLines.length > 0) section += `**EXPERIENCES (required, must appear in \`experience\`):**\n${expLines.join('\n')}\n\n`;
+  if (projLines.length > 0) section += `**PROJECTS (required, must appear in \`projects\`):**\n${projLines.join('\n')}\n\n`;
+  if (eduLines.length > 0) section += `**EDUCATION (required, must appear in \`education\`):**\n${eduLines.join('\n')}\n\n`;
+  if (certLines.length > 0) section += `**CERTIFICATIONS (required, must appear in \`certifications\`):**\n${certLines.join('\n')}\n\n`;
+
+  section += `Note: relevance-ordering still applies — order all items (required + extras) by relevance to the vacancy. But the items above must be PRESENT in the corresponding output array.`;
+
+  return section;
+}
+
 function buildPrompt(
   linkedIn: ParsedLinkedIn,
   jobVacancy: JobVacancy | null,
@@ -468,6 +524,7 @@ function buildPrompt(
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
   fitAnalysis?: FitAnalysis | null,
   includeInterests: boolean = false,
+  requiredSelection?: RequiredItemsSelection,
 ): string {
   // Layout-aware instructions (single-column only now for reliable PDF)
   const isCompact = designTokens?.spacing === 'compact';
@@ -917,6 +974,11 @@ generate a non-empty CV:
 Returning empty arrays/strings while the profile has data is a contract
 violation, not a safety default. Fill the fields with what's in the profile.`;
 
+  // Append the user's MUST-INCLUDE override last so it carries maximum weight
+  // and explicitly overrides the earlier "OR omit if CV is already long enough"
+  // guidance for the specific items the user pinned.
+  prompt += buildMandatoryItemsSection(linkedIn, requiredSelection);
+
   return prompt;
 }
 
@@ -936,8 +998,9 @@ export async function generateCV(
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
   fitAnalysis?: FitAnalysis | null,
   includeInterests: boolean = false,
+  requiredSelection?: RequiredItemsSelection,
 ): Promise<GenerateCVResult> {
-  const prompt = buildPrompt(linkedIn, jobVacancy, designTokens, language, descriptionFormat, fitAnalysis, includeInterests);
+  const prompt = buildPrompt(linkedIn, jobVacancy, designTokens, language, descriptionFormat, fitAnalysis, includeInterests, requiredSelection);
 
   try {
     const { value, usage } = await generateObjectResilient({
@@ -947,7 +1010,7 @@ export async function generateCV(
       schema: cvContentSchema,
       prompt,
       temperature: resolveTemperature(provider, model, 0.5),
-      normalize: (raw) => normalizeCVContent(raw, linkedIn, jobVacancy, includeInterests),
+      normalize: (raw) => normalizeCVContent(raw, linkedIn, jobVacancy, includeInterests, requiredSelection),
       logTag: 'CV Gen',
     });
 
@@ -955,6 +1018,118 @@ export async function generateCV(
   } catch (error) {
     console.error('[CV Gen] Failed after all attempts:', error);
     throw error;
+  }
+}
+
+function norm(s: string | null | undefined): string {
+  return (s ?? '').trim().toLowerCase();
+}
+
+// Walk the user's required-items selection and append any pinned item the LLM
+// dropped. Match permissively (case-insensitive substring on the most
+// identifying field per category) — the LLM is allowed to reframe titles
+// (e.g. "IT Consultant" → "ServiceNow Consultant") so an exact match would
+// produce false negatives.
+function enforceRequiredItems(
+  filled: GeneratedCVContent,
+  linkedIn: ParsedLinkedIn,
+  required?: RequiredItemsSelection,
+): void {
+  if (!required) return;
+
+  // EXPERIENCES — match on (company contains profile.company) AND (title overlaps profile.title)
+  for (const idx of required.experienceIndices ?? []) {
+    const src = linkedIn.experience?.[idx];
+    if (!src) continue;
+    const srcCompany = norm(src.company);
+    const srcTitle = norm(src.title);
+    const present = filled.experience.some((e) => {
+      const c = norm(e.company);
+      const t = norm(e.title);
+      return c.length > 0 && srcCompany.length > 0
+        && (c.includes(srcCompany) || srcCompany.includes(c))
+        && (t.includes(srcTitle) || srcTitle.includes(t) || srcTitle.length === 0);
+    });
+    if (!present) {
+      console.warn(`[CV Gen] Required experience missing from LLM output — appending mechanically: "${src.title}" at "${src.company}"`);
+      const period = `${src.startDate ?? ''}${src.endDate ? ` – ${src.endDate}` : ' – Present'}`.trim();
+      const highlights = src.description
+        ? src.description.split(/\n+/).map((s) => s.trim()).filter((s) => s.length > 0).slice(0, 3)
+        : [];
+      filled.experience.push({
+        title: src.title,
+        company: src.company,
+        location: src.location,
+        period,
+        highlights: highlights.length > 0 ? highlights : (src.description ? [src.description] : []),
+        relevanceScore: 3,
+      });
+    }
+  }
+
+  // PROJECTS — match on title substring
+  for (const idx of required.projectIndices ?? []) {
+    const src = linkedIn.projects?.[idx];
+    if (!src) continue;
+    const srcTitle = norm(src.title);
+    const present = (filled.projects ?? []).some((p) => {
+      const t = norm(p.title);
+      return t.length > 0 && (t.includes(srcTitle) || srcTitle.includes(t));
+    });
+    if (!present) {
+      console.warn(`[CV Gen] Required project missing from LLM output — appending mechanically: "${src.title}"`);
+      const period = src.startDate || src.endDate
+        ? `${src.startDate ?? ''}${src.endDate ? ` – ${src.endDate}` : ''}`.trim()
+        : '';
+      filled.projects = [
+        ...(filled.projects ?? []),
+        {
+          title: src.title,
+          description: src.description ?? '',
+          technologies: src.technologies ?? [],
+          url: src.url,
+          period,
+          highlights: [],
+        },
+      ];
+    }
+  }
+
+  // EDUCATION — match on institution (school)
+  for (const idx of required.educationIndices ?? []) {
+    const src = linkedIn.education?.[idx];
+    if (!src) continue;
+    const srcSchool = norm(src.school);
+    const present = filled.education.some((e) => {
+      const inst = norm(e.institution);
+      return inst.length > 0 && (inst.includes(srcSchool) || srcSchool.includes(inst));
+    });
+    if (!present) {
+      console.warn(`[CV Gen] Required education missing from LLM output — appending mechanically: "${src.school}"`);
+      const year = [src.startYear, src.endYear].filter(Boolean).join('–');
+      const degree = [src.degree, src.fieldOfStudy].filter(Boolean).join(' in ') || 'Studie';
+      filled.education.push({
+        degree,
+        institution: src.school,
+        year,
+        details: null,
+      });
+    }
+  }
+
+  // CERTIFICATIONS — match on name substring
+  for (const idx of required.certificationIndices ?? []) {
+    const src = linkedIn.certifications?.[idx];
+    if (!src) continue;
+    const srcName = norm(src.name);
+    const present = filled.certifications.some((c) => {
+      const n = norm(c);
+      return n.length > 0 && (n.includes(srcName) || srcName.includes(n));
+    });
+    if (!present) {
+      console.warn(`[CV Gen] Required certification missing from LLM output — appending mechanically: "${src.name}"`);
+      filled.certifications.push(src.issuer ? `${src.name} - ${src.issuer}` : src.name);
+    }
   }
 }
 
@@ -972,6 +1147,7 @@ function normalizeCVContent(
   linkedIn: ParsedLinkedIn,
   jobVacancy: JobVacancy | null,
   includeInterests: boolean = false,
+  requiredSelection?: RequiredItemsSelection,
 ): GeneratedCVContent {
   type RawShape = Partial<GeneratedCVContent> & { data?: Partial<GeneratedCVContent> };
   let raw = (rawInput ?? {}) as RawShape;
@@ -1102,6 +1278,12 @@ function normalizeCVContent(
     projects: raw.projects ?? [],
     interests,
   } as GeneratedCVContent;
+
+  // Required-items safety net — if the user marked items as MUST-INCLUDE in
+  // the wizard and the LLM still omitted them despite the prompt instruction,
+  // append a minimal entry built mechanically from the profile. The prompt is
+  // guidance; this is the guarantee.
+  enforceRequiredItems(filled, linkedIn, requiredSelection);
 
   // Deterministic claim validation — strip anything the model fabricated
   // despite the prompt's "do not fabricate" rules. The prompt is guidance;

@@ -8,11 +8,12 @@ import type {
   FitAnalysis,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import type { RequiredItemsSelection } from '@/types/cv';
 
 const STORAGE_KEY = 'cveetje_wizard_draft';
 const EXPIRY_HOURS = 24; // Draft expires after 24 hours
 
-export type WizardStep = 'linkedin' | 'job' | 'fit-analysis' | 'style-choice' | 'style' | 'template-style' | 'template' | 'generating' | 'preview';
+export type WizardStep = 'linkedin' | 'job' | 'fit-analysis' | 'required-items' | 'style-choice' | 'style' | 'template-style' | 'template' | 'generating' | 'preview';
 
 export interface WizardDraft {
   currentStep: WizardStep;
@@ -23,6 +24,7 @@ export interface WizardDraft {
   avatarUrl: string | null;
   outputLanguage: OutputLanguage;
   showInterestsOnCV?: boolean;
+  requiredSelection?: RequiredItemsSelection;
   savedAt: number; // timestamp
 }
 

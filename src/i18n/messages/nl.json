@@ -1003,6 +1003,7 @@
       "profile": "Profiel",
       "job": "Vacature",
       "fitAnalysis": "Match",
+      "requiredItems": "Pin",
       "styleChoice": "Keuze",
       "style": "Stijl",
       "template": "Template",
@@ -1053,6 +1054,26 @@
       "resume": "Doorgaan",
       "startNew": "Opnieuw Beginnen"
     }
+  },
+  "requiredItems": {
+    "title": "Wat moet er beslist op je CV?",
+    "description": "Vink ervaringen, projecten, opleidingen of certificaten aan die de AI hoe dan ook moet meenemen. Niets aanvinken is prima — dan beslist de AI zelf op basis van relevantie.",
+    "emptyProfile": "Je profiel heeft (nog) geen werkervaring, projecten, opleidingen of certificaten om te pinnen. Sla deze stap gewoon over.",
+    "sections": {
+      "experience": "Werkervaring",
+      "experienceHint": "Ervaringen die per se op het CV moeten",
+      "projects": "Projecten",
+      "projectsHint": "Projecten die per se op het CV moeten",
+      "education": "Opleiding",
+      "educationHint": "Opleidingen die per se op het CV moeten",
+      "certifications": "Certificaten",
+      "certificationsHint": "Certificaten die per se op het CV moeten"
+    },
+    "summary": "{count} item(s) worden gegarandeerd op je CV gezet. De AI mag nog steeds extra relevante items toevoegen.",
+    "summaryEmpty": "Niets aangevinkt — de AI kiest zelf wat er op het CV komt op basis van relevantie voor de vacature.",
+    "back": "Terug",
+    "skip": "Overslaan",
+    "continue": "Doorgaan"
   },
   "fitAnalysis": {
     "title": "Fit Analyse",

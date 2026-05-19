@@ -6,7 +6,7 @@ React hooks voor stateful client-side logica.
 |---|---|
 | `use-cv-chat.ts` | `useCVChat()` — wraps `useChat()` van `@ai-sdk/react`. Handles tool-calls die CV content of design tokens muteren. |
 | `use-template-chat.ts` | Idem voor DOCX-template editing. |
-| `use-wizard-persistence.ts` | localStorage draft management. Key: `cveetje_wizard_draft`. Expiry: 24h. Exports `WizardStep` type. |
+| `use-wizard-persistence.ts` | localStorage draft management. Key: `cveetje_wizard_draft`. Expiry: 24h. Exports `WizardStep` type (`linkedin` → `job` → `fit-analysis` → `required-items` → `style-choice` → `style`/`template-style`/`template` → `generating` → `preview`). `WizardDraft` includes optional `requiredSelection: RequiredItemsSelection` so the user's pinned items survive a refresh. |
 | `use-profiles.ts` | Saved-profile fetching helper. |
 
 ## Patterns

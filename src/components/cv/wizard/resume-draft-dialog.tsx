@@ -30,6 +30,7 @@ export function ResumeDraftDialog({ draft, onResume, onDiscard }: ResumeDraftDia
     linkedin: t('steps.profile'),
     job: t('steps.job'),
     'fit-analysis': t('steps.fitAnalysis'),
+    'required-items': t('steps.requiredItems'),
     'style-choice': t('steps.styleChoice'),
     style: t('steps.style'),
     'template-style': t('steps.templateStyle'),

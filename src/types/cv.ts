@@ -103,6 +103,18 @@ export interface CVElementOverrides {
   lastModified: Date;
 }
 
+// ============ Required Items Selection (User Override) ============
+// Indices in ParsedLinkedIn.<category> arrays that the user has marked as
+// MUST-INCLUDE on the generated CV. AI may still add other relevant items
+// from the profile — required indices only set the floor, never the ceiling.
+// undefined/empty arrays = no constraint = AI decides freely (default).
+export interface RequiredItemsSelection {
+  experienceIndices?: number[];
+  projectIndices?: number[];
+  educationIndices?: number[];
+  certificationIndices?: number[];
+}
+
 // ============ CV Document ============
 
 export interface CV {

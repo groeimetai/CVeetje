@@ -1003,6 +1003,7 @@
       "profile": "Profile",
       "job": "Job",
       "fitAnalysis": "Match",
+      "requiredItems": "Pin",
       "styleChoice": "Choice",
       "style": "Style",
       "template": "Template",
@@ -1053,6 +1054,26 @@
       "resume": "Continue",
       "startNew": "Start New"
     }
+  },
+  "requiredItems": {
+    "title": "What must definitely be on your CV?",
+    "description": "Pin experiences, projects, education or certifications you want the AI to keep on the CV no matter what. Pinning nothing is fine — the AI will then decide based on relevance.",
+    "emptyProfile": "Your profile has no work experience, projects, education or certifications to pin yet. Just skip this step.",
+    "sections": {
+      "experience": "Work experience",
+      "experienceHint": "Experiences that must appear",
+      "projects": "Projects",
+      "projectsHint": "Projects that must appear",
+      "education": "Education",
+      "educationHint": "Education entries that must appear",
+      "certifications": "Certifications",
+      "certificationsHint": "Certifications that must appear"
+    },
+    "summary": "{count} item(s) will be guaranteed on your CV. The AI may still add other relevant items.",
+    "summaryEmpty": "Nothing pinned — the AI will decide what goes on the CV based on relevance to the job.",
+    "back": "Back",
+    "skip": "Skip",
+    "continue": "Continue"
   },
   "fitAnalysis": {
     "title": "Fit Analysis",

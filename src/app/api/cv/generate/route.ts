@@ -17,6 +17,7 @@ import type {
   StyleCreativityLevel,
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import type { RequiredItemsSelection } from '@/types/cv';
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
       fitAnalysis,
       creativityLevel,
       includeInterests = false,
+      requiredSelection,
     } = body as {
       linkedInData: ParsedLinkedIn;
       jobVacancy: JobVacancy | null;
@@ -83,6 +85,7 @@ export async function POST(request: NextRequest) {
       fitAnalysis?: FitAnalysis | null;
       creativityLevel?: StyleCreativityLevel;
       includeInterests?: boolean;
+      requiredSelection?: RequiredItemsSelection;
     };
 
     // Validate input
@@ -126,6 +129,7 @@ export async function POST(request: NextRequest) {
         designTokens.experienceDescriptionFormat || 'bullets',
         fitAnalysis,
         includeInterests,
+        requiredSelection,
       );
       content = result.content;
       usage = result.usage;

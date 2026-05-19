@@ -75,6 +75,7 @@ Orchestrator + drempel-logica zit in `src/lib/pdf/smart-pdf-filler.ts` (zie `src
 
 ## Belangrijke patronen
 
+- **Required items override** (`cv-generator.ts`): de wizard kan een `RequiredItemsSelection` meegeven met indices van experiences/projects/education/certifications die de gebruiker per se op het CV wil. `buildPrompt` zet een `## === MANDATORY ITEMS ===` sectie aan het einde van de prompt die de eerdere "OR omit if CV is already long enough" instructie (Step 6, line ~751) **overrulet** voor pinned items. Daarnaast loopt er een safety net in `normalizeCVContent → enforceRequiredItems()`: als de LLM een pinned item alsnog weglaat (case-insensitive match per categorie), wordt het mechanisch uit het profiel toegevoegd. Niet-pinned items blijven onder de bestaande AI-vrijheid vallen.
 - AI-credit operaties **altijd** via `resolveProvider({ userId, operation })`. Niet eigen credit-logica schrijven.
 - Character-based billing (cv-chat): `chargePlatformCredits()` apart aanroepen na de operatie.
 - Flaky Anthropic structured-output: gebruik `generateObjectResilient` (heeft Opus 4.6 fallback).
