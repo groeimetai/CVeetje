@@ -1025,6 +1025,41 @@ function norm(s: string | null | undefined): string {
   return (s ?? '').trim().toLowerCase();
 }
 
+// Tokenize a title for fuzzy dup-detection: strip punctuation, lowercase,
+// split on whitespace, drop tokens <3 chars (filler words like "de", "en",
+// "AI", "for"). The substring-based matcher we used before missed pairs
+// like "Serac — Multi-Agent Orchestration Platform" vs
+// "Serac: Multi Agent Orchestration ServiceNow Development Platform"
+// because em-dash/hyphen/colon and inserted words broke .includes().
+function tokenSet(s: string | null | undefined): Set<string> {
+  return new Set(
+    (s ?? '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]+/g, ' ')
+      .split(/\s+/)
+      .filter((t) => t.length >= 3),
+  );
+}
+
+// Period strings come in as "Jul 2025", "Jul 2025 – Present", "Aug 2023 – Aug 2025"
+// — sometimes em-dash, sometimes hyphen. Normalize separators so equality
+// + substring checks work across both. Used to confirm two near-titles refer
+// to the same project (start date must overlap to be safe to dedup).
+function normPeriod(p: string | null | undefined): string {
+  return (p ?? '')
+    .toLowerCase()
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function periodsOverlap(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normPeriod(a);
+  const nb = normPeriod(b);
+  if (na.length === 0 || nb.length === 0) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
 // Walk the user's required-items selection and append any pinned item the LLM
 // dropped. Match permissively (case-insensitive substring on the most
 // identifying field per category) — the LLM is allowed to reframe titles
@@ -1140,18 +1175,35 @@ function enforceRequiredItems(
 // but here we drop instead of add. Keeps the first occurrence; logs anything
 // dropped so we can spot whether the prompt or the safety net is misfiring.
 function deduplicateCVContent(filled: GeneratedCVContent): void {
-  // PROJECTS — match on title-substring or identical url
+  // PROJECTS — token-based title match (lenient on punctuation/extra words)
+  // plus period-overlap as anti-FP for short titles. Driver: Claude emits the
+  // same project twice — once as a clean NL reframe ("Serac — Multi-Agent
+  // Orchestration Platform") and once as the raw profile entry ("Serac:
+  // Multi Agent Orchestration ServiceNow Development Platform"). Substring
+  // matching missed those because of em-dash vs hyphen + inserted words.
   if (filled.projects && filled.projects.length > 1) {
     const kept: typeof filled.projects = [];
     for (const p of filled.projects) {
-      const pTitle = norm(p.title);
       const pUrl = p.url?.trim().toLowerCase() ?? '';
+      const pTokens = tokenSet(p.title);
       const dup = kept.find((k) => {
-        const kTitle = norm(k.title);
+        // 1. URL match — strongest signal
         const kUrl = k.url?.trim().toLowerCase() ?? '';
         if (pUrl.length > 0 && pUrl === kUrl) return true;
-        if (pTitle.length > 0 && kTitle.length > 0 && (pTitle.includes(kTitle) || kTitle.includes(pTitle))) return true;
-        return false;
+
+        // 2. Token overlap on the title. Need both sides to have ≥2
+        //    meaningful tokens; require ≥2 shared tokens and ≥50% overlap of
+        //    the smaller set. Short titles fall back to a period-overlap
+        //    check so we don't merge two distinct 3-token projects that
+        //    happen to share a brand prefix.
+        const kTokens = tokenSet(k.title);
+        if (pTokens.size < 2 || kTokens.size < 2) return false;
+        let shared = 0;
+        for (const t of pTokens) if (kTokens.has(t)) shared++;
+        const shortest = Math.min(pTokens.size, kTokens.size);
+        if (shared < 2 || shared / shortest < 0.5) return false;
+        if (shortest <= 3) return periodsOverlap(p.period, k.period);
+        return true;
       });
       if (dup) {
         console.warn(`[CV Gen] Dropped duplicate project: "${p.title}" (matches kept "${dup.title}")`);
@@ -1169,17 +1221,14 @@ function deduplicateCVContent(filled: GeneratedCVContent): void {
     for (const e of filled.experience) {
       const eCompany = norm(e.company);
       const eTitle = norm(e.title);
-      const ePeriod = norm(e.period);
       const dup = kept.find((k) => {
         const kCompany = norm(k.company);
         if (eCompany.length === 0 || kCompany.length === 0) return false;
         const sameCompany = eCompany.includes(kCompany) || kCompany.includes(eCompany);
         if (!sameCompany) return false;
         const kTitle = norm(k.title);
-        const kPeriod = norm(k.period);
         const titleOverlap = eTitle.length > 0 && kTitle.length > 0 && (eTitle.includes(kTitle) || kTitle.includes(eTitle));
-        const periodEq = ePeriod.length > 0 && kPeriod.length > 0 && ePeriod === kPeriod;
-        return titleOverlap || periodEq;
+        return titleOverlap || periodsOverlap(e.period, k.period);
       });
       if (dup) {
         console.warn(`[CV Gen] Dropped duplicate experience: "${e.title}" at "${e.company}" (matches kept "${dup.title}")`);
