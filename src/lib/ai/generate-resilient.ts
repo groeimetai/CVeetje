@@ -44,15 +44,26 @@ export interface ResilientGenerateResult<TResult> {
 /**
  * Returns true for errors we should retry / fall back on — empty responses,
  * schema mismatches, type validation, invalid JSON, Anthropic schema-too-
- * complex (pre-flight validation, Opus 4.7-specific). Does NOT retry auth
- * errors, rate limits (those are handled by withRetry upstream), etc.
+ * complex (pre-flight validation, Opus 4.7-specific), plus capacity errors
+ * (HTTP 529 Overloaded, 503, rate-limit) where Anthropic itself signals
+ * `x-should-retry: true`. Does NOT retry auth errors.
  */
 function isRecoverableStructuredError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
   if (/401|403|unauthorized|forbidden|invalid api key/i.test(message)) return false;
-  return /did not match schema|type validation|no object generated|invalid json|response did not|leeg antwoord|schema is too complex/i.test(
+  return /did not match schema|type validation|no object generated|invalid json|response did not|leeg antwoord|schema is too complex|overloaded|529|503|too many requests|429|service unavailable/i.test(
     message,
   );
+}
+
+/**
+ * Capacity-side errors (Anthropic overloaded, rate-limited, briefly
+ * unavailable). These benefit from a short delay before retrying — hammering
+ * immediately just hits the same overloaded queue.
+ */
+function isCapacityError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /overloaded|529|503|too many requests|429|service unavailable/i.test(message);
 }
 
 /** Anthropic Opus 4.7 sometimes 400's on schemas that 4.6 accepts ("Schema
@@ -132,9 +143,10 @@ export async function generateObjectResilient<TSchema extends z.ZodTypeAny, TRes
     } catch (err) {
       lastError = err;
       const recoverable = isRecoverableStructuredError(err);
+      const capacity = isCapacityError(err);
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(
-        `[${logTag}] Attempt ${attemptIndex + 1} with ${attemptModelId} failed${recoverable ? ' (recoverable)' : ''}: ${msg.slice(0, 160)}`,
+        `[${logTag}] Attempt ${attemptIndex + 1} with ${attemptModelId} failed${recoverable ? capacity ? ' (capacity)' : ' (recoverable)' : ''}: ${msg.slice(0, 160)}`,
       );
 
       // Non-structural errors (auth, network etc.) bubble up immediately —
@@ -158,6 +170,16 @@ export async function generateObjectResilient<TSchema extends z.ZodTypeAny, TRes
           `[${logTag}] ${reason} on ${attemptModelId} — skipping duplicate retry, jumping to fallback`,
         );
         attemptIndex++; // skip the duplicate-model attempt
+      }
+
+      // Capacity errors get a short backoff before the next attempt —
+      // hammering an overloaded queue just hits the same wall. Anthropic
+      // itself sets `x-should-retry: true` on 529 responses. Skip the wait
+      // if we've already exhausted the chain (the throw below handles it).
+      if (capacity && attemptIndex < modelChain.length - 1) {
+        const delayMs = 2000 * Math.pow(2, attemptIndex); // 2s, 4s, 8s
+        console.warn(`[${logTag}] Capacity error — waiting ${delayMs}ms before next attempt`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
   }
