@@ -504,7 +504,7 @@ function buildMandatoryItemsSection(
 
   if (expLines.length + projLines.length + eduLines.length + certLines.length === 0) return '';
 
-  let section = `\n\n## === MANDATORY ITEMS (must appear in output) ===\n\nThe candidate has marked the following items as REQUIRED — they MUST appear in the generated CV. You may still add OTHER relevant items from the profile, but you may NOT omit any of these. These items OVERRIDE any earlier guidance about omitting low-relevance roles or trimming the CV for length — even a Score-1 item on this list must appear (use the minimum bullet count if needed, but never omit).\n\n`;
+  let section = `\n\n## === MANDATORY ITEMS (must appear in output) ===\n\nThe items below are a **subset of the candidate's profile above** — they are NOT new items. The candidate marked them as REQUIRED, meaning each one MUST appear in the generated CV (so the AI doesn't drop them for length / low relevance reasons).\n\n**CRITICAL — no duplicates:** include each of these items **exactly once** in the corresponding output array. If you reframe the title or description to match the vacancy vocabulary, do that **in the single entry** for that item — do NOT also output the original phrasing as a second entry. Two entries for the same underlying item is a bug.\n\nYou may still add OTHER relevant items from the profile alongside these. These items OVERRIDE any earlier guidance about omitting low-relevance roles or trimming the CV for length — even a Score-1 item on this list must appear (use the minimum bullet count if needed, but never omit).\n\n`;
 
   if (expLines.length > 0) section += `**EXPERIENCES (required, must appear in \`experience\`):**\n${expLines.join('\n')}\n\n`;
   if (projLines.length > 0) section += `**PROJECTS (required, must appear in \`projects\`):**\n${projLines.join('\n')}\n\n`;
@@ -1133,6 +1133,107 @@ function enforceRequiredItems(
   }
 }
 
+// Drop duplicate entries from the four list-fields. Driver: the user-pinned
+// "MANDATORY ITEMS" prompt section sometimes causes Claude to emit an item
+// twice — once from its profile-walk and once from the mandatory-list — with
+// slightly different framing. Matching mirrors enforceRequiredItems's intent
+// but here we drop instead of add. Keeps the first occurrence; logs anything
+// dropped so we can spot whether the prompt or the safety net is misfiring.
+function deduplicateCVContent(filled: GeneratedCVContent): void {
+  // PROJECTS — match on title-substring or identical url
+  if (filled.projects && filled.projects.length > 1) {
+    const kept: typeof filled.projects = [];
+    for (const p of filled.projects) {
+      const pTitle = norm(p.title);
+      const pUrl = p.url?.trim().toLowerCase() ?? '';
+      const dup = kept.find((k) => {
+        const kTitle = norm(k.title);
+        const kUrl = k.url?.trim().toLowerCase() ?? '';
+        if (pUrl.length > 0 && pUrl === kUrl) return true;
+        if (pTitle.length > 0 && kTitle.length > 0 && (pTitle.includes(kTitle) || kTitle.includes(pTitle))) return true;
+        return false;
+      });
+      if (dup) {
+        console.warn(`[CV Gen] Dropped duplicate project: "${p.title}" (matches kept "${dup.title}")`);
+        continue;
+      }
+      kept.push(p);
+    }
+    filled.projects = kept;
+  }
+
+  // EXPERIENCES — same company AND (title overlap OR identical period).
+  // Promotions at the same company stay (different title + different period).
+  if (filled.experience.length > 1) {
+    const kept: typeof filled.experience = [];
+    for (const e of filled.experience) {
+      const eCompany = norm(e.company);
+      const eTitle = norm(e.title);
+      const ePeriod = norm(e.period);
+      const dup = kept.find((k) => {
+        const kCompany = norm(k.company);
+        if (eCompany.length === 0 || kCompany.length === 0) return false;
+        const sameCompany = eCompany.includes(kCompany) || kCompany.includes(eCompany);
+        if (!sameCompany) return false;
+        const kTitle = norm(k.title);
+        const kPeriod = norm(k.period);
+        const titleOverlap = eTitle.length > 0 && kTitle.length > 0 && (eTitle.includes(kTitle) || kTitle.includes(eTitle));
+        const periodEq = ePeriod.length > 0 && kPeriod.length > 0 && ePeriod === kPeriod;
+        return titleOverlap || periodEq;
+      });
+      if (dup) {
+        console.warn(`[CV Gen] Dropped duplicate experience: "${e.title}" at "${e.company}" (matches kept "${dup.title}")`);
+        continue;
+      }
+      kept.push(e);
+    }
+    filled.experience = kept;
+  }
+
+  // EDUCATION — same institution AND overlapping degree
+  if (filled.education.length > 1) {
+    const kept: typeof filled.education = [];
+    for (const e of filled.education) {
+      const eInst = norm(e.institution);
+      const eDegree = norm(e.degree);
+      const dup = kept.find((k) => {
+        const kInst = norm(k.institution);
+        if (eInst.length === 0 || kInst.length === 0) return false;
+        const sameInst = eInst.includes(kInst) || kInst.includes(eInst);
+        if (!sameInst) return false;
+        const kDegree = norm(k.degree);
+        const degreeOverlap = eDegree.length === 0 || kDegree.length === 0
+          || eDegree.includes(kDegree) || kDegree.includes(eDegree);
+        return degreeOverlap;
+      });
+      if (dup) {
+        console.warn(`[CV Gen] Dropped duplicate education: "${e.institution}"`);
+        continue;
+      }
+      kept.push(e);
+    }
+    filled.education = kept;
+  }
+
+  // CERTIFICATIONS — substring on string entries
+  if (filled.certifications.length > 1) {
+    const kept: string[] = [];
+    for (const c of filled.certifications) {
+      const cNorm = norm(c);
+      const dup = kept.find((k) => {
+        const kNorm = norm(k);
+        return cNorm.length > 0 && kNorm.length > 0 && (cNorm.includes(kNorm) || kNorm.includes(cNorm));
+      });
+      if (dup) {
+        console.warn(`[CV Gen] Dropped duplicate certification: "${c}"`);
+        continue;
+      }
+      kept.push(c);
+    }
+    filled.certifications = kept;
+  }
+}
+
 // Normalize what the LLM returned into a fully-populated GeneratedCVContent.
 //
 // Claude Opus 4.7 structured-output has four failure modes we handle here:
@@ -1284,6 +1385,12 @@ function normalizeCVContent(
   // append a minimal entry built mechanically from the profile. The prompt is
   // guidance; this is the guarantee.
   enforceRequiredItems(filled, linkedIn, requiredSelection);
+
+  // Dedup pass — the mandatory-items prompt occasionally causes the model to
+  // emit the same underlying item twice (once from profile-walk, once from
+  // the mandatory list, with slightly different framing). Drop the duplicates
+  // before claim-validation so they don't both survive.
+  deduplicateCVContent(filled);
 
   // Deterministic claim validation — strip anything the model fabricated
   // despite the prompt's "do not fabricate" rules. The prompt is guidance;
