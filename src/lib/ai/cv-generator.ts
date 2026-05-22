@@ -1021,8 +1021,20 @@ export async function generateCV(
   }
 }
 
+// Normalize a name/title for matching: strip diacritics, lowercase, drop
+// punctuation, collapse whitespace. Used by the required-items safety net
+// and the dedup pass — both compared values previously through
+// `.trim().toLowerCase()` only, which left commas/periods/parentheses in
+// place and broke matches like "Big Tech Inc." vs "Big Tech Inc" or
+// "Acme, B.V." vs "Acme B.V.". With punctuation/diacritics gone the
+// substring checks downstream survive those tiny drifts.
 function norm(s: string | null | undefined): string {
-  return (s ?? '').trim().toLowerCase();
+  return (s ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // Tokenize a title for fuzzy dup-detection: strip punctuation, lowercase,
@@ -1066,9 +1078,10 @@ function periodsOverlap(a: string | null | undefined, b: string | null | undefin
 // slipped through). Tokenize → strip punctuation, lowercase, drop tokens <3
 // chars. Strict by default to avoid false positives on generic words like
 // "social", "media", "platform": for sets of >3 tokens we require ≥3 shared
-// tokens; for shorter sets we require ≥2 shared tokens AND period-overlap
-// (period must be supplied — if you can't, pass empty strings and a 2-token
-// match will not be accepted).
+// tokens; for shorter sets we require ≥2 shared tokens AND period-overlap.
+// Single-token titles ("Phoenix", "Apollo") are handled separately — the
+// previous behaviour of returning false outright caused single-word pinned
+// projects to slip past both the safety net AND the dedup pass.
 function projectTitlesLikelyMatch(
   titleA: string,
   titleB: string,
@@ -1077,20 +1090,36 @@ function projectTitlesLikelyMatch(
 ): boolean {
   const setA = tokenSet(titleA);
   const setB = tokenSet(titleB);
-  if (setA.size < 2 || setB.size < 2) return false;
+  if (setA.size === 0 || setB.size === 0) return false;
   let shared = 0;
   for (const t of setA) if (setB.has(t)) shared++;
-  if (shared < 2) return false;
+  if (shared === 0) return false;
   const shortest = Math.min(setA.size, setB.size);
+  if (shortest === 1) {
+    // Single meaningful token on at least one side. Generic single-token names
+    // ("Marketing", "Platform") would over-merge here, so we require either
+    // period-overlap as the disambiguator, or — when periods are missing on
+    // either side — exact normalized title equality. That covers the genuine
+    // pin-vs-AI-emit case ("Phoenix" both sides, no dates) without merging
+    // two unrelated single-word projects.
+    if (periodsOverlap(periodA, periodB)) return true;
+    return norm(titleA) === norm(titleB);
+  }
+  if (shared < 2) return false;
   if (shared / shortest < 0.5) return false;
   if (shortest > 3) {
     // Long titles: 3+ shared tokens is strong enough on its own.
     return shared >= 3;
   }
-  // Short titles (≤3 meaningful tokens): require period-overlap as anti-FP.
-  // Prevents merging "Social Media Strat Agent" with "Automated Social Media
-  // Comments" just because they share "social" + "media".
-  return periodsOverlap(periodA, periodB);
+  // Short titles (2-3 meaningful tokens): prefer period-overlap as anti-FP.
+  // When either side has no usable period string, fall back to exact-token-
+  // set equality so a pinned project without dates can still be deduped
+  // against the AI's emitted entry.
+  if (periodsOverlap(periodA, periodB)) return true;
+  if (!normPeriod(periodA) || !normPeriod(periodB)) {
+    return setA.size === setB.size && shared === setA.size;
+  }
+  return false;
 }
 
 // Walk the user's required-items selection and append any pinned item the LLM
@@ -1105,22 +1134,31 @@ function enforceRequiredItems(
 ): void {
   if (!required) return;
 
-  // EXPERIENCES — match on (company contains profile.company) AND (title overlaps profile.title)
+  // EXPERIENCES — match on (company overlaps profile.company) AND
+  // (title overlaps profile.title OR period overlaps profile period). The
+  // period fallback exists so an AI-reframed title at the same company in
+  // the same window ("IT Consultant" → "ServiceNow Consultant", Jan 2022 –
+  // Present) is still recognised as present and the safety net doesn't
+  // append a mechanical duplicate.
   for (const idx of required.experienceIndices ?? []) {
     const src = linkedIn.experience?.[idx];
     if (!src) continue;
     const srcCompany = norm(src.company);
     const srcTitle = norm(src.title);
+    const srcPeriod = `${src.startDate ?? ''}${src.endDate ? ` – ${src.endDate}` : ' – Present'}`.trim();
     const present = filled.experience.some((e) => {
       const c = norm(e.company);
       const t = norm(e.title);
-      return c.length > 0 && srcCompany.length > 0
-        && (c.includes(srcCompany) || srcCompany.includes(c))
-        && (t.includes(srcTitle) || srcTitle.includes(t) || srcTitle.length === 0);
+      if (c.length === 0 || srcCompany.length === 0) return false;
+      const sameCompany = c.includes(srcCompany) || srcCompany.includes(c);
+      if (!sameCompany) return false;
+      const titleMatch = t.includes(srcTitle) || srcTitle.includes(t) || srcTitle.length === 0;
+      if (titleMatch) return true;
+      return periodsOverlap(srcPeriod, e.period);
     });
     if (!present) {
       console.warn(`[CV Gen] Required experience missing from LLM output — appending mechanically: "${src.title}" at "${src.company}"`);
-      const period = `${src.startDate ?? ''}${src.endDate ? ` – ${src.endDate}` : ' – Present'}`.trim();
+      const period = srcPeriod;
       const highlights = src.description
         ? src.description.split(/\n+/).map((s) => s.trim()).filter((s) => s.length > 0).slice(0, 3)
         : [];
@@ -1135,16 +1173,27 @@ function enforceRequiredItems(
     }
   }
 
-  // PROJECTS — token-based match against the source title (reframings allowed)
+  // PROJECTS — token-based match against the source title (reframings allowed).
+  // URL is the strongest signal (exact URL = same project, period); otherwise
+  // we fall back to the token-based matcher and finally to exact normalized
+  // title equality. The two extra signals exist for the same reason as the
+  // dedup URL check below: profile entries can be short single-word titles
+  // ("Phoenix", "Apollo") where the token matcher refuses to commit without
+  // period evidence.
   for (const idx of required.projectIndices ?? []) {
     const src = linkedIn.projects?.[idx];
     if (!src) continue;
     const srcPeriod = src.startDate || src.endDate
       ? `${src.startDate ?? ''}${src.endDate ? ` – ${src.endDate}` : ''}`.trim()
       : '';
-    const present = (filled.projects ?? []).some((p) =>
-      projectTitlesLikelyMatch(src.title, p.title, srcPeriod, p.period),
-    );
+    const srcUrl = src.url?.trim().toLowerCase() ?? '';
+    const srcTitleNorm = norm(src.title);
+    const present = (filled.projects ?? []).some((p) => {
+      const pUrl = p.url?.trim().toLowerCase() ?? '';
+      if (srcUrl.length > 0 && pUrl === srcUrl) return true;
+      if (projectTitlesLikelyMatch(src.title, p.title, srcPeriod, p.period)) return true;
+      return srcTitleNorm.length > 0 && srcTitleNorm === norm(p.title);
+    });
     if (!present) {
       console.warn(`[CV Gen] Required project missing from LLM output — appending mechanically: "${src.title}"`);
       filled.projects = [
@@ -1230,8 +1279,18 @@ function deduplicateCVContent(filled: GeneratedCVContent): void {
     filled.projects = kept;
   }
 
-  // EXPERIENCES — same company AND (title overlap OR identical period).
-  // Promotions at the same company stay (different title + different period).
+  // EXPERIENCES — same company, then disambiguate by title + period.
+  //
+  // Previous logic used `titleOverlap OR periodsOverlap` which over-merged
+  // legitimate promotions at the same employer: "Software Engineer" and
+  // "Senior Software Engineer" share a substring → titleOverlap → wrongly
+  // collapsed into one entry. We now distinguish three signals:
+  //   - exact normalized title equality → same role, just format-drift on
+  //     the period → dedup
+  //   - substring title overlap + period overlap → AI reframed title in same
+  //     window → dedup
+  //   - substring title overlap WITHOUT period overlap → DIFFERENT role
+  //     (promotion / role-change) → keep both
   if (filled.experience.length > 1) {
     const kept: typeof filled.experience = [];
     for (const e of filled.experience) {
@@ -1243,8 +1302,10 @@ function deduplicateCVContent(filled: GeneratedCVContent): void {
         const sameCompany = eCompany.includes(kCompany) || kCompany.includes(eCompany);
         if (!sameCompany) return false;
         const kTitle = norm(k.title);
+        const exactTitle = eTitle.length > 0 && eTitle === kTitle;
+        if (exactTitle) return true;
         const titleOverlap = eTitle.length > 0 && kTitle.length > 0 && (eTitle.includes(kTitle) || kTitle.includes(eTitle));
-        return titleOverlap || periodsOverlap(e.period, k.period);
+        return titleOverlap && periodsOverlap(e.period, k.period);
       });
       if (dup) {
         console.warn(`[CV Gen] Dropped duplicate experience: "${e.title}" at "${e.company}" (matches kept "${dup.title}")`);
