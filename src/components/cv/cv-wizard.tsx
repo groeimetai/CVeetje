@@ -535,6 +535,88 @@ export function CVWizard() {
     setCurrentStep('job');
   };
 
+  // POST to /api/cv/generate using SSE. The server emits progress + heartbeat
+  // events during the long-running AI call so mobile carriers / WebKit don't
+  // drop the idle connection and surface it as a generic "Load failed" on the
+  // client. Falls back to plain JSON parsing when the server doesn't return
+  // an event-stream (older deploys, BYOK proxies, etc.).
+  const postCVGenerate = async (body: Record<string, unknown>): Promise<{
+    content: GeneratedCVContent;
+    cvId: string;
+    usage?: TokenUsage;
+  }> => {
+    const response = await fetch('/api/cv/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      let errMsg = 'Failed to generate CV';
+      try {
+        const j = await response.json();
+        if (j?.error) errMsg = j.error;
+      } catch { /* body was not JSON */ }
+      throw new Error(errMsg);
+    }
+
+    const contentType = response.headers.get('content-type') ?? '';
+
+    if (!contentType.includes('text/event-stream')) {
+      const result = await response.json();
+      return { content: result.content, cvId: result.cvId, usage: result.usage };
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response body');
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let final: { content: GeneratedCVContent; cvId: string; usage?: TokenUsage } | null = null;
+
+    const handleEvent = (raw: string) => {
+      // Heartbeat / comment lines start with ":" — ignore.
+      if (!raw.startsWith('data: ')) return;
+      const payload = raw.slice(6);
+      let data: unknown;
+      try { data = JSON.parse(payload); } catch { return; }
+      const ev = data as { type?: string; error?: string; content?: GeneratedCVContent; cvId?: string; usage?: TokenUsage };
+      if (ev.type === 'error') {
+        throw new Error(ev.error || 'Failed to generate CV');
+      }
+      if (ev.type === 'complete' && ev.content && ev.cvId) {
+        final = { content: ev.content, cvId: ev.cvId, usage: ev.usage };
+      }
+    };
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          if (buffer.trim()) {
+            for (const line of buffer.split('\n\n')) {
+              if (line.trim()) handleEvent(line);
+            }
+          }
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() ?? '';
+        for (const part of parts) {
+          if (part.trim()) handleEvent(part);
+        }
+      }
+    } finally {
+      try { reader.releaseLock(); } catch { /* already released */ }
+    }
+
+    if (!final) throw new Error('Generation stream ended without a result');
+    return final;
+  };
+
   const handleStyleGenerated = async (tokens: CVDesignTokens, creativityLevel?: StyleCreativityLevel) => {
     setDesignTokens(tokens);
     if (creativityLevel) {
@@ -552,29 +634,18 @@ export function CVWizard() {
     setError(null);
 
     try {
-      const response = await fetch('/api/cv/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          linkedInData,
-          jobVacancy,
-          designTokens: tokens,
-          avatarUrl,
-          language: outputLanguage,
-          fitAnalysis,
-          creativityLevel: creativityLevel || selectedCreativityLevel,
-          includeInterests: showInterestsOnCV,
-          requiredSelection,
-        }),
+      const result = await postCVGenerate({
+        linkedInData,
+        jobVacancy,
+        designTokens: tokens,
+        avatarUrl,
+        language: outputLanguage,
+        fitAnalysis,
+        creativityLevel: creativityLevel || selectedCreativityLevel,
+        includeInterests: showInterestsOnCV,
+        requiredSelection,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to generate CV');
-      }
-
-      // Track token usage for CV generation
       if (result.usage) {
         addTokenUsage('generate', result.usage);
       }
@@ -582,9 +653,7 @@ export function CVWizard() {
       setGeneratedContent(result.content);
       setCvId(result.cvId);
       setCurrentStep('preview');
-      // Clear draft since CV was successfully generated
       clearDraft();
-      // Refresh credits in case platform AI was used
       if (llmMode === 'platform') refreshCredits();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -601,35 +670,23 @@ export function CVWizard() {
     setError(null);
 
     try {
-      const response = await fetch('/api/cv/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          linkedInData,
-          jobVacancy,
-          designTokens,
-          avatarUrl,
-          language: outputLanguage,
-          fitAnalysis,
-          includeInterests: showInterestsOnCV,
-          requiredSelection,
-        }),
+      const result = await postCVGenerate({
+        linkedInData,
+        jobVacancy,
+        designTokens,
+        avatarUrl,
+        language: outputLanguage,
+        fitAnalysis,
+        includeInterests: showInterestsOnCV,
+        requiredSelection,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to regenerate CV');
-      }
-
-      // Track token usage for CV regeneration
       if (result.usage) {
         addTokenUsage('regenerate', result.usage);
       }
 
       setGeneratedContent(result.content);
       setCvId(result.cvId);
-      // Refresh credits in case platform AI was used
       if (llmMode === 'platform') refreshCredits();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
