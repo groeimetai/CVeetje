@@ -195,7 +195,8 @@ export async function POST(
       headline as string | null,
       effectiveOverrides,
       contactInfo,
-      pageMode
+      pageMode,
+      cvData.language ?? 'nl'
     );
 
     // Mark CV as pdf_ready on first download — analytics/UX only, no credit deduction.

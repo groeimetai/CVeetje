@@ -401,13 +401,16 @@ export function CVPreview({
           overrides: effectiveOverrides,
           contactInfo: editedHeader.contactInfo,
           legacyOptions: { previewProtection: true, watermarkText: 'CVeetje PREVIEW' },
+          // Drive v2 section labels off the CV's output language so an English
+          // CV shows "Interests/Experience" instead of defaulting to Dutch.
+          locale: language,
         },
       );
     } catch (err) {
       console.error('[cv-preview] renderCV failed:', err);
       return `<!doctype html><html><body style="font-family:system-ui;padding:40px;color:#a00"><h2>Preview render error</h2><pre>${err instanceof Error ? err.message : String(err)}</pre></body></html>`;
     }
-  }, [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides]);
+  }, [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides, language]);
 
   // Check if content, header, tokens, or element colors have been edited
   const hasEdits = useMemo(() => {

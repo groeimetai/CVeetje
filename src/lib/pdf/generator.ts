@@ -44,7 +44,8 @@ export async function generatePDF(
   headline?: string | null,
   overrides?: CVElementOverrides | null,
   contactInfo?: CVContactInfo | null,
-  pageMode: PDFPageMode = 'multi-page'
+  pageMode: PDFPageMode = 'multi-page',
+  locale: 'nl' | 'en' = 'nl'
 ): Promise<Buffer> {
   // Use provided tokens or default (legacy default — v2 tokens always come
   // through the caller; v1 docs fall back to legacy defaults).
@@ -64,6 +65,10 @@ export async function generatePDF(
       contactInfo,
       legacyOptions: { forPdf: true },
       pageMode: pageMode === 'single-page' ? 'single-long' : 'a4-paged',
+      // CV output language drives the v2 section labels (Interesses/Interests,
+      // Werkervaring/Experience, …). Without it composeCV defaults to 'nl',
+      // so an English CV would render Dutch section headers.
+      locale,
     },
   );
 
