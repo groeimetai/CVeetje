@@ -44,14 +44,15 @@ export interface ResilientGenerateResult<TResult> {
 /**
  * Returns true for errors we should retry / fall back on — empty responses,
  * schema mismatches, type validation, invalid JSON, Anthropic schema-too-
- * complex (pre-flight validation, Opus 4.7-specific), plus capacity errors
- * (HTTP 529 Overloaded, 503, rate-limit) where Anthropic itself signals
- * `x-should-retry: true`. Does NOT retry auth errors.
+ * complex / grammar-compilation-timeout (pre-flight validation, Opus 4.7-
+ * specific), plus capacity errors (HTTP 529 Overloaded, 503, rate-limit)
+ * where Anthropic itself signals `x-should-retry: true`. Does NOT retry auth
+ * errors.
  */
 function isRecoverableStructuredError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
   if (/401|403|unauthorized|forbidden|invalid api key/i.test(message)) return false;
-  return /did not match schema|type validation|no object generated|invalid json|response did not|leeg antwoord|schema is too complex|overloaded|529|503|too many requests|429|service unavailable/i.test(
+  return /did not match schema|type validation|no object generated|invalid json|response did not|leeg antwoord|schema is too complex|grammar compilation|overloaded|529|503|too many requests|429|service unavailable/i.test(
     message,
   );
 }
@@ -66,13 +67,17 @@ function isCapacityError(err: unknown): boolean {
   return /overloaded|529|503|too many requests|429|service unavailable/i.test(message);
 }
 
-/** Anthropic Opus 4.7 sometimes 400's on schemas that 4.6 accepts ("Schema
- *  is too complex"). When we see this on the primary attempts, skip the
- *  duplicate-retry and jump straight to the 4.6 fallback — same as we do
- *  for empty responses. */
+/** Anthropic Opus 4.7 sometimes 400's on schemas that 4.6 accepts — either
+ *  "Schema is too complex" (pre-flight rejection) or "Grammar compilation
+ *  timed out" (the constrained-decoding grammar is too large to compile
+ *  within Anthropic's budget). Both are deterministic for a given
+ *  model+schema, so a same-model retry just burns time on an identical
+ *  request. When we see either on the primary attempts, skip the duplicate-
+ *  retry and jump straight to the 4.6 fallback — same as we do for empty
+ *  responses. */
 function isSchemaTooComplexError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
-  return /schema is too complex/i.test(message);
+  return /schema is too complex|grammar compilation/i.test(message);
 }
 
 /**
@@ -165,7 +170,11 @@ export async function generateObjectResilient<TSchema extends z.ZodTypeAny, TRes
         (isEmptyResponseError(err) || isSchemaTooComplexError(err)) &&
         nextAttemptModelId === attemptModelId
       ) {
-        const reason = isSchemaTooComplexError(err) ? 'schema-too-complex' : 'empty payload';
+        const reason = isSchemaTooComplexError(err)
+          ? (/grammar compilation/i.test(err instanceof Error ? err.message : String(err))
+              ? 'grammar-compilation-timeout'
+              : 'schema-too-complex')
+          : 'empty payload';
         console.warn(
           `[${logTag}] ${reason} on ${attemptModelId} — skipping duplicate retry, jumping to fallback`,
         );
