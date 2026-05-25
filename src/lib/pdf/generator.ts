@@ -107,6 +107,16 @@ export async function generatePDF(
         /* Remove any @page-derived size — explicit width/height in pdf()
            options is the source of truth. */
         @page { size: auto; margin: 0; }
+        /* The CV page is normally \`margin: 0 auto\` (centred), and the
+           width-normalising rule that pins it flush-left lives in an
+           \`@media print\` block. Single-page export emulates SCREEN media,
+           so that block never fires: the page stays centred inside the
+           1200px viewport while the PDF paper window starts at x=0. The
+           right edge — where the header/poster photo sits in 3 of 4 shapes
+           — then falls outside the captured width and gets clipped. Pin the
+           page flush-left so the whole width (photo included) is captured. */
+        html, body { width: 210mm !important; margin: 0 !important; padding: 0 !important; }
+        .cv-page, .bold-cv, .editorial-cv, .cv-container { margin: 0 !important; }
       `,
     });
 
@@ -115,7 +125,7 @@ export async function generatePDF(
     // which PDF viewers then rendered as a tiny CV floating in a massive page.
     const contentSize = await page.evaluate(() => {
       const root =
-        document.querySelector('.bold-cv, .editorial-cv, .cv-container') as HTMLElement | null;
+        document.querySelector('.cv-page, .bold-cv, .editorial-cv, .cv-container') as HTMLElement | null;
       const target = root || document.body;
       const rect = target.getBoundingClientRect();
 
