@@ -26,6 +26,18 @@ export function Footer({ minimal = false }: FooterProps) {
               <span>GroeimetAI</span>
               <span className="hidden sm:inline">|</span>
               <span>KvK: 90102304</span>
+              <span className="hidden sm:inline">|</span>
+              <span>
+                {locale === 'nl' ? 'Website door ' : 'Website by '}
+                <a
+                  href="https://groei.studio"
+                  target="_blank"
+                  rel="noopener"
+                  className="hover:text-foreground underline-offset-2 hover:underline"
+                >
+                  Studio Groei
+                </a>
+              </span>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               <Link href="/privacy" className="hover:text-foreground">
@@ -154,6 +166,17 @@ export function Footer({ minimal = false }: FooterProps) {
         <div className="mt-8 pt-4 border-t text-center text-xs text-muted-foreground space-y-1">
           <p>
             © {currentYear} CVeetje - {locale === 'nl' ? 'Een dienst van' : 'A service by'} GroeimetAI
+          </p>
+          <p>
+            {locale === 'nl' ? 'Website door ' : 'Website by '}
+            <a
+              href="https://groei.studio"
+              target="_blank"
+              rel="noopener"
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Studio Groei
+            </a>
           </p>
           <p>
             {locale === 'nl'
