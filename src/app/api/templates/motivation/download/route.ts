@@ -41,12 +41,14 @@ export async function POST(request: NextRequest) {
       format,
       letter,
       linkedInData,
-      jobVacancy
+      jobVacancy,
+      language,
     } = body as {
       format: 'pdf' | 'docx' | 'txt';
       letter: GeneratedMotivationLetter;
       linkedInData?: ParsedLinkedIn;
       jobVacancy?: JobVacancy;
+      language?: string;
     };
 
     if (!format || !letter) {
@@ -67,6 +69,8 @@ export async function POST(request: NextRequest) {
       senderPhone: linkedInData?.phone,
       senderLocation: linkedInData?.location || undefined,
       recipientCompany: jobVacancy?.company || undefined,
+      // Zonder expliciete taal leidt de renderer die af uit de brieftekst
+      language: language === 'en' || language === 'nl' ? language : undefined,
     };
 
     // Generate file based on format

@@ -142,6 +142,7 @@ async function main() {
           senderName: fx.profile.fullName,
           senderEmail: fx.profile.email,
           senderLocation: fx.profile.location ?? undefined,
+          language: lang,
         };
         const letterPdf = await generateMotivationLetterPDF(data, getDefaultTokens());
         writeFileSync(path.join(dir, 'brief.pdf'), letterPdf);

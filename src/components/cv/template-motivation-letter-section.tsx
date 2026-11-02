@@ -131,6 +131,7 @@ export function TemplateMotivationLetterSection({
           letter,
           linkedInData,
           jobVacancy,
+          language,
         }),
       });
 
