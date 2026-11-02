@@ -37,6 +37,8 @@ import { generateEditorialHTML } from './renderers/editorial';
 import { generateBoldHTML } from './renderers/bold';
 import { splitInterest } from './interest-format';
 import { buildEditBridgeMarkup } from './edit-bridge';
+import { sanitizeLegacyTokens, sanitizeOverrides } from './sanitize-tokens';
+import { safeHttpUrl } from '@/lib/security/html-escape';
 
 // ============ Helper Functions ============
 
@@ -177,6 +179,11 @@ export function generateCVHTML(
   contactInfo?: CVContactInfo | null,
   options?: CVHTMLOptions
 ): string {
+  // Security: tokens/overrides kunnen uit request-body of client-geschreven
+  // Firestore komen en worden hieronder ongeëscaped in CSS geïnterpoleerd.
+  tokens = sanitizeLegacyTokens(tokens);
+  overrides = sanitizeOverrides(overrides);
+
   // Creative-level CVs use a fully separate editorial/magazine renderer.
   // The presence of tokens.editorial is the signal — the AI only sets this
   // object for the creative creativity level.
@@ -1121,8 +1128,11 @@ function generateProjects(
         </ul>`
       : '';
 
+    const safeProjUrl = safeHttpUrl(proj.url);
     const urlHtml = proj.url
-      ? `<div class="project-url"><a href="${escapeHtml(proj.url)}">${escapeHtml(proj.url)}</a></div>`
+      ? safeProjUrl
+        ? `<div class="project-url"><a href="${escapeHtml(safeProjUrl)}">${escapeHtml(proj.url)}</a></div>`
+        : `<div class="project-url">${escapeHtml(proj.url)}</div>`
       : '';
 
     return `

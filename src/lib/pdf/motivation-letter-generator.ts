@@ -3,6 +3,8 @@ import chromium from '@sparticuz/chromium';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { fontPairings, typeScales, spacingScales } from '@/lib/cv/templates/themes';
+import { escapeHtml, sanitizeCssColor } from '@/lib/security/html-escape';
+import { setContentHardened } from './harden-page';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -145,7 +147,7 @@ function generateMotivationLetterHTML(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Motivatiebrief - ${data.senderName}</title>
+  <title>Motivatiebrief - ${escapeHtml(data.senderName)}</title>
   ${fontLinks}
   <style>
     * {
@@ -158,7 +160,7 @@ function generateMotivationLetterHTML(
       font-family: ${fontConfig.body.family};
       font-size: ${typeScale.body}pt;
       line-height: 1.6;
-      color: ${tokens.colors.text};
+      color: ${sanitizeCssColor(tokens.colors.text, '#333333')};
       background: white;
       padding: 40mm 25mm;
       max-width: 210mm;
@@ -178,18 +180,18 @@ function generateMotivationLetterHTML(
       font-family: ${fontConfig.heading.family}, sans-serif;
       font-size: ${typeScale.heading}pt;
       font-weight: 600;
-      color: ${tokens.colors.primary};
+      color: ${sanitizeCssColor(tokens.colors.primary, '#333333')};
     }
 
     .sender-contact {
       font-size: ${typeScale.small}pt;
-      color: ${tokens.colors.muted};
+      color: ${sanitizeCssColor(tokens.colors.muted, '#333333')};
       margin-top: 4px;
     }
 
     .date {
       text-align: right;
-      color: ${tokens.colors.muted};
+      color: ${sanitizeCssColor(tokens.colors.muted, '#333333')};
       font-size: ${typeScale.small}pt;
       margin-bottom: ${spacingScale.section};
     }
@@ -206,10 +208,10 @@ function generateMotivationLetterHTML(
       font-family: ${fontConfig.heading.family}, sans-serif;
       font-size: ${typeScale.heading}pt;
       font-weight: 600;
-      color: ${tokens.colors.primary};
+      color: ${sanitizeCssColor(tokens.colors.primary, '#333333')};
       margin-bottom: ${spacingScale.section};
       padding-bottom: 8px;
-      border-bottom: 2px solid ${tokens.colors.accent};
+      border-bottom: 2px solid ${sanitizeCssColor(tokens.colors.accent, '#333333')};
     }
 
     .content {
@@ -232,7 +234,7 @@ function generateMotivationLetterHTML(
     .signature-name {
       font-family: ${fontConfig.heading.family}, sans-serif;
       font-weight: 600;
-      color: ${tokens.colors.primary};
+      color: ${sanitizeCssColor(tokens.colors.primary, '#333333')};
     }
 
     @media print {
@@ -245,31 +247,31 @@ function generateMotivationLetterHTML(
 <body>
   <div class="header">
     <div class="sender-info">
-      <div class="sender-name">${data.senderName}</div>
+      <div class="sender-name">${escapeHtml(data.senderName)}</div>
       <div class="sender-contact">
-        ${[data.senderEmail, data.senderPhone, data.senderLocation].filter(Boolean).join(' | ')}
+        ${[data.senderEmail, data.senderPhone, data.senderLocation].filter(Boolean).map(escapeHtml).join(' | ')}
       </div>
     </div>
-    <div class="date">${today}</div>
+    <div class="date">${escapeHtml(today)}</div>
   </div>
 
   ${data.recipientCompany ? `
   <div class="recipient">
-    ${data.recipientName ? `<div>${data.recipientName}</div>` : ''}
-    <div class="recipient-company">${data.recipientCompany}</div>
+    ${data.recipientName ? `<div>${escapeHtml(data.recipientName)}</div>` : ''}
+    <div class="recipient-company">${escapeHtml(data.recipientCompany)}</div>
   </div>
   ` : ''}
 
   <div class="subject">Motivatiebrief</div>
 
   <div class="content">
-    ${paragraphs.map(p => `<p class="paragraph">${p}</p>`).join('\n    ')}
+    ${paragraphs.map(p => `<p class="paragraph">${escapeHtml(p)}</p>`).join('\n    ')}
   </div>
 
   <div class="closing">
     <p>Met vriendelijke groet,</p>
     <div class="signature">
-      <div class="signature-name">${data.senderName}</div>
+      <div class="signature-name">${escapeHtml(data.senderName)}</div>
     </div>
   </div>
 </body>
@@ -286,9 +288,10 @@ export async function generateMotivationLetterPDF(
   const html = generateMotivationLetterHTML(data, tokens);
 
   const browser = await getBrowser();
+  try {
   const page = await browser.newPage();
 
-  await page.setContent(html, { waitUntil: 'networkidle0' });
+  await setContentHardened(page, html);
 
   const pdf = await page.pdf({
     format: 'A4',
@@ -301,9 +304,10 @@ export async function generateMotivationLetterPDF(
     },
   });
 
-  await browser.close();
-
   return Buffer.from(pdf);
+  } finally {
+    await browser.close().catch(() => {});
+  }
 }
 
 /**

@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
 import fs from 'fs';
 import path from 'path';
+import { hardenPage } from '@/lib/pdf/harden-page';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -53,6 +54,9 @@ export async function convertDocxToPdf(docxBytes: ArrayBuffer): Promise<Buffer> 
   const page = await browser.newPage();
 
   try {
+    // Blokkeer netwerk-requests buiten de allowlist (externe images in DOCX → SSRF)
+    await hardenPage(page);
+
     // Set up minimal HTML with a container
     await page.setContent(
       `<!DOCTYPE html>
