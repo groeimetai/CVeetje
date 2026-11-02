@@ -33,9 +33,11 @@ import {
 } from 'lucide-react';
 import type { PDFTemplateSummary } from '@/types';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/brand/page-header';
 
 export function TemplatesPage() {
   const t = useTranslations('templatesPage');
+  const tHeaders = useTranslations('pageHeaders');
   const tCommon = useTranslations('common');
   const tTemplates = useTranslations('templates');
   const [personalTemplates, setPersonalTemplates] = useState<PDFTemplateSummary[]>([]);
@@ -268,10 +270,11 @@ export function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('description')}</p>
-      </div>
+      <PageHeader
+        eyebrow={tHeaders('templates.eyebrow')}
+        title={tHeaders.rich('templates.title', { em: (chunks) => <em>{chunks}</em> })}
+        subtitle={t('description')}
+      />
 
       {/* Personal Templates */}
       <Card>

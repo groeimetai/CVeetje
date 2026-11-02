@@ -145,8 +145,9 @@ function SidebarContent({
             type="button"
             className="dash-sb__head-collapse"
             onClick={onToggle}
-            title={collapsed ? 'Uitvouwen' : 'Inklappen'}
-            aria-label={collapsed ? 'Sidebar uitvouwen' : 'Sidebar inklappen'}
+            title={collapsed ? tSidebar('expand') : tSidebar('collapse')}
+            aria-label={collapsed ? tSidebar('expandSidebar') : tSidebar('collapseSidebar')}
+            aria-expanded={!collapsed}
           >
             <ChevronRight
               size={14}
@@ -163,7 +164,7 @@ function SidebarContent({
         </span>
       </Link>
 
-      <nav className="dash-sb__nav" aria-label="Dashboard navigation">
+      <nav className="dash-sb__nav" aria-label={tSidebar('navLabel')}>
         {groups.map((group) => (
           <div key={group.label}>
             <div className="dash-sb__section-label">{tSidebar(`groups.${group.label}`)}</div>
@@ -213,12 +214,12 @@ function SidebarContent({
       </nav>
 
       <div className="dash-sb__creditcard">
-        <div className="dash-sb__credit-label">Credits</div>
+        <div className="dash-sb__credit-label">{t('credits')}</div>
         <div className="dash-sb__credit-num">{credits}</div>
         <div className="dash-sb__credit-meta">
-          <span><strong>{freeCredits}</strong> {tSidebar('freeCredits', { count: freeCredits }).replace(/^\d+\s*/, '')}</span>
+          <span>{tSidebar.rich('freeCreditsRich', { count: freeCredits, strong: (chunks) => <strong>{chunks}</strong> })}</span>
           <span style={{ opacity: 0.4 }}>·</span>
-          <span><strong>{purchasedCredits}</strong> {tSidebar('purchasedCredits', { count: purchasedCredits }).replace(/^\d+\s*/, '')}</span>
+          <span>{tSidebar.rich('purchasedCreditsRich', { count: purchasedCredits, strong: (chunks) => <strong>{chunks}</strong> })}</span>
         </div>
         <Link href="/credits" onClick={onNavigate} className="dash-sb__credit-cta">
           + {tSidebar('buyMoreCredits')} <ArrowRight size={11} />
@@ -337,6 +338,7 @@ export function Sidebar() {
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
   const tDash = useTranslations('dashboard');
+  const tSidebar = useTranslations('sidebar');
   const counts = useSidebarCounts();
 
   return (
@@ -360,7 +362,7 @@ export function MobileHeader() {
       </div>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="sm" aria-label="Menu">
+          <Button variant="ghost" size="sm" aria-label={tSidebar('openMenu')}>
             <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>
         </SheetTrigger>

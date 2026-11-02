@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Sidebar, MobileHeader } from '@/components/dashboard/sidebar';
 import { DashTopbar } from '@/components/dashboard/topbar';
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner';
@@ -16,6 +17,7 @@ interface DashboardShellProps {
  * Does NOT perform auth checks — that's the parent layout's responsibility.
  */
 export function DashboardShell({ children, noIndex = true }: DashboardShellProps) {
+  const t = useTranslations('navigation');
   return (
     <>
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
@@ -24,7 +26,7 @@ export function DashboardShell({ children, noIndex = true }: DashboardShellProps
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md"
       >
-        Skip to main content
+        {t('skipToContent')}
       </a>
       <ConfirmProvider>
       <div className="dash">

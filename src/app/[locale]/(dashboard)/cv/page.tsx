@@ -23,6 +23,7 @@ import { ListSkeleton } from '@/components/ui/skeleton';
 export default function CVListPage() {
   const { firebaseUser, effectiveUserId } = useAuth();
   const t = useTranslations('cvList');
+  const tHeaders = useTranslations('pageHeaders');
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
   const confirmDialog = useConfirm();
@@ -69,8 +70,8 @@ export default function CVListPage() {
   return (
     <>
       <PageHeader
-        eyebrow="§ CV-archief"
-        title={<>Mijn <em>CV's</em></>}
+        eyebrow={tHeaders('cv.eyebrow')}
+        title={tHeaders.rich('cv.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('subtitle')}
         actions={
           <Link href="/cv/new" className="brand-btn brand-btn--primary">

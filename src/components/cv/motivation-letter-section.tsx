@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -106,6 +107,7 @@ export function MotivationLetterSection({
   onTokenUsage,
 }: MotivationLetterSectionProps) {
   const { llmMode } = useAuth();
+  const t = useTranslations('motivationLetter');
   // Alleen platform-modus kost credits; kosten uit de centrale config
   const notEnoughCredits = llmMode === 'platform' && credits < PLATFORM_CREDIT_COSTS['motivation-letter'];
   const [isExpanded, setIsExpanded] = useState(false);
@@ -157,7 +159,7 @@ export function MotivationLetterSection({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to generate motivation letter');
+        throw new Error(result.error || t('errors.generateFailed'));
       }
 
       setLetter(result.letter);
@@ -167,7 +169,7 @@ export function MotivationLetterSection({
         onTokenUsage?.(result.usage);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setIsGenerating(false);
     }
@@ -190,7 +192,7 @@ export function MotivationLetterSection({
       });
 
       if (!response.ok) {
-        throw new Error('Download failed');
+        throw new Error(t('errors.downloadFailed'));
       }
 
       // Get the blob from response
@@ -200,14 +202,14 @@ export function MotivationLetterSection({
       a.href = url;
 
       const extension = format === 'pdf' ? 'pdf' : 'docx';
-      a.download = `motivatiebrief-${new Date().toISOString().split('T')[0]}.${extension}`;
+      a.download = `${t('filePrefix')}-${new Date().toISOString().split('T')[0]}.${extension}`;
 
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Download mislukt');
+      setError(err instanceof Error ? err.message : t('errors.downloadFailed'));
     } finally {
       setIsDownloading(false);
       setDownloadFormat(null);
@@ -223,7 +225,7 @@ export function MotivationLetterSection({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Mail className="h-5 w-5 text-primary" />
-            {letter ? 'Motivatiebrief' : 'Motivatiebrief Genereren'}
+            {letter ? t('title') : t('generateTitle')}
             {!letter && (
               <CreditBadge operation="motivation-letter" />
             )}
@@ -242,7 +244,7 @@ export function MotivationLetterSection({
           {isLoadingSaved && (
             <div className="flex items-center justify-center py-4 text-muted-foreground">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              <span className="text-sm">Opgeslagen brief laden...</span>
+              <span className="text-sm">{t('loadingSaved')}</span>
             </div>
           )}
 
@@ -251,13 +253,14 @@ export function MotivationLetterSection({
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium">
-                  Wat motiveert jou om te solliciteren? (optioneel)
+                  {t('motivationLabel')}
                 </label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Deel je persoonlijke motivatie om een meer authentieke brief te krijgen.
+                  {t('motivationHint')}
                 </p>
                 <Textarea
                   placeholder={placeholders[Math.floor(Math.random() * placeholders.length)]}
+                  aria-label={t('motivationLabel')}
                   value={personalMotivation}
                   onChange={(e) => setPersonalMotivation(e.target.value)}
                   rows={3}
@@ -267,7 +270,7 @@ export function MotivationLetterSection({
 
               {/* Suggestion chips */}
               <div className="flex flex-wrap gap-2">
-                <span className="text-xs text-muted-foreground">Inspiratie:</span>
+                <span className="text-xs text-muted-foreground">{t('inspiration')}</span>
                 {placeholders.slice(0, 3).map((placeholder, idx) => (
                   <button
                     key={idx}
@@ -288,19 +291,19 @@ export function MotivationLetterSection({
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Brief genereren...
+                    {t('generating')}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Genereer Motivatiebrief
+                    {t('generateButton')}
                   </>
                 )}
               </Button>
 
               {notEnoughCredits && (
                 <p className="text-sm text-amber-600 text-center">
-                  Je hebt niet genoeg credits.
+                  {t('notEnoughCredits')}
                 </p>
               )}
             </div>
@@ -364,12 +367,12 @@ export function MotivationLetterSection({
                       {isDownloading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {downloadFormat === 'pdf' ? 'PDF genereren...' : 'DOCX genereren...'}
+                          {downloadFormat === 'pdf' ? t('generatingPdf') : t('generatingDocx')}
                         </>
                       ) : (
                         <>
                           <Download className="mr-2 h-4 w-4" />
-                          Download
+                          {t('download')}
                           <ChevronDown className="ml-2 h-4 w-4" />
                         </>
                       )}
@@ -381,7 +384,7 @@ export function MotivationLetterSection({
                       <div className="flex flex-col">
                         <span className="font-medium">PDF</span>
                         <span className="text-xs text-muted-foreground">
-                          Gestijld document met CV thema
+                          {t('pdfDescription')}
                         </span>
                       </div>
                     </DropdownMenuItem>
@@ -390,7 +393,7 @@ export function MotivationLetterSection({
                       <div className="flex flex-col">
                         <span className="font-medium">Word (.docx)</span>
                         <span className="text-xs text-muted-foreground">
-                          Bewerkbaar Word document
+                          {t('docxDescription')}
                         </span>
                       </div>
                     </DropdownMenuItem>
@@ -406,13 +409,13 @@ export function MotivationLetterSection({
                   className="flex-1 sm:flex-none"
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Opnieuw genereren
+                  {t('regenerate')}
                 </Button>
               </div>
 
               {/* Info */}
               <p className="text-xs text-muted-foreground text-center">
-                Download de brief om deze te kunnen bewerken en versturen.
+                {t('downloadHint')}
               </p>
             </div>
           )}

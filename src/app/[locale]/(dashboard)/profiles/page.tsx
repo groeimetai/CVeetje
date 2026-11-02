@@ -29,6 +29,7 @@ import { ListSkeleton } from '@/components/ui/skeleton';
 export default function ProfilesPage() {
   const router = useRouter();
   const t = useTranslations('profiles');
+  const tHeaders = useTranslations('pageHeaders');
   const { profiles, isLoading, error, deleteProfile, setDefaultProfile } = useProfiles();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -61,8 +62,8 @@ export default function ProfilesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="§ LinkedIn-profielen"
-        title={<>Mijn <em>profielen</em></>}
+        eyebrow={tHeaders('profiles.eyebrow')}
+        title={tHeaders.rich('profiles.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('subtitle')}
         actions={
           <button

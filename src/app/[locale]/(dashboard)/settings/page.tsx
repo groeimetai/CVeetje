@@ -59,6 +59,7 @@ function formatPrice(price: number): string {
 export default function SettingsPage() {
   const { userData, firebaseUser, credits, refreshUserData, logout, llmMode } = useAuth();
   const t = useTranslations('settings');
+  const tHeaders = useTranslations('pageHeaders');
   const confirmDialog = useConfirm();
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -342,8 +343,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <PageHeader
-        eyebrow="§ Configuratie"
-        title={<>{t('title')} <em>aanpassen</em></>}
+        eyebrow={tHeaders('settings.eyebrow')}
+        title={tHeaders.rich('settings.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('subtitle')}
       />
 

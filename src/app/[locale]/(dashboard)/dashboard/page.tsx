@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/auth-context';
 import { getUserCVs } from '@/lib/firebase/firestore';
 import { getDaysUntilReset } from '@/lib/credits/manager';
@@ -105,7 +106,10 @@ function toDate(value: unknown): Date | null {
   return null;
 }
 
-function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityItem[] {
+type Translate = ReturnType<typeof useTranslations>;
+
+function buildActivity(cvs: CV[], applications: ApplicationRecord[], t: Translate): ActivityItem[] {
+  const generalCv = t('dashboard.recentCvs.generalCv');
   const items: Array<ActivityItem & { ts: number }> = [];
 
   for (const cv of cvs.slice(0, 4)) {
@@ -114,8 +118,8 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
         id: `cv-pdf-${cv.id}`,
         icon: 'check',
         kind: 'success',
-        message: `<strong>CV PDF klaar</strong> · ${escapeHtml(cv.jobVacancy?.company ?? 'Algemene CV')} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
-        time: fmtTimeShort(toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
+        message: `<strong>${escapeHtml(t('dashboard.activity.cvPdfReady'))}</strong> · ${escapeHtml(cv.jobVacancy?.company ?? generalCv)} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
+        time: fmtTimeShort(t, toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
         ts: (toDate(cv.updatedAt) ?? toDate(cv.createdAt))?.getTime() ?? 0,
       });
     } else if (cv.status === 'generated') {
@@ -123,8 +127,8 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
         id: `cv-gen-${cv.id}`,
         icon: 'spark',
         kind: 'default',
-        message: `<strong>Nieuw CV gegenereerd</strong> · ${escapeHtml(cv.jobVacancy?.company ?? 'Algemene CV')} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
-        time: fmtTimeShort(toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
+        message: `<strong>${escapeHtml(t('dashboard.activity.cvGenerated'))}</strong> · ${escapeHtml(cv.jobVacancy?.company ?? generalCv)} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
+        time: fmtTimeShort(t, toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
         ts: (toDate(cv.updatedAt) ?? toDate(cv.createdAt))?.getTime() ?? 0,
       });
     }
@@ -135,9 +139,9 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
       icon: app.status === 'interview' || app.status === 'offer' || app.status === 'accepted' ? 'check' : 'send',
       kind: app.status === 'interview' || app.status === 'offer' || app.status === 'accepted' ? 'success' : 'accent',
       message: app.status === 'applied'
-        ? `<strong>Sollicitatie verstuurd</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`
-        : `<strong>Status: ${escapeHtml(app.status)}</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`,
-      time: fmtTimeShort(toDate(app.updatedAt) ?? toDate(app.appliedAt)),
+        ? `<strong>${escapeHtml(t('dashboard.activity.applicationSent'))}</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`
+        : `<strong>${escapeHtml(t('dashboard.activity.statusChanged', { status: t(`applications.status.${app.status}`) }))}</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`,
+      time: fmtTimeShort(t, toDate(app.updatedAt) ?? toDate(app.appliedAt)),
         ts: (toDate(app.updatedAt) ?? toDate(app.appliedAt))?.getTime() ?? 0,
     });
   }
@@ -150,18 +154,19 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
     .map((item) => ({ id: item.id, icon: item.icon, kind: item.kind, message: item.message, time: item.time }));
 }
 
-function fmtTimeShort(date: Date | null): string {
+function fmtTimeShort(t: Translate, date: Date | null): string {
   if (!date) return '—';
   const ms = Date.now() - date.getTime();
   const min = Math.floor(ms / 60_000);
-  if (min < 60) return `${Math.max(1, min)}m`;
+  if (min < 60) return t('dashboard.activity.timeMinutes', { n: Math.max(1, min) });
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h}u`;
-  return `${Math.floor(h / 24)}d`;
+  if (h < 24) return t('dashboard.activity.timeHours', { n: h });
+  return t('dashboard.activity.timeDays', { n: Math.floor(h / 24) });
 }
 
 export default function DashboardPage() {
   const { effectiveUserId, credits } = useAuth();
+  const t = useTranslations();
   const [cvs, setCvs] = useState<CV[]>([]);
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [draft, setDraft] = useState<DraftSnapshot | null>(null);
@@ -266,12 +271,12 @@ export default function DashboardPage() {
       break;
   }
 
-  const activity = useMemo(() => buildActivity(cvs, applications), [cvs, applications]);
+  const activity = useMemo(() => buildActivity(cvs, applications, t), [cvs, applications, t]);
 
   // Tijdens het laden geen nullen + "maak je eerste CV" tonen, maar een skeleton.
   if (loading) {
     return (
-      <div className="space-y-6" role="status" aria-busy="true">
+      <div className="space-y-6" role="status" aria-busy="true" aria-label={t('common.loading')}>
         <Skeleton className="h-40 w-full rounded-xl" />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (

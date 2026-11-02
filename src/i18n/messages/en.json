@@ -72,7 +72,8 @@
     "new": "New",
     "edit": "Edit",
     "preview": "Preview",
-    "details": "Details"
+    "details": "Details",
+    "skipToContent": "Skip to main content"
   },
   "auth": {
     "signIn": "Sign In",
@@ -437,19 +438,39 @@
       "newCv": "New CV",
       "newCvSub": "Start with a job posting",
       "ago": "{time} ago",
-      "untitled": "Untitled CV"
+      "untitled": "Untitled CV",
+      "relative": {
+        "justNow": "just now",
+        "hours": "{n, plural, one {# hour} other {# hours}} ago",
+        "days": "{n, plural, one {# day} other {# days}} ago",
+        "weeks": "{n, plural, one {# week} other {# weeks}} ago",
+        "months": "{n, plural, one {# month} other {# months}} ago"
+      },
+      "status": {
+        "pdfReady": "PDF ready",
+        "generating": "Working…"
+      }
     },
     "jobsFeed": {
       "title": "For you",
       "subtitle": "Jobs based on your profile",
       "viewAll": "All jobs",
-      "empty": "Fill in your profile to see matching jobs."
+      "empty": "Fill in your profile to see matching jobs.",
+      "quickGenerateTitle": "Generate a CV for this job",
+      "quickGenerateLabel": "Generate CV for {title}"
     },
     "activity": {
       "title": "Activity",
       "subtitle": "Last 7 days",
       "viewAll": "All",
-      "empty": "No activity in the past week."
+      "empty": "No activity in the past week.",
+      "cvPdfReady": "CV PDF ready",
+      "cvGenerated": "New CV generated",
+      "applicationSent": "Application sent",
+      "statusChanged": "Status: {status}",
+      "timeMinutes": "{n}m",
+      "timeHours": "{n}h",
+      "timeDays": "{n}d"
     },
     "stats": {
       "totalCvs": "Total CVs",
@@ -487,7 +508,15 @@
       "make": "Make",
       "apply": "Apply",
       "account": "Account"
-    }
+    },
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "navLabel": "Dashboard navigation",
+    "openMenu": "Open menu",
+    "freeCreditsRich": "<strong>{count}</strong> free",
+    "purchasedCreditsRich": "<strong>{count}</strong> purchased"
   },
   "credits": {
     "title": "Credits",
@@ -748,6 +777,13 @@
       "name": "Name",
       "issuer": "Issuer",
       "error": "Enrichment failed"
+    },
+    "card": {
+      "experienceCount": "{count, plural, one {# experience} other {# experiences}}",
+      "moreActions": "Actions for {name}",
+      "load": "Load",
+      "noHeadline": "No headline",
+      "lastUpdated": "Last updated: {date}"
     }
   },
   "linkedInExport": {
@@ -2468,6 +2504,194 @@
       "tooLarge": "Image must be smaller than 5MB",
       "processFailed": "Could not process the image",
       "uploadFailed": "Upload failed"
+    }
+  },
+  "cvDetail": {
+    "fitContextTitle": "Application context",
+    "originalVacancy": "Original job posting",
+    "bonusSkills": "Bonus",
+    "verdict": {
+      "excellent": "Excellent match",
+      "good": "Good match",
+      "moderate": "Moderate match",
+      "challenging": "Challenging match",
+      "unlikely": "Unlikely match",
+      "unknown": "Unknown"
+    },
+    "errors": {
+      "saveFailed": "Failed to save changes",
+      "loadFailed": "Failed to load CV",
+      "pdfFailed": "Failed to generate PDF",
+      "generic": "An error occurred"
+    },
+    "notFound": "CV not found",
+    "backToCvs": "Back to CVs",
+    "details": {
+      "title": "CV details",
+      "notGenerated": "This CV has not been generated yet.",
+      "name": "Name",
+      "headline": "Headline",
+      "targetJob": "Target job"
+    }
+  },
+  "applications": {
+    "status": {
+      "applied": "Sent",
+      "interview": "Interview",
+      "offer": "Offer",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "statusLabel": "Application status",
+    "errors": {
+      "loadFailed": "Failed to load applications",
+      "saveFailed": "Saving failed. Please try again.",
+      "deleteFailed": "Deleting failed. Please try again."
+    },
+    "confirmDelete": "Remove this application from your overview?",
+    "empty": {
+      "title": "You haven't sent any applications yet.",
+      "description": "Go to the job board, pick a vacancy and send your first application with one click."
+    },
+    "appliedOn": "Sent on {date}",
+    "notesPlaceholder": "Notes (interview date, contact person, etc.)",
+    "notesLabel": "Notes",
+    "saveNotes": "Save notes",
+    "viewVacancy": "Job posting"
+  },
+  "pageHeaders": {
+    "cv": {
+      "eyebrow": "§ CV archive",
+      "title": "My <em>CVs</em>"
+    },
+    "profiles": {
+      "eyebrow": "§ LinkedIn profiles",
+      "title": "My <em>profiles</em>"
+    },
+    "credits": {
+      "eyebrow": "§ Balance & packages",
+      "title": "Buy <em>credits</em>"
+    },
+    "settings": {
+      "eyebrow": "§ Configuration",
+      "title": "Adjust <em>settings</em>"
+    },
+    "feedback": {
+      "eyebrow": "§ Bug? Suggestion?",
+      "title": "Share <em>feedback</em>"
+    },
+    "applications": {
+      "eyebrow": "§ Application tracker",
+      "title": "My <em>applications</em>",
+      "subtitle": "Overview of all applications you sent via CVeetje."
+    },
+    "cvNew": {
+      "eyebrow": "§ New CV",
+      "title": "Create a <em>new CV</em>"
+    },
+    "templates": {
+      "eyebrow": "§ Templates",
+      "title": "My <em>templates</em>"
+    }
+  },
+  "motivationLetter": {
+    "title": "Cover letter",
+    "generateTitle": "Generate cover letter",
+    "loadingSaved": "Loading saved letter...",
+    "motivationLabel": "What motivates you to apply? (optional)",
+    "motivationHint": "Share your personal motivation to get a more authentic letter.",
+    "inspiration": "Inspiration:",
+    "generating": "Generating letter...",
+    "generateButton": "Generate cover letter",
+    "notEnoughCredits": "You don't have enough credits.",
+    "generatingPdf": "Generating PDF...",
+    "generatingDocx": "Generating DOCX...",
+    "download": "Download",
+    "pdfDescription": "Styled document with CV theme",
+    "docxDescription": "Editable Word document",
+    "regenerate": "Regenerate",
+    "downloadHint": "Download the letter to edit and send it.",
+    "filePrefix": "cover-letter",
+    "errors": {
+      "generateFailed": "Failed to generate cover letter",
+      "generic": "An error occurred",
+      "downloadFailed": "Download failed"
+    }
+  },
+  "cvDispute": {
+    "title": "Request a CV review",
+    "description": "Something wrong with your CV? You can request a review up to {max} times. An independent AI assesses your complaint — the final attempt goes to an admin.",
+    "maxReached": "Maximum number of disputes reached for this CV ({max}/{max}).",
+    "attempt": "Attempt {current} of {max}",
+    "lastAttempt": "(last — will be reviewed manually)",
+    "levels": {
+      "conservative": {
+        "label": "Safe",
+        "description": "ATS-friendly, traditional"
+      },
+      "balanced": {
+        "label": "Balanced",
+        "description": "Modern but professional"
+      },
+      "creative": {
+        "label": "Creative",
+        "description": "Editorial/magazine layout"
+      },
+      "experimental": {
+        "label": "Experimental",
+        "description": "Bold/Canva style with colour"
+      },
+      "editorial-paper": {
+        "label": "Editorial Paper",
+        "description": "CVeetje look: cream paper + ink + clay accent"
+      }
+    },
+    "reasonLabel": "What's wrong?",
+    "reasonMin": "(min. {min} characters)",
+    "reasonPlaceholder": "For example: my graduation date is missing, or: the colours don't suit a finance role...",
+    "reasonCount": "{count}/{min} characters",
+    "submitting": "Reviewing...",
+    "submit": "Submit dispute",
+    "approved": {
+      "title": "Dispute approved",
+      "body": "Your CV has been regenerated at the <strong>{level}</strong> level."
+    },
+    "aiRationale": "AI: \"{rationale}\"",
+    "rejected": {
+      "title": "Dispute rejected",
+      "body": "The AI reviewer considers this CV appropriate. The CV stays as it is.",
+      "remaining": "You have {count, plural, one {# dispute} other {# disputes}} left."
+    },
+    "needsHuman": {
+      "title": "Awaiting manual review",
+      "body": "This is your last dispute. An admin will review it manually as soon as possible."
+    },
+    "viewNewCv": "View new CV",
+    "tweaksDiscarded": "Your tweaks have been replaced by the new AI style",
+    "errors": {
+      "reasonTooShort": "Reason must contain at least {min} characters",
+      "chooseLevel": "Choose a different style level",
+      "sameLevel": "The chosen level is the same as the current one",
+      "unknown": "Unknown error"
+    }
+  },
+  "tokenUsage": {
+    "title": "Token usage",
+    "tokens": "{value} tokens",
+    "total": "Total",
+    "in": "In: {value}",
+    "out": "Out: {value}",
+    "model": "Model: {model}",
+    "steps": {
+      "profileParse": "Profile parse",
+      "profileEnrich": "Profile enrich",
+      "linkedinExport": "LinkedIn export",
+      "job": "Job parse",
+      "style": "Style",
+      "generate": "Generate CV",
+      "regenerate": "Regenerate CV",
+      "motivation": "Cover letter"
     }
   }
 }

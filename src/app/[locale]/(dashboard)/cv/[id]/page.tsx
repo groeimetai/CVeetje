@@ -43,7 +43,7 @@ function getVerdictConfig(verdict: FitVerdict) {
         bgColor: 'bg-green-50 dark:bg-green-950',
         borderColor: 'border-green-200 dark:border-green-800',
         icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-        label: 'Uitstekende match',
+        labelKey: 'excellent',
       };
     case 'good':
       return {
@@ -51,7 +51,7 @@ function getVerdictConfig(verdict: FitVerdict) {
         bgColor: 'bg-blue-50 dark:bg-blue-950',
         borderColor: 'border-blue-200 dark:border-blue-800',
         icon: <CheckCircle2 className="h-5 w-5 text-blue-600" />,
-        label: 'Goede match',
+        labelKey: 'good',
       };
     case 'moderate':
       return {
@@ -59,7 +59,7 @@ function getVerdictConfig(verdict: FitVerdict) {
         bgColor: 'bg-yellow-50 dark:bg-yellow-950',
         borderColor: 'border-yellow-200 dark:border-yellow-800',
         icon: <AlertCircle className="h-5 w-5 text-yellow-600" />,
-        label: 'Matige match',
+        labelKey: 'moderate',
       };
     case 'challenging':
       return {
@@ -67,7 +67,7 @@ function getVerdictConfig(verdict: FitVerdict) {
         bgColor: 'bg-orange-50 dark:bg-orange-950',
         borderColor: 'border-orange-200 dark:border-orange-800',
         icon: <AlertTriangle className="h-5 w-5 text-orange-600" />,
-        label: 'Uitdagende match',
+        labelKey: 'challenging',
       };
     case 'unlikely':
       return {
@@ -75,7 +75,7 @@ function getVerdictConfig(verdict: FitVerdict) {
         bgColor: 'bg-red-50 dark:bg-red-950',
         borderColor: 'border-red-200 dark:border-red-800',
         icon: <XCircle className="h-5 w-5 text-red-600" />,
-        label: 'Onwaarschijnlijke match',
+        labelKey: 'unlikely',
       };
     default:
       return {
@@ -83,7 +83,7 @@ function getVerdictConfig(verdict: FitVerdict) {
         bgColor: 'bg-gray-50 dark:bg-gray-950',
         borderColor: 'border-gray-200 dark:border-gray-800',
         icon: <Info className="h-5 w-5 text-gray-600" />,
-        label: 'Onbekend',
+        labelKey: 'unknown',
       };
   }
 }
@@ -119,6 +119,8 @@ function getSeverityConfig(severity: FitWarningSeverity) {
 
 function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnalysis; jobVacancy?: Pick<import('@/types').JobVacancy, 'title' | 'company' | 'location' | 'sourceUrl'> | null }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const t = useTranslations('cvDetail');
+  const tFit = useTranslations('fitAnalysis');
   const verdictConfig = getVerdictConfig(fitAnalysis.verdict);
 
   return (
@@ -127,11 +129,12 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
           className="flex items-center justify-between w-full text-left"
         >
           <CardTitle className="flex items-center gap-2 text-base">
             <Target className="h-5 w-5" />
-            Sollicitatie-context
+            {t('fitContextTitle')}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className={verdictConfig.color}>
@@ -173,7 +176,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
                   onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  Originele vacature
+                  {t('originalVacancy')}
                 </a>
               )}
             </div>
@@ -185,7 +188,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
               <div className="flex items-center gap-2">
                 {verdictConfig.icon}
                 <span className={`font-semibold ${verdictConfig.color}`}>
-                  {verdictConfig.label}
+                  {t(`verdict.${verdictConfig.labelKey}`)}
                 </span>
               </div>
               <Badge variant="outline" className={verdictConfig.color}>
@@ -202,13 +205,13 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
           <div className="rounded-lg border p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Award className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Skills Match</span>
+              <span className="font-medium text-sm">{tFit('skillsMatch')}</span>
               <Badge variant="secondary">{fitAnalysis.skillMatch.matchPercentage}%</Badge>
             </div>
             <div className="grid gap-2 text-sm">
               {fitAnalysis.skillMatch.matched.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  <span className="text-green-600 font-medium mr-1">Gevonden:</span>
+                  <span className="text-green-600 font-medium mr-1">{tFit('matchedSkills')}:</span>
                   {fitAnalysis.skillMatch.matched.map((skill, i) => (
                     <Badge key={i} variant="outline" className="text-green-700 border-green-300 bg-green-50 dark:text-green-400 dark:border-green-700 dark:bg-green-950">
                       {skill}
@@ -218,7 +221,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
               )}
               {fitAnalysis.skillMatch.missing.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  <span className="text-red-600 font-medium mr-1">Ontbreken:</span>
+                  <span className="text-red-600 font-medium mr-1">{tFit('missingSkills')}:</span>
                   {fitAnalysis.skillMatch.missing.map((skill, i) => (
                     <Badge key={i} variant="outline" className="text-red-700 border-red-300 bg-red-50 dark:text-red-400 dark:border-red-700 dark:bg-red-950">
                       {skill}
@@ -228,7 +231,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
               )}
               {fitAnalysis.skillMatch.bonus.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  <span className="text-blue-600 font-medium mr-1">Bonus:</span>
+                  <span className="text-blue-600 font-medium mr-1">{t('bonusSkills')}:</span>
                   {fitAnalysis.skillMatch.bonus.map((skill, i) => (
                     <Badge key={i} variant="outline" className="text-blue-700 border-blue-300 bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:bg-blue-950">
                       {skill}
@@ -243,18 +246,18 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
           <div className="rounded-lg border p-4 space-y-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">Ervaring</span>
+              <span className="font-medium text-sm">{tFit('experienceMatch')}</span>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <span>
-                Jouw ervaring: <strong>{fitAnalysis.experienceMatch.candidateYears} jaar</strong>
+                {tFit('yourExperience')}: <strong>{fitAnalysis.experienceMatch.candidateYears} {tFit('years')}</strong>
               </span>
               <span>
-                Vereist: <strong>{fitAnalysis.experienceMatch.requiredYears} jaar</strong>
+                {tFit('required')}: <strong>{fitAnalysis.experienceMatch.requiredYears} {tFit('years')}</strong>
               </span>
               {fitAnalysis.experienceMatch.gap !== 0 && (
                 <Badge variant={fitAnalysis.experienceMatch.gap >= 0 ? 'secondary' : 'destructive'}>
-                  {fitAnalysis.experienceMatch.gap >= 0 ? '+' : ''}{fitAnalysis.experienceMatch.gap} jaar
+                  {fitAnalysis.experienceMatch.gap >= 0 ? '+' : ''}{fitAnalysis.experienceMatch.gap} {tFit('years')}
                 </Badge>
               )}
             </div>
@@ -265,7 +268,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                Sterke Punten ({fitAnalysis.strengths.length})
+                {tFit('strengths')} ({fitAnalysis.strengths.length})
               </div>
               <div className="space-y-2">
                 {fitAnalysis.strengths.slice(0, 3).map((strength, i) => (
@@ -290,7 +293,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                Aandachtspunten ({fitAnalysis.warnings.length})
+                {tFit('warnings')} ({fitAnalysis.warnings.length})
               </div>
               <div className="space-y-2">
                 {fitAnalysis.warnings.map((warning, i) => {
@@ -323,7 +326,7 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
             <div className="flex items-start gap-2">
               <Lightbulb className="h-4 w-4 text-primary mt-0.5" />
               <div>
-                <p className="font-medium text-sm text-primary">Advies</p>
+                <p className="font-medium text-sm text-primary">{tFit('advice')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {fitAnalysis.advice}
                 </p>
@@ -349,6 +352,7 @@ export default function CVDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tDashboard = useTranslations('dashboard');
+  const t = useTranslations('cvDetail');
   const { firebaseUser, effectiveUserId, credits, refreshCredits } = useAuth();
 
   const [cv, setCV] = useState<(CV & { tokens?: CVDesignTokens }) | null>(null);
@@ -368,7 +372,7 @@ export default function CVDetailPage() {
       await updateCV(effectiveUserId, cvId, { elementOverrides: overrides });
       setCV(prev => prev ? { ...prev, elementOverrides: overrides } : null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save changes');
+      setError(err instanceof Error ? err.message : t('errors.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -382,11 +386,11 @@ export default function CVDetailPage() {
       setCV(cvData as CV & { tokens?: CVDesignTokens });
     } catch (err) {
       console.error('[cv/[id]] getCV failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load CV');
+      setError(err instanceof Error ? err.message : t('errors.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [effectiveUserId, cvId]);
+  }, [effectiveUserId, cvId, t]);
 
   useEffect(() => {
     fetchCV();
@@ -412,7 +416,7 @@ export default function CVDetailPage() {
 
       if (!response.ok) {
         const result = await response.json();
-        throw new Error(result.error || 'Failed to generate PDF');
+        throw new Error(result.error || t('errors.pdfFailed'));
       }
 
       // Get the PDF blob
@@ -431,7 +435,7 @@ export default function CVDetailPage() {
       // Refresh credits
       await refreshCredits();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setIsDownloading(false);
     }
@@ -460,12 +464,12 @@ export default function CVDetailPage() {
       <div className="max-w-2xl mx-auto">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <span className="ml-2">CV not found</span>
+          <span className="ml-2">{t('notFound')}</span>
         </Alert>
         <Link href="/cv">
           <Button variant="outline" className="mt-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to CVs
+            {t('backToCvs')}
           </Button>
         </Link>
       </div>
@@ -493,16 +497,16 @@ export default function CVDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-4">
           <Link href="/cv">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label={t('backToCvs')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
             <h1 className="text-2xl font-bold">
-              {cv.linkedInData?.fullName || 'Untitled CV'}
+              {cv.linkedInData?.fullName || tDashboard('recentCvs.untitled')}
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-              <span>{cv.jobVacancy?.title || 'General CV'}</span>
+              <span>{cv.jobVacancy?.title || tDashboard('recentCvs.generalCv')}</span>
               <span>•</span>
               <span>{tokens.styleName}</span>
               <span>•</span>
@@ -562,26 +566,26 @@ export default function CVDetailPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>CV Details</CardTitle>
+            <CardTitle>{t('details.title')}</CardTitle>
             <CardDescription>
-              This CV has not been generated yet.
+              {t('details.notGenerated')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Name</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('details.name')}</p>
                 <p>{cv.linkedInData.fullName}</p>
               </div>
               {cv.linkedInData.headline && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Headline</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('details.headline')}</p>
                   <p>{cv.linkedInData.headline}</p>
                 </div>
               )}
               {cv.jobVacancy && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Target Job</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('details.targetJob')}</p>
                   <p>{cv.jobVacancy.title}</p>
                 </div>
               )}

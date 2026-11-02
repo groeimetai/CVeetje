@@ -21,6 +21,7 @@ export default function CreditsPage() {
   const searchParams = useSearchParams();
   const { effectiveUserId, credits, refreshCredits } = useAuth();
   const t = useTranslations('credits');
+  const tHeaders = useTranslations('pageHeaders');
   const tCommon = useTranslations('common');
 
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
@@ -77,8 +78,8 @@ export default function CreditsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <PageHeader
-        eyebrow="§ Saldo & pakketten"
-        title={<>{t('title')} <em>kopen</em></>}
+        eyebrow={tHeaders('credits.eyebrow')}
+        title={tHeaders.rich('credits.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('subtitle')}
       />
 

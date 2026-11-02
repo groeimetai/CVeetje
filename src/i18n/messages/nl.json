@@ -72,7 +72,8 @@
     "new": "Nieuw",
     "edit": "Bewerken",
     "preview": "Voorbeeld",
-    "details": "Details"
+    "details": "Details",
+    "skipToContent": "Ga naar hoofdinhoud"
   },
   "auth": {
     "signIn": "Inloggen",
@@ -437,19 +438,39 @@
       "newCv": "Nieuw CV",
       "newCvSub": "Begin met een vacature",
       "ago": "{time} geleden",
-      "untitled": "Naamloze CV"
+      "untitled": "Naamloze CV",
+      "relative": {
+        "justNow": "zojuist",
+        "hours": "{n} uur geleden",
+        "days": "{n, plural, one {# dag} other {# dagen}} geleden",
+        "weeks": "{n, plural, one {# week} other {# weken}} geleden",
+        "months": "{n, plural, one {# maand} other {# maanden}} geleden"
+      },
+      "status": {
+        "pdfReady": "PDF klaar",
+        "generating": "Bezig…"
+      }
     },
     "jobsFeed": {
       "title": "Voor jou",
       "subtitle": "Vacatures op basis van je profiel",
       "viewAll": "Alle vacatures",
-      "empty": "Vul je profiel in om vacatures te zien."
+      "empty": "Vul je profiel in om vacatures te zien.",
+      "quickGenerateTitle": "Genereer CV voor deze vacature",
+      "quickGenerateLabel": "Genereer CV voor {title}"
     },
     "activity": {
       "title": "Activiteit",
       "subtitle": "Laatste 7 dagen",
       "viewAll": "Alles",
-      "empty": "Nog geen activiteit deze week."
+      "empty": "Nog geen activiteit deze week.",
+      "cvPdfReady": "CV PDF klaar",
+      "cvGenerated": "Nieuw CV gegenereerd",
+      "applicationSent": "Sollicitatie verstuurd",
+      "statusChanged": "Status: {status}",
+      "timeMinutes": "{n}m",
+      "timeHours": "{n}u",
+      "timeDays": "{n}d"
     },
     "stats": {
       "totalCvs": "Totaal CVs",
@@ -487,7 +508,15 @@
       "make": "Maken",
       "apply": "Solliciteren",
       "account": "Account"
-    }
+    },
+    "expand": "Uitvouwen",
+    "collapse": "Inklappen",
+    "expandSidebar": "Zijbalk uitvouwen",
+    "collapseSidebar": "Zijbalk inklappen",
+    "navLabel": "Dashboardnavigatie",
+    "openMenu": "Menu openen",
+    "freeCreditsRich": "<strong>{count}</strong> gratis",
+    "purchasedCreditsRich": "<strong>{count}</strong> gekocht"
   },
   "credits": {
     "title": "Credits",
@@ -748,6 +777,13 @@
       "name": "Naam",
       "issuer": "Uitgever",
       "error": "Verrijken mislukt"
+    },
+    "card": {
+      "experienceCount": "{count, plural, one {# ervaring} other {# ervaringen}}",
+      "moreActions": "Acties voor {name}",
+      "load": "Laden",
+      "noHeadline": "Geen functietitel",
+      "lastUpdated": "Laatst bijgewerkt: {date}"
     }
   },
   "linkedInExport": {
@@ -2468,6 +2504,194 @@
       "tooLarge": "Afbeelding moet kleiner zijn dan 5MB",
       "processFailed": "Kon de afbeelding niet verwerken",
       "uploadFailed": "Uploaden mislukt"
+    }
+  },
+  "cvDetail": {
+    "fitContextTitle": "Sollicitatie-context",
+    "originalVacancy": "Originele vacature",
+    "bonusSkills": "Bonus",
+    "verdict": {
+      "excellent": "Uitstekende match",
+      "good": "Goede match",
+      "moderate": "Matige match",
+      "challenging": "Uitdagende match",
+      "unlikely": "Onwaarschijnlijke match",
+      "unknown": "Onbekend"
+    },
+    "errors": {
+      "saveFailed": "Wijzigingen opslaan mislukt",
+      "loadFailed": "CV laden mislukt",
+      "pdfFailed": "PDF genereren mislukt",
+      "generic": "Er is een fout opgetreden"
+    },
+    "notFound": "CV niet gevonden",
+    "backToCvs": "Terug naar CV's",
+    "details": {
+      "title": "CV-details",
+      "notGenerated": "Deze CV is nog niet gegenereerd.",
+      "name": "Naam",
+      "headline": "Functietitel",
+      "targetJob": "Beoogde functie"
+    }
+  },
+  "applications": {
+    "status": {
+      "applied": "Verzonden",
+      "interview": "Gesprek",
+      "offer": "Aanbod",
+      "accepted": "Aangenomen",
+      "rejected": "Afgewezen",
+      "withdrawn": "Ingetrokken"
+    },
+    "statusLabel": "Status van sollicitatie",
+    "errors": {
+      "loadFailed": "Sollicitaties laden mislukt",
+      "saveFailed": "Opslaan mislukt. Probeer het opnieuw.",
+      "deleteFailed": "Verwijderen mislukt. Probeer het opnieuw."
+    },
+    "confirmDelete": "Sollicitatie verwijderen uit je overzicht?",
+    "empty": {
+      "title": "Je hebt nog geen sollicitaties verzonden.",
+      "description": "Ga naar de vacaturebank, kies een vacature en verstuur je eerste sollicitatie met één klik."
+    },
+    "appliedOn": "Verzonden op {date}",
+    "notesPlaceholder": "Notities (gespreksdatum, contactpersoon, etc.)",
+    "notesLabel": "Notities",
+    "saveNotes": "Notities opslaan",
+    "viewVacancy": "Vacature"
+  },
+  "pageHeaders": {
+    "cv": {
+      "eyebrow": "§ CV-archief",
+      "title": "Mijn <em>CV's</em>"
+    },
+    "profiles": {
+      "eyebrow": "§ LinkedIn-profielen",
+      "title": "Mijn <em>profielen</em>"
+    },
+    "credits": {
+      "eyebrow": "§ Saldo & pakketten",
+      "title": "Credits <em>kopen</em>"
+    },
+    "settings": {
+      "eyebrow": "§ Configuratie",
+      "title": "Instellingen <em>aanpassen</em>"
+    },
+    "feedback": {
+      "eyebrow": "§ Bug? Suggestie?",
+      "title": "Geef <em>feedback</em>"
+    },
+    "applications": {
+      "eyebrow": "§ Sollicitatie-tracker",
+      "title": "Mijn <em>sollicitaties</em>",
+      "subtitle": "Overzicht van alle sollicitaties die je via CVeetje hebt verstuurd."
+    },
+    "cvNew": {
+      "eyebrow": "§ Nieuw CV",
+      "title": "Nieuwe CV <em>maken</em>"
+    },
+    "templates": {
+      "eyebrow": "§ Templates",
+      "title": "Mijn <em>templates</em>"
+    }
+  },
+  "motivationLetter": {
+    "title": "Motivatiebrief",
+    "generateTitle": "Motivatiebrief genereren",
+    "loadingSaved": "Opgeslagen brief laden...",
+    "motivationLabel": "Wat motiveert jou om te solliciteren? (optioneel)",
+    "motivationHint": "Deel je persoonlijke motivatie om een meer authentieke brief te krijgen.",
+    "inspiration": "Inspiratie:",
+    "generating": "Brief genereren...",
+    "generateButton": "Genereer motivatiebrief",
+    "notEnoughCredits": "Je hebt niet genoeg credits.",
+    "generatingPdf": "PDF genereren...",
+    "generatingDocx": "DOCX genereren...",
+    "download": "Download",
+    "pdfDescription": "Gestijld document met CV-thema",
+    "docxDescription": "Bewerkbaar Word-document",
+    "regenerate": "Opnieuw genereren",
+    "downloadHint": "Download de brief om deze te kunnen bewerken en versturen.",
+    "filePrefix": "motivatiebrief",
+    "errors": {
+      "generateFailed": "Motivatiebrief genereren mislukt",
+      "generic": "Er is een fout opgetreden",
+      "downloadFailed": "Download mislukt"
+    }
+  },
+  "cvDispute": {
+    "title": "CV laten heroverwegen",
+    "description": "Klopt er iets niet in je CV? Je kunt tot {max} keer om een heroverweging vragen. Een onafhankelijke AI beoordeelt je klacht — bij de laatste poging komt het bij een admin terecht.",
+    "maxReached": "Maximaal aantal disputes bereikt voor deze CV ({max}/{max}).",
+    "attempt": "Poging {current} van {max}",
+    "lastAttempt": "(laatste — wordt handmatig beoordeeld)",
+    "levels": {
+      "conservative": {
+        "label": "Veilig",
+        "description": "ATS-vriendelijk, traditioneel"
+      },
+      "balanced": {
+        "label": "Gebalanceerd",
+        "description": "Modern maar professioneel"
+      },
+      "creative": {
+        "label": "Creatief",
+        "description": "Editorial/magazine-layout"
+      },
+      "experimental": {
+        "label": "Experimenteel",
+        "description": "Bold/Canva-stijl met kleur"
+      },
+      "editorial-paper": {
+        "label": "Editorial Paper",
+        "description": "CVeetje-look: crèmekleurig papier + inkt + klei-accent"
+      }
+    },
+    "reasonLabel": "Wat klopt er niet?",
+    "reasonMin": "(min. {min} tekens)",
+    "reasonPlaceholder": "Bijvoorbeeld: de datum van mijn afstuderen staat er niet op, of: de kleuren passen niet bij een finance-rol...",
+    "reasonCount": "{count}/{min} tekens",
+    "submitting": "Bezig met beoordelen...",
+    "submit": "Dispute indienen",
+    "approved": {
+      "title": "Dispute goedgekeurd",
+      "body": "Je CV is opnieuw gegenereerd in het niveau <strong>{level}</strong>."
+    },
+    "aiRationale": "AI: \"{rationale}\"",
+    "rejected": {
+      "title": "Dispute afgewezen",
+      "body": "De AI-beoordelaar vindt deze CV passend. De CV blijft zoals hij is.",
+      "remaining": "Je hebt nog {count, plural, one {# dispute} other {# disputes}} over."
+    },
+    "needsHuman": {
+      "title": "Wacht op handmatige beoordeling",
+      "body": "Dit is je laatste dispute. Een admin beoordeelt hem zo snel mogelijk handmatig."
+    },
+    "viewNewCv": "Bekijk nieuwe CV",
+    "tweaksDiscarded": "Je tweaks zijn vervangen door de nieuwe AI-stijl",
+    "errors": {
+      "reasonTooShort": "Reden moet minstens {min} tekens bevatten",
+      "chooseLevel": "Kies een ander stijl-niveau",
+      "sameLevel": "Het gekozen niveau is hetzelfde als het huidige",
+      "unknown": "Onbekende fout"
+    }
+  },
+  "tokenUsage": {
+    "title": "Tokengebruik",
+    "tokens": "{value} tokens",
+    "total": "Totaal",
+    "in": "In: {value}",
+    "out": "Uit: {value}",
+    "model": "Model: {model}",
+    "steps": {
+      "profileParse": "Profiel inlezen",
+      "profileEnrich": "Profiel verrijken",
+      "linkedinExport": "LinkedIn-export",
+      "job": "Vacature inlezen",
+      "style": "Stijl",
+      "generate": "CV genereren",
+      "regenerate": "CV opnieuw genereren",
+      "motivation": "Motivatiebrief"
     }
   }
 }
