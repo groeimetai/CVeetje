@@ -120,35 +120,3 @@ export function useWizardPersistence(): UseWizardPersistenceResult {
     isLoading,
   };
 }
-
-// Helper to format time ago
-export function formatTimeAgo(timestamp: number, locale: string = 'nl'): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-
-  const intervals = {
-    nl: {
-      hour: { singular: 'uur', plural: 'uur' },
-      minute: { singular: 'minuut', plural: 'minuten' },
-      second: { singular: 'seconde', plural: 'seconden' },
-      ago: 'geleden',
-    },
-    en: {
-      hour: { singular: 'hour', plural: 'hours' },
-      minute: { singular: 'minute', plural: 'minutes' },
-      second: { singular: 'second', plural: 'seconds' },
-      ago: 'ago',
-    },
-  };
-
-  const t = intervals[locale as keyof typeof intervals] || intervals.nl;
-
-  if (seconds >= 3600) {
-    const hours = Math.floor(seconds / 3600);
-    return `${hours} ${hours === 1 ? t.hour.singular : t.hour.plural} ${t.ago}`;
-  }
-  if (seconds >= 60) {
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} ${minutes === 1 ? t.minute.singular : t.minute.plural} ${t.ago}`;
-  }
-  return `${seconds} ${seconds === 1 ? t.second.singular : t.second.plural} ${t.ago}`;
-}

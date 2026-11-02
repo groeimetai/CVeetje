@@ -1099,7 +1099,8 @@
     "summaryEmpty": "Niets aangevinkt — de AI kiest zelf wat er op het CV komt op basis van relevantie voor de vacature.",
     "back": "Terug",
     "skip": "Overslaan",
-    "continue": "Doorgaan"
+    "continue": "Doorgaan",
+    "present": "heden"
   },
   "fitAnalysis": {
     "title": "Fit Analyse",
@@ -1125,7 +1126,20 @@
     "advice": "Advies",
     "confirmProceedWarning": "Dit profiel heeft significante mismatches met de vacature. Je kunt nog steeds een CV genereren, maar de kans op succes is mogelijk lager. Wil je toch doorgaan?",
     "criticalWarningsNote": "Let op: er zijn kritieke aandachtspunten gevonden",
-    "aiDisclaimer": "Deze analyse is een AI-inschatting en geen garantie van je kansen."
+    "aiDisclaimer": "Deze analyse is een AI-inschatting en geen garantie van je kansen.",
+    "verdicts": {
+      "excellent": "Uitstekende match",
+      "good": "Goede match",
+      "moderate": "Matige match",
+      "challenging": "Uitdagende match",
+      "unlikely": "Onwaarschijnlijke match",
+      "unknown": "Onbekend"
+    },
+    "errors": {
+      "couldNotAnalyze": "Kon fit-analyse niet uitvoeren",
+      "analysisFailed": "Analyse mislukt",
+      "generic": "Er ging iets mis"
+    }
   },
   "templateStyle": {
     "title": "Stijl van Template",
@@ -1314,7 +1328,10 @@
       "newProfile": "Nieuw profiel invoeren",
       "loading": "Profielen laden...",
       "load": "Laden",
-      "experiences": "ervaringen"
+      "experiences": "ervaringen",
+      "experienceCount": "{count, plural, one {# ervaring} other {# ervaringen}}",
+      "setDefault": "Als standaard instellen",
+      "actions": "Profielacties voor {name}"
     },
     "addNewBelow": "Of voeg hieronder nieuw profiel informatie toe",
     "addFile": "Bestand toevoegen",
@@ -1344,7 +1361,11 @@
       "addSource": "Voeg minimaal 1 bron toe",
       "noNameFound": "Kon geen naam vinden. Controleer of je de volledige profielinformatie hebt toegevoegd.",
       "configureApiKey": "Configureer je API key in Instellingen om bestanden te verwerken.",
-      "noProfileInfo": "Kon geen profiel informatie extraheren. Probeer andere bronnen."
+      "noProfileInfo": "Kon geen profiel informatie extraheren. Probeer andere bronnen.",
+      "processingFailed": "Verwerking mislukt",
+      "invalidFileType": "{name}: Alleen PDF of afbeeldingen (PNG, JPG, WebP) toegestaan",
+      "fileTooLarge": "{name}: Bestand is te groot. Maximum is 10MB.",
+      "readFailed": "Kon bestand niet lezen"
     },
     "editProfile": {
       "title": "Profiel Bewerken",
@@ -1358,7 +1379,53 @@
       "educationNum": "Opleiding {num}",
       "skillPlaceholder": "Vaardigheid",
       "save": "Opslaan",
-      "saving": "Opslaan..."
+      "saving": "Opslaan...",
+      "description": "Pas de geëxtraheerde informatie aan indien nodig",
+      "basicInfo": "Basis Gegevens",
+      "languages": "Talen",
+      "certifications": "Certificaten",
+      "addLanguage": "Toevoegen",
+      "addCertification": "Toevoegen",
+      "removeExperience": "Ervaring {num} verwijderen",
+      "removeEducation": "Opleiding {num} verwijderen",
+      "removeSkill": "Vaardigheid verwijderen",
+      "removeLanguage": "Taal verwijderen",
+      "removeCertification": "Certificaat verwijderen",
+      "fields": {
+        "name": "Naam",
+        "namePlaceholder": "Volledige naam",
+        "headline": "Titel / Headline",
+        "headlinePlaceholder": "Functietitel",
+        "location": "Locatie",
+        "locationPlaceholder": "Amsterdam, Nederland",
+        "about": "Over mij",
+        "aboutPlaceholder": "Korte beschrijving...",
+        "jobTitle": "Functie",
+        "jobTitlePlaceholder": "Software Developer",
+        "company": "Bedrijf",
+        "companyPlaceholder": "Bedrijfsnaam",
+        "cityPlaceholder": "Amsterdam",
+        "startDate": "Startdatum",
+        "startDatePlaceholder": "jan 2020",
+        "endDate": "Einddatum",
+        "endDatePlaceholder": "heden",
+        "currentRole": "Huidige functie",
+        "description": "Beschrijving",
+        "descriptionPlaceholder": "Beschrijving van werkzaamheden...",
+        "school": "School / Universiteit",
+        "schoolPlaceholder": "Universiteit van Amsterdam",
+        "degree": "Diploma",
+        "degreePlaceholder": "Bachelor / Master",
+        "fieldOfStudy": "Studierichting",
+        "fieldOfStudyPlaceholder": "Informatica",
+        "startYear": "Startjaar",
+        "endYear": "Eindjaar",
+        "languagePlaceholder": "Nederlands",
+        "proficiencyPlaceholder": "Moedertaal",
+        "certNamePlaceholder": "Certificaat naam",
+        "issuerPlaceholder": "Uitgever",
+        "datePlaceholder": "Datum"
+      }
     },
     "processed": {
       "title": "Profiel Verwerkt",
@@ -1366,11 +1433,41 @@
       "experienceCount": "{count} Werkervaring(en)",
       "educationCount": "{count} Opleiding(en)",
       "skillCount": "{count} Vaardighe(i)d(en)",
-      "experiencePreview": "Werkervaring Preview"
+      "experiencePreview": "Werkervaring Preview",
+      "name": "Naam",
+      "headline": "Titel",
+      "badges": {
+        "experience": "{count, plural, one {# Werkervaring} other {# Werkervaringen}}",
+        "education": "{count, plural, one {# Opleiding} other {# Opleidingen}}",
+        "skills": "{count, plural, one {# Vaardigheid} other {# Vaardigheden}}",
+        "languages": "{count, plural, one {# Taal} other {# Talen}}",
+        "projects": "{count, plural, one {# Project} other {# Projecten}}",
+        "interests": "{count, plural, one {# Interesse} other {# Interesses}}"
+      },
+      "experienceAt": "<strong>{jobTitle}</strong> bij {company}",
+      "morePositions": "+{count} meer posities",
+      "projectsPreview": "Projecten Preview",
+      "moreProjects": "+{count} meer projecten",
+      "photoHint": "Je foto wordt getoond in de CV als de gekozen stijl dit ondersteunt.",
+      "editInProfiles": "Bewerk in profielen",
+      "startOver": "Opnieuw"
     },
     "contactInfo": {
       "title": "Contactgegevens voor je CV",
-      "description": "LinkedIn exporteert geen contactgegevens - vul deze hieronder in!"
+      "description": "LinkedIn exporteert geen contactgegevens - vul deze hieronder in!",
+      "email": "Email *",
+      "emailPlaceholder": "naam@email.com",
+      "phone": "Telefoon",
+      "phonePlaceholder": "+31 6 12345678",
+      "linkedinUrl": "LinkedIn URL",
+      "linkedinPlaceholder": "linkedin.com/in/jouw-naam",
+      "website": "Website / Portfolio",
+      "websitePlaceholder": "jouwwebsite.nl",
+      "github": "GitHub (optioneel)",
+      "githubPlaceholder": "github.com/username",
+      "location": "Locatie",
+      "locationPlaceholder": "Amsterdam, Nederland",
+      "emailRequired": "* Email is verplicht voor een professionele CV"
     },
     "saveProfile": {
       "title": "Profiel Opslaan",
@@ -1382,7 +1479,10 @@
       "saving": "Opslaan...",
       "saveButton": "Profiel opslaan",
       "updateButton": "Profiel bijwerken",
-      "saveAsNew": "Als nieuw opslaan"
+      "saveAsNew": "Als nieuw opslaan",
+      "nameLabel": "Naam *",
+      "descriptionLabel": "Beschrijving (optioneel)",
+      "descriptionPlaceholder": "bijv. Gericht op ServiceNow implementatie projecten..."
     },
     "enrichProfile": {
       "title": "Profiel Verrijken met AI",
@@ -1408,6 +1508,25 @@
       "copied": "Gekopieerd!",
       "copy": "Kopiëren",
       "credits": "credits"
+    },
+    "unknownModel": "Onbekend",
+    "fileUploadUnavailable": "Bestand uploaden niet beschikbaar",
+    "modelNoVision": "Je geselecteerde AI model ({model}) ondersteunt geen afbeelding/PDF input.",
+    "apiKeyRequired": "API key vereist",
+    "closeTextInput": "Tekstinvoer sluiten",
+    "fileTypesHint": "PDF, PNG, JPG, WebP (max 10MB per bestand)",
+    "addedSourcesCount": "Toegevoegde bronnen ({count})",
+    "fileTypePdf": "PDF",
+    "fileTypeImage": "Afbeelding",
+    "removeSource": "Bron verwijderen",
+    "estimatedTokens": "Geschatte tokens",
+    "estimatedCost": "Geschatte kosten",
+    "processInfo": "Informatie verwerken",
+    "processingInfo": "Informatie verwerken...",
+    "largeRequestDialog": {
+      "title": "Grote Request",
+      "description": "Dit is een grote request met geschatte {tokens} tokens ({cost} kosten).",
+      "confirm": "Ja, verwerken"
     }
   },
   "jobInput": {
@@ -1423,7 +1542,8 @@
       "couldNotAnalyze": "Kon vacature niet analyseren",
       "somethingWentWrong": "Er ging iets mis",
       "titleRequired": "Functietitel is verplicht",
-      "descriptionRequired": "Geef meer details over de functie"
+      "descriptionRequired": "Geef meer details over de functie",
+      "textTooShort": "Plak een volledige vacaturetekst (minimaal 50 tekens)"
     },
     "parsed": {
       "title": "Vacature Analyse",
@@ -1443,7 +1563,79 @@
       "addRequirement": "Eis toevoegen",
       "addKeyword": "Trefwoord toevoegen",
       "addBenefit": "Voordeel toevoegen"
-    }
+    },
+    "urlLabel": "Vacature URL (optioneel)",
+    "urlHint": "We bewaren de link bij je CV, zodat je later de originele vacature kunt terugvinden. Als de link openbaar bereikbaar is, halen we automatisch de volledige tekst op.",
+    "pasteHint": "Je kunt de hele vacaturetekst plakken - inclusief bedrijfsinfo, vereisten, en extraatjes",
+    "preview": {
+      "title": "Vacature geanalyseerd",
+      "description": "Controleer de geëxtraheerde informatie en ga door of pas aan",
+      "startOver": "Opnieuw",
+      "originalVacancy": "Originele vacature",
+      "summary": "Samenvatting"
+    },
+    "adzuna": {
+      "title": "Adzuna geeft maar een korte preview van deze vacature",
+      "body": "De AI maakt een veel scherper CV met de volledige vacaturetekst. Open de werkgever-site, kopieer de hele advertentie en plak hem hieronder.",
+      "openSite": "Open vacature-site",
+      "pasteFull": "Volledige tekst plakken"
+    },
+    "salary": {
+      "aiEstimate": "AI Salaris Inschatting",
+      "perYear": "/jaar",
+      "level": "{level} niveau",
+      "reasoning": "Onderbouwing",
+      "marketInsight": "Marktinzicht",
+      "disclaimer": "* Dit is een AI-inschatting op basis van functie, industrie en locatie. Werkelijke salarissen kunnen afwijken.",
+      "range": "{currency} {min} - {max}{period}",
+      "from": "Vanaf {currency} {min}{period}",
+      "to": "Tot {currency} {max}{period}",
+      "periodSuffix": {
+        "yearly": "/jaar",
+        "monthly": "/maand",
+        "hourly": "/uur"
+      }
+    },
+    "compensation": {
+      "title": "Compensatie & Secundaire Voorwaarden",
+      "filled": "Ingevuld",
+      "salary": "Salaris",
+      "benefits": "Secundaire voorwaarden",
+      "bonus": "Bonus",
+      "notes": "Notities",
+      "emptyHint": "Klik op \"Bewerken\" om compensatie details toe te voegen",
+      "editTitle": "Compensatie & Voorwaarden (optioneel)",
+      "salaryMin": "Minimum Salaris",
+      "salaryMax": "Maximum Salaris",
+      "currency": "Valuta",
+      "period": "Periode",
+      "perYear": "Per jaar",
+      "perMonth": "Per maand",
+      "perHour": "Per uur",
+      "benefitPlaceholder": "bijv. Pensioenregeling, Lease auto, 30 vakantiedagen",
+      "bonusOptional": "Bonus (optioneel)",
+      "bonusPlaceholder": "bijv. 13e maand, prestatiebonus tot 10%",
+      "notesPlaceholder": "bijv. Afhankelijk van ervaring"
+    },
+    "edit": {
+      "title": "Vacature bewerken",
+      "description": "Pas de geëxtraheerde informatie aan indien nodig",
+      "titleLabel": "Functietitel *",
+      "titlePlaceholder": "bijv. Senior Software Engineer",
+      "companyPlaceholder": "bijv. TechCorp",
+      "locationPlaceholder": "bijv. Amsterdam",
+      "employmentType": "Dienstverband",
+      "employmentTypePlaceholder": "bijv. Fulltime",
+      "industry": "Sector",
+      "industryPlaceholder": "bijv. Tech",
+      "descriptionLabel": "Beschrijving *",
+      "descriptionPlaceholder": "Korte samenvatting van de functie...",
+      "requirementPlaceholder": "bijv. 5+ jaar React ervaring",
+      "keywordPlaceholder": "bijv. kubernetes"
+    },
+    "removeRequirement": "Eis verwijderen",
+    "removeKeyword": "Trefwoord verwijderen",
+    "removeBenefit": "Voordeel verwijderen"
   },
   "errors": {
     "unauthorized": "Je bent niet gemachtigd voor deze actie",
@@ -2178,6 +2370,104 @@
       "accentKeywords": "Accent-keywords",
       "accentKeywordsPlaceholder": "38%, Postgres, design-system",
       "accentKeywordsHint": "Komma-gescheiden, max 7. Deze worden in de accentkleur gemarkeerd in de lopende tekst."
+    }
+  },
+  "dynamicStylePicker": {
+    "title": "AI-stijlgeneratie",
+    "description": "Laat AI een unieke stijl maken op basis van de vacature en je profiel",
+    "creativityLevel": "Creativiteitsniveau",
+    "levels": {
+      "conservative": {
+        "label": "Veilig",
+        "desc": "ATS-vriendelijk, geen risico"
+      },
+      "balanced": {
+        "label": "Gebalanceerd",
+        "desc": "Professioneel met accenten"
+      },
+      "creative": {
+        "label": "Creatief",
+        "desc": "Moderne, opvallende designs"
+      },
+      "experimental": {
+        "label": "Experimenteel",
+        "desc": "Maximale visuele impact"
+      }
+    },
+    "preferencesLabel": "Stijlvoorkeuren (optioneel)",
+    "preferencesPlaceholder": "bijv. 'formeel en traditioneel', 'modern met blauwe accenten', 'minimalistisch', 'creatief en gedurfd'...",
+    "preferencesHint": "Beschrijf je gewenste stijl, kleuren of sfeer. Laat leeg om de AI te laten kiezen op basis van de vacature.",
+    "generate": "Genereer AI-stijl",
+    "initializing": "Initialiseren...",
+    "generating": "Stijl genereren...",
+    "analyzing": "AI analyseert je profiel en vacature",
+    "preview": "Voorbeeld",
+    "previewFrameTitle": "Stijlvoorbeeld",
+    "tone": {
+      "casual": "informeel",
+      "professional": "professioneel"
+    },
+    "colors": "Kleuren",
+    "colorRoles": {
+      "primary": "Primair",
+      "secondary": "Secundair",
+      "accent": "Accent",
+      "text": "Tekst",
+      "muted": "Gedempt"
+    },
+    "layout": "Layout",
+    "typography": "Typografie",
+    "fields": {
+      "theme": "Thema:",
+      "header": "Header:",
+      "sections": "Secties:",
+      "skills": "Vaardigheden:",
+      "fonts": "Lettertypen:",
+      "scale": "Schaal:",
+      "nameSize": "Naamgrootte:"
+    },
+    "styleDetails": "Stijldetails",
+    "photo": "Foto",
+    "icons": "Iconen",
+    "rounded": "Afgerond",
+    "spacing": "Witruimte: {value}",
+    "contact": "Contact: {value}",
+    "decorations": {
+      "title": "Achtergrond Decoraties",
+      "hint": "Subtiele SVG vormen als achtergrond",
+      "none": "Geen",
+      "minimal": "Minimaal",
+      "moderate": "Gemiddeld",
+      "abundant": "Veel"
+    },
+    "experienceFormat": {
+      "title": "Werkervaring Formaat",
+      "hint": "Kies tussen opsommingstekens of doorlopende tekst",
+      "bullets": "Bullets",
+      "bulletsDesc": "Opsommingstekens",
+      "paragraph": "Paragraaf",
+      "paragraphDesc": "Doorlopende tekst"
+    },
+    "regenerate": "Opnieuw genereren",
+    "useStyle": "Gebruik deze stijl",
+    "errors": {
+      "generateFailed": "Kon stijl niet genereren",
+      "noResponseBody": "Geen antwoord van de server ontvangen",
+      "generic": "Er is een fout opgetreden"
+    }
+  },
+  "avatarUpload": {
+    "title": "Profielfoto (optioneel)",
+    "alt": "Profielfoto",
+    "remove": "Foto verwijderen",
+    "upload": "Uploaden",
+    "uploadAria": "Profielfoto uploaden",
+    "hint": "Sleep een foto hierheen of klik om te uploaden. Max. 5MB.",
+    "errors": {
+      "notImage": "Upload een afbeeldingsbestand",
+      "tooLarge": "Afbeelding moet kleiner zijn dan 5MB",
+      "processFailed": "Kon de afbeelding niet verwerken",
+      "uploadFailed": "Uploaden mislukt"
     }
   }
 }
