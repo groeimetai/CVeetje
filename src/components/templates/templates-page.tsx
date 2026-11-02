@@ -32,9 +32,12 @@ import {
   Eye,
 } from 'lucide-react';
 import type { PDFTemplateSummary } from '@/types';
+import { toast } from 'sonner';
+import { PageHeader } from '@/components/brand/page-header';
 
 export function TemplatesPage() {
   const t = useTranslations('templatesPage');
+  const tHeaders = useTranslations('pageHeaders');
   const tCommon = useTranslations('common');
   const tTemplates = useTranslations('templates');
   const [personalTemplates, setPersonalTemplates] = useState<PDFTemplateSummary[]>([]);
@@ -79,12 +82,12 @@ export function TemplatesPage() {
       'application/pdf',
     ];
     if (!validTypes.includes(file.type)) {
-      alert(tTemplates('errors.invalidFileType'));
+      toast.error(tTemplates('errors.invalidFileType'));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(tTemplates('errors.fileTooLarge'));
+      toast.error(tTemplates('errors.fileTooLarge'));
       return;
     }
 
@@ -107,7 +110,7 @@ export function TemplatesPage() {
       await fetchTemplates();
     } catch (error) {
       console.error('Upload failed:', error);
-      alert(error instanceof Error ? error.message : 'Upload failed');
+      toast.error(error instanceof Error ? error.message : 'Upload failed');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -267,10 +270,11 @@ export function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('description')}</p>
-      </div>
+      <PageHeader
+        eyebrow={tHeaders('templates.eyebrow')}
+        title={tHeaders.rich('templates.title', { em: (chunks) => <em>{chunks}</em> })}
+        subtitle={t('description')}
+      />
 
       {/* Personal Templates */}
       <Card>

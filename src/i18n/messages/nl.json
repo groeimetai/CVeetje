@@ -71,7 +71,9 @@
     "adminPlatform": "Platform AI",
     "new": "Nieuw",
     "edit": "Bewerken",
-    "preview": "Voorbeeld"
+    "preview": "Voorbeeld",
+    "details": "Details",
+    "skipToContent": "Ga naar hoofdinhoud"
   },
   "auth": {
     "signIn": "Inloggen",
@@ -403,7 +405,7 @@
         "done": "Klaar",
         "skip": "—",
         "oneClick": "1-klik",
-        "oneCredit": "1 credit"
+        "generateCost": "{credits, plural, one {# credit} other {# credits}}"
       }
     },
     "statRow": {
@@ -436,19 +438,39 @@
       "newCv": "Nieuw CV",
       "newCvSub": "Begin met een vacature",
       "ago": "{time} geleden",
-      "untitled": "Naamloze CV"
+      "untitled": "Naamloze CV",
+      "relative": {
+        "justNow": "zojuist",
+        "hours": "{n} uur geleden",
+        "days": "{n, plural, one {# dag} other {# dagen}} geleden",
+        "weeks": "{n, plural, one {# week} other {# weken}} geleden",
+        "months": "{n, plural, one {# maand} other {# maanden}} geleden"
+      },
+      "status": {
+        "pdfReady": "PDF klaar",
+        "generating": "Bezig…"
+      }
     },
     "jobsFeed": {
       "title": "Voor jou",
       "subtitle": "Vacatures op basis van je profiel",
       "viewAll": "Alle vacatures",
-      "empty": "Vul je profiel in om vacatures te zien."
+      "empty": "Vul je profiel in om vacatures te zien.",
+      "quickGenerateTitle": "Genereer CV voor deze vacature",
+      "quickGenerateLabel": "Genereer CV voor {title}"
     },
     "activity": {
       "title": "Activiteit",
       "subtitle": "Laatste 7 dagen",
       "viewAll": "Alles",
-      "empty": "Nog geen activiteit deze week."
+      "empty": "Nog geen activiteit deze week.",
+      "cvPdfReady": "CV PDF klaar",
+      "cvGenerated": "Nieuw CV gegenereerd",
+      "applicationSent": "Sollicitatie verstuurd",
+      "statusChanged": "Status: {status}",
+      "timeMinutes": "{n}m",
+      "timeHours": "{n}u",
+      "timeDays": "{n}d"
     },
     "stats": {
       "totalCvs": "Totaal CVs",
@@ -486,7 +508,15 @@
       "make": "Maken",
       "apply": "Solliciteren",
       "account": "Account"
-    }
+    },
+    "expand": "Uitvouwen",
+    "collapse": "Inklappen",
+    "expandSidebar": "Zijbalk uitvouwen",
+    "collapseSidebar": "Zijbalk inklappen",
+    "navLabel": "Dashboardnavigatie",
+    "openMenu": "Menu openen",
+    "freeCreditsRich": "<strong>{count}</strong> gratis",
+    "purchasedCreditsRich": "<strong>{count}</strong> gekocht"
   },
   "credits": {
     "title": "Credits",
@@ -714,7 +744,8 @@
         "addCertification": "Certificaat toevoegen",
         "addProject": "Project toevoegen",
         "addInterest": "Interesse toevoegen"
-      }
+      },
+      "createCv": "CV maken"
     },
     "enrich": {
       "title": "Verrijken met AI",
@@ -746,6 +777,13 @@
       "name": "Naam",
       "issuer": "Uitgever",
       "error": "Verrijken mislukt"
+    },
+    "card": {
+      "experienceCount": "{count, plural, one {# ervaring} other {# ervaringen}}",
+      "moreActions": "Acties voor {name}",
+      "load": "Laden",
+      "noHeadline": "Geen functietitel",
+      "lastUpdated": "Laatst bijgewerkt: {date}"
     }
   },
   "linkedInExport": {
@@ -1032,13 +1070,28 @@
       "balance": "{credits} credit(s) beschikbaar",
       "insufficient": "Onvoldoende credits voor deze actie",
       "buyMore": "Koop meer credits",
-      "saveTip": "Bespaar credits door je eigen API key toe te voegen"
+      "saveTip": "Bespaar credits door je eigen API key toe te voegen",
+      "estimate": "een CV met vacature kost ca. {credits} credits"
     },
     "generating": {
       "title": "Je CV wordt gegenereerd...",
       "analyzing": "Je profiel en vacature worden geanalyseerd...",
       "creating": "Je gepersonaliseerde CV wordt gemaakt...",
-      "aiDisclosure": "Je CV wordt gegenereerd met behulp van AI. Controleer de inhoud voordat je downloadt."
+      "aiDisclosure": "Je CV wordt gegenereerd met behulp van AI. Controleer de inhoud voordat je downloadt.",
+      "phases": [
+        "Profiel en vacature analyseren",
+        "Ervaring afstemmen op de vacature",
+        "Inhoud schrijven",
+        "Controleren op juistheid",
+        "Opmaak toepassen"
+      ],
+      "templatePhases": [
+        "Template-structuur lezen",
+        "Velden koppelen aan je profiel",
+        "Template invullen",
+        "Document opmaken"
+      ],
+      "duration": "Dit duurt meestal 30–90 seconden."
     },
     "error": {
       "title": "Er ging iets mis",
@@ -1053,7 +1106,16 @@
       "saved": "Opgeslagen",
       "resume": "Doorgaan",
       "startNew": "Opnieuw Beginnen"
-    }
+    },
+    "phases": {
+      "profile": "Profiel",
+      "job": "Vacature",
+      "match": "Match",
+      "design": "Ontwerp",
+      "result": "Resultaat"
+    },
+    "phaseSkipped": "overgeslagen",
+    "progressLabel": "Voortgang CV maken"
   },
   "requiredItems": {
     "title": "Wat moet er beslist op je CV?",
@@ -1073,7 +1135,8 @@
     "summaryEmpty": "Niets aangevinkt — de AI kiest zelf wat er op het CV komt op basis van relevantie voor de vacature.",
     "back": "Terug",
     "skip": "Overslaan",
-    "continue": "Doorgaan"
+    "continue": "Doorgaan",
+    "present": "heden"
   },
   "fitAnalysis": {
     "title": "Fit Analyse",
@@ -1099,7 +1162,20 @@
     "advice": "Advies",
     "confirmProceedWarning": "Dit profiel heeft significante mismatches met de vacature. Je kunt nog steeds een CV genereren, maar de kans op succes is mogelijk lager. Wil je toch doorgaan?",
     "criticalWarningsNote": "Let op: er zijn kritieke aandachtspunten gevonden",
-    "aiDisclaimer": "Deze analyse is een AI-inschatting en geen garantie van je kansen."
+    "aiDisclaimer": "Deze analyse is een AI-inschatting en geen garantie van je kansen.",
+    "verdicts": {
+      "excellent": "Uitstekende match",
+      "good": "Goede match",
+      "moderate": "Matige match",
+      "challenging": "Uitdagende match",
+      "unlikely": "Onwaarschijnlijke match",
+      "unknown": "Onbekend"
+    },
+    "errors": {
+      "couldNotAnalyze": "Kon fit-analyse niet uitvoeren",
+      "analysisFailed": "Analyse mislukt",
+      "generic": "Er ging iets mis"
+    }
   },
   "templateStyle": {
     "title": "Stijl van Template",
@@ -1157,7 +1233,92 @@
     "viewMode": "Weergave",
     "singlePage": "Enkele Pagina",
     "allPages": "Alle Pagina's",
-    "creditCost": "Download gratis"
+    "creditCost": "Download gratis",
+    "title": "CV Preview",
+    "renderError": "Fout bij renderen van de preview",
+    "disputeTooltip": "Klopt deze CV niet? Vraag een heroverweging aan.",
+    "openAssistant": "Open CV Assistent",
+    "closeAssistant": "Sluit CV Assistent",
+    "tweaksTooltip": "Tweaks — kleuren, fonts en stijl aanpassen",
+    "fullscreen": "Volledig scherm",
+    "exitFullscreen": "Volledig scherm sluiten",
+    "overview": "Overzicht",
+    "tldr": "TLDR",
+    "profile": "Profiel",
+    "labelName": "Naam:",
+    "labelJobTitle": "Functie:",
+    "labelEmail": "E-mail:",
+    "labelLocation": "Locatie:",
+    "labelCompany": "Bedrijf:",
+    "labelIndustry": "Branche:",
+    "labelTheme": "Thema:",
+    "labelIndustryFit": "Branche-fit:",
+    "labelRecipe": "Recipe:",
+    "labelShape": "Vorm:",
+    "labelDensity": "Dichtheid:",
+    "vacancy": "Vacature",
+    "salaryEstimate": "Salarisinschatting",
+    "confidence": "{level, select, high {Hoge zekerheid} medium {Gemiddelde zekerheid} low {Lage zekerheid} other {Zekerheid: {level}}}",
+    "keywords": "Keywords",
+    "moreCount": "+{count} meer",
+    "style": "Stijl",
+    "generatedContent": "Gegenereerde content",
+    "skillsCount": "{count, plural, one {# vaardigheid} other {# vaardigheden}}",
+    "experienceCount": "{count, plural, one {# ervaring} other {# ervaringen}}",
+    "educationCount": "{count, plural, one {# opleiding} other {# opleidingen}}",
+    "languagesCount": "{count, plural, one {# taal} other {# talen}}",
+    "tabPreview": "Preview",
+    "tabStructure": "Structuur",
+    "tabStructureShort": "Struct.",
+    "tabStyleDetails": "Stijldetails",
+    "editsNotice": "Je hebt wijzigingen aangebracht aan de CV-inhoud. Deze worden meegenomen bij het downloaden.",
+    "editTipTitle": "Tip: tekst wijzigen?",
+    "editTipBody": "Klik direct op de tekst in de preview (naam, titel, bullets, samenvatting…) en typ je aanpassing. Gebruik dit paneel voor structurele edits zoals items toevoegen of verwijderen. Voor kleuren, fonts en stijl: gebruik de <strong>Tweaks</strong>-knop rechtsboven.",
+    "resetToOriginal": "Reset naar origineel",
+    "viewPreview": "Bekijk preview",
+    "themeColors": "Thema & kleuren",
+    "theme": "Thema",
+    "industryFit": "Branche-fit",
+    "colorPrimary": "Primair",
+    "colorSecondary": "Secundair",
+    "colorAccent": "Accent",
+    "colorText": "Tekst",
+    "colorMuted": "Gedempt",
+    "typography": "Typografie",
+    "fontPairing": "Lettertypecombinatie",
+    "scale": "Schaal",
+    "nameSize": "Naamgrootte",
+    "bodySize": "Tekstgrootte",
+    "layout": "Layout",
+    "header": "Header",
+    "sections": "Secties",
+    "spacing": "Witruimte",
+    "skills": "Vaardigheden",
+    "features": "Functies",
+    "photo": "Foto",
+    "icons": "Iconen",
+    "roundedCorners": "Afgeronde hoeken",
+    "on": "Aan",
+    "off": "Uit",
+    "styleRationale": "Stijlonderbouwing",
+    "recipeNotFound": "Recipe <code>{id}</code> niet gevonden in registry.",
+    "recipePalette": "Recipe & palet",
+    "recipe": "Recipe",
+    "route": "Route",
+    "layoutTypography": "Layout & typografie",
+    "shape": "Vorm",
+    "density": "Dichtheid",
+    "font": "Lettertype",
+    "pageMode": "Paginamodus",
+    "recipeBrief": "Recipe-brief",
+    "generatingPdf": "PDF genereren...",
+    "a4Pages": "A4-pagina's",
+    "a4PagesDesc": "Standaard PDF met meerdere pagina's",
+    "singleLongPage": "Enkele lange pagina",
+    "singleLongPageDesc": "Eén doorlopende pagina zonder witruimte",
+    "regenerating": "Regenereren...",
+    "newVacancy": "Nieuwe vacature",
+    "newVacancyShort": "Nieuw"
   },
   "templatePreview": {
     "title": "CV Klaar",
@@ -1172,7 +1333,9 @@
     "downloading": "Downloaden...",
     "changeTemplate": "Andere Template",
     "newVacancy": "Nieuwe Vacature",
-    "insufficientCredits": "Je hebt niet genoeg credits om te downloaden."
+    "insufficientCredits": "Je hebt niet genoeg credits om te downloaden.",
+    "assistant": "Assistent",
+    "loadError": "Kon document niet laden"
   },
   "cvList": {
     "title": "Mijn CVs",
@@ -1201,7 +1364,10 @@
       "newProfile": "Nieuw profiel invoeren",
       "loading": "Profielen laden...",
       "load": "Laden",
-      "experiences": "ervaringen"
+      "experiences": "ervaringen",
+      "experienceCount": "{count, plural, one {# ervaring} other {# ervaringen}}",
+      "setDefault": "Als standaard instellen",
+      "actions": "Profielacties voor {name}"
     },
     "addNewBelow": "Of voeg hieronder nieuw profiel informatie toe",
     "addFile": "Bestand toevoegen",
@@ -1231,7 +1397,11 @@
       "addSource": "Voeg minimaal 1 bron toe",
       "noNameFound": "Kon geen naam vinden. Controleer of je de volledige profielinformatie hebt toegevoegd.",
       "configureApiKey": "Configureer je API key in Instellingen om bestanden te verwerken.",
-      "noProfileInfo": "Kon geen profiel informatie extraheren. Probeer andere bronnen."
+      "noProfileInfo": "Kon geen profiel informatie extraheren. Probeer andere bronnen.",
+      "processingFailed": "Verwerking mislukt",
+      "invalidFileType": "{name}: Alleen PDF of afbeeldingen (PNG, JPG, WebP) toegestaan",
+      "fileTooLarge": "{name}: Bestand is te groot. Maximum is 10MB.",
+      "readFailed": "Kon bestand niet lezen"
     },
     "editProfile": {
       "title": "Profiel Bewerken",
@@ -1245,7 +1415,53 @@
       "educationNum": "Opleiding {num}",
       "skillPlaceholder": "Vaardigheid",
       "save": "Opslaan",
-      "saving": "Opslaan..."
+      "saving": "Opslaan...",
+      "description": "Pas de geëxtraheerde informatie aan indien nodig",
+      "basicInfo": "Basis Gegevens",
+      "languages": "Talen",
+      "certifications": "Certificaten",
+      "addLanguage": "Toevoegen",
+      "addCertification": "Toevoegen",
+      "removeExperience": "Ervaring {num} verwijderen",
+      "removeEducation": "Opleiding {num} verwijderen",
+      "removeSkill": "Vaardigheid verwijderen",
+      "removeLanguage": "Taal verwijderen",
+      "removeCertification": "Certificaat verwijderen",
+      "fields": {
+        "name": "Naam",
+        "namePlaceholder": "Volledige naam",
+        "headline": "Titel / Headline",
+        "headlinePlaceholder": "Functietitel",
+        "location": "Locatie",
+        "locationPlaceholder": "Amsterdam, Nederland",
+        "about": "Over mij",
+        "aboutPlaceholder": "Korte beschrijving...",
+        "jobTitle": "Functie",
+        "jobTitlePlaceholder": "Software Developer",
+        "company": "Bedrijf",
+        "companyPlaceholder": "Bedrijfsnaam",
+        "cityPlaceholder": "Amsterdam",
+        "startDate": "Startdatum",
+        "startDatePlaceholder": "jan 2020",
+        "endDate": "Einddatum",
+        "endDatePlaceholder": "heden",
+        "currentRole": "Huidige functie",
+        "description": "Beschrijving",
+        "descriptionPlaceholder": "Beschrijving van werkzaamheden...",
+        "school": "School / Universiteit",
+        "schoolPlaceholder": "Universiteit van Amsterdam",
+        "degree": "Diploma",
+        "degreePlaceholder": "Bachelor / Master",
+        "fieldOfStudy": "Studierichting",
+        "fieldOfStudyPlaceholder": "Informatica",
+        "startYear": "Startjaar",
+        "endYear": "Eindjaar",
+        "languagePlaceholder": "Nederlands",
+        "proficiencyPlaceholder": "Moedertaal",
+        "certNamePlaceholder": "Certificaat naam",
+        "issuerPlaceholder": "Uitgever",
+        "datePlaceholder": "Datum"
+      }
     },
     "processed": {
       "title": "Profiel Verwerkt",
@@ -1253,11 +1469,41 @@
       "experienceCount": "{count} Werkervaring(en)",
       "educationCount": "{count} Opleiding(en)",
       "skillCount": "{count} Vaardighe(i)d(en)",
-      "experiencePreview": "Werkervaring Preview"
+      "experiencePreview": "Werkervaring Preview",
+      "name": "Naam",
+      "headline": "Titel",
+      "badges": {
+        "experience": "{count, plural, one {# Werkervaring} other {# Werkervaringen}}",
+        "education": "{count, plural, one {# Opleiding} other {# Opleidingen}}",
+        "skills": "{count, plural, one {# Vaardigheid} other {# Vaardigheden}}",
+        "languages": "{count, plural, one {# Taal} other {# Talen}}",
+        "projects": "{count, plural, one {# Project} other {# Projecten}}",
+        "interests": "{count, plural, one {# Interesse} other {# Interesses}}"
+      },
+      "experienceAt": "<strong>{jobTitle}</strong> bij {company}",
+      "morePositions": "+{count} meer posities",
+      "projectsPreview": "Projecten Preview",
+      "moreProjects": "+{count} meer projecten",
+      "photoHint": "Je foto wordt getoond in de CV als de gekozen stijl dit ondersteunt.",
+      "editInProfiles": "Bewerk in profielen",
+      "startOver": "Opnieuw"
     },
     "contactInfo": {
       "title": "Contactgegevens voor je CV",
-      "description": "LinkedIn exporteert geen contactgegevens - vul deze hieronder in!"
+      "description": "LinkedIn exporteert geen contactgegevens - vul deze hieronder in!",
+      "email": "Email *",
+      "emailPlaceholder": "naam@email.com",
+      "phone": "Telefoon",
+      "phonePlaceholder": "+31 6 12345678",
+      "linkedinUrl": "LinkedIn URL",
+      "linkedinPlaceholder": "linkedin.com/in/jouw-naam",
+      "website": "Website / Portfolio",
+      "websitePlaceholder": "jouwwebsite.nl",
+      "github": "GitHub (optioneel)",
+      "githubPlaceholder": "github.com/username",
+      "location": "Locatie",
+      "locationPlaceholder": "Amsterdam, Nederland",
+      "emailRequired": "* Email is verplicht voor een professionele CV"
     },
     "saveProfile": {
       "title": "Profiel Opslaan",
@@ -1269,7 +1515,10 @@
       "saving": "Opslaan...",
       "saveButton": "Profiel opslaan",
       "updateButton": "Profiel bijwerken",
-      "saveAsNew": "Als nieuw opslaan"
+      "saveAsNew": "Als nieuw opslaan",
+      "nameLabel": "Naam *",
+      "descriptionLabel": "Beschrijving (optioneel)",
+      "descriptionPlaceholder": "bijv. Gericht op ServiceNow implementatie projecten..."
     },
     "enrichProfile": {
       "title": "Profiel Verrijken met AI",
@@ -1295,6 +1544,25 @@
       "copied": "Gekopieerd!",
       "copy": "Kopiëren",
       "credits": "credits"
+    },
+    "unknownModel": "Onbekend",
+    "fileUploadUnavailable": "Bestand uploaden niet beschikbaar",
+    "modelNoVision": "Je geselecteerde AI model ({model}) ondersteunt geen afbeelding/PDF input.",
+    "apiKeyRequired": "API key vereist",
+    "closeTextInput": "Tekstinvoer sluiten",
+    "fileTypesHint": "PDF, PNG, JPG, WebP (max 10MB per bestand)",
+    "addedSourcesCount": "Toegevoegde bronnen ({count})",
+    "fileTypePdf": "PDF",
+    "fileTypeImage": "Afbeelding",
+    "removeSource": "Bron verwijderen",
+    "estimatedTokens": "Geschatte tokens",
+    "estimatedCost": "Geschatte kosten",
+    "processInfo": "Informatie verwerken",
+    "processingInfo": "Informatie verwerken...",
+    "largeRequestDialog": {
+      "title": "Grote Request",
+      "description": "Dit is een grote request met geschatte {tokens} tokens ({cost} kosten).",
+      "confirm": "Ja, verwerken"
     }
   },
   "jobInput": {
@@ -1310,7 +1578,8 @@
       "couldNotAnalyze": "Kon vacature niet analyseren",
       "somethingWentWrong": "Er ging iets mis",
       "titleRequired": "Functietitel is verplicht",
-      "descriptionRequired": "Geef meer details over de functie"
+      "descriptionRequired": "Geef meer details over de functie",
+      "textTooShort": "Plak een volledige vacaturetekst (minimaal 50 tekens)"
     },
     "parsed": {
       "title": "Vacature Analyse",
@@ -1330,7 +1599,79 @@
       "addRequirement": "Eis toevoegen",
       "addKeyword": "Trefwoord toevoegen",
       "addBenefit": "Voordeel toevoegen"
-    }
+    },
+    "urlLabel": "Vacature URL (optioneel)",
+    "urlHint": "We bewaren de link bij je CV, zodat je later de originele vacature kunt terugvinden. Als de link openbaar bereikbaar is, halen we automatisch de volledige tekst op.",
+    "pasteHint": "Je kunt de hele vacaturetekst plakken - inclusief bedrijfsinfo, vereisten, en extraatjes",
+    "preview": {
+      "title": "Vacature geanalyseerd",
+      "description": "Controleer de geëxtraheerde informatie en ga door of pas aan",
+      "startOver": "Opnieuw",
+      "originalVacancy": "Originele vacature",
+      "summary": "Samenvatting"
+    },
+    "adzuna": {
+      "title": "Adzuna geeft maar een korte preview van deze vacature",
+      "body": "De AI maakt een veel scherper CV met de volledige vacaturetekst. Open de werkgever-site, kopieer de hele advertentie en plak hem hieronder.",
+      "openSite": "Open vacature-site",
+      "pasteFull": "Volledige tekst plakken"
+    },
+    "salary": {
+      "aiEstimate": "AI Salaris Inschatting",
+      "perYear": "/jaar",
+      "level": "{level} niveau",
+      "reasoning": "Onderbouwing",
+      "marketInsight": "Marktinzicht",
+      "disclaimer": "* Dit is een AI-inschatting op basis van functie, industrie en locatie. Werkelijke salarissen kunnen afwijken.",
+      "range": "{currency} {min} - {max}{period}",
+      "from": "Vanaf {currency} {min}{period}",
+      "to": "Tot {currency} {max}{period}",
+      "periodSuffix": {
+        "yearly": "/jaar",
+        "monthly": "/maand",
+        "hourly": "/uur"
+      }
+    },
+    "compensation": {
+      "title": "Compensatie & Secundaire Voorwaarden",
+      "filled": "Ingevuld",
+      "salary": "Salaris",
+      "benefits": "Secundaire voorwaarden",
+      "bonus": "Bonus",
+      "notes": "Notities",
+      "emptyHint": "Klik op \"Bewerken\" om compensatie details toe te voegen",
+      "editTitle": "Compensatie & Voorwaarden (optioneel)",
+      "salaryMin": "Minimum Salaris",
+      "salaryMax": "Maximum Salaris",
+      "currency": "Valuta",
+      "period": "Periode",
+      "perYear": "Per jaar",
+      "perMonth": "Per maand",
+      "perHour": "Per uur",
+      "benefitPlaceholder": "bijv. Pensioenregeling, Lease auto, 30 vakantiedagen",
+      "bonusOptional": "Bonus (optioneel)",
+      "bonusPlaceholder": "bijv. 13e maand, prestatiebonus tot 10%",
+      "notesPlaceholder": "bijv. Afhankelijk van ervaring"
+    },
+    "edit": {
+      "title": "Vacature bewerken",
+      "description": "Pas de geëxtraheerde informatie aan indien nodig",
+      "titleLabel": "Functietitel *",
+      "titlePlaceholder": "bijv. Senior Software Engineer",
+      "companyPlaceholder": "bijv. TechCorp",
+      "locationPlaceholder": "bijv. Amsterdam",
+      "employmentType": "Dienstverband",
+      "employmentTypePlaceholder": "bijv. Fulltime",
+      "industry": "Sector",
+      "industryPlaceholder": "bijv. Tech",
+      "descriptionLabel": "Beschrijving *",
+      "descriptionPlaceholder": "Korte samenvatting van de functie...",
+      "requirementPlaceholder": "bijv. 5+ jaar React ervaring",
+      "keywordPlaceholder": "bijv. kubernetes"
+    },
+    "removeRequirement": "Eis verwijderen",
+    "removeKeyword": "Trefwoord verwijderen",
+    "removeBenefit": "Voordeel verwijderen"
   },
   "errors": {
     "unauthorized": "Je bent niet gemachtigd voor deze actie",
@@ -1876,6 +2217,481 @@
         "title": "9. Contact en Vragen",
         "content": "Heb je vragen over hoe CVeetje AI gebruikt? Neem contact met ons op:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nNederland\n\nKvK-nummer: 90102304\nBTW-nummer: NL004787305B79\nE-mail: info@groeimetai.io\n\nWij streven ernaar binnen 5 werkdagen te reageren."
       }
+    }
+  },
+  "commandPalette": {
+    "dialogLabel": "Zoeken",
+    "placeholder": "Zoek CV's, vacatures, profielen…",
+    "close": "Sluiten",
+    "searching": "Bezig met zoeken…",
+    "noResults": "Geen resultaten.",
+    "untitledCv": "Naamloos CV",
+    "hintNavigate": "navigeren",
+    "hintOpen": "openen",
+    "hintClose": "sluiten",
+    "groups": {
+      "navigation": "Navigatie",
+      "admin": "Beheer",
+      "cvs": "CV's",
+      "profiles": "Profielen",
+      "jobs": "Vacatures"
+    }
+  },
+  "cvContentEditor": {
+    "title": "Bewerk CV-inhoud",
+    "clickToEdit": "Klik op tekst om te bewerken",
+    "changeColor": "Kleur aanpassen",
+    "resetColor": "Kleur resetten",
+    "personalDetails": "Persoonlijke gegevens",
+    "name": "Naam",
+    "headline": "Functietitel / headline",
+    "contactDetails": "Contactgegevens",
+    "colors": "Kleuren",
+    "colorPrimary": "Primair",
+    "colorPrimaryDesc": "Naam, koppen en accenten",
+    "colorSecondary": "Secundair",
+    "colorSecondaryDesc": "Achtergrond en subtiele elementen",
+    "colorAccent": "Accent",
+    "colorAccentDesc": "Links en highlights",
+    "colorText": "Tekst",
+    "colorTextDesc": "Kleur van de hoofdtekst",
+    "colorMuted": "Gedempte tekst",
+    "colorMutedDesc": "Secundaire tekst en labels",
+    "contrastNote": "Let op: zorg voor voldoende contrast tussen tekst en achtergrond voor leesbaarheid.",
+    "summary": "Samenvatting",
+    "experience": "Werkervaring",
+    "highlights": "Highlights:",
+    "education": "Opleiding",
+    "skills": "Vaardigheden",
+    "technical": "Technisch:",
+    "softSkills": "Soft skills:",
+    "skillsTip": "Tip: vaardigheden kun je aanpassen via de stijlgenerator-stap",
+    "projects": "Projecten",
+    "description": "Omschrijving:",
+    "technologies": "Technologieën (komma-gescheiden):",
+    "add": "+ Toevoegen",
+    "removeHighlight": "Verwijder highlight",
+    "addHighlight": "+ Highlight toevoegen"
+  },
+  "cvChat": {
+    "title": "CV Assistent",
+    "busy": "Bezig...",
+    "clearChat": "Chat wissen",
+    "welcome": "Hoi! Ik ben je CV-assistent. Ik kan je helpen om je CV te verfijnen. Vertel me wat je wilt aanpassen, of kies een snelle actie hieronder.",
+    "quickActions": {
+      "shorterSummary": {
+        "label": "Samenvatting korter",
+        "prompt": "Maak mijn samenvatting korter en krachtiger."
+      },
+      "moreNumbers": {
+        "label": "Meer cijfers",
+        "prompt": "Voeg meer cijfers en statistieken toe aan mijn werkervaring bullets."
+      },
+      "orderSkills": {
+        "label": "Skills ordenen",
+        "prompt": "Orden mijn technische skills op relevantie voor de vacature."
+      },
+      "improveHeadline": {
+        "label": "Headline verbeteren",
+        "prompt": "Verbeter mijn headline zodat die beter aansluit bij de vacature."
+      }
+    },
+    "tools": {
+      "update_summary": "Samenvatting bijgewerkt",
+      "update_headline": "Headline bijgewerkt",
+      "update_experience": "Werkervaring bijgewerkt",
+      "update_experience_highlight": "Highlight bijgewerkt",
+      "add_experience_highlight": "Highlight toegevoegd",
+      "remove_experience_highlight": "Highlight verwijderd",
+      "update_education": "Opleiding bijgewerkt",
+      "add_skill": "Vaardigheid toegevoegd",
+      "remove_skill": "Vaardigheid verwijderd",
+      "reorder_skills": "Vaardigheden herordend",
+      "update_project": "Project bijgewerkt",
+      "update_project_highlight": "Projecthighlight bijgewerkt",
+      "add_project_highlight": "Projecthighlight toegevoegd",
+      "remove_project_highlight": "Projecthighlight verwijderd",
+      "update_header_variant": "Headerstijl gewijzigd",
+      "update_colors": "Kleuren aangepast",
+      "update_font_pairing": "Lettertype gewijzigd",
+      "update_spacing": "Witruimte aangepast",
+      "update_section_style": "Sectiestijl gewijzigd",
+      "update_layout": "Layout gewijzigd",
+      "update_contact_layout": "Contactlayout gewijzigd",
+      "update_skills_display": "Skillsweergave gewijzigd",
+      "update_accent_style": "Accentstijl gewijzigd",
+      "update_name_style": "Naamstijl gewijzigd",
+      "update_skill_tag_style": "Skill-tagstijl gewijzigd",
+      "update_scale": "Tekstschaal gewijzigd",
+      "toggle_feature": "Feature aan/uit"
+    },
+    "changeApplied": "Aanpassing toegepast",
+    "thinking": "Denken...",
+    "genericError": "Er is een fout opgetreden. Probeer het opnieuw.",
+    "creditWarning": "Je volgende bericht kost 1 extra credit.",
+    "placeholder": "Typ je vraag of verzoek...",
+    "send": "Versturen",
+    "shiftEnterHint": "Shift+Enter voor nieuwe regel",
+    "charCount": "{used}k / 40k tekens"
+  },
+  "templateChat": {
+    "title": "Template Assistent",
+    "updating": "Bijwerken...",
+    "clearChat": "Chat wissen",
+    "welcome": "Hoi! Ik kan je helpen de ingevulde template aan te passen. Vertel me wat je wilt veranderen, of kies een snelle actie hieronder.",
+    "howItWorksTitle": "Hoe het werkt:",
+    "howItWorksBody": "Elke aanpassing wordt direct toegepast op de template. Je kunt meerdere aanpassingen na elkaar doen - ze worden gecombineerd.",
+    "quickActions": {
+      "shorter": "Korter & krachtiger",
+      "moreNumbers": "Meer cijfers",
+      "actionVerbs": "Meer actiewoorden",
+      "focusOnJob": "Focus op vacature"
+    },
+    "updatingTemplate": "Template wordt bijgewerkt...",
+    "placeholder": "Beschrijf je aanpassing...",
+    "send": "Versturen",
+    "shiftEnterHint": "Shift+Enter voor nieuwe regel"
+  },
+  "designTweaks": {
+    "v1Title": "Tweaks",
+    "v1Description": "Pas kleuren, typografie en stijl direct aan — preview update live.",
+    "v2Title": "Stijl tweaken",
+    "autoSaveNote": "Wijzigingen worden automatisch opgeslagen.",
+    "reset": "Reset",
+    "resetTooltip": "Terug naar originele AI-stijl",
+    "resetToOriginalToast": "Teruggezet naar originele AI-stijl",
+    "resetToast": "Stijl teruggezet naar AI-versie",
+    "saveFailedToast": "Tweak kon niet worden opgeslagen — probeer opnieuw",
+    "dirty": "Wijziging…",
+    "saving": "Opslaan…",
+    "saved": "Opgeslagen",
+    "savedCheck": "Opgeslagen ✓",
+    "saveError": "Fout bij opslaan",
+    "tabs": {
+      "colors": "Kleuren",
+      "typography": "Typografie",
+      "layout": "Layout",
+      "content": "Inhoud"
+    },
+    "tabVisual": "Visueel",
+    "tabColor": "Kleur",
+    "tabContent": "Inhoud",
+    "recipeNotFound": "Recipe <code>{id}</code> niet gevonden in registry.",
+    "visualDirection": "Visuele richting",
+    "font": "Lettertype",
+    "recipeDefaultFont": "Recipe-standaard ({font})",
+    "singleLongPdf": "PDF als één lange pagina",
+    "singleLongPdfHint": "Aan: één lange pagina, geen pagina-einden. Uit: standaard A4-pagina's.",
+    "backToAiVersion": "Terug naar AI-versie",
+    "roles": {
+      "ink": "Inkt (tekst)",
+      "paper": "Papier (achtergrond)",
+      "accent": "Accent",
+      "muted": "Subtiele tekst",
+      "surface": "Oppervlak (sidebar/secties)"
+    },
+    "emphasis": {
+      "nameTagline": "Naam-tagline",
+      "nameTaglineHint": "Monocle-stijl, 2-6 woorden onder je naam (bv. 'Strateeg, schrijver, tuinier')",
+      "dropCap": "Drop-cap-letter",
+      "dropCapHint": "Eén karakter — de grote initiaal in je samenvatting",
+      "pullQuote": "Pull-quote-tekst",
+      "pullQuoteHint": "Eén zin uit je werkervaring die uitgelicht wordt",
+      "pullQuoteAttribution": "Pull-quote-attributie",
+      "pullQuoteAttributionHint": "Bv. '— Lead Engineer, Adyen'",
+      "posterLine": "Poster-zin",
+      "posterLineHint": "De grote zin in posterformaat (bij manifesto-/poster-vorm)",
+      "heroNumeral": "Hero-cijfer",
+      "heroNumeralHint": "Korte tekst (bv. '8' voor 8 jaar ervaring)",
+      "accentKeywords": "Accent-keywords",
+      "accentKeywordsPlaceholder": "38%, Postgres, design-system",
+      "accentKeywordsHint": "Komma-gescheiden, max 7. Deze worden in de accentkleur gemarkeerd in de lopende tekst."
+    }
+  },
+  "dynamicStylePicker": {
+    "title": "AI-stijlgeneratie",
+    "description": "Laat AI een unieke stijl maken op basis van de vacature en je profiel",
+    "creativityLevel": "Creativiteitsniveau",
+    "levels": {
+      "conservative": {
+        "label": "Veilig",
+        "desc": "ATS-vriendelijk, geen risico"
+      },
+      "balanced": {
+        "label": "Gebalanceerd",
+        "desc": "Professioneel met accenten"
+      },
+      "creative": {
+        "label": "Creatief",
+        "desc": "Moderne, opvallende designs"
+      },
+      "experimental": {
+        "label": "Experimenteel",
+        "desc": "Maximale visuele impact"
+      }
+    },
+    "preferencesLabel": "Stijlvoorkeuren (optioneel)",
+    "preferencesPlaceholder": "bijv. 'formeel en traditioneel', 'modern met blauwe accenten', 'minimalistisch', 'creatief en gedurfd'...",
+    "preferencesHint": "Beschrijf je gewenste stijl, kleuren of sfeer. Laat leeg om de AI te laten kiezen op basis van de vacature.",
+    "generate": "Genereer AI-stijl",
+    "initializing": "Initialiseren...",
+    "generating": "Stijl genereren...",
+    "analyzing": "AI analyseert je profiel en vacature",
+    "preview": "Voorbeeld",
+    "previewFrameTitle": "Stijlvoorbeeld",
+    "tone": {
+      "casual": "informeel",
+      "professional": "professioneel"
+    },
+    "colors": "Kleuren",
+    "colorRoles": {
+      "primary": "Primair",
+      "secondary": "Secundair",
+      "accent": "Accent",
+      "text": "Tekst",
+      "muted": "Gedempt"
+    },
+    "layout": "Layout",
+    "typography": "Typografie",
+    "fields": {
+      "theme": "Thema:",
+      "header": "Header:",
+      "sections": "Secties:",
+      "skills": "Vaardigheden:",
+      "fonts": "Lettertypen:",
+      "scale": "Schaal:",
+      "nameSize": "Naamgrootte:"
+    },
+    "styleDetails": "Stijldetails",
+    "photo": "Foto",
+    "icons": "Iconen",
+    "rounded": "Afgerond",
+    "spacing": "Witruimte: {value}",
+    "contact": "Contact: {value}",
+    "decorations": {
+      "title": "Achtergrond Decoraties",
+      "hint": "Subtiele SVG vormen als achtergrond",
+      "none": "Geen",
+      "minimal": "Minimaal",
+      "moderate": "Gemiddeld",
+      "abundant": "Veel"
+    },
+    "experienceFormat": {
+      "title": "Werkervaring Formaat",
+      "hint": "Kies tussen opsommingstekens of doorlopende tekst",
+      "bullets": "Bullets",
+      "bulletsDesc": "Opsommingstekens",
+      "paragraph": "Paragraaf",
+      "paragraphDesc": "Doorlopende tekst"
+    },
+    "regenerate": "Opnieuw genereren",
+    "useStyle": "Gebruik deze stijl",
+    "errors": {
+      "generateFailed": "Kon stijl niet genereren",
+      "noResponseBody": "Geen antwoord van de server ontvangen",
+      "generic": "Er is een fout opgetreden"
+    }
+  },
+  "avatarUpload": {
+    "title": "Profielfoto (optioneel)",
+    "alt": "Profielfoto",
+    "remove": "Foto verwijderen",
+    "upload": "Uploaden",
+    "uploadAria": "Profielfoto uploaden",
+    "hint": "Sleep een foto hierheen of klik om te uploaden. Max. 5MB.",
+    "errors": {
+      "notImage": "Upload een afbeeldingsbestand",
+      "tooLarge": "Afbeelding moet kleiner zijn dan 5MB",
+      "processFailed": "Kon de afbeelding niet verwerken",
+      "uploadFailed": "Uploaden mislukt"
+    }
+  },
+  "cvDetail": {
+    "fitContextTitle": "Sollicitatie-context",
+    "originalVacancy": "Originele vacature",
+    "bonusSkills": "Bonus",
+    "verdict": {
+      "excellent": "Uitstekende match",
+      "good": "Goede match",
+      "moderate": "Matige match",
+      "challenging": "Uitdagende match",
+      "unlikely": "Onwaarschijnlijke match",
+      "unknown": "Onbekend"
+    },
+    "errors": {
+      "saveFailed": "Wijzigingen opslaan mislukt",
+      "loadFailed": "CV laden mislukt",
+      "pdfFailed": "PDF genereren mislukt",
+      "generic": "Er is een fout opgetreden"
+    },
+    "notFound": "CV niet gevonden",
+    "backToCvs": "Terug naar CV's",
+    "details": {
+      "title": "CV-details",
+      "notGenerated": "Deze CV is nog niet gegenereerd.",
+      "name": "Naam",
+      "headline": "Functietitel",
+      "targetJob": "Beoogde functie"
+    }
+  },
+  "applications": {
+    "status": {
+      "applied": "Verzonden",
+      "interview": "Gesprek",
+      "offer": "Aanbod",
+      "accepted": "Aangenomen",
+      "rejected": "Afgewezen",
+      "withdrawn": "Ingetrokken"
+    },
+    "statusLabel": "Status van sollicitatie",
+    "errors": {
+      "loadFailed": "Sollicitaties laden mislukt",
+      "saveFailed": "Opslaan mislukt. Probeer het opnieuw.",
+      "deleteFailed": "Verwijderen mislukt. Probeer het opnieuw."
+    },
+    "confirmDelete": "Sollicitatie verwijderen uit je overzicht?",
+    "empty": {
+      "title": "Je hebt nog geen sollicitaties verzonden.",
+      "description": "Ga naar de vacaturebank, kies een vacature en verstuur je eerste sollicitatie met één klik."
+    },
+    "appliedOn": "Verzonden op {date}",
+    "notesPlaceholder": "Notities (gespreksdatum, contactpersoon, etc.)",
+    "notesLabel": "Notities",
+    "saveNotes": "Notities opslaan",
+    "viewVacancy": "Vacature"
+  },
+  "pageHeaders": {
+    "cv": {
+      "eyebrow": "§ CV-archief",
+      "title": "Mijn <em>CV's</em>"
+    },
+    "profiles": {
+      "eyebrow": "§ LinkedIn-profielen",
+      "title": "Mijn <em>profielen</em>"
+    },
+    "credits": {
+      "eyebrow": "§ Saldo & pakketten",
+      "title": "Credits <em>kopen</em>"
+    },
+    "settings": {
+      "eyebrow": "§ Configuratie",
+      "title": "Instellingen <em>aanpassen</em>"
+    },
+    "feedback": {
+      "eyebrow": "§ Bug? Suggestie?",
+      "title": "Geef <em>feedback</em>"
+    },
+    "applications": {
+      "eyebrow": "§ Sollicitatie-tracker",
+      "title": "Mijn <em>sollicitaties</em>",
+      "subtitle": "Overzicht van alle sollicitaties die je via CVeetje hebt verstuurd."
+    },
+    "cvNew": {
+      "eyebrow": "§ Nieuw CV",
+      "title": "Nieuwe CV <em>maken</em>"
+    },
+    "templates": {
+      "eyebrow": "§ Templates",
+      "title": "Mijn <em>templates</em>"
+    }
+  },
+  "motivationLetter": {
+    "title": "Motivatiebrief",
+    "generateTitle": "Motivatiebrief genereren",
+    "loadingSaved": "Opgeslagen brief laden...",
+    "motivationLabel": "Wat motiveert jou om te solliciteren? (optioneel)",
+    "motivationHint": "Deel je persoonlijke motivatie om een meer authentieke brief te krijgen.",
+    "inspiration": "Inspiratie:",
+    "generating": "Brief genereren...",
+    "generateButton": "Genereer motivatiebrief",
+    "notEnoughCredits": "Je hebt niet genoeg credits.",
+    "generatingPdf": "PDF genereren...",
+    "generatingDocx": "DOCX genereren...",
+    "download": "Download",
+    "pdfDescription": "Gestijld document met CV-thema",
+    "docxDescription": "Bewerkbaar Word-document",
+    "regenerate": "Opnieuw genereren",
+    "downloadHint": "Download de brief om deze te kunnen bewerken en versturen.",
+    "filePrefix": "motivatiebrief",
+    "errors": {
+      "generateFailed": "Motivatiebrief genereren mislukt",
+      "generic": "Er is een fout opgetreden",
+      "downloadFailed": "Download mislukt"
+    }
+  },
+  "cvDispute": {
+    "title": "CV laten heroverwegen",
+    "description": "Klopt er iets niet in je CV? Je kunt tot {max} keer om een heroverweging vragen. Een onafhankelijke AI beoordeelt je klacht — bij de laatste poging komt het bij een admin terecht.",
+    "maxReached": "Maximaal aantal disputes bereikt voor deze CV ({max}/{max}).",
+    "attempt": "Poging {current} van {max}",
+    "lastAttempt": "(laatste — wordt handmatig beoordeeld)",
+    "levels": {
+      "conservative": {
+        "label": "Veilig",
+        "description": "ATS-vriendelijk, traditioneel"
+      },
+      "balanced": {
+        "label": "Gebalanceerd",
+        "description": "Modern maar professioneel"
+      },
+      "creative": {
+        "label": "Creatief",
+        "description": "Editorial/magazine-layout"
+      },
+      "experimental": {
+        "label": "Experimenteel",
+        "description": "Bold/Canva-stijl met kleur"
+      },
+      "editorial-paper": {
+        "label": "Editorial Paper",
+        "description": "CVeetje-look: crèmekleurig papier + inkt + klei-accent"
+      }
+    },
+    "reasonLabel": "Wat klopt er niet?",
+    "reasonMin": "(min. {min} tekens)",
+    "reasonPlaceholder": "Bijvoorbeeld: de datum van mijn afstuderen staat er niet op, of: de kleuren passen niet bij een finance-rol...",
+    "reasonCount": "{count}/{min} tekens",
+    "submitting": "Bezig met beoordelen...",
+    "submit": "Dispute indienen",
+    "approved": {
+      "title": "Dispute goedgekeurd",
+      "body": "Je CV is opnieuw gegenereerd in het niveau <strong>{level}</strong>."
+    },
+    "aiRationale": "AI: \"{rationale}\"",
+    "rejected": {
+      "title": "Dispute afgewezen",
+      "body": "De AI-beoordelaar vindt deze CV passend. De CV blijft zoals hij is.",
+      "remaining": "Je hebt nog {count, plural, one {# dispute} other {# disputes}} over."
+    },
+    "needsHuman": {
+      "title": "Wacht op handmatige beoordeling",
+      "body": "Dit is je laatste dispute. Een admin beoordeelt hem zo snel mogelijk handmatig."
+    },
+    "viewNewCv": "Bekijk nieuwe CV",
+    "tweaksDiscarded": "Je tweaks zijn vervangen door de nieuwe AI-stijl",
+    "errors": {
+      "reasonTooShort": "Reden moet minstens {min} tekens bevatten",
+      "chooseLevel": "Kies een ander stijl-niveau",
+      "sameLevel": "Het gekozen niveau is hetzelfde als het huidige",
+      "unknown": "Onbekende fout"
+    }
+  },
+  "tokenUsage": {
+    "title": "Tokengebruik",
+    "tokens": "{value} tokens",
+    "total": "Totaal",
+    "in": "In: {value}",
+    "out": "Uit: {value}",
+    "model": "Model: {model}",
+    "steps": {
+      "profileParse": "Profiel inlezen",
+      "profileEnrich": "Profiel verrijken",
+      "linkedinExport": "LinkedIn-export",
+      "job": "Vacature inlezen",
+      "style": "Stijl",
+      "generate": "CV genereren",
+      "regenerate": "CV opnieuw genereren",
+      "motivation": "Motivatiebrief"
     }
   }
 }

@@ -71,7 +71,9 @@
     "adminPlatform": "Platform AI",
     "new": "New",
     "edit": "Edit",
-    "preview": "Preview"
+    "preview": "Preview",
+    "details": "Details",
+    "skipToContent": "Skip to main content"
   },
   "auth": {
     "signIn": "Sign In",
@@ -403,7 +405,7 @@
         "done": "Done",
         "skip": "—",
         "oneClick": "1-click",
-        "oneCredit": "1 credit"
+        "generateCost": "{credits, plural, one {# credit} other {# credits}}"
       }
     },
     "statRow": {
@@ -436,19 +438,39 @@
       "newCv": "New CV",
       "newCvSub": "Start with a job posting",
       "ago": "{time} ago",
-      "untitled": "Untitled CV"
+      "untitled": "Untitled CV",
+      "relative": {
+        "justNow": "just now",
+        "hours": "{n, plural, one {# hour} other {# hours}} ago",
+        "days": "{n, plural, one {# day} other {# days}} ago",
+        "weeks": "{n, plural, one {# week} other {# weeks}} ago",
+        "months": "{n, plural, one {# month} other {# months}} ago"
+      },
+      "status": {
+        "pdfReady": "PDF ready",
+        "generating": "Working…"
+      }
     },
     "jobsFeed": {
       "title": "For you",
       "subtitle": "Jobs based on your profile",
       "viewAll": "All jobs",
-      "empty": "Fill in your profile to see matching jobs."
+      "empty": "Fill in your profile to see matching jobs.",
+      "quickGenerateTitle": "Generate a CV for this job",
+      "quickGenerateLabel": "Generate CV for {title}"
     },
     "activity": {
       "title": "Activity",
       "subtitle": "Last 7 days",
       "viewAll": "All",
-      "empty": "No activity in the past week."
+      "empty": "No activity in the past week.",
+      "cvPdfReady": "CV PDF ready",
+      "cvGenerated": "New CV generated",
+      "applicationSent": "Application sent",
+      "statusChanged": "Status: {status}",
+      "timeMinutes": "{n}m",
+      "timeHours": "{n}h",
+      "timeDays": "{n}d"
     },
     "stats": {
       "totalCvs": "Total CVs",
@@ -486,7 +508,15 @@
       "make": "Make",
       "apply": "Apply",
       "account": "Account"
-    }
+    },
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "navLabel": "Dashboard navigation",
+    "openMenu": "Open menu",
+    "freeCreditsRich": "<strong>{count}</strong> free",
+    "purchasedCreditsRich": "<strong>{count}</strong> purchased"
   },
   "credits": {
     "title": "Credits",
@@ -714,7 +744,8 @@
         "addCertification": "Add certification",
         "addProject": "Add project",
         "addInterest": "Add interest"
-      }
+      },
+      "createCv": "Create CV"
     },
     "enrich": {
       "title": "Enrich with AI",
@@ -746,6 +777,13 @@
       "name": "Name",
       "issuer": "Issuer",
       "error": "Enrichment failed"
+    },
+    "card": {
+      "experienceCount": "{count, plural, one {# experience} other {# experiences}}",
+      "moreActions": "Actions for {name}",
+      "load": "Load",
+      "noHeadline": "No headline",
+      "lastUpdated": "Last updated: {date}"
     }
   },
   "linkedInExport": {
@@ -1032,13 +1070,28 @@
       "balance": "{credits} credit(s) available",
       "insufficient": "Insufficient credits for this action",
       "buyMore": "Buy more credits",
-      "saveTip": "Save credits by adding your own API key"
+      "saveTip": "Save credits by adding your own API key",
+      "estimate": "a CV with a vacancy costs about {credits} credits"
     },
     "generating": {
       "title": "Your CV is being generated...",
       "analyzing": "Analyzing your profile and job posting...",
       "creating": "Creating your personalized CV...",
-      "aiDisclosure": "Your CV is being generated using AI. Please review the content before downloading."
+      "aiDisclosure": "Your CV is being generated using AI. Please review the content before downloading.",
+      "phases": [
+        "Analysing profile and vacancy",
+        "Matching experience to the vacancy",
+        "Writing the content",
+        "Checking for accuracy",
+        "Applying the layout"
+      ],
+      "templatePhases": [
+        "Reading the template structure",
+        "Mapping fields to your profile",
+        "Filling the template",
+        "Formatting the document"
+      ],
+      "duration": "This usually takes 30–90 seconds."
     },
     "error": {
       "title": "Something went wrong",
@@ -1053,7 +1106,16 @@
       "saved": "Saved",
       "resume": "Continue",
       "startNew": "Start New"
-    }
+    },
+    "phases": {
+      "profile": "Profile",
+      "job": "Vacancy",
+      "match": "Match",
+      "design": "Design",
+      "result": "Result"
+    },
+    "phaseSkipped": "skipped",
+    "progressLabel": "CV creation progress"
   },
   "requiredItems": {
     "title": "What must definitely be on your CV?",
@@ -1073,7 +1135,8 @@
     "summaryEmpty": "Nothing pinned — the AI will decide what goes on the CV based on relevance to the job.",
     "back": "Back",
     "skip": "Skip",
-    "continue": "Continue"
+    "continue": "Continue",
+    "present": "present"
   },
   "fitAnalysis": {
     "title": "Fit Analysis",
@@ -1099,7 +1162,20 @@
     "advice": "Advice",
     "confirmProceedWarning": "This profile has significant mismatches with the job posting. You can still generate a CV, but the chance of success may be lower. Do you want to continue anyway?",
     "criticalWarningsNote": "Note: critical issues were found",
-    "aiDisclaimer": "This analysis is an AI estimate and not a guarantee of your chances."
+    "aiDisclaimer": "This analysis is an AI estimate and not a guarantee of your chances.",
+    "verdicts": {
+      "excellent": "Excellent match",
+      "good": "Good match",
+      "moderate": "Moderate match",
+      "challenging": "Challenging match",
+      "unlikely": "Unlikely match",
+      "unknown": "Unknown"
+    },
+    "errors": {
+      "couldNotAnalyze": "Could not run fit analysis",
+      "analysisFailed": "Analysis failed",
+      "generic": "Something went wrong"
+    }
   },
   "templateStyle": {
     "title": "Style from Template",
@@ -1157,7 +1233,92 @@
     "viewMode": "View",
     "singlePage": "Single Page",
     "allPages": "All Pages",
-    "creditCost": "Download free"
+    "creditCost": "Download free",
+    "title": "CV Preview",
+    "renderError": "Preview render error",
+    "disputeTooltip": "Something wrong with this CV? Request a reconsideration.",
+    "openAssistant": "Open CV Assistant",
+    "closeAssistant": "Close CV Assistant",
+    "tweaksTooltip": "Tweaks — adjust colours, fonts and style",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "overview": "Overview",
+    "tldr": "TL;DR",
+    "profile": "Profile",
+    "labelName": "Name:",
+    "labelJobTitle": "Position:",
+    "labelEmail": "Email:",
+    "labelLocation": "Location:",
+    "labelCompany": "Company:",
+    "labelIndustry": "Industry:",
+    "labelTheme": "Theme:",
+    "labelIndustryFit": "Industry fit:",
+    "labelRecipe": "Recipe:",
+    "labelShape": "Shape:",
+    "labelDensity": "Density:",
+    "vacancy": "Vacancy",
+    "salaryEstimate": "Salary estimate",
+    "confidence": "{level, select, high {High confidence} medium {Medium confidence} low {Low confidence} other {Confidence: {level}}}",
+    "keywords": "Keywords",
+    "moreCount": "+{count} more",
+    "style": "Style",
+    "generatedContent": "Generated content",
+    "skillsCount": "{count, plural, one {# skill} other {# skills}}",
+    "experienceCount": "{count, plural, one {# experience} other {# experiences}}",
+    "educationCount": "{count, plural, one {# education} other {# educations}}",
+    "languagesCount": "{count, plural, one {# language} other {# languages}}",
+    "tabPreview": "Preview",
+    "tabStructure": "Structure",
+    "tabStructureShort": "Struct.",
+    "tabStyleDetails": "Style details",
+    "editsNotice": "You have made changes to the CV content. They will be included when you download.",
+    "editTipTitle": "Tip: want to change text?",
+    "editTipBody": "Click directly on the text in the preview (name, title, bullets, summary…) and type your change. Use this panel for structural edits such as adding or removing items. For colours, fonts and style: use the <strong>Tweaks</strong> button in the top right.",
+    "resetToOriginal": "Reset to original",
+    "viewPreview": "View preview",
+    "themeColors": "Theme & colours",
+    "theme": "Theme",
+    "industryFit": "Industry fit",
+    "colorPrimary": "Primary",
+    "colorSecondary": "Secondary",
+    "colorAccent": "Accent",
+    "colorText": "Text",
+    "colorMuted": "Muted",
+    "typography": "Typography",
+    "fontPairing": "Font pairing",
+    "scale": "Scale",
+    "nameSize": "Name size",
+    "bodySize": "Body size",
+    "layout": "Layout",
+    "header": "Header",
+    "sections": "Sections",
+    "spacing": "Spacing",
+    "skills": "Skills",
+    "features": "Features",
+    "photo": "Photo",
+    "icons": "Icons",
+    "roundedCorners": "Rounded corners",
+    "on": "On",
+    "off": "Off",
+    "styleRationale": "Style rationale",
+    "recipeNotFound": "Recipe <code>{id}</code> not found in registry.",
+    "recipePalette": "Recipe & palette",
+    "recipe": "Recipe",
+    "route": "Route",
+    "layoutTypography": "Layout & typography",
+    "shape": "Shape",
+    "density": "Density",
+    "font": "Font",
+    "pageMode": "Page mode",
+    "recipeBrief": "Recipe brief",
+    "generatingPdf": "Generating PDF...",
+    "a4Pages": "A4 pages",
+    "a4PagesDesc": "Standard PDF with multiple pages",
+    "singleLongPage": "Single long page",
+    "singleLongPageDesc": "One continuous page without white space",
+    "regenerating": "Regenerating...",
+    "newVacancy": "New vacancy",
+    "newVacancyShort": "New"
   },
   "templatePreview": {
     "title": "CV Ready",
@@ -1172,7 +1333,9 @@
     "downloading": "Downloading...",
     "changeTemplate": "Change Template",
     "newVacancy": "New Vacancy",
-    "insufficientCredits": "You don't have enough credits to download."
+    "insufficientCredits": "You don't have enough credits to download.",
+    "assistant": "Assistant",
+    "loadError": "Could not load document"
   },
   "cvList": {
     "title": "My CVs",
@@ -1201,7 +1364,10 @@
       "newProfile": "Enter new profile",
       "loading": "Loading profiles...",
       "load": "Load",
-      "experiences": "experiences"
+      "experiences": "experiences",
+      "experienceCount": "{count, plural, one {# experience} other {# experiences}}",
+      "setDefault": "Set as default",
+      "actions": "Profile actions for {name}"
     },
     "addNewBelow": "Or add new profile information below",
     "addFile": "Add file",
@@ -1231,7 +1397,11 @@
       "addSource": "Add at least 1 source",
       "noNameFound": "Could not find name. Check if you have added complete profile information.",
       "configureApiKey": "Configure your API key in Settings to process files.",
-      "noProfileInfo": "Could not extract profile information. Try other sources."
+      "noProfileInfo": "Could not extract profile information. Try other sources.",
+      "processingFailed": "Processing failed",
+      "invalidFileType": "{name}: Only PDF or images (PNG, JPG, WebP) are allowed",
+      "fileTooLarge": "{name}: File is too large. Maximum is 10MB.",
+      "readFailed": "Could not read file"
     },
     "editProfile": {
       "title": "Edit Profile",
@@ -1245,7 +1415,53 @@
       "educationNum": "Education {num}",
       "skillPlaceholder": "Skill",
       "save": "Save",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "description": "Adjust the extracted information if needed",
+      "basicInfo": "Basic Information",
+      "languages": "Languages",
+      "certifications": "Certifications",
+      "addLanguage": "Add",
+      "addCertification": "Add",
+      "removeExperience": "Remove experience {num}",
+      "removeEducation": "Remove education {num}",
+      "removeSkill": "Remove skill",
+      "removeLanguage": "Remove language",
+      "removeCertification": "Remove certification",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Full name",
+        "headline": "Title / Headline",
+        "headlinePlaceholder": "Job title",
+        "location": "Location",
+        "locationPlaceholder": "Amsterdam, Netherlands",
+        "about": "About me",
+        "aboutPlaceholder": "Short description...",
+        "jobTitle": "Position",
+        "jobTitlePlaceholder": "Software Developer",
+        "company": "Company",
+        "companyPlaceholder": "Company name",
+        "cityPlaceholder": "Amsterdam",
+        "startDate": "Start date",
+        "startDatePlaceholder": "Jan 2020",
+        "endDate": "End date",
+        "endDatePlaceholder": "present",
+        "currentRole": "Current position",
+        "description": "Description",
+        "descriptionPlaceholder": "Description of your work...",
+        "school": "School / University",
+        "schoolPlaceholder": "University of Amsterdam",
+        "degree": "Degree",
+        "degreePlaceholder": "Bachelor / Master",
+        "fieldOfStudy": "Field of study",
+        "fieldOfStudyPlaceholder": "Computer Science",
+        "startYear": "Start year",
+        "endYear": "End year",
+        "languagePlaceholder": "Dutch",
+        "proficiencyPlaceholder": "Native",
+        "certNamePlaceholder": "Certificate name",
+        "issuerPlaceholder": "Issuer",
+        "datePlaceholder": "Date"
+      }
     },
     "processed": {
       "title": "Profile Processed",
@@ -1253,11 +1469,41 @@
       "experienceCount": "{count} Work Experience(s)",
       "educationCount": "{count} Education(s)",
       "skillCount": "{count} Skill(s)",
-      "experiencePreview": "Work Experience Preview"
+      "experiencePreview": "Work Experience Preview",
+      "name": "Name",
+      "headline": "Title",
+      "badges": {
+        "experience": "{count, plural, one {# Work experience} other {# Work experiences}}",
+        "education": "{count, plural, one {# Education} other {# Educations}}",
+        "skills": "{count, plural, one {# Skill} other {# Skills}}",
+        "languages": "{count, plural, one {# Language} other {# Languages}}",
+        "projects": "{count, plural, one {# Project} other {# Projects}}",
+        "interests": "{count, plural, one {# Interest} other {# Interests}}"
+      },
+      "experienceAt": "<strong>{jobTitle}</strong> at {company}",
+      "morePositions": "+{count} more positions",
+      "projectsPreview": "Projects Preview",
+      "moreProjects": "+{count} more projects",
+      "photoHint": "Your photo is shown on the CV if the chosen style supports it.",
+      "editInProfiles": "Edit in profiles",
+      "startOver": "Start over"
     },
     "contactInfo": {
       "title": "Contact Information for your CV",
-      "description": "LinkedIn doesn't export contact info - fill it in below!"
+      "description": "LinkedIn doesn't export contact info - fill it in below!",
+      "email": "Email *",
+      "emailPlaceholder": "name@email.com",
+      "phone": "Phone",
+      "phonePlaceholder": "+31 6 12345678",
+      "linkedinUrl": "LinkedIn URL",
+      "linkedinPlaceholder": "linkedin.com/in/your-name",
+      "website": "Website / Portfolio",
+      "websitePlaceholder": "yourwebsite.com",
+      "github": "GitHub (optional)",
+      "githubPlaceholder": "github.com/username",
+      "location": "Location",
+      "locationPlaceholder": "Amsterdam, Netherlands",
+      "emailRequired": "* Email is required for a professional CV"
     },
     "saveProfile": {
       "title": "Save Profile",
@@ -1269,7 +1515,10 @@
       "saving": "Saving...",
       "saveButton": "Save Profile",
       "updateButton": "Update Profile",
-      "saveAsNew": "Save as new"
+      "saveAsNew": "Save as new",
+      "nameLabel": "Name *",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "e.g., Focused on ServiceNow implementation projects..."
     },
     "enrichProfile": {
       "title": "Enrich Profile with AI",
@@ -1295,6 +1544,25 @@
       "copied": "Copied!",
       "copy": "Copy",
       "credits": "credits"
+    },
+    "unknownModel": "Unknown",
+    "fileUploadUnavailable": "File upload not available",
+    "modelNoVision": "Your selected AI model ({model}) does not support image/PDF input.",
+    "apiKeyRequired": "API key required",
+    "closeTextInput": "Close text input",
+    "fileTypesHint": "PDF, PNG, JPG, WebP (max 10MB per file)",
+    "addedSourcesCount": "Added sources ({count})",
+    "fileTypePdf": "PDF",
+    "fileTypeImage": "Image",
+    "removeSource": "Remove source",
+    "estimatedTokens": "Estimated tokens",
+    "estimatedCost": "Estimated cost",
+    "processInfo": "Process information",
+    "processingInfo": "Processing information...",
+    "largeRequestDialog": {
+      "title": "Large Request",
+      "description": "This is a large request with an estimated {tokens} tokens ({cost} cost).",
+      "confirm": "Yes, process"
     }
   },
   "jobInput": {
@@ -1310,7 +1578,8 @@
       "couldNotAnalyze": "Could not analyze job posting",
       "somethingWentWrong": "Something went wrong",
       "titleRequired": "Job title is required",
-      "descriptionRequired": "Provide more details about the job"
+      "descriptionRequired": "Provide more details about the job",
+      "textTooShort": "Paste a complete job posting (at least 50 characters)"
     },
     "parsed": {
       "title": "Job Analysis",
@@ -1330,7 +1599,79 @@
       "addRequirement": "Add requirement",
       "addKeyword": "Add keyword",
       "addBenefit": "Add benefit"
-    }
+    },
+    "urlLabel": "Job posting URL (optional)",
+    "urlHint": "We store the link with your CV so you can find the original job posting later. If the link is publicly accessible, we automatically fetch the full text.",
+    "pasteHint": "You can paste the entire job posting - including company info, requirements, and perks",
+    "preview": {
+      "title": "Job posting analyzed",
+      "description": "Review the extracted information and continue or adjust it",
+      "startOver": "Start over",
+      "originalVacancy": "Original job posting",
+      "summary": "Summary"
+    },
+    "adzuna": {
+      "title": "Adzuna only provides a short preview of this job posting",
+      "body": "The AI creates a much sharper CV with the full job posting. Open the employer's site, copy the entire posting and paste it below.",
+      "openSite": "Open job site",
+      "pasteFull": "Paste full text"
+    },
+    "salary": {
+      "aiEstimate": "AI Salary Estimate",
+      "perYear": "/year",
+      "level": "{level} level",
+      "reasoning": "Reasoning",
+      "marketInsight": "Market insight",
+      "disclaimer": "* This is an AI estimate based on role, industry and location. Actual salaries may differ.",
+      "range": "{currency} {min} - {max}{period}",
+      "from": "From {currency} {min}{period}",
+      "to": "Up to {currency} {max}{period}",
+      "periodSuffix": {
+        "yearly": "/year",
+        "monthly": "/month",
+        "hourly": "/hour"
+      }
+    },
+    "compensation": {
+      "title": "Compensation & Benefits",
+      "filled": "Filled in",
+      "salary": "Salary",
+      "benefits": "Benefits",
+      "bonus": "Bonus",
+      "notes": "Notes",
+      "emptyHint": "Click \"Edit\" to add compensation details",
+      "editTitle": "Compensation & Benefits (optional)",
+      "salaryMin": "Minimum Salary",
+      "salaryMax": "Maximum Salary",
+      "currency": "Currency",
+      "period": "Period",
+      "perYear": "Per year",
+      "perMonth": "Per month",
+      "perHour": "Per hour",
+      "benefitPlaceholder": "e.g., Pension plan, Lease car, 30 vacation days",
+      "bonusOptional": "Bonus (optional)",
+      "bonusPlaceholder": "e.g., 13th month, performance bonus up to 10%",
+      "notesPlaceholder": "e.g., Depending on experience"
+    },
+    "edit": {
+      "title": "Edit job posting",
+      "description": "Adjust the extracted information if needed",
+      "titleLabel": "Job title *",
+      "titlePlaceholder": "e.g., Senior Software Engineer",
+      "companyPlaceholder": "e.g., TechCorp",
+      "locationPlaceholder": "e.g., Amsterdam",
+      "employmentType": "Employment type",
+      "employmentTypePlaceholder": "e.g., Full-time",
+      "industry": "Industry",
+      "industryPlaceholder": "e.g., Tech",
+      "descriptionLabel": "Description *",
+      "descriptionPlaceholder": "Short summary of the role...",
+      "requirementPlaceholder": "e.g., 5+ years of React experience",
+      "keywordPlaceholder": "e.g., kubernetes"
+    },
+    "removeRequirement": "Remove requirement",
+    "removeKeyword": "Remove keyword",
+    "removeBenefit": "Remove benefit"
   },
   "errors": {
     "unauthorized": "You are not authorized for this action",
@@ -1876,6 +2217,481 @@
         "title": "9. Contact and Questions",
         "content": "Do you have questions about how CVeetje uses AI? Contact us:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nThe Netherlands\n\nChamber of Commerce (KvK): 90102304\nVAT number: NL004787305B79\nEmail: info@groeimetai.io\n\nWe aim to respond within 5 business days."
       }
+    }
+  },
+  "commandPalette": {
+    "dialogLabel": "Search",
+    "placeholder": "Search CVs, jobs, profiles…",
+    "close": "Close",
+    "searching": "Searching…",
+    "noResults": "No results.",
+    "untitledCv": "Untitled CV",
+    "hintNavigate": "navigate",
+    "hintOpen": "open",
+    "hintClose": "close",
+    "groups": {
+      "navigation": "Navigation",
+      "admin": "Admin",
+      "cvs": "CVs",
+      "profiles": "Profiles",
+      "jobs": "Jobs"
+    }
+  },
+  "cvContentEditor": {
+    "title": "Edit CV content",
+    "clickToEdit": "Click text to edit",
+    "changeColor": "Change colour",
+    "resetColor": "Reset colour",
+    "personalDetails": "Personal details",
+    "name": "Name",
+    "headline": "Job title / headline",
+    "contactDetails": "Contact details",
+    "colors": "Colours",
+    "colorPrimary": "Primary",
+    "colorPrimaryDesc": "Name, headings and accents",
+    "colorSecondary": "Secondary",
+    "colorSecondaryDesc": "Background and subtle elements",
+    "colorAccent": "Accent",
+    "colorAccentDesc": "Links and highlights",
+    "colorText": "Text",
+    "colorTextDesc": "Main text colour",
+    "colorMuted": "Muted text",
+    "colorMutedDesc": "Secondary text and labels",
+    "contrastNote": "Note: make sure there is enough contrast between text and background for readability.",
+    "summary": "Summary",
+    "experience": "Work experience",
+    "highlights": "Highlights:",
+    "education": "Education",
+    "skills": "Skills",
+    "technical": "Technical:",
+    "softSkills": "Soft skills:",
+    "skillsTip": "Tip: skills can be adjusted in the style generator step",
+    "projects": "Projects",
+    "description": "Description:",
+    "technologies": "Technologies (comma-separated):",
+    "add": "+ Add",
+    "removeHighlight": "Remove highlight",
+    "addHighlight": "+ Add highlight"
+  },
+  "cvChat": {
+    "title": "CV Assistant",
+    "busy": "Working...",
+    "clearChat": "Clear chat",
+    "welcome": "Hi! I'm your CV assistant. I can help you refine your CV. Tell me what you'd like to change, or pick a quick action below.",
+    "quickActions": {
+      "shorterSummary": {
+        "label": "Shorter summary",
+        "prompt": "Make my summary shorter and more powerful."
+      },
+      "moreNumbers": {
+        "label": "More numbers",
+        "prompt": "Add more numbers and statistics to my work experience bullets."
+      },
+      "orderSkills": {
+        "label": "Order skills",
+        "prompt": "Order my technical skills by relevance to the vacancy."
+      },
+      "improveHeadline": {
+        "label": "Improve headline",
+        "prompt": "Improve my headline so it better matches the vacancy."
+      }
+    },
+    "tools": {
+      "update_summary": "Summary updated",
+      "update_headline": "Headline updated",
+      "update_experience": "Work experience updated",
+      "update_experience_highlight": "Highlight updated",
+      "add_experience_highlight": "Highlight added",
+      "remove_experience_highlight": "Highlight removed",
+      "update_education": "Education updated",
+      "add_skill": "Skill added",
+      "remove_skill": "Skill removed",
+      "reorder_skills": "Skills reordered",
+      "update_project": "Project updated",
+      "update_project_highlight": "Project highlight updated",
+      "add_project_highlight": "Project highlight added",
+      "remove_project_highlight": "Project highlight removed",
+      "update_header_variant": "Header style changed",
+      "update_colors": "Colours adjusted",
+      "update_font_pairing": "Font changed",
+      "update_spacing": "Spacing adjusted",
+      "update_section_style": "Section style changed",
+      "update_layout": "Layout changed",
+      "update_contact_layout": "Contact layout changed",
+      "update_skills_display": "Skills display changed",
+      "update_accent_style": "Accent style changed",
+      "update_name_style": "Name style changed",
+      "update_skill_tag_style": "Skill tag style changed",
+      "update_scale": "Text scale changed",
+      "toggle_feature": "Feature toggled"
+    },
+    "changeApplied": "Change applied",
+    "thinking": "Thinking...",
+    "genericError": "Something went wrong. Please try again.",
+    "creditWarning": "Your next message costs 1 extra credit.",
+    "placeholder": "Type your question or request...",
+    "send": "Send",
+    "shiftEnterHint": "Shift+Enter for new line",
+    "charCount": "{used}k / 40k characters"
+  },
+  "templateChat": {
+    "title": "Template Assistant",
+    "updating": "Updating...",
+    "clearChat": "Clear chat",
+    "welcome": "Hi! I can help you adjust the filled template. Tell me what you'd like to change, or choose a quick action below.",
+    "howItWorksTitle": "How it works:",
+    "howItWorksBody": "Each adjustment is applied directly to the template. You can make multiple adjustments - they will be combined.",
+    "quickActions": {
+      "shorter": "Shorter & stronger",
+      "moreNumbers": "More numbers",
+      "actionVerbs": "Action verbs",
+      "focusOnJob": "Focus on job"
+    },
+    "updatingTemplate": "Updating template...",
+    "placeholder": "Describe your change...",
+    "send": "Send",
+    "shiftEnterHint": "Shift+Enter for new line"
+  },
+  "designTweaks": {
+    "v1Title": "Tweaks",
+    "v1Description": "Adjust colours, typography and style directly — the preview updates live.",
+    "v2Title": "Tweak style",
+    "autoSaveNote": "Changes are saved automatically.",
+    "reset": "Reset",
+    "resetTooltip": "Back to the original AI style",
+    "resetToOriginalToast": "Reset to the original AI style",
+    "resetToast": "Style reset to AI version",
+    "saveFailedToast": "Tweak could not be saved — please try again",
+    "dirty": "Changing…",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "savedCheck": "Saved ✓",
+    "saveError": "Error while saving",
+    "tabs": {
+      "colors": "Colours",
+      "typography": "Typography",
+      "layout": "Layout",
+      "content": "Content"
+    },
+    "tabVisual": "Visual",
+    "tabColor": "Colour",
+    "tabContent": "Content",
+    "recipeNotFound": "Recipe <code>{id}</code> not found in registry.",
+    "visualDirection": "Visual direction",
+    "font": "Font",
+    "recipeDefaultFont": "Recipe default ({font})",
+    "singleLongPdf": "PDF as one long page",
+    "singleLongPdfHint": "On: one long page, no page breaks. Off: standard A4 pages.",
+    "backToAiVersion": "Back to AI version",
+    "roles": {
+      "ink": "Ink (text)",
+      "paper": "Paper (background)",
+      "accent": "Accent",
+      "muted": "Subtle text",
+      "surface": "Surface (sidebar/sections)"
+    },
+    "emphasis": {
+      "nameTagline": "Name tagline",
+      "nameTaglineHint": "Monocle style, 2-6 words below your name (e.g. 'Strategist, writer, gardener')",
+      "dropCap": "Drop-cap letter",
+      "dropCapHint": "One character — the large initial in your summary",
+      "pullQuote": "Pull-quote text",
+      "pullQuoteHint": "One sentence from your work experience to highlight",
+      "pullQuoteAttribution": "Pull-quote attribution",
+      "pullQuoteAttributionHint": "E.g. '— Lead Engineer, Adyen'",
+      "posterLine": "Poster line",
+      "posterLineHint": "The large sentence in poster format (manifesto / poster shape)",
+      "heroNumeral": "Hero numeral",
+      "heroNumeralHint": "Short text (e.g. '8' for 8 years of experience)",
+      "accentKeywords": "Accent keywords",
+      "accentKeywordsPlaceholder": "38%, Postgres, design-system",
+      "accentKeywordsHint": "Comma-separated, max 7. These are highlighted in the accent colour in body text."
+    }
+  },
+  "dynamicStylePicker": {
+    "title": "AI Style Generation",
+    "description": "Let AI create a unique style based on the job and your profile",
+    "creativityLevel": "Creativity level",
+    "levels": {
+      "conservative": {
+        "label": "Safe",
+        "desc": "ATS-friendly, no risk"
+      },
+      "balanced": {
+        "label": "Balanced",
+        "desc": "Professional with accents"
+      },
+      "creative": {
+        "label": "Creative",
+        "desc": "Modern, eye-catching designs"
+      },
+      "experimental": {
+        "label": "Experimental",
+        "desc": "Maximum visual impact"
+      }
+    },
+    "preferencesLabel": "Style preferences (optional)",
+    "preferencesPlaceholder": "e.g., 'formal and traditional', 'modern with blue accents', 'minimalistic', 'creative and bold'...",
+    "preferencesHint": "Describe your preferred style, colors, or vibe. Leave empty for AI to decide based on the job.",
+    "generate": "Generate AI Style",
+    "initializing": "Initializing...",
+    "generating": "Generating style...",
+    "analyzing": "AI is analyzing your profile and the job",
+    "preview": "Preview",
+    "previewFrameTitle": "Style preview",
+    "tone": {
+      "casual": "casual",
+      "professional": "professional"
+    },
+    "colors": "Colors",
+    "colorRoles": {
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "accent": "Accent",
+      "text": "Text",
+      "muted": "Muted"
+    },
+    "layout": "Layout",
+    "typography": "Typography",
+    "fields": {
+      "theme": "Theme:",
+      "header": "Header:",
+      "sections": "Sections:",
+      "skills": "Skills:",
+      "fonts": "Fonts:",
+      "scale": "Scale:",
+      "nameSize": "Name size:"
+    },
+    "styleDetails": "Style Details",
+    "photo": "Photo",
+    "icons": "Icons",
+    "rounded": "Rounded",
+    "spacing": "Spacing: {value}",
+    "contact": "Contact: {value}",
+    "decorations": {
+      "title": "Background Decorations",
+      "hint": "Subtle SVG shapes in the background",
+      "none": "None",
+      "minimal": "Minimal",
+      "moderate": "Moderate",
+      "abundant": "Abundant"
+    },
+    "experienceFormat": {
+      "title": "Work Experience Format",
+      "hint": "Choose between bullet points or running text",
+      "bullets": "Bullets",
+      "bulletsDesc": "Bullet points",
+      "paragraph": "Paragraph",
+      "paragraphDesc": "Running text"
+    },
+    "regenerate": "Regenerate",
+    "useStyle": "Use This Style",
+    "errors": {
+      "generateFailed": "Failed to generate style",
+      "noResponseBody": "No response received from the server",
+      "generic": "An error occurred"
+    }
+  },
+  "avatarUpload": {
+    "title": "Profile Photo (optional)",
+    "alt": "Profile photo",
+    "remove": "Remove photo",
+    "upload": "Upload",
+    "uploadAria": "Upload profile photo",
+    "hint": "Drag & drop or click to upload. Max 5MB.",
+    "errors": {
+      "notImage": "Please upload an image file",
+      "tooLarge": "Image must be smaller than 5MB",
+      "processFailed": "Could not process the image",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "cvDetail": {
+    "fitContextTitle": "Application context",
+    "originalVacancy": "Original job posting",
+    "bonusSkills": "Bonus",
+    "verdict": {
+      "excellent": "Excellent match",
+      "good": "Good match",
+      "moderate": "Moderate match",
+      "challenging": "Challenging match",
+      "unlikely": "Unlikely match",
+      "unknown": "Unknown"
+    },
+    "errors": {
+      "saveFailed": "Failed to save changes",
+      "loadFailed": "Failed to load CV",
+      "pdfFailed": "Failed to generate PDF",
+      "generic": "An error occurred"
+    },
+    "notFound": "CV not found",
+    "backToCvs": "Back to CVs",
+    "details": {
+      "title": "CV details",
+      "notGenerated": "This CV has not been generated yet.",
+      "name": "Name",
+      "headline": "Headline",
+      "targetJob": "Target job"
+    }
+  },
+  "applications": {
+    "status": {
+      "applied": "Sent",
+      "interview": "Interview",
+      "offer": "Offer",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "statusLabel": "Application status",
+    "errors": {
+      "loadFailed": "Failed to load applications",
+      "saveFailed": "Saving failed. Please try again.",
+      "deleteFailed": "Deleting failed. Please try again."
+    },
+    "confirmDelete": "Remove this application from your overview?",
+    "empty": {
+      "title": "You haven't sent any applications yet.",
+      "description": "Go to the job board, pick a vacancy and send your first application with one click."
+    },
+    "appliedOn": "Sent on {date}",
+    "notesPlaceholder": "Notes (interview date, contact person, etc.)",
+    "notesLabel": "Notes",
+    "saveNotes": "Save notes",
+    "viewVacancy": "Job posting"
+  },
+  "pageHeaders": {
+    "cv": {
+      "eyebrow": "§ CV archive",
+      "title": "My <em>CVs</em>"
+    },
+    "profiles": {
+      "eyebrow": "§ LinkedIn profiles",
+      "title": "My <em>profiles</em>"
+    },
+    "credits": {
+      "eyebrow": "§ Balance & packages",
+      "title": "Buy <em>credits</em>"
+    },
+    "settings": {
+      "eyebrow": "§ Configuration",
+      "title": "Adjust <em>settings</em>"
+    },
+    "feedback": {
+      "eyebrow": "§ Bug? Suggestion?",
+      "title": "Share <em>feedback</em>"
+    },
+    "applications": {
+      "eyebrow": "§ Application tracker",
+      "title": "My <em>applications</em>",
+      "subtitle": "Overview of all applications you sent via CVeetje."
+    },
+    "cvNew": {
+      "eyebrow": "§ New CV",
+      "title": "Create a <em>new CV</em>"
+    },
+    "templates": {
+      "eyebrow": "§ Templates",
+      "title": "My <em>templates</em>"
+    }
+  },
+  "motivationLetter": {
+    "title": "Cover letter",
+    "generateTitle": "Generate cover letter",
+    "loadingSaved": "Loading saved letter...",
+    "motivationLabel": "What motivates you to apply? (optional)",
+    "motivationHint": "Share your personal motivation to get a more authentic letter.",
+    "inspiration": "Inspiration:",
+    "generating": "Generating letter...",
+    "generateButton": "Generate cover letter",
+    "notEnoughCredits": "You don't have enough credits.",
+    "generatingPdf": "Generating PDF...",
+    "generatingDocx": "Generating DOCX...",
+    "download": "Download",
+    "pdfDescription": "Styled document with CV theme",
+    "docxDescription": "Editable Word document",
+    "regenerate": "Regenerate",
+    "downloadHint": "Download the letter to edit and send it.",
+    "filePrefix": "cover-letter",
+    "errors": {
+      "generateFailed": "Failed to generate cover letter",
+      "generic": "An error occurred",
+      "downloadFailed": "Download failed"
+    }
+  },
+  "cvDispute": {
+    "title": "Request a CV review",
+    "description": "Something wrong with your CV? You can request a review up to {max} times. An independent AI assesses your complaint — the final attempt goes to an admin.",
+    "maxReached": "Maximum number of disputes reached for this CV ({max}/{max}).",
+    "attempt": "Attempt {current} of {max}",
+    "lastAttempt": "(last — will be reviewed manually)",
+    "levels": {
+      "conservative": {
+        "label": "Safe",
+        "description": "ATS-friendly, traditional"
+      },
+      "balanced": {
+        "label": "Balanced",
+        "description": "Modern but professional"
+      },
+      "creative": {
+        "label": "Creative",
+        "description": "Editorial/magazine layout"
+      },
+      "experimental": {
+        "label": "Experimental",
+        "description": "Bold/Canva style with colour"
+      },
+      "editorial-paper": {
+        "label": "Editorial Paper",
+        "description": "CVeetje look: cream paper + ink + clay accent"
+      }
+    },
+    "reasonLabel": "What's wrong?",
+    "reasonMin": "(min. {min} characters)",
+    "reasonPlaceholder": "For example: my graduation date is missing, or: the colours don't suit a finance role...",
+    "reasonCount": "{count}/{min} characters",
+    "submitting": "Reviewing...",
+    "submit": "Submit dispute",
+    "approved": {
+      "title": "Dispute approved",
+      "body": "Your CV has been regenerated at the <strong>{level}</strong> level."
+    },
+    "aiRationale": "AI: \"{rationale}\"",
+    "rejected": {
+      "title": "Dispute rejected",
+      "body": "The AI reviewer considers this CV appropriate. The CV stays as it is.",
+      "remaining": "You have {count, plural, one {# dispute} other {# disputes}} left."
+    },
+    "needsHuman": {
+      "title": "Awaiting manual review",
+      "body": "This is your last dispute. An admin will review it manually as soon as possible."
+    },
+    "viewNewCv": "View new CV",
+    "tweaksDiscarded": "Your tweaks have been replaced by the new AI style",
+    "errors": {
+      "reasonTooShort": "Reason must contain at least {min} characters",
+      "chooseLevel": "Choose a different style level",
+      "sameLevel": "The chosen level is the same as the current one",
+      "unknown": "Unknown error"
+    }
+  },
+  "tokenUsage": {
+    "title": "Token usage",
+    "tokens": "{value} tokens",
+    "total": "Total",
+    "in": "In: {value}",
+    "out": "Out: {value}",
+    "model": "Model: {model}",
+    "steps": {
+      "profileParse": "Profile parse",
+      "profileEnrich": "Profile enrich",
+      "linkedinExport": "LinkedIn export",
+      "job": "Job parse",
+      "style": "Style",
+      "generate": "Generate CV",
+      "regenerate": "Regenerate CV",
+      "motivation": "Cover letter"
     }
   }
 }

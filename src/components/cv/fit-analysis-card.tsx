@@ -51,7 +51,7 @@ function getVerdictConfig(verdict: FitVerdict): {
   bgColor: string;
   borderColor: string;
   icon: React.ReactNode;
-  label: string;
+  labelKey: 'excellent' | 'good' | 'moderate' | 'challenging' | 'unlikely' | 'unknown';
 } {
   switch (verdict) {
     case 'excellent':
@@ -60,7 +60,7 @@ function getVerdictConfig(verdict: FitVerdict): {
         bgColor: 'bg-green-50 dark:bg-green-950',
         borderColor: 'border-green-200 dark:border-green-800',
         icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-        label: 'Uitstekende match',
+        labelKey: 'excellent',
       };
     case 'good':
       return {
@@ -68,7 +68,7 @@ function getVerdictConfig(verdict: FitVerdict): {
         bgColor: 'bg-blue-50 dark:bg-blue-950',
         borderColor: 'border-blue-200 dark:border-blue-800',
         icon: <CheckCircle2 className="h-5 w-5 text-blue-600" />,
-        label: 'Goede match',
+        labelKey: 'good',
       };
     case 'moderate':
       return {
@@ -76,7 +76,7 @@ function getVerdictConfig(verdict: FitVerdict): {
         bgColor: 'bg-yellow-50 dark:bg-yellow-950',
         borderColor: 'border-yellow-200 dark:border-yellow-800',
         icon: <AlertCircle className="h-5 w-5 text-yellow-600" />,
-        label: 'Matige match',
+        labelKey: 'moderate',
       };
     case 'challenging':
       return {
@@ -84,7 +84,7 @@ function getVerdictConfig(verdict: FitVerdict): {
         bgColor: 'bg-orange-50 dark:bg-orange-950',
         borderColor: 'border-orange-200 dark:border-orange-800',
         icon: <AlertTriangle className="h-5 w-5 text-orange-600" />,
-        label: 'Uitdagende match',
+        labelKey: 'challenging',
       };
     case 'unlikely':
       return {
@@ -92,7 +92,7 @@ function getVerdictConfig(verdict: FitVerdict): {
         bgColor: 'bg-red-50 dark:bg-red-950',
         borderColor: 'border-red-200 dark:border-red-800',
         icon: <XCircle className="h-5 w-5 text-red-600" />,
-        label: 'Onwaarschijnlijke match',
+        labelKey: 'unlikely',
       };
     default:
       return {
@@ -100,7 +100,7 @@ function getVerdictConfig(verdict: FitVerdict): {
         bgColor: 'bg-gray-50 dark:bg-gray-950',
         borderColor: 'border-gray-200 dark:border-gray-800',
         icon: <Info className="h-5 w-5 text-gray-600" />,
-        label: 'Onbekend',
+        labelKey: 'unknown',
       };
   }
 }
@@ -174,7 +174,7 @@ export function FitAnalysisCard({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Kon fit-analyse niet uitvoeren');
+        throw new Error(result.error || t('errors.couldNotAnalyze'));
       }
 
       if (result.success && result.analysis) {
@@ -187,10 +187,10 @@ export function FitAnalysisCard({
         }
         onCreditsRefresh?.();
       } else {
-        throw new Error(result.error || 'Analyse mislukt');
+        throw new Error(result.error || t('errors.analysisFailed'));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Er ging iets mis');
+      setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setIsLoading(false);
     }
@@ -316,7 +316,7 @@ export function FitAnalysisCard({
               <div className="flex items-center gap-2">
                 {verdictConfig.icon}
                 <span className={`font-semibold ${verdictConfig.color}`}>
-                  {verdictConfig.label}
+                  {t(`verdicts.${verdictConfig.labelKey}`)}
                 </span>
               </div>
               <Badge variant="outline" className={verdictConfig.color}>

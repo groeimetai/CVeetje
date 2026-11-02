@@ -17,11 +17,14 @@ export function renderSkillList(
   accentKeywords?: string[],
 ): string {
   const accentSet = new Set((accentKeywords ?? []).map(k => k.toLowerCase()));
-  const renderOne = (s: string) => {
+  const renderOne = (s: string, id: string) => {
     const isAccent = accentSet.has(s.toLowerCase());
     const attr = isAccent ? ` data-tone="accent"` : '';
-    return `<span class="cv-skill"${attr}>${escHtml(s)}</span>`;
+    return `<span class="cv-skill" data-id="${id}"${attr}>${escHtml(s)}</span>`;
   };
-  const all = [...skills.technical, ...skills.soft].map(renderOne).join('');
+  const all = [
+    ...skills.technical.map((s, i) => renderOne(s, `skill-tech-${i}`)),
+    ...skills.soft.map((s, i) => renderOne(s, `skill-soft-${i}`)),
+  ].join('');
   return `<div class="cv-skill-list">${all}</div>`;
 }

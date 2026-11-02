@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
   Sheet,
   SheetContent,
@@ -43,13 +44,7 @@ import { clampOklch } from '@/lib/cv-engine/render/css/oklch';
 
 const ROLES: PaletteRole[] = ['ink', 'paper', 'accent', 'muted', 'surface'];
 
-const ROLE_LABELS: Record<PaletteRole, string> = {
-  ink: 'Inkt (tekst)',
-  paper: 'Papier (achtergrond)',
-  accent: 'Accent',
-  muted: 'Subtiele tekst',
-  surface: 'Oppervlak (sidebar/secties)',
-};
+// Role labels live in messages under `designTweaks.roles.<role>`.
 
 type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
 
@@ -71,6 +66,7 @@ export function DesignTweaksSheetV2({
   onTokensChange,
 }: DesignTweaksSheetV2Props) {
   const { refreshToken } = useAuth();
+  const t = useTranslations('designTweaks');
   const recipe = useMemo(() => getRecipeById(tokens.recipeId), [tokens.recipeId]);
   const candidates = useMemo(
     () => (recipe ? listRecipesByRoute(recipe.route) : []),
@@ -102,11 +98,11 @@ export function DesignTweaksSheetV2({
         } catch (err) {
           console.error('[design-tweaks-v2] PATCH failed:', err);
           setSaveState('error');
-          toast.error('Tweak niet opgeslagen — probeer opnieuw');
+          toast.error(t('saveFailedToast'));
         }
       }, 500);
     },
-    [cvId, refreshToken],
+    [cvId, refreshToken, t],
   );
 
   // Cleanup pending debounce on unmount.
@@ -169,7 +165,7 @@ export function DesignTweaksSheetV2({
   const resetAll = () => {
     if (!originalTokens) return;
     update(originalTokens);
-    toast.success('Stijl teruggezet naar AI-versie');
+    toast.success(t('resetToast'));
   };
 
   // ============ Guard ============
@@ -177,12 +173,12 @@ export function DesignTweaksSheetV2({
   if (!recipe) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-[420px] sm:max-w-[420px]">
+        <SheetContent side="right" className="w-full sm:max-w-[420px]">
           <SheetHeader>
-            <SheetTitle>Stijl tweaken</SheetTitle>
+            <SheetTitle>{t('v2Title')}</SheetTitle>
           </SheetHeader>
           <p className="mt-4 text-sm text-muted-foreground">
-            Recipe <code>{tokens.recipeId}</code> niet gevonden in registry.
+            {t.rich('recipeNotFound', { id: tokens.recipeId, code: (chunks) => <code>{chunks}</code> })}
           </p>
         </SheetContent>
       </Sheet>
@@ -193,27 +189,27 @@ export function DesignTweaksSheetV2({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[420px] sm:max-w-[420px] overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-[420px] overflow-y-auto">
         <SheetHeader className="space-y-1">
-          <SheetTitle>Stijl tweaken</SheetTitle>
+          <SheetTitle>{t('v2Title')}</SheetTitle>
           <SheetDescription>
-            Wijzigingen worden automatisch opgeslagen.{' '}
+            {t('autoSaveNote')}{' '}
             <SaveIndicator state={saveState} />
           </SheetDescription>
         </SheetHeader>
 
         <Tabs defaultValue="visual" className="mt-4">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="visual">Visual</TabsTrigger>
-            <TabsTrigger value="color">Kleur</TabsTrigger>
-            <TabsTrigger value="content">Inhoud</TabsTrigger>
+            <TabsTrigger value="visual">{t('tabVisual')}</TabsTrigger>
+            <TabsTrigger value="color">{t('tabColor')}</TabsTrigger>
+            <TabsTrigger value="content">{t('tabContent')}</TabsTrigger>
           </TabsList>
 
           {/* ============ Visual tab ============ */}
           <TabsContent value="visual" className="space-y-6 mt-4">
             <section className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                Visuele richting
+                {t('visualDirection')}
               </Label>
               <div className="space-y-1.5">
                 {candidates.map(c => (
@@ -229,7 +225,7 @@ export function DesignTweaksSheetV2({
 
             <section className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                Lettertype
+                {t('font')}
               </Label>
               <Select
                 value={tokens.fontOverride ?? 'recipe-default'}
@@ -240,7 +236,7 @@ export function DesignTweaksSheetV2({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="recipe-default">
-                    Recipe-default ({recipe.allowedFontPairings[0]})
+                    {t('recipeDefaultFont', { font: recipe.allowedFontPairings[0] })}
                   </SelectItem>
                   {recipe.allowedFontPairings.map(f => (
                     <SelectItem key={f} value={f}>
@@ -253,7 +249,7 @@ export function DesignTweaksSheetV2({
 
             <section className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="single-long">PDF als één lange pagina</Label>
+                <Label htmlFor="single-long">{t('singleLongPdf')}</Label>
                 <Switch
                   id="single-long"
                   checked={(tokens.pageMode ?? 'a4-paged') === 'single-long'}
@@ -261,14 +257,14 @@ export function DesignTweaksSheetV2({
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Aan: één lange pagina, geen page-breaks. Uit: standaard A4-paging.
+                {t('singleLongPdfHint')}
               </p>
             </section>
 
             {hasOverride && originalTokens && (
               <Button variant="outline" size="sm" onClick={resetAll} className="w-full">
                 <RotateCcw className="w-3 h-3 mr-2" />
-                Terug naar AI-versie
+                {t('backToAiVersion')}
               </Button>
             )}
           </TabsContent>
@@ -279,7 +275,7 @@ export function DesignTweaksSheetV2({
               <ColorRoleRow
                 key={role}
                 role={role}
-                label={ROLE_LABELS[role]}
+                label={t(`roles.${role}`)}
                 recipe={recipe}
                 value={tokens.paletteOverride?.[role] ?? recipe.palette[role].anchor}
                 onChange={(channel, value) => setOklchChannel(role, channel, value)}
@@ -290,8 +286,8 @@ export function DesignTweaksSheetV2({
           {/* ============ Content tab — emphasis fields ============ */}
           <TabsContent value="content" className="space-y-5 mt-4">
             <EmphasisField
-              label="Naam-tagline"
-              hint="Monocle-stijl, 2-6 woorden onder je naam (bv. 'Strategist, writer, gardener')"
+              label={t('emphasis.nameTagline')}
+              hint={t('emphasis.nameTaglineHint')}
               value={tokens.emphasis.nameTagline ?? ''}
               maxLength={80}
               onChange={v => setEmphasis('nameTagline', v || undefined)}
@@ -299,8 +295,8 @@ export function DesignTweaksSheetV2({
 
             {recipe.decorators.dropCap && (
               <EmphasisField
-                label="Drop-cap letter"
-                hint="Eén karakter — de grote initiaal in je samenvatting"
+                label={t('emphasis.dropCap')}
+                hint={t('emphasis.dropCapHint')}
                 value={tokens.emphasis.dropCapLetter ?? ''}
                 maxLength={1}
                 onChange={v => setEmphasis('dropCapLetter', v || undefined)}
@@ -310,15 +306,15 @@ export function DesignTweaksSheetV2({
             {recipe.decorators.pullQuote && (
               <>
                 <EmphasisField
-                  label="Pull-quote tekst"
-                  hint="Eén zin uit je werkervaring die uitgelicht wordt"
+                  label={t('emphasis.pullQuote')}
+                  hint={t('emphasis.pullQuoteHint')}
                   value={tokens.emphasis.pullQuoteText ?? ''}
                   maxLength={240}
                   onChange={v => setEmphasis('pullQuoteText', v || undefined)}
                 />
                 <EmphasisField
-                  label="Pull-quote attributie"
-                  hint="Bv. '— Lead Engineer, Adyen'"
+                  label={t('emphasis.pullQuoteAttribution')}
+                  hint={t('emphasis.pullQuoteAttributionHint')}
                   value={tokens.emphasis.pullQuoteAttribution ?? ''}
                   maxLength={80}
                   onChange={v => setEmphasis('pullQuoteAttribution', v || undefined)}
@@ -328,8 +324,8 @@ export function DesignTweaksSheetV2({
 
             {recipe.decorators.posterLine && (
               <EmphasisField
-                label="Poster-zin"
-                hint="De grote zin in poster-formaat (bij manifesto / poster shape)"
+                label={t('emphasis.posterLine')}
+                hint={t('emphasis.posterLineHint')}
                 value={tokens.emphasis.posterLine ?? ''}
                 maxLength={160}
                 onChange={v => setEmphasis('posterLine', v || undefined)}
@@ -338,8 +334,8 @@ export function DesignTweaksSheetV2({
 
             {recipe.decorators.heroNumeral && (
               <EmphasisField
-                label="Hero-cijfer"
-                hint="Korte tekst (bv. '8' voor 8 jaar ervaring)"
+                label={t('emphasis.heroNumeral')}
+                hint={t('emphasis.heroNumeralHint')}
                 value={tokens.emphasis.heroNumeralValue ?? ''}
                 maxLength={12}
                 onChange={v => setEmphasis('heroNumeralValue', v || undefined)}
@@ -348,7 +344,7 @@ export function DesignTweaksSheetV2({
 
             <section className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                Accent-keywords
+                {t('emphasis.accentKeywords')}
               </Label>
               <Input
                 value={(tokens.emphasis.accentKeywords ?? []).join(', ')}
@@ -360,10 +356,11 @@ export function DesignTweaksSheetV2({
                     .slice(0, 7);
                   setEmphasis('accentKeywords', list.length ? list : undefined);
                 }}
-                placeholder="38%, Postgres, design-system"
+                placeholder={t('emphasis.accentKeywordsPlaceholder')}
+                aria-label={t('emphasis.accentKeywords')}
               />
               <p className="text-xs text-muted-foreground">
-                Komma-gescheiden, max 7. Deze worden in accent-kleur gemarkeerd in body-tekst.
+                {t('emphasis.accentKeywordsHint')}
               </p>
             </section>
           </TabsContent>
@@ -376,16 +373,17 @@ export function DesignTweaksSheetV2({
 // ============ Subcomponents ============
 
 function SaveIndicator({ state }: { state: SaveState }) {
+  const t = useTranslations('designTweaks');
   switch (state) {
     case 'idle':
       return null;
     case 'dirty':
     case 'saving':
-      return <span className="text-xs text-muted-foreground">Opslaan…</span>;
+      return <span className="text-xs text-muted-foreground">{t('saving')}</span>;
     case 'saved':
-      return <span className="text-xs text-green-600">Opgeslagen ✓</span>;
+      return <span className="text-xs text-green-600">{t('savedCheck')}</span>;
     case 'error':
-      return <span className="text-xs text-red-600">Fout bij opslaan</span>;
+      return <span className="text-xs text-red-600">{t('saveError')}</span>;
   }
 }
 
@@ -536,6 +534,7 @@ function EmphasisField({
     <section className="space-y-1.5">
       <Label className="text-xs uppercase tracking-wide text-muted-foreground">{label}</Label>
       <Input
+        aria-label={label}
         value={value}
         maxLength={maxLength}
         onChange={e => onChange(e.target.value)}

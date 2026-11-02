@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,8 @@ interface EditableFieldProps {
 }
 
 function EditableField({ value, onChange, multiline, className, label, color, onColorChange }: EditableFieldProps) {
+  const t = useTranslations('cvContentEditor');
+  const tCommon = useTranslations('common');
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -93,11 +96,11 @@ function EditableField({ value, onChange, multiline, className, label, color, on
             className={`flex-1 ${className}`}
           />
         )}
-        <Button size="icon" variant="ghost" onClick={handleSave} className="h-8 w-8">
-          <Check className="h-4 w-4 text-green-600" />
+        <Button size="icon" variant="ghost" onClick={handleSave} className="h-8 w-8" aria-label={tCommon('save')}>
+          <Check className="h-4 w-4 text-green-600" aria-hidden="true" />
         </Button>
-        <Button size="icon" variant="ghost" onClick={handleCancel} className="h-8 w-8">
-          <X className="h-4 w-4 text-red-600" />
+        <Button size="icon" variant="ghost" onClick={handleCancel} className="h-8 w-8" aria-label={tCommon('cancel')}>
+          <X className="h-4 w-4 text-red-600" aria-hidden="true" />
         </Button>
       </div>
     );
@@ -124,18 +127,19 @@ function EditableField({ value, onChange, multiline, className, label, color, on
                 className="h-4 w-4 rounded border border-border cursor-pointer mt-0.5 hover:ring-2 hover:ring-primary/50"
                 style={{ backgroundColor: color || '#888888' }}
                 onClick={handleColorClick}
-                title="Kleur aanpassen"
+                title={t('changeColor')}
               />
               <input
                 ref={colorInputRef}
                 type="color"
+                aria-label={t('changeColor')}
                 value={color || '#000000'}
                 onChange={handleColorChange}
                 className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
               />
             </div>
             {color && (
-              <span title="Kleur resetten">
+              <span title={t('resetColor')}>
                 <X
                   className="h-3 w-3 text-muted-foreground mt-1 cursor-pointer hover:text-destructive"
                   onClick={handleResetColor}
@@ -168,6 +172,7 @@ function ColorPicker({ label, description, value, onChange }: ColorPickerProps) 
       <div className="relative">
         <input
           type="color"
+          aria-label={label}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-10 h-10 rounded-lg border-2 border-border cursor-pointer bg-transparent"
@@ -220,6 +225,7 @@ export function CVContentEditor({
   elementColors,
   onElementColorChange,
 }: CVContentEditorProps) {
+  const t = useTranslations('cvContentEditor');
   const updateSummary = useCallback((newSummary: string) => {
     onContentChange({ ...content, summary: newSummary });
   }, [content, onContentChange]);
@@ -316,17 +322,17 @@ export function CVContentEditor({
   return (
     <div className="space-y-6 p-4 bg-muted/30 rounded-lg border">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg">Bewerk CV Inhoud</h3>
-        <p className="text-xs text-muted-foreground">Klik op tekst om te bewerken</p>
+        <h3 className="font-semibold text-lg">{t('title')}</h3>
+        <p className="text-xs text-muted-foreground">{t('clickToEdit')}</p>
       </div>
 
       {/* Header / Personal Info */}
       {headerInfo && onHeaderChange && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Persoonlijke Gegevens</h4>
+          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('personalDetails')}</h4>
           <div className="p-3 border rounded bg-background space-y-3">
             <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">Naam</span>
+              <span className="text-xs text-muted-foreground">{t('name')}</span>
               <EditableField
                 value={headerInfo.fullName}
                 onChange={(v) => updateHeader({ fullName: v })}
@@ -336,7 +342,7 @@ export function CVContentEditor({
               />
             </div>
             <div className="space-y-1">
-              <span className="text-xs text-muted-foreground">Functietitel / Headline</span>
+              <span className="text-xs text-muted-foreground">{t('headline')}</span>
               <EditableField
                 value={headerInfo.headline || ''}
                 onChange={(v) => updateHeader({ headline: v || null })}
@@ -348,7 +354,7 @@ export function CVContentEditor({
 
             {/* Contact Info */}
             <div className="pt-2 border-t space-y-2">
-              <span className="text-xs text-muted-foreground font-medium">Contactgegevens</span>
+              <span className="text-xs text-muted-foreground font-medium">{t('contactDetails')}</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -417,41 +423,41 @@ export function CVContentEditor({
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
             <Palette className="h-4 w-4" />
-            Kleuren
+            {t('colors')}
           </h4>
           <div className="p-3 border rounded bg-background space-y-4">
             <ColorPicker
-              label="Primair"
-              description="Naam, koppen en accenten"
+              label={t('colorPrimary')}
+              description={t('colorPrimaryDesc')}
               value={colors.primary}
               onChange={(v) => updateColor('primary', v)}
             />
             <ColorPicker
-              label="Secundair"
-              description="Achtergrond en subtiele elementen"
+              label={t('colorSecondary')}
+              description={t('colorSecondaryDesc')}
               value={colors.secondary}
               onChange={(v) => updateColor('secondary', v)}
             />
             <ColorPicker
-              label="Accent"
-              description="Links en highlights"
+              label={t('colorAccent')}
+              description={t('colorAccentDesc')}
               value={colors.accent}
               onChange={(v) => updateColor('accent', v)}
             />
             <ColorPicker
-              label="Tekst"
-              description="Hoofdtekst kleur"
+              label={t('colorText')}
+              description={t('colorTextDesc')}
               value={colors.text}
               onChange={(v) => updateColor('text', v)}
             />
             <ColorPicker
-              label="Gedempte tekst"
-              description="Secundaire tekst en labels"
+              label={t('colorMuted')}
+              description={t('colorMutedDesc')}
               value={colors.muted}
               onChange={(v) => updateColor('muted', v)}
             />
             <p className="text-xs text-muted-foreground italic pt-2 border-t">
-              Let op: zorg voor voldoende contrast tussen tekst en achtergrond voor leesbaarheid.
+              {t('contrastNote')}
             </p>
           </div>
         </div>
@@ -459,7 +465,7 @@ export function CVContentEditor({
 
       {/* Summary */}
       <div className="space-y-2">
-        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Samenvatting</h4>
+        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('summary')}</h4>
         <EditableField
           value={content.summary}
           onChange={updateSummary}
@@ -472,7 +478,7 @@ export function CVContentEditor({
 
       {/* Experience */}
       <div className="space-y-4">
-        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Werkervaring</h4>
+        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('experience')}</h4>
         {content.experience.map((exp, expIndex) => (
           <div key={expIndex} className="space-y-2 p-3 border rounded bg-background">
             <div className="flex items-start justify-between gap-4">
@@ -502,7 +508,7 @@ export function CVContentEditor({
             </div>
             {exp.highlights.length > 0 && (
               <div className="space-y-1 mt-2">
-                <span className="text-xs text-muted-foreground">Highlights:</span>
+                <span className="text-xs text-muted-foreground">{t('highlights')}</span>
                 <ul className="space-y-1">
                   {exp.highlights.map((highlight, hIndex) => (
                     <li key={hIndex} className="flex items-start gap-2">
@@ -525,7 +531,7 @@ export function CVContentEditor({
 
       {/* Education */}
       <div className="space-y-4">
-        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Opleiding</h4>
+        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('education')}</h4>
         {content.education.map((edu, eduIndex) => (
           <div key={eduIndex} className="space-y-2 p-3 border rounded bg-background">
             <div className="flex items-start justify-between gap-4">
@@ -568,18 +574,18 @@ export function CVContentEditor({
 
       {/* Skills */}
       <div className="space-y-2">
-        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Vaardigheden</h4>
+        <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('skills')}</h4>
         <div className="p-3 border rounded bg-background space-y-2">
           <div>
-            <span className="text-xs text-muted-foreground">Technisch:</span>
+            <span className="text-xs text-muted-foreground">{t('technical')}</span>
             <p className="text-sm">{content.skills.technical.join(', ')}</p>
           </div>
           <div>
-            <span className="text-xs text-muted-foreground">Soft skills:</span>
+            <span className="text-xs text-muted-foreground">{t('softSkills')}</span>
             <p className="text-sm">{content.skills.soft.join(', ')}</p>
           </div>
           <p className="text-xs text-muted-foreground italic">
-            Tip: Skills kunnen worden aangepast via de style generator stap
+            {t('skillsTip')}
           </p>
         </div>
       </div>
@@ -587,7 +593,7 @@ export function CVContentEditor({
       {/* Projects */}
       {content.projects && content.projects.length > 0 && (
         <div className="space-y-4">
-          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Projecten</h4>
+          <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t('projects')}</h4>
           {content.projects.map((proj, projIndex) => (
             <div key={projIndex} className="space-y-2 p-3 border rounded bg-background">
               <div className="flex items-start justify-between gap-4">
@@ -615,7 +621,7 @@ export function CVContentEditor({
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs text-muted-foreground">Omschrijving:</span>
+                <span className="text-xs text-muted-foreground">{t('description')}</span>
                 <EditableField
                   value={proj.description}
                   onChange={(v) => updateProject(projIndex, { description: v })}
@@ -627,15 +633,15 @@ export function CVContentEditor({
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs text-muted-foreground">Technologieën (komma-gescheiden):</span>
+                <span className="text-xs text-muted-foreground">{t('technologies')}</span>
                 <EditableField
                   value={proj.technologies.join(', ')}
                   onChange={(v) =>
                     updateProject(projIndex, {
                       technologies: v
                         .split(',')
-                        .map((t) => t.trim())
-                        .filter((t) => t.length > 0),
+                        .map((s) => s.trim())
+                        .filter((s) => s.length > 0),
                     })
                   }
                   className="text-sm"
@@ -645,7 +651,7 @@ export function CVContentEditor({
               {proj.highlights.length > 0 && (
                 <div className="space-y-1 mt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Highlights:</span>
+                    <span className="text-xs text-muted-foreground">{t('highlights')}</span>
                     <Button
                       type="button"
                       size="sm"
@@ -653,7 +659,7 @@ export function CVContentEditor({
                       className="h-6 px-2 text-xs"
                       onClick={() => addProjectHighlight(projIndex)}
                     >
-                      + Toevoegen
+                      {t('add')}
                     </Button>
                   </div>
                   <ul className="space-y-1">
@@ -673,9 +679,9 @@ export function CVContentEditor({
                           variant="ghost"
                           className="h-5 w-5 text-muted-foreground hover:text-destructive"
                           onClick={() => removeProjectHighlight(projIndex, hIndex)}
-                          aria-label="Verwijder highlight"
+                          aria-label={t('removeHighlight')}
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-3 w-3" aria-hidden="true" />
                         </Button>
                       </li>
                     ))}
@@ -691,7 +697,7 @@ export function CVContentEditor({
                   className="h-7 px-2 text-xs"
                   onClick={() => addProjectHighlight(projIndex)}
                 >
-                  + Highlight toevoegen
+                  {t('addHighlight')}
                 </Button>
               )}
             </div>

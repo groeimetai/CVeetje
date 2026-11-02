@@ -17,9 +17,12 @@ import {
   AlertCircle,
   User,
   Star,
+  Linkedin,
 } from 'lucide-react';
 import { ProfileEditForm } from '@/components/profiles/profile-edit-form';
 import { ProfileEnrichDrawer } from '@/components/profiles/profile-enrich-drawer';
+import { LinkedInExportDialog } from '@/components/profiles/linkedin-export-dialog';
+import { useAuth } from '@/components/auth/auth-context';
 import type { SavedProfile, ParsedLinkedIn } from '@/types';
 
 export default function ProfileEditPage() {
@@ -35,6 +38,9 @@ export default function ProfileEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [enrichOpen, setEnrichOpen] = useState(false);
+  // De LinkedIn-export (API + dialog) bestond al, maar was nergens bereikbaar.
+  const [exportOpen, setExportOpen] = useState(false);
+  const { refreshCredits } = useAuth();
 
   // Load profile on mount.
   useEffect(() => {
@@ -218,7 +224,11 @@ export default function ProfileEditPage() {
                 </Button>
                 <Button variant="outline" onClick={handleCreateCV}>
                   <FileText className="h-4 w-4 mr-1" />
-                  CV
+                  {t('createCv')}
+                </Button>
+                <Button variant="outline" onClick={() => setExportOpen(true)} disabled={isDirty}>
+                  <Linkedin className="h-4 w-4 mr-1" />
+                  {t('linkedInExport')}
                 </Button>
               </div>
             </div>
@@ -249,6 +259,14 @@ export default function ProfileEditPage() {
         open={enrichOpen}
         onOpenChange={setEnrichOpen}
         onApply={handleEnrichApply}
+      />
+
+      <LinkedInExportDialog
+        profileId={profileId}
+        profileName={profile?.name ?? ''}
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        onCreditsUsed={refreshCredits}
       />
     </div>
   );

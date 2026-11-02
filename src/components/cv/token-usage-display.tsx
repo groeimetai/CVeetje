@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, Coins } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import type { StepTokenUsage } from '@/types';
@@ -13,32 +14,35 @@ interface TokenUsageDisplayProps {
   modelName?: string;
 }
 
-const STEP_LABELS: Record<StepTokenUsage['step'], string> = {
-  'profile-parse': 'Profiel Parse',
-  'profile-enrich': 'Profiel Verrijken',
-  'linkedin-export': 'LinkedIn Export',
-  job: 'Vacature Parse',
-  style: 'Stijl',
-  generate: 'CV Genereren',
-  regenerate: 'CV Regenereren',
-  motivation: 'Motivatiebrief',
+// Step labels live in `tokenUsage.steps.<step>`.
+const STEP_KEYS: Record<StepTokenUsage['step'], string> = {
+  'profile-parse': 'profileParse',
+  'profile-enrich': 'profileEnrich',
+  'linkedin-export': 'linkedinExport',
+  job: 'job',
+  style: 'style',
+  generate: 'generate',
+  regenerate: 'regenerate',
+  motivation: 'motivation',
 };
-
-function formatNumber(num: number): string {
-  return num.toLocaleString('nl-NL');
-}
-
-function formatCost(usd: number): string {
-  const eur = usd * USD_TO_EUR;
-  // Show more decimal places for very small amounts
-  if (eur < 0.01) {
-    return `€${eur.toFixed(4)}`;
-  }
-  return `€${eur.toFixed(2)}`;
-}
 
 export function TokenUsageDisplay({ history, modelName }: TokenUsageDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const t = useTranslations('tokenUsage');
+  const format = useFormatter();
+
+  const formatNumber = (num: number): string => format.number(num);
+  const formatCost = (usd: number): string => {
+    const eur = usd * USD_TO_EUR;
+    // Show more decimal places for very small amounts
+    const digits = eur < 0.01 ? 4 : 2;
+    return format.number(eur, {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+  };
 
   const totals = useMemo(() => {
     return history.reduce(
@@ -61,12 +65,14 @@ export function TokenUsageDisplay({ history, modelName }: TokenUsageDisplayProps
     <div className="relative">
       {/* Inline badge - styled to match the wizard */}
       <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border bg-card hover:bg-accent/50 transition-colors"
       >
         <Coins className="h-4 w-4 text-muted-foreground" />
         <span className="text-muted-foreground">
-          {formatNumber(totals.totalTokens)} tokens
+          {t('tokens', { value: formatNumber(totals.totalTokens) })}
         </span>
         <span className="text-muted-foreground">|</span>
         <span className="font-medium">{formatCost(totals.totalCostUsd)}</span>
@@ -81,19 +87,19 @@ export function TokenUsageDisplay({ history, modelName }: TokenUsageDisplayProps
       {isExpanded && (
         <div className="absolute top-full left-0 mt-2 z-50 w-72 rounded-lg border bg-card shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="p-4 space-y-3">
-            <h4 className="text-sm font-medium text-muted-foreground">Token Usage</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">{t('title')}</h4>
 
             {history.map((item, index) => (
               <div key={index} className="space-y-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">{STEP_LABELS[item.step]}</span>
+                  <span className="text-sm font-medium">{t(`steps.${STEP_KEYS[item.step]}`)}</span>
                   <span className="text-sm text-muted-foreground">
                     {formatCost(item.cost.total)}
                   </span>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground">
-                  <span>In: {formatNumber(item.usage.promptTokens)}</span>
-                  <span>Out: {formatNumber(item.usage.completionTokens)}</span>
+                  <span>{t('in', { value: formatNumber(item.usage.promptTokens) })}</span>
+                  <span>{t('out', { value: formatNumber(item.usage.completionTokens) })}</span>
                 </div>
                 {index < history.length - 1 && <Separator className="mt-2" />}
               </div>
@@ -104,12 +110,12 @@ export function TokenUsageDisplay({ history, modelName }: TokenUsageDisplayProps
             {/* Totals */}
             <div className="space-y-1">
               <div className="flex justify-between items-center font-medium">
-                <span className="text-sm">Totaal</span>
+                <span className="text-sm">{t('total')}</span>
                 <span className="text-sm">{formatCost(totals.totalCostUsd)}</span>
               </div>
               <div className="flex gap-4 text-xs text-muted-foreground">
-                <span>In: {formatNumber(totals.promptTokens)}</span>
-                <span>Out: {formatNumber(totals.completionTokens)}</span>
+                <span>{t('in', { value: formatNumber(totals.promptTokens) })}</span>
+                <span>{t('out', { value: formatNumber(totals.completionTokens) })}</span>
               </div>
             </div>
 
@@ -118,7 +124,7 @@ export function TokenUsageDisplay({ history, modelName }: TokenUsageDisplayProps
               <>
                 <Separator />
                 <div className="text-xs text-muted-foreground">
-                  Model: {modelName}
+                  {t('model', { model: modelName })}
                 </div>
               </>
             )}

@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { Bell, ChevronRight, MessageSquarePlus, Search } from 'lucide-react';
+import { ChevronRight, MessageSquarePlus, Search } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Link } from '@/i18n/navigation';
-import { CommandPalette } from '@/components/dashboard/command-palette';
+import { CommandPalette, OPEN_PALETTE_EVENT } from '@/components/dashboard/command-palette';
 
 /** Maps a URL segment to the navigation-namespace key. Only segments listed
  *  here go through translation; anything else (CV id, etc.) falls back to a
@@ -26,6 +26,27 @@ const SEGMENT_KEYS: Record<string, string> = {
   new: 'new',
   edit: 'edit',
   preview: 'preview',
+};
+
+/** Admin-subpagina's → navigation-keys (voorheen Engelse title-case "Users"). */
+const ADMIN_KEYS: Record<string, string> = {
+  users: 'adminUsers',
+  profielen: 'adminProfiles',
+  cvs: 'adminCvs',
+  disputes: 'adminDisputes',
+  emails: 'adminEmails',
+  templates: 'adminTemplates',
+  kanban: 'adminKanban',
+  feedback: 'adminFeedback',
+  platform: 'adminPlatform',
+};
+
+/** Root-segment → href voor de klikbare eerste breadcrumb. */
+const ROOT_HREF: Record<string, string> = {
+  cv: '/cv',
+  profiles: '/profiles',
+  jobs: '/jobs',
+  admin: '/admin/users',
 };
 
 function titleCase(s: string): string {
@@ -65,8 +86,13 @@ export function DashTopbar() {
         setPaletteOpen((v) => !v);
       }
     };
+    const onOpen = () => setPaletteOpen(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener(OPEN_PALETTE_EVENT, onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(OPEN_PALETTE_EVENT, onOpen);
+    };
   }, []);
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
@@ -74,25 +100,30 @@ export function DashTopbar() {
 
   const { crumbRoot, pageKey } = useMemo(() => getPageKey(pathname), [pathname]);
 
-  const rootLabel = crumbRoot === 'admin' ? t('adminSection') : t('dashboard');
+  // Breadcrumb: [sectie] › [pagina]. Onbekende sub-segmenten (CV-/profiel-
+  // ID's) tonen "Details" i.p.v. een ge-title-cased ruwe ID.
+  let rootLabel: string;
   let pageLabel: string;
-  if (crumbRoot === 'dashboard') {
+  if (crumbRoot === 'admin') {
+    rootLabel = t('adminSection');
+    pageLabel = pageKey && ADMIN_KEYS[pageKey] ? t(ADMIN_KEYS[pageKey]) : t('adminSection');
+  } else if (crumbRoot === 'dashboard') {
+    rootLabel = t('dashboard');
     pageLabel = tDashboard('overview');
-  } else if (pageKey && SEGMENT_KEYS[pageKey]) {
-    pageLabel = t(SEGMENT_KEYS[pageKey]);
   } else if (pageKey) {
-    pageLabel = titleCase(pageKey);
-  } else if (SEGMENT_KEYS[crumbRoot]) {
-    pageLabel = t(SEGMENT_KEYS[crumbRoot]);
+    rootLabel = SEGMENT_KEYS[crumbRoot] ? t(SEGMENT_KEYS[crumbRoot]) : titleCase(crumbRoot);
+    pageLabel = SEGMENT_KEYS[pageKey] ? t(SEGMENT_KEYS[pageKey]) : t('details');
   } else {
-    pageLabel = titleCase(crumbRoot);
+    rootLabel = t('dashboard');
+    pageLabel = SEGMENT_KEYS[crumbRoot] ? t(SEGMENT_KEYS[crumbRoot]) : titleCase(crumbRoot);
   }
+  const rootHref = pageKey && ROOT_HREF[crumbRoot] ? ROOT_HREF[crumbRoot] : crumbRoot === 'dashboard' ? null : '/dashboard';
 
   return (
     <div className="dash-topbar">
       <div className="dash-topbar__crumb">
-        <span>{rootLabel}</span>
-        <ChevronRight size={12} />
+        {rootHref ? <Link href={rootHref}>{rootLabel}</Link> : <span>{rootLabel}</span>}
+        <ChevronRight size={12} aria-hidden="true" />
         <strong>{pageLabel}</strong>
       </div>
 
@@ -118,9 +149,6 @@ export function DashTopbar() {
         <Link href="/feedback" className="dash-topbar__icon-btn" title={t('feedback')} aria-label={t('feedback')}>
           <MessageSquarePlus size={16} />
         </Link>
-        <button type="button" className="dash-topbar__icon-btn" title="Notificaties" aria-label="Notificaties">
-          <Bell size={16} />
-        </button>
       </div>
 
       <CommandPalette open={paletteOpen} onClose={closePalette} />

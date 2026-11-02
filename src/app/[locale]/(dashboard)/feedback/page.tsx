@@ -8,13 +8,14 @@ import { PageHeader } from '@/components/brand/page-header';
 
 export default function FeedbackPage() {
   const t = useTranslations('feedback');
+  const tHeaders = useTranslations('pageHeaders');
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
     <>
       <PageHeader
-        eyebrow="§ Bug? Suggestie?"
-        title={<>{t('title').replace(/\s+\S+$/, '')} <em>{t('title').split(/\s+/).slice(-1)[0]}</em></>}
+        eyebrow={tHeaders('feedback.eyebrow')}
+        title={tHeaders.rich('feedback.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('description')}
       />
       <div className="grid gap-6 lg:grid-cols-2">

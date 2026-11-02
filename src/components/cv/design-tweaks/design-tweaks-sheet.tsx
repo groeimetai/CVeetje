@@ -19,6 +19,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import {
   Sheet,
   SheetContent,
@@ -51,12 +52,8 @@ import {
   TextControl,
 } from './controls';
 
-const TAB_LABELS: Record<TweakTab, string> = {
-  colors: 'Kleuren',
-  typography: 'Typografie',
-  layout: 'Layout',
-  content: 'Inhoud',
-};
+// Tab labels live in messages under `designTweaks.tabs.<tab>`.
+const TABS: TweakTab[] = ['colors', 'typography', 'layout', 'content'];
 
 interface DesignTweaksSheetProps {
   open: boolean;
@@ -109,6 +106,7 @@ export function DesignTweaksSheetV1({
   onTokensChange,
 }: DesignTweaksSheetProps) {
   const { refreshToken } = useAuth();
+  const t = useTranslations('designTweaks');
   const fields = useMemo(() => getVisibleFields(creativityLevel), [creativityLevel]);
   const grouped = useMemo(() => fieldsByTab(fields), [fields]);
 
@@ -125,7 +123,7 @@ export function DesignTweaksSheetV1({
 
   // Pick the first tab that actually has at least one field
   const initialTab = (Object.keys(grouped) as TweakTab[])
-    .find(t => grouped[t].length > 0) ?? 'colors';
+    .find(tab => grouped[tab].length > 0) ?? 'colors';
 
   // Persist to server, debounced. Called from handleChange.
   const persist = useCallback((next: CVDesignTokens) => {
@@ -154,10 +152,10 @@ export function DesignTweaksSheetV1({
       } catch (e) {
         console.error('[DesignTweaksSheet] save failed', e);
         setSaveState('error');
-        toast.error('Tweak kon niet worden opgeslagen — probeer opnieuw');
+        toast.error(t('saveFailedToast'));
       }
     }, 500);
-  }, [cvId, refreshToken]);
+  }, [cvId, refreshToken, t]);
 
   // Cleanup pending debounce on unmount
   useEffect(() => {
@@ -177,15 +175,15 @@ export function DesignTweaksSheetV1({
     const restored = JSON.parse(JSON.stringify(originalTokens)) as CVDesignTokens;
     onTokensChange(restored);
     persist(restored);
-    toast.success('Teruggezet naar originele AI-stijl');
-  }, [originalTokens, onTokensChange, persist]);
+    toast.success(t('resetToOriginalToast'));
+  }, [originalTokens, onTokensChange, persist, t]);
 
   const saveLabel: Record<SaveState, string> = {
     idle: '',
-    dirty: 'Wijziging…',
-    saving: 'Opslaan…',
-    saved: 'Opgeslagen',
-    error: 'Fout bij opslaan',
+    dirty: t('dirty'),
+    saving: t('saving'),
+    saved: t('saved'),
+    error: t('saveError'),
   };
 
   return (
@@ -194,9 +192,9 @@ export function DesignTweaksSheetV1({
         <SheetHeader>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <SheetTitle>Tweaks</SheetTitle>
+              <SheetTitle>{t('v1Title')}</SheetTitle>
               <SheetDescription>
-                Pas kleuren, typografie en stijl direct aan — preview update live.
+                {t('v1Description')}
               </SheetDescription>
             </div>
             {originalTokens && (
@@ -206,10 +204,10 @@ export function DesignTweaksSheetV1({
                 size="sm"
                 onClick={handleReset}
                 className="shrink-0 gap-1.5 text-xs"
-                title="Terug naar originele AI-stijl"
+                title={t('resetTooltip')}
               >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                {t('reset')}
               </Button>
             )}
           </div>
@@ -222,18 +220,18 @@ export function DesignTweaksSheetV1({
 
         <Tabs defaultValue={initialTab} className="mt-4 px-4 pb-6">
           <TabsList className="grid w-full grid-cols-4">
-            {(Object.keys(TAB_LABELS) as TweakTab[]).map(tab => (
+            {TABS.map(tab => (
               <TabsTrigger
                 key={tab}
                 value={tab}
                 disabled={grouped[tab].length === 0}
               >
-                {TAB_LABELS[tab]}
+                {t(`tabs.${tab}`)}
               </TabsTrigger>
             ))}
           </TabsList>
 
-          {(Object.keys(TAB_LABELS) as TweakTab[]).map(tab => (
+          {TABS.map(tab => (
             <TabsContent key={tab} value={tab} className="mt-4 space-y-4">
               {grouped[tab].map(field => (
                 <FieldRow

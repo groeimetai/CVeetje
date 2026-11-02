@@ -18,6 +18,7 @@ import { LanguageSelector } from './wizard/language-selector';
 import { ResumeDraftDialog } from './wizard/resume-draft-dialog';
 import { NoApiKeyAlert } from './wizard/no-api-key-alert';
 import { WizardProgress } from './wizard/wizard-progress';
+import { GeneratingProgress } from './wizard/generating-progress';
 import { StyleOrTemplateChoice, TemplateSelector } from '@/components/templates';
 import { useAuth } from '@/components/auth/auth-context';
 import { getCV } from '@/lib/firebase/firestore';
@@ -356,28 +357,6 @@ export function CVWizard() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templatePdfBlob, setTemplatePdfBlob] = useState<Blob | null>(null);
   const [templateFileName, setTemplateFileName] = useState<string>('');
-
-  // Determine which step to show in progress bar
-  const getStyleStepConfig = (): { id: WizardStep; label: string } => {
-    if (useTemplateMode) {
-      return { id: 'template' as WizardStep, label: t('steps.template') };
-    }
-    if (useTemplateStyleMode) {
-      return { id: 'template-style' as WizardStep, label: t('steps.templateStyle') };
-    }
-    return { id: 'style' as WizardStep, label: t('steps.style') };
-  };
-
-  const steps: { id: WizardStep; label: string }[] = [
-    { id: 'linkedin', label: t('steps.profile') },
-    { id: 'job', label: t('steps.job') },
-    { id: 'fit-analysis', label: t('steps.fitAnalysis') },
-    { id: 'required-items', label: t('steps.requiredItems') },
-    { id: 'style-choice', label: t('steps.styleChoice') },
-    getStyleStepConfig(),
-    { id: 'generating', label: t('steps.generating') },
-    { id: 'preview', label: t('steps.preview') },
-  ];
 
   // Check if user has AI access (own key or platform mode)
   const hasApiKey = hasAIAccess;
@@ -894,13 +873,15 @@ export function CVWizard() {
   return (
     <div className="space-y-6">
       <WizardProgress
-        steps={steps}
         currentStep={currentStep}
+        hasVacancy={!!jobVacancy}
+        hasResult={!!generatedContent || !!templatePdfBlob}
         tokenHistory={tokenHistory}
         modelName={modelInfo?.name}
         llmMode={llmMode}
         credits={credits}
         onBack={goBack}
+        onNavigate={setCurrentStep}
       />
 
       {/* Error display */}
@@ -1047,18 +1028,7 @@ export function CVWizard() {
       )}
 
       {currentStep === 'generating' && (
-        <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <div className="text-center">
-            <h3 className="text-lg font-semibold">{t('generating.title')}</h3>
-            <p className="text-muted-foreground">
-              {t('generating.creating')}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('generating.aiDisclosure')}
-            </p>
-          </div>
-        </div>
+        <GeneratingProgress isTemplate={useTemplateMode} />
       )}
 
       {/* Template Preview - for filled templates */}
