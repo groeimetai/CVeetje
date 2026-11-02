@@ -20,17 +20,19 @@ function layoutFromCV(cv: CV): CvThumbLayout {
   return 'split';
 }
 
-function fmtRelative(date: Date | null): string {
+type Translate = ReturnType<typeof useTranslations<'dashboard'>>;
+
+function fmtRelative(tDashboard: Translate, date: Date | null): string {
   if (!date) return '—';
   const ms = Date.now() - date.getTime();
   const h = Math.floor(ms / 3600_000);
-  if (h < 1) return 'net nu';
-  if (h < 24) return `${h} uur`;
+  if (h < 1) return tDashboard('cvGrid.relative.justNow');
+  if (h < 24) return tDashboard('cvGrid.relative.hours', { n: h });
   const d = Math.floor(h / 24);
-  if (d < 7) return `${d} dag`;
+  if (d < 7) return tDashboard('cvGrid.relative.days', { n: d });
   const w = Math.floor(d / 7);
-  if (w < 4) return `${w} week`;
-  return `${Math.floor(d / 30)} mnd`;
+  if (w < 4) return tDashboard('cvGrid.relative.weeks', { n: w });
+  return tDashboard('cvGrid.relative.months', { n: Math.floor(d / 30) });
 }
 
 function toDate(value: unknown): Date | null {
@@ -42,17 +44,18 @@ function toDate(value: unknown): Date | null {
   return null;
 }
 
-function statusBadge(status: CV['status']): { label: string; variant: 'success' | 'primary' | 'ghost' | 'accent' } {
+function statusBadge(tDashboard: Translate, status: CV['status']): { label: string; variant: 'success' | 'primary' | 'ghost' | 'accent' } {
   switch (status) {
-    case 'pdf_ready': return { label: 'PDF klaar', variant: 'success' };
-    case 'generated': return { label: 'Gegenereerd', variant: 'primary' };
-    case 'generating': return { label: 'Bezig…', variant: 'accent' };
-    case 'failed': return { label: 'Mislukt', variant: 'accent' };
-    default: return { label: 'Concept', variant: 'ghost' };
+    case 'pdf_ready': return { label: tDashboard('cvGrid.status.pdfReady'), variant: 'success' };
+    case 'generated': return { label: tDashboard('status.generated'), variant: 'primary' };
+    case 'generating': return { label: tDashboard('cvGrid.status.generating'), variant: 'accent' };
+    case 'failed': return { label: tDashboard('status.failed'), variant: 'accent' };
+    default: return { label: tDashboard('status.draft'), variant: 'ghost' };
   }
 }
 
 export function CvGridSection({ cvs, total, readyCount }: CvGridProps) {
+  const tDashboard = useTranslations('dashboard');
   const t = useTranslations('dashboard.cvGrid');
 
   return (
@@ -73,8 +76,8 @@ export function CvGridSection({ cvs, total, readyCount }: CvGridProps) {
             const role = cv.jobVacancy?.title || t('untitled');
             const company = cv.jobVacancy?.company;
             const name = cv.linkedInData?.fullName || '—';
-            const status = statusBadge(cv.status);
-            const time = fmtRelative(toDate(cv.createdAt));
+            const status = statusBadge(tDashboard, cv.status);
+            const time = fmtRelative(tDashboard, toDate(cv.createdAt));
             return (
               <Link key={cv.id} href={`/cv/${cv.id}`} className="cvgrid__card">
                 <CvThumb layout={layout} name={name} role={role} />
@@ -93,7 +96,7 @@ export function CvGridSection({ cvs, total, readyCount }: CvGridProps) {
                   </span>
                 </div>
                 <div className="cvgrid__card-foot">
-                  <span>{t('ago', { time })}</span>
+                  <span>{time}</span>
                   <ExternalLink size={12} style={{ color: 'var(--muted)' }} />
                 </div>
               </Link>

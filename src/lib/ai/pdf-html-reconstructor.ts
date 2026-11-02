@@ -22,6 +22,7 @@ import { withRetry } from './retry';
 import type { RenderedPage } from '@/lib/pdf/pdf-to-image';
 import type { PDFBlueprint } from './pdf-template-analyzer';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage } from '@/types';
+import { resolveTemperature } from '@/lib/ai/temperature';
 
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
@@ -79,7 +80,7 @@ async function generateHTML(opts: ReconstructPDFOptions): Promise<string> {
     .map((f) => {
       const v = values.get(f.id) ?? '';
       if (!v.trim()) return null;
-      return `  ${f.id} (${f.kind}/${f.profileField}${typeof f.index === 'number' ? `[${f.index}]` : ''}): ${JSON.stringify(v.slice(0, 240))}`;
+      return `  ${f.id} (${f.kind}/${f.profileField}${typeof f.index === 'number' ? `[${f.index}]` : ''}): ${JSON.stringify(v.slice(0, 1200))}`;
     })
     .filter(Boolean)
     .join('\n');
@@ -125,7 +126,7 @@ LAYOUT FIT: target A4 (210×297mm). Aim for a single page; let content overflow 
       model: aiProvider(model),
       system: systemPrompt,
       messages: [{ role: 'user', content: userContent }],
-      temperature: 0.3,
+      temperature: resolveTemperature(provider, model, 0.3),
     })
   );
 

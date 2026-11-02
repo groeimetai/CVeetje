@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,16 +19,18 @@ import { CreditBadge } from '@/components/cv/credit-badge';
 
 type Mode = 'input' | 'preview' | 'edit';
 
-const editSchema = z.object({
-  title: z.string().min(2, 'Functietitel is verplicht'),
-  company: z.string().optional(),
-  description: z.string().min(20, 'Geef meer details over de functie'),
-  industry: z.string().optional(),
-  location: z.string().optional(),
-  employmentType: z.string().optional(),
-});
+function createEditSchema(messages: { titleRequired: string; descriptionRequired: string }) {
+  return z.object({
+    title: z.string().min(2, messages.titleRequired),
+    company: z.string().optional(),
+    description: z.string().min(20, messages.descriptionRequired),
+    industry: z.string().optional(),
+    location: z.string().optional(),
+    employmentType: z.string().optional(),
+  });
+}
 
-type EditFormData = z.infer<typeof editSchema>;
+type EditFormData = z.infer<ReturnType<typeof createEditSchema>>;
 
 interface JobInputProps {
   onSubmit: (data: JobVacancy | null) => void;
@@ -54,6 +56,15 @@ export function JobInput({
   sourceHint,
 }: JobInputProps) {
   const t = useTranslations('jobInput');
+  const tCommon = useTranslations('common');
+  const format = useFormatter();
+  const editSchema = useMemo(
+    () => createEditSchema({
+      titleRequired: t('errors.titleRequired'),
+      descriptionRequired: t('errors.descriptionRequired'),
+    }),
+    [t]
+  );
   const { llmMode } = useAuth();
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
   const [rawText, setRawText] = useState(initialData?.rawText || '');
@@ -91,7 +102,7 @@ export function JobInput({
 
   const handleParse = async () => {
     if (!rawText.trim() || rawText.trim().length < 50) {
-      setError('Plak een volledige vacaturetekst (minimaal 50 tekens)');
+      setError(t('errors.textTooShort'));
       return;
     }
 
@@ -112,7 +123,7 @@ export function JobInput({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Kon vacature niet analyseren');
+        throw new Error(result.error || t('errors.couldNotAnalyze'));
       }
 
       const job = result.data as JobVacancy;
@@ -149,7 +160,7 @@ export function JobInput({
 
       setMode('preview');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Er ging iets mis');
+      setError(err instanceof Error ? err.message : t('errors.somethingWentWrong'));
     } finally {
       setIsParsing(false);
     }
@@ -256,12 +267,18 @@ export function JobInput({
   const formatSalary = (min?: number, max?: number, currency?: string, period?: string) => {
     if (!min && !max) return null;
     const curr = currency || 'EUR';
-    const per = period === 'monthly' ? '/maand' : period === 'hourly' ? '/uur' : '/jaar';
+    const per = t(
+      period === 'monthly'
+        ? 'salary.periodSuffix.monthly'
+        : period === 'hourly'
+          ? 'salary.periodSuffix.hourly'
+          : 'salary.periodSuffix.yearly'
+    );
     if (min && max) {
-      return `${curr} ${min.toLocaleString()} - ${max.toLocaleString()}${per}`;
+      return t('salary.range', { currency: curr, min: format.number(min), max: format.number(max), period: per });
     }
-    if (min) return `Vanaf ${curr} ${min.toLocaleString()}${per}`;
-    if (max) return `Tot ${curr} ${max.toLocaleString()}${per}`;
+    if (min) return t('salary.from', { currency: curr, min: format.number(min), period: per });
+    if (max) return t('salary.to', { currency: curr, max: format.number(max), period: per });
     return null;
   };
 
@@ -282,7 +299,7 @@ export function JobInput({
           <div className="space-y-2">
             <Label htmlFor="vacancy-url" className="flex items-center gap-1.5">
               <Link2 className="h-3.5 w-3.5" />
-              Vacature URL (optioneel)
+              {t('urlLabel')}
             </Label>
             <Input
               id="vacancy-url"
@@ -293,9 +310,7 @@ export function JobInput({
               onChange={(e) => setSourceUrl(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              We bewaren de link bij je CV, zodat je later de originele vacature
-              kunt terugvinden. Als de link openbaar bereikbaar is, halen we
-              automatisch de volledige tekst op.
+              {t('urlHint')}
             </p>
           </div>
 
@@ -310,7 +325,7 @@ export function JobInput({
               className="font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Je kunt de hele vacaturetekst plakken - inclusief bedrijfsinfo, vereisten, en extraatjes
+              {t('pasteHint')}
             </p>
           </div>
 
@@ -329,12 +344,12 @@ export function JobInput({
               {isParsing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Analyseren...
+                  {t('analyzing')}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4" />
-                  Analyseer vacature
+                  {t('analyze')}
                   {llmMode === 'platform' && (
                     <CreditBadge operation="job-parse" />
                   )}
@@ -342,7 +357,7 @@ export function JobInput({
               )}
             </Button>
             <Button type="button" variant="outline" onClick={handleSkip}>
-              Overslaan (Algemene CV)
+              {t('skipVacancy')}
             </Button>
           </div>
         </CardContent>
@@ -359,15 +374,15 @@ export function JobInput({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                Vacature geanalyseerd
+                {t('preview.title')}
               </CardTitle>
               <CardDescription>
-                Controleer de geëxtraheerde informatie en ga door of pas aan
+                {t('preview.description')}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" onClick={handleStartOver} className="gap-1">
               <ArrowLeft className="h-4 w-4" />
-              Opnieuw
+              {t('preview.startOver')}
             </Button>
           </div>
         </CardHeader>
@@ -378,12 +393,10 @@ export function JobInput({
                 <AlertCircle className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="space-y-2">
                   <p className="text-sm font-medium">
-                    Adzuna geeft maar een korte preview van deze vacature
+                    {t('adzuna.title')}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    De AI maakt een veel scherper CV met de volledige
-                    vacaturetekst. Open de werkgever-site, kopieer de hele
-                    advertentie en plak hem hieronder.
+                    {t('adzuna.body')}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {sourceHint.externalUrl && (
@@ -393,12 +406,12 @@ export function JobInput({
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Open vacature-site
+                          {t('adzuna.openSite')}
                         </a>
                       </Button>
                     )}
                     <Button size="sm" onClick={() => setMode('input')}>
-                      Volledige tekst plakken
+                      {t('adzuna.pasteFull')}
                     </Button>
                   </div>
                 </AlertDescription>
@@ -438,7 +451,7 @@ export function JobInput({
                   className="flex items-center gap-1 text-primary underline-offset-2 hover:underline"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Originele vacature
+                  {t('preview.originalVacancy')}
                 </a>
               )}
               {parsedJob.industry && (
@@ -449,14 +462,14 @@ export function JobInput({
 
           {/* Description */}
           <div className="space-y-1">
-            <Label className="text-sm font-medium">Samenvatting</Label>
+            <Label className="text-sm font-medium">{t('preview.summary')}</Label>
             <p className="text-sm text-muted-foreground">{parsedJob.description}</p>
           </div>
 
           {/* Requirements */}
           {requirements.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Vereisten</Label>
+              <Label className="text-sm font-medium">{t('parsed.requirements')}</Label>
               <ul className="space-y-1">
                 {requirements.map((req, i) => (
                   <li key={i} className="text-sm flex items-start gap-2">
@@ -466,8 +479,9 @@ export function JobInput({
                       type="button"
                       onClick={() => removeRequirement(i)}
                       className="text-muted-foreground hover:text-destructive"
+                      aria-label={t('removeRequirement')}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </button>
                   </li>
                 ))}
@@ -478,7 +492,7 @@ export function JobInput({
           {/* Keywords */}
           {keywords.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Keywords</Label>
+              <Label className="text-sm font-medium">{t('parsed.keywords')}</Label>
               <div className="flex flex-wrap gap-2">
                 {keywords.map((kw, i) => (
                   <Badge key={i} variant="outline" className="gap-1">
@@ -487,8 +501,9 @@ export function JobInput({
                       type="button"
                       onClick={() => removeKeyword(i)}
                       className="hover:text-destructive"
+                      aria-label={t('removeKeyword')}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </button>
                   </Badge>
                 ))}
@@ -506,10 +521,10 @@ export function JobInput({
               >
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-sm">AI Salaris Inschatting</span>
+                  <span className="font-medium text-sm">{t('salary.aiEstimate')}</span>
                   <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                    {salaryEstimate.confidence === 'high' ? 'Hoge betrouwbaarheid' :
-                     salaryEstimate.confidence === 'medium' ? 'Gemiddelde betrouwbaarheid' : 'Lage betrouwbaarheid'}
+                    {salaryEstimate.confidence === 'high' ? t('parsed.salaryConfidence.high') :
+                     salaryEstimate.confidence === 'medium' ? t('parsed.salaryConfidence.medium') : t('parsed.salaryConfidence.low')}
                   </Badge>
                 </div>
                 {showSalaryEstimate ? (
@@ -526,12 +541,12 @@ export function JobInput({
                     <div className="flex items-center gap-2 mb-2">
                       <Target className="h-4 w-4 text-primary" />
                       <span className="font-semibold text-lg">
-                        €{salaryEstimate.estimatedMin.toLocaleString()} - €{salaryEstimate.estimatedMax.toLocaleString()}
+                        €{format.number(salaryEstimate.estimatedMin)} - €{format.number(salaryEstimate.estimatedMax)}
                       </span>
-                      <span className="text-sm text-muted-foreground">/jaar</span>
+                      <span className="text-sm text-muted-foreground">{t('salary.perYear')}</span>
                     </div>
                     <Badge variant="secondary" className="capitalize">
-                      {salaryEstimate.experienceLevel} niveau
+                      {t('salary.level', { level: salaryEstimate.experienceLevel })}
                     </Badge>
                   </div>
 
@@ -539,7 +554,7 @@ export function JobInput({
                   <div>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
-                      Onderbouwing
+                      {t('salary.reasoning')}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">{salaryEstimate.reasoning}</p>
                   </div>
@@ -548,13 +563,13 @@ export function JobInput({
                   <div>
                     <Label className="text-sm font-medium flex items-center gap-1">
                       <TrendingUp className="h-3 w-3" />
-                      Marktinzicht
+                      {t('salary.marketInsight')}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">{salaryEstimate.marketInsight}</p>
                   </div>
 
                   <p className="text-xs text-muted-foreground italic">
-                    * Dit is een AI-inschatting op basis van functie, industrie en locatie. Werkelijke salarissen kunnen afwijken.
+                    {t('salary.disclaimer')}
                   </p>
                 </div>
               )}
@@ -570,9 +585,9 @@ export function JobInput({
             >
               <div className="flex items-center gap-2">
                 <Euro className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-sm">Compensatie & Secundaire Voorwaarden</span>
+                <span className="font-medium text-sm">{t('compensation.title')}</span>
                 {(compensation.salaryMin || compensation.salaryMax || (compensation.benefits && compensation.benefits.length > 0)) && (
-                  <Badge variant="secondary" className="text-xs">Ingevuld</Badge>
+                  <Badge variant="secondary" className="text-xs">{t('compensation.filled')}</Badge>
                 )}
               </div>
               {showCompensation ? (
@@ -587,7 +602,7 @@ export function JobInput({
                 {/* Salary display */}
                 {(compensation.salaryMin || compensation.salaryMax) && (
                   <div className="pt-3">
-                    <Label className="text-sm font-medium">Salaris</Label>
+                    <Label className="text-sm font-medium">{t('compensation.salary')}</Label>
                     <p className="text-sm text-muted-foreground">
                       {formatSalary(compensation.salaryMin, compensation.salaryMax, compensation.salaryCurrency, compensation.salaryPeriod)}
                     </p>
@@ -597,7 +612,7 @@ export function JobInput({
                 {/* Benefits display */}
                 {compensation.benefits && compensation.benefits.length > 0 && (
                   <div>
-                    <Label className="text-sm font-medium">Secundaire voorwaarden</Label>
+                    <Label className="text-sm font-medium">{t('compensation.benefits')}</Label>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {compensation.benefits.map((benefit, i) => (
                         <Badge key={i} variant="secondary" className="gap-1">
@@ -607,8 +622,9 @@ export function JobInput({
                             type="button"
                             onClick={() => removeBenefit(i)}
                             className="hover:text-destructive"
+                            aria-label={t('removeBenefit')}
                           >
-                            <X className="h-3 w-3" />
+                            <X className="h-3 w-3" aria-hidden="true" />
                           </button>
                         </Badge>
                       ))}
@@ -619,7 +635,7 @@ export function JobInput({
                 {/* Bonus info */}
                 {compensation.bonusInfo && (
                   <div>
-                    <Label className="text-sm font-medium">Bonus</Label>
+                    <Label className="text-sm font-medium">{t('compensation.bonus')}</Label>
                     <p className="text-sm text-muted-foreground">{compensation.bonusInfo}</p>
                   </div>
                 )}
@@ -627,7 +643,7 @@ export function JobInput({
                 {/* Notes */}
                 {compensation.notes && (
                   <div>
-                    <Label className="text-sm font-medium">Notities</Label>
+                    <Label className="text-sm font-medium">{t('compensation.notes')}</Label>
                     <p className="text-sm text-muted-foreground">{compensation.notes}</p>
                   </div>
                 )}
@@ -635,7 +651,7 @@ export function JobInput({
                 {/* If nothing filled yet, show input fields */}
                 {!compensation.salaryMin && !compensation.salaryMax && (!compensation.benefits || compensation.benefits.length === 0) && (
                   <p className="text-sm text-muted-foreground pt-3 italic">
-                    Klik op &quot;Bewerken&quot; om compensatie details toe te voegen
+                    {t('compensation.emptyHint')}
                   </p>
                 )}
               </div>
@@ -643,10 +659,10 @@ export function JobInput({
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button onClick={handleContinue}>Doorgaan</Button>
+            <Button onClick={handleContinue}>{t('continueWithJob')}</Button>
             <Button variant="outline" onClick={() => setMode('edit')} className="gap-1">
               <Pencil className="h-4 w-4" />
-              Bewerken
+              {tCommon('edit')}
             </Button>
           </div>
         </CardContent>
@@ -662,15 +678,15 @@ export function JobInput({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
-              Vacature bewerken
+              {t('edit.title')}
             </CardTitle>
             <CardDescription>
-              Pas de geëxtraheerde informatie aan indien nodig
+              {t('edit.description')}
             </CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={() => setMode('preview')} className="gap-1">
             <ArrowLeft className="h-4 w-4" />
-            Terug
+            {tCommon('back')}
           </Button>
         </div>
       </CardHeader>
@@ -678,10 +694,10 @@ export function JobInput({
         <form onSubmit={handleSubmit(handleEditSave)} className="space-y-4">
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="title">Functietitel *</Label>
+              <Label htmlFor="title">{t('edit.titleLabel')}</Label>
               <Input
                 id="title"
-                placeholder="bijv. Senior Software Engineer"
+                placeholder={t('edit.titlePlaceholder')}
                 {...register('title')}
               />
               {errors.title && (
@@ -690,10 +706,10 @@ export function JobInput({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="company">Bedrijf</Label>
+              <Label htmlFor="company">{t('parsed.company')}</Label>
               <Input
                 id="company"
-                placeholder="bijv. TechCorp"
+                placeholder={t('edit.companyPlaceholder')}
                 {...register('company')}
               />
             </div>
@@ -701,38 +717,38 @@ export function JobInput({
 
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="location">Locatie</Label>
+              <Label htmlFor="location">{t('parsed.location')}</Label>
               <Input
                 id="location"
-                placeholder="bijv. Amsterdam"
+                placeholder={t('edit.locationPlaceholder')}
                 {...register('location')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employmentType">Dienstverband</Label>
+              <Label htmlFor="employmentType">{t('edit.employmentType')}</Label>
               <Input
                 id="employmentType"
-                placeholder="bijv. Fulltime"
+                placeholder={t('edit.employmentTypePlaceholder')}
                 {...register('employmentType')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="industry">Sector</Label>
+              <Label htmlFor="industry">{t('edit.industry')}</Label>
               <Input
                 id="industry"
-                placeholder="bijv. Tech"
+                placeholder={t('edit.industryPlaceholder')}
                 {...register('industry')}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Beschrijving *</Label>
+            <Label htmlFor="description">{t('edit.descriptionLabel')}</Label>
             <Textarea
               id="description"
-              placeholder="Korte samenvatting van de functie..."
+              placeholder={t('edit.descriptionPlaceholder')}
               rows={4}
               {...register('description')}
             />
@@ -743,16 +759,16 @@ export function JobInput({
 
           {/* Requirements */}
           <div className="space-y-2">
-            <Label>Vereisten</Label>
+            <Label>{t('parsed.requirements')}</Label>
             <div className="flex gap-2">
               <Input
-                placeholder="bijv. 5+ jaar React ervaring"
+                placeholder={t('edit.requirementPlaceholder')}
                 value={newRequirement}
                 onChange={(e) => setNewRequirement(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
               />
-              <Button type="button" variant="outline" onClick={addRequirement}>
-                <Plus className="h-4 w-4" />
+              <Button type="button" variant="outline" onClick={addRequirement} aria-label={t('parsed.addRequirement')}>
+                <Plus className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
             {requirements.length > 0 && (
@@ -765,8 +781,9 @@ export function JobInput({
                       variant="ghost"
                       size="sm"
                       onClick={() => removeRequirement(i)}
+                      aria-label={t('removeRequirement')}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   </li>
                 ))}
@@ -776,16 +793,16 @@ export function JobInput({
 
           {/* Keywords */}
           <div className="space-y-2">
-            <Label>Keywords</Label>
+            <Label>{t('parsed.keywords')}</Label>
             <div className="flex gap-2">
               <Input
-                placeholder="bijv. kubernetes"
+                placeholder={t('edit.keywordPlaceholder')}
                 value={newKeyword}
                 onChange={(e) => setNewKeyword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
               />
-              <Button type="button" variant="outline" onClick={addKeyword}>
-                <Plus className="h-4 w-4" />
+              <Button type="button" variant="outline" onClick={addKeyword} aria-label={t('parsed.addKeyword')}>
+                <Plus className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
             {keywords.length > 0 && (
@@ -797,8 +814,9 @@ export function JobInput({
                       type="button"
                       onClick={() => removeKeyword(i)}
                       className="hover:text-destructive"
+                      aria-label={t('removeKeyword')}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </button>
                   </Badge>
                 ))}
@@ -810,13 +828,13 @@ export function JobInput({
           <div className="border rounded-lg p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Euro className="h-4 w-4 text-muted-foreground" />
-              <Label className="font-medium">Compensatie & Voorwaarden (optioneel)</Label>
+              <Label className="font-medium">{t('compensation.editTitle')}</Label>
             </div>
 
             {/* Salary Range */}
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
               <div className="space-y-2">
-                <Label htmlFor="salaryMin" className="text-sm">Minimum Salaris</Label>
+                <Label htmlFor="salaryMin" className="text-sm">{t('compensation.salaryMin')}</Label>
                 <Input
                   id="salaryMin"
                   type="number"
@@ -829,7 +847,7 @@ export function JobInput({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="salaryMax" className="text-sm">Maximum Salaris</Label>
+                <Label htmlFor="salaryMax" className="text-sm">{t('compensation.salaryMax')}</Label>
                 <Input
                   id="salaryMax"
                   type="number"
@@ -842,7 +860,7 @@ export function JobInput({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="salaryCurrency" className="text-sm">Valuta</Label>
+                <Label htmlFor="salaryCurrency" className="text-sm">{t('compensation.currency')}</Label>
                 <select
                   id="salaryCurrency"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -858,7 +876,7 @@ export function JobInput({
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="salaryPeriod" className="text-sm">Periode</Label>
+                <Label htmlFor="salaryPeriod" className="text-sm">{t('compensation.period')}</Label>
                 <select
                   id="salaryPeriod"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -868,25 +886,25 @@ export function JobInput({
                     salaryPeriod: e.target.value as 'yearly' | 'monthly' | 'hourly',
                   }))}
                 >
-                  <option value="yearly">Per jaar</option>
-                  <option value="monthly">Per maand</option>
-                  <option value="hourly">Per uur</option>
+                  <option value="yearly">{t('compensation.perYear')}</option>
+                  <option value="monthly">{t('compensation.perMonth')}</option>
+                  <option value="hourly">{t('compensation.perHour')}</option>
                 </select>
               </div>
             </div>
 
             {/* Benefits */}
             <div className="space-y-2">
-              <Label className="text-sm">Secundaire voorwaarden</Label>
+              <Label className="text-sm">{t('compensation.benefits')}</Label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="bijv. Pensioenregeling, Lease auto, 30 vakantiedagen"
+                  placeholder={t('compensation.benefitPlaceholder')}
                   value={newBenefit}
                   onChange={(e) => setNewBenefit(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
                 />
-                <Button type="button" variant="outline" onClick={addBenefit}>
-                  <Plus className="h-4 w-4" />
+                <Button type="button" variant="outline" onClick={addBenefit} aria-label={t('parsed.addBenefit')}>
+                  <Plus className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
               {compensation.benefits && compensation.benefits.length > 0 && (
@@ -899,8 +917,9 @@ export function JobInput({
                         type="button"
                         onClick={() => removeBenefit(i)}
                         className="hover:text-destructive"
+                        aria-label={t('removeBenefit')}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3 w-3" aria-hidden="true" />
                       </button>
                     </Badge>
                   ))}
@@ -911,10 +930,10 @@ export function JobInput({
             {/* Bonus & Notes */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="bonusInfo" className="text-sm">Bonus (optioneel)</Label>
+                <Label htmlFor="bonusInfo" className="text-sm">{t('compensation.bonusOptional')}</Label>
                 <Input
                   id="bonusInfo"
-                  placeholder="bijv. 13e maand, prestatiebonus tot 10%"
+                  placeholder={t('compensation.bonusPlaceholder')}
                   value={compensation.bonusInfo || ''}
                   onChange={(e) => setCompensation(prev => ({
                     ...prev,
@@ -923,10 +942,10 @@ export function JobInput({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="compensationNotes" className="text-sm">Notities</Label>
+                <Label htmlFor="compensationNotes" className="text-sm">{t('compensation.notes')}</Label>
                 <Input
                   id="compensationNotes"
-                  placeholder="bijv. Afhankelijk van ervaring"
+                  placeholder={t('compensation.notesPlaceholder')}
                   value={compensation.notes || ''}
                   onChange={(e) => setCompensation(prev => ({
                     ...prev,
@@ -938,9 +957,9 @@ export function JobInput({
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit">Opslaan</Button>
+            <Button type="submit">{tCommon('save')}</Button>
             <Button type="button" variant="outline" onClick={() => setMode('preview')}>
-              Annuleren
+              {tCommon('cancel')}
             </Button>
           </div>
         </form>

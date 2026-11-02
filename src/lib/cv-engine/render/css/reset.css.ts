@@ -7,11 +7,31 @@ export function resetCSS(pageMode: PageMode = 'a4-paged'): string {
     ? 'min-height: 297mm;'
     : '/* single-long: body grows to content height */';
 
+  // a4-paged: lange CV's lopen over meerdere A4-pagina's. Zonder clone
+  // begon pagina 2+ zonder marge bovenaan (content plakte tegen de rand) en
+  // kregen koppen geen keep-with-next. box-decoration-break: clone herhaalt
+  // padding + achtergrond per paginafragment (Chromium LayoutNG).
   const printBlock = pageMode === 'a4-paged'
     ? `@media print {
   html, body { width: 210mm; }
   @page { size: A4; margin: 0; }
-  .cv-page { box-shadow: none; margin: 0; }
+  .cv-page {
+    box-shadow: none;
+    margin: 0;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  /* Shapes met padding op kolommen i.p.v. op .cv-page */
+  .cv-shape-sidebar .cv-main,
+  .cv-shape-sidebar .cv-sidebar,
+  .cv-shape-editorial-grid,
+  .cv-shape-poster {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .cv-section-title, .cv-section-kicker, h2, h3 { break-after: avoid; page-break-after: avoid; }
+  li, .cv-item { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
 }`
     : `@media print {
   html, body { width: 210mm; }

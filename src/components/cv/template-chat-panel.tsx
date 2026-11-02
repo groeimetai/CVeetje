@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
@@ -19,17 +20,20 @@ interface TemplateChatPanelProps {
   onCreditsRefresh?: () => void;
 }
 
-// Quick action suggestions for template modifications
+// Quick action suggestions for template modifications.
+// The button label follows the UI locale (`templateChat.quickActions.<id>`);
+// the prompt sent to the AI follows the template's output language so the
+// instruction matches the document being edited.
 const getQuickActions = (language: OutputLanguage) => language === 'nl' ? [
-  { label: 'Korter & krachtiger', prompt: 'Maak alle teksten korter en krachtiger. Focus op de kern.' },
-  { label: 'Meer cijfers', prompt: 'Voeg waar mogelijk concrete cijfers en resultaten toe aan de werkervaring.' },
-  { label: 'Meer actiewoorden', prompt: 'Gebruik sterkere actiewoorden aan het begin van elke bullet point.' },
-  { label: 'Focus op vacature', prompt: 'Pas de beschrijvingen aan zodat ze beter aansluiten bij de vacature.' },
+  { id: 'shorter', prompt: 'Maak alle teksten korter en krachtiger. Focus op de kern.' },
+  { id: 'moreNumbers', prompt: 'Voeg waar mogelijk concrete cijfers en resultaten toe aan de werkervaring.' },
+  { id: 'actionVerbs', prompt: 'Gebruik sterkere actiewoorden aan het begin van elke bullet point.' },
+  { id: 'focusOnJob', prompt: 'Pas de beschrijvingen aan zodat ze beter aansluiten bij de vacature.' },
 ] : [
-  { label: 'Shorter & stronger', prompt: 'Make all text shorter and more impactful. Focus on the essentials.' },
-  { label: 'More numbers', prompt: 'Add concrete numbers and results to work experience where possible.' },
-  { label: 'Action verbs', prompt: 'Use stronger action verbs at the start of each bullet point.' },
-  { label: 'Focus on job', prompt: 'Adjust descriptions to better match the target job vacancy.' },
+  { id: 'shorter', prompt: 'Make all text shorter and more impactful. Focus on the essentials.' },
+  { id: 'moreNumbers', prompt: 'Add concrete numbers and results to work experience where possible.' },
+  { id: 'actionVerbs', prompt: 'Use stronger action verbs at the start of each bullet point.' },
+  { id: 'focusOnJob', prompt: 'Adjust descriptions to better match the target job vacancy.' },
 ];
 
 export function TemplateChatPanel({
@@ -43,6 +47,8 @@ export function TemplateChatPanel({
   onRefillComplete,
   onCreditsRefresh,
 }: TemplateChatPanelProps) {
+  const t = useTranslations('templateChat');
+  const tCommon = useTranslations('common');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
@@ -134,12 +140,12 @@ export function TemplateChatPanel({
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-primary" />
           <h2 className="font-semibold">
-            {language === 'nl' ? 'Template Assistent' : 'Template Assistant'}
+            {t('title')}
           </h2>
           {isLoading && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <RefreshCw className="h-3 w-3 animate-spin" />
-              {language === 'nl' ? 'Bijwerken...' : 'Updating...'}
+              {t('updating')}
             </span>
           )}
         </div>
@@ -149,14 +155,15 @@ export function TemplateChatPanel({
               variant="ghost"
               size="icon"
               onClick={clearChat}
-              title={language === 'nl' ? 'Chat wissen' : 'Clear chat'}
+              title={t('clearChat')}
+              aria-label={t('clearChat')}
               className="h-8 w-8"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" aria-label={tCommon('close')}>
+            <X className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -171,36 +178,32 @@ export function TemplateChatPanel({
             </div>
             <div className="flex-1 space-y-2">
               <p className="text-sm bg-muted rounded-lg p-3">
-                {language === 'nl'
-                  ? 'Hoi! Ik kan je helpen de ingevulde template aan te passen. Vertel me wat je wilt veranderen, of kies een snelle actie hieronder.'
-                  : 'Hi! I can help you adjust the filled template. Tell me what you\'d like to change, or choose a quick action below.'}
+                {t('welcome')}
               </p>
 
               {/* Info about how it works */}
               <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mt-2">
                 <p className="font-medium mb-1">
-                  {language === 'nl' ? 'Hoe het werkt:' : 'How it works:'}
+                  {t('howItWorksTitle')}
                 </p>
                 <p>
-                  {language === 'nl'
-                    ? 'Elke aanpassing wordt direct toegepast op de template. Je kunt meerdere aanpassingen na elkaar doen - ze worden gecombineerd.'
-                    : 'Each adjustment is applied directly to the template. You can make multiple adjustments - they will be combined.'}
+                  {t('howItWorksBody')}
                 </p>
               </div>
 
               {/* Quick actions */}
               {showQuickActions && (
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {quickActions.map((action, idx) => (
+                  {quickActions.map((action) => (
                     <Button
-                      key={idx}
+                      key={action.id}
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickAction(action.prompt)}
                       className="text-xs"
                       disabled={isLoading}
                     >
-                      {action.label}
+                      {t(`quickActions.${action.id}`)}
                     </Button>
                   ))}
                 </div>
@@ -251,7 +254,7 @@ export function TemplateChatPanel({
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{language === 'nl' ? 'Template wordt bijgewerkt...' : 'Updating template...'}</span>
+              <span>{t('updatingTemplate')}</span>
             </div>
           </div>
         )}
@@ -275,7 +278,8 @@ export function TemplateChatPanel({
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={language === 'nl' ? 'Beschrijf je aanpassing...' : 'Describe your change...'}
+            placeholder={t('placeholder')}
+            aria-label={t('placeholder')}
             className="min-h-[44px] max-h-[120px] resize-none"
             disabled={isLoading}
             rows={1}
@@ -285,16 +289,17 @@ export function TemplateChatPanel({
             size="icon"
             disabled={!input.trim() || isLoading}
             className="h-[44px] w-[44px] flex-shrink-0"
+            aria-label={t('send')}
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4" aria-hidden="true" />
             )}
           </Button>
         </form>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          {language === 'nl' ? 'Shift+Enter voor nieuwe regel' : 'Shift+Enter for new line'}
+          {t('shiftEnterHint')}
         </p>
       </div>
     </div>

@@ -26,6 +26,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { GlobalTemplate } from '@/types';
+import { toast } from 'sonner';
 
 export function GlobalTemplatesSection() {
   const t = useTranslations('admin.globalTemplates');
@@ -79,7 +80,7 @@ export function GlobalTemplatesSection() {
       await fetchTemplates();
     } catch (error) {
       console.error('Upload failed:', error);
-      alert(error instanceof Error ? error.message : 'Upload failed');
+      toast.error(error instanceof Error ? error.message : 'Upload failed');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

@@ -24,10 +24,12 @@ import {
 import { useProfiles } from '@/hooks/use-profiles';
 import { ProfileCard } from '@/components/profiles/profile-card';
 import { PageHeader } from '@/components/brand/page-header';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 export default function ProfilesPage() {
   const router = useRouter();
   const t = useTranslations('profiles');
+  const tHeaders = useTranslations('pageHeaders');
   const { profiles, isLoading, error, deleteProfile, setDefaultProfile } = useProfiles();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -53,17 +55,15 @@ export default function ProfilesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <ListSkeleton rows={3} className="py-4" />
     );
   }
 
   return (
     <>
       <PageHeader
-        eyebrow="§ LinkedIn-profielen"
-        title={<>Mijn <em>profielen</em></>}
+        eyebrow={tHeaders('profiles.eyebrow')}
+        title={tHeaders.rich('profiles.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('subtitle')}
         actions={
           <button

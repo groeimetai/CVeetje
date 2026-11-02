@@ -17,12 +17,16 @@ import { useAuth } from '@/components/auth/auth-context';
 import { getUserCVs, deleteCV } from '@/lib/firebase/firestore';
 import { PageHeader } from '@/components/brand/page-header';
 import type { CV } from '@/types';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 export default function CVListPage() {
   const { firebaseUser, effectiveUserId } = useAuth();
   const t = useTranslations('cvList');
+  const tHeaders = useTranslations('pageHeaders');
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
+  const confirmDialog = useConfirm();
   const [cvs, setCvs] = useState<CV[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +42,7 @@ export default function CVListPage() {
   }, [effectiveUserId]);
 
   const handleDelete = async (cvId: string) => {
-    if (!effectiveUserId || !confirm(t('deleteConfirm'))) return;
+    if (!effectiveUserId || !(await confirmDialog({ title: t('deleteConfirm'), destructive: true }))) return;
 
     try {
       await deleteCV(effectiveUserId, cvId);
@@ -66,8 +70,8 @@ export default function CVListPage() {
   return (
     <>
       <PageHeader
-        eyebrow="§ CV-archief"
-        title={<>Mijn <em>CV's</em></>}
+        eyebrow={tHeaders('cv.eyebrow')}
+        title={tHeaders.rich('cv.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('subtitle')}
         actions={
           <Link href="/cv/new" className="brand-btn brand-btn--primary">
@@ -86,7 +90,7 @@ export default function CVListPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="py-8 text-center text-muted-foreground">{tCommon('loading')}</div>
+            <ListSkeleton rows={4} />
           ) : cvs.length === 0 ? (
             <div className="py-12 text-center">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />

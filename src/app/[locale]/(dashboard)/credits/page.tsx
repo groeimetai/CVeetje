@@ -15,11 +15,13 @@ import { CREDIT_PACKAGES } from '@/lib/mollie/client';
 import { getDaysUntilReset, getNextResetDate } from '@/lib/credits/manager';
 import type { CreditTransaction } from '@/types';
 import { PageHeader } from '@/components/brand/page-header';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 export default function CreditsPage() {
   const searchParams = useSearchParams();
   const { effectiveUserId, credits, refreshCredits } = useAuth();
   const t = useTranslations('credits');
+  const tHeaders = useTranslations('pageHeaders');
   const tCommon = useTranslations('common');
 
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
@@ -76,8 +78,8 @@ export default function CreditsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <PageHeader
-        eyebrow="§ Saldo & pakketten"
-        title={<>{t('title')} <em>kopen</em></>}
+        eyebrow={tHeaders('credits.eyebrow')}
+        title={tHeaders.rich('credits.title', { em: (chunks) => <em>{chunks}</em> })}
         subtitle={t('subtitle')}
       />
 
@@ -180,7 +182,7 @@ export default function CreditsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center text-muted-foreground py-4">{tCommon('loading')}</p>
+            <ListSkeleton rows={3} />
           ) : transactions.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
               {t('history.noTransactions')}

@@ -26,6 +26,7 @@ export const PLATFORM_MODEL = {
 export type PlatformOperation =
   | 'cv-generate'
   | 'profile-parse'
+  | 'profile-enrich'
   | 'job-parse'
   | 'fit-analysis'
   | 'style-generate'
@@ -36,6 +37,7 @@ export type PlatformOperation =
 
 export const PLATFORM_CREDIT_COSTS: Record<PlatformOperation, number> = {
   'profile-parse': 2,       // ~$0.30 cost (5K in + 3K out, full structured profile)
+  'profile-enrich': 2,      // vergelijkbaar met profile-parse (bestaand profiel + nieuwe tekst)
   'job-parse': 1,           // ~$0.13 cost (3.6K in + 1K out)
   'fit-analysis': 2,        // ~$0.25 cost (9K in + 1.5K out)
   'cv-generate': 3,         // ~$0.32 cost (10K in + 2.25K out) — main value
@@ -77,9 +79,15 @@ export const MODEL_PRICING_USD_PER_MTOK: Record<
 > = {
   'claude-opus-4-7':       { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
   'claude-opus-4-7-1m':    { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
-  'claude-opus-4-6':       { input: 15,   cache5m: 18.75, cache1h: 30,   cacheHit: 1.5,  output: 75 },
-  'claude-opus-4-5':       { input: 15,   cache5m: 18.75, cache1h: 30,   cacheHit: 1.5,  output: 75 },
-  'claude-sonnet-4-7':     { input: 3,    cache5m: 3.75,  cache1h: 6,    cacheHit: 0.3,  output: 15 },
+  // Opus 4.5+ zit op $5/$25 (de oude $15/$75 gold voor Opus 4/4.1). De
+  // fallback-route (Opus 4.6) werd daardoor 3x te duur geboekt in usage/kosten.
+  'claude-opus-4-6':       { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
+  'claude-opus-4-5':       { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
+  'claude-opus-4-8':       { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
+  'claude-opus-5':         { input: 5,    cache5m: 6.25,  cache1h: 10,   cacheHit: 0.5,  output: 25 },
+  'claude-opus-5-5':       { input: 4,    cache5m: 5,     cache1h: 8,    cacheHit: 0.2,  output: 20 },
+  'claude-sonnet-4-6':     { input: 3,    cache5m: 3.75,  cache1h: 6,    cacheHit: 0.3,  output: 15 },
+  'claude-sonnet-5-5':     { input: 2,    cache5m: 2.5,   cache1h: 4,    cacheHit: 0.2,  output: 10 },
   'claude-haiku-4-5':      { input: 1,    cache5m: 1.25,  cache1h: 2,    cacheHit: 0.1,  output: 5 },
 };
 

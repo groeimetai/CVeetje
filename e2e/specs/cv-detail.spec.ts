@@ -13,9 +13,7 @@ test.describe('CV-detail, motivatiebrief, chat en disputes', () => {
     await expect(frame.getByText('Sanne de Vries').first()).toBeVisible({ timeout: 30_000 });
   });
 
-  // Bekende bug (fase C): de v2-renderer (alle nieuwe CV's) injecteert geen
-  // click-to-edit-bridge, terwijl de UI "klik direct op de tekst" belooft.
-  test.fixme('inline bewerken in de preview wordt opgeslagen (postMessage-bridge)', async ({ loggedInPage: page, user }) => {
+  test('inline bewerken in de preview wordt opgeslagen (postMessage-bridge)', async ({ loggedInPage: page, user }) => {
     const cvId = await seedGeneratedCv(user);
     await page.goto(`/nl/cv/${cvId}`);
     const frame = page.frameLocator('iframe[title="CV Preview"]');

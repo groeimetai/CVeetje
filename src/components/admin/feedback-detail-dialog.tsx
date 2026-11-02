@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { FeedbackItem, FeedbackStatus } from '@/types';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 interface GitHubComment {
   id: number;
@@ -45,6 +46,7 @@ const STATUSES: FeedbackStatus[] = ['new', 'in_review', 'planned', 'in_progress'
 export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }: FeedbackDetailDialogProps) {
   const t = useTranslations('admin.feedback');
   const tf = useTranslations('feedback');
+  const confirmDialog = useConfirm();
   const [status, setStatus] = useState<FeedbackStatus>('new');
   const [adminNotes, setAdminNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -104,7 +106,7 @@ export function FeedbackDetailDialog({ feedback, open, onOpenChange, onUpdate }:
   };
 
   const handleDelete = async () => {
-    if (!confirm(t('deleteConfirm'))) return;
+    if (!(await confirmDialog({ title: t('deleteConfirm'), destructive: true }))) return;
     const res = await fetch(`/api/admin/feedback/${feedback.id}`, { method: 'DELETE' });
     if (res.ok) {
       onUpdate();

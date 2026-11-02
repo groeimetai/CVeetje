@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Lightbulb, Bug, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { FeedbackStatusBadge } from './feedback-status-badge';
 import type { FeedbackItem, FeedbackType } from '@/types';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const TYPE_ICONS: Record<FeedbackType, typeof Lightbulb> = {
   feature_request: Lightbulb,
@@ -21,6 +22,7 @@ interface FeedbackListProps {
 
 export function FeedbackList({ refreshKey }: FeedbackListProps) {
   const t = useTranslations('feedback');
+  const confirmDialog = useConfirm();
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function FeedbackList({ refreshKey }: FeedbackListProps) {
   }, [fetchFeedback, refreshKey]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('deleteConfirm'))) return;
+    if (!(await confirmDialog({ title: t('deleteConfirm'), destructive: true }))) return;
     const res = await fetch(`/api/feedback/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setItems(prev => prev.filter(item => item.id !== id));

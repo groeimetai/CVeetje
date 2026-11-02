@@ -60,12 +60,18 @@ test.describe('CV-wizard (gemockte AI)', () => {
 
     // PDF-download
     const downloadPromise = page.waitForEvent('download', { timeout: 90_000 });
-    // Het dropdown-menu kan net na de preview-render nog niet reageren; retry openen.
+    // Wacht tot de preview-iframe zijn hoogte heeft gemeld (anders verschuift de
+    // layout terwijl het menu open is), open dan het menu en kies via het
+    // toetsenbord (Radix blokkeert scrollen zolang het menu open is).
+    await page.waitForTimeout(1_500);
+    const downloadBtn = page.getByRole('button', { name: /Download PDF/ }).first();
+    await downloadBtn.scrollIntoViewIfNeeded();
     await expect(async () => {
-      await page.getByRole('button', { name: /Download PDF/ }).first().click();
-      await expect(page.getByRole('menuitem', { name: /A4 Pagina/ })).toBeVisible({ timeout: 3_000 });
+      await downloadBtn.click();
+      await expect(page.getByRole('menuitem', { name: /A4.?pagina/i })).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 30_000 });
-    await page.getByRole('menuitem', { name: /A4 Pagina/ }).click();
+    await page.getByRole('menuitem', { name: /A4.?pagina/i }).focus();
+    await page.keyboard.press('Enter');
     const download = await downloadPromise;
     const pdfPath = await download.path();
     expect(pdfPath).toBeTruthy();

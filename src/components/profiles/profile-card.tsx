@@ -1,5 +1,6 @@
 'use client';
 
+import { useFormatter, useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,6 +47,9 @@ export function ProfileCard({
   onView,
   showActions = true,
 }: ProfileCardProps) {
+  const t = useTranslations('profiles');
+  const tCommon = useTranslations('common');
+  const format = useFormatter();
   // List variant - compact for sidebar/wizard
   if (variant === 'list') {
     return (
@@ -71,11 +75,11 @@ export function ProfileCard({
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm">{profile.name}</span>
               {profile.isDefault && (
-                <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                <Star className="h-3 w-3 text-amber-500 fill-amber-500" aria-label={t('isDefault')} />
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {profile.headline || `${profile.experienceCount} ervaringen`}
+              {profile.headline || t('card.experienceCount', { count: profile.experienceCount })}
             </p>
           </div>
         </div>
@@ -85,19 +89,19 @@ export function ProfileCard({
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('card.moreActions', { name: profile.name })}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelect?.(profile.id); }}>
                 <FolderOpen className="h-4 w-4 mr-2" />
-                Laden
+                {t('card.load')}
               </DropdownMenuItem>
               {!profile.isDefault && onSetDefault && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetDefault(profile.id); }}>
                   <Star className="h-4 w-4 mr-2" />
-                  Als standaard instellen
+                  {t('setDefault')}
                 </DropdownMenuItem>
               )}
               {onDelete && (
@@ -108,7 +112,7 @@ export function ProfileCard({
                     onClick={(e) => { e.stopPropagation(); onDelete(profile.id); }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Verwijderen
+                    {tCommon('delete')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -143,17 +147,17 @@ export function ProfileCard({
               <CardTitle className="text-base flex items-center gap-2">
                 {profile.name}
                 {profile.isDefault && (
-                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" aria-label={t('isDefault')} />
                 )}
               </CardTitle>
               <CardDescription className="text-sm">
-                {profile.headline || 'Geen headline'}
+                {profile.headline || t('card.noHeadline')}
               </CardDescription>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('card.moreActions', { name: profile.name })}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -161,7 +165,7 @@ export function ProfileCard({
               {!profile.isDefault && onSetDefault && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSetDefault(profile.id); }}>
                   <Star className="h-4 w-4 mr-2" />
-                  Als standaard instellen
+                  {t('setDefault')}
                 </DropdownMenuItem>
               )}
               {onDelete && (
@@ -172,7 +176,7 @@ export function ProfileCard({
                     onClick={(e) => { e.stopPropagation(); onDelete(profile.id); }}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Verwijderen
+                    {tCommon('delete')}
                   </DropdownMenuItem>
                 </>
               )}
@@ -185,7 +189,7 @@ export function ProfileCard({
         <div className="flex gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Briefcase className="h-4 w-4" />
-            <span>{profile.experienceCount} ervaringen</span>
+            <span>{t('card.experienceCount', { count: profile.experienceCount })}</span>
           </div>
         </div>
 
@@ -206,14 +210,16 @@ export function ProfileCard({
               onClick={(e) => { e.stopPropagation(); onCreateCV(profile.id); }}
             >
               <FileText className="h-4 w-4 mr-1" />
-              CV Maken
+              {t('createCV')}
             </Button>
           </div>
         )}
 
         {/* Last updated */}
         <p className="text-xs text-muted-foreground">
-          Laatst bijgewerkt: {new Date(profile.updatedAt).toLocaleDateString('nl-NL')}
+          {t('card.lastUpdated', {
+            date: format.dateTime(new Date(profile.updatedAt), { dateStyle: 'short' }),
+          })}
         </p>
       </CardContent>
     </Card>

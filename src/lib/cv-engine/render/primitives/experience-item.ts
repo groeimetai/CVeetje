@@ -19,7 +19,10 @@ export function renderExperienceItem(
   variant: ExperienceItemVariant,
   exp: ExperienceInput,
   accentKeywords?: string[],
+  /** Index in content.experience — enables click-to-edit ids in the preview. */
+  index?: number,
 ): string {
+  const id = (field: string) => (typeof index === 'number' ? ` data-id="exp-${index}-${field}"` : '');
   const meta = [exp.company, exp.location].filter(Boolean).map(s => escHtml(String(s))).join(' · ');
 
   // Paragraph variant: fold highlights into a single prose paragraph if no
@@ -31,18 +34,18 @@ export function renderExperienceItem(
       .join('. ') + '.';
   }
   const desc = descText
-    ? `<p class="cv-experience-desc">${applyAccentHighlights(escHtml(descText), accentKeywords)}</p>`
+    ? `<p class="cv-experience-desc"${exp.description ? id('description') : ''}>${applyAccentHighlights(escHtml(descText), accentKeywords)}</p>`
     : '';
 
   const highlightItems = (exp.highlights ?? [])
-    .map(h => `<li>${applyAccentHighlights(escHtml(h), accentKeywords)}</li>`)
+    .map((h, j) => `<li${id(`highlight-${j}`)}>${applyAccentHighlights(escHtml(h), accentKeywords)}</li>`)
     .join('');
 
   return `<article class="cv-experience-item">
   <div class="cv-role-line">
-    <span class="cv-role-title">${escHtml(exp.title)}</span>
+    <span class="cv-role-title"${id('title')}>${escHtml(exp.title)}</span>
     <span class="cv-role-meta">${meta}</span>
-    <span class="cv-role-period">${escHtml(exp.period)}</span>
+    <span class="cv-role-period"${id('period')}>${escHtml(exp.period)}</span>
   </div>
   ${desc}
   ${highlightItems ? `<ul class="cv-highlights">${highlightItems}</ul>` : ''}

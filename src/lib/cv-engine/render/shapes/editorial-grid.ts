@@ -40,8 +40,8 @@ function renderEditorialHeader(fullName: string, headline: string, tagline?: str
     : '';
   return `<header class="cv-editorial-header${avatarUrl ? ' has-photo' : ''}">
   <div class="cv-editorial-header-content">
-    <h1 class="cv-name">${escHtml(fullName)}</h1>
-    ${headline ? `<div class="cv-headline">${escHtml(headline)}</div>` : ''}
+    <h1 class="cv-name" data-id="header-name">${escHtml(fullName)}</h1>
+    ${headline ? `<div class="cv-headline" data-id="headline">${escHtml(headline)}</div>` : ''}
     ${t}
     ${contactLine ? `<div class="cv-contact">${contactLine}</div>` : ''}
   </div>
@@ -65,11 +65,11 @@ function renderMarginalia(content: GeneratedCVContent): string {
 function renderEducation(items: GeneratedCVContent['education']): string {
   return items
     .map(
-      e => `<article class="cv-experience-item">
+      (e, i) => `<article class="cv-experience-item">
   <div class="cv-role-line">
-    <span class="cv-role-title">${escHtml(e.degree)}</span>
-    <span class="cv-role-meta">${escHtml(e.institution)}</span>
-    <span class="cv-role-period">${escHtml(e.year)}</span>
+    <span class="cv-role-title" data-id="edu-${i}-degree">${escHtml(e.degree)}</span>
+    <span class="cv-role-meta" data-id="edu-${i}-institution">${escHtml(e.institution)}</span>
+    <span class="cv-role-period" data-id="edu-${i}-year">${escHtml(e.year)}</span>
   </div>
   ${e.details ? `<p class="cv-experience-desc">${escHtml(e.details)}</p>` : ''}
 </article>`,
@@ -129,7 +129,7 @@ export function renderEditorialGrid(rs: ResolvedSpec, input: EditorialGridInput)
 
   const mainSections: string[] = [
     renderEditorialHeader(fullName, content.headline, rs.emphasis.nameTagline, contact, input.avatarUrl),
-    `<p class="cv-summary">${summaryBody}</p>`,
+    `<p class="cv-summary" data-id="summary">${summaryBody}</p>`,
   ];
 
   for (const section of rs.sectionOrder) {
@@ -143,7 +143,7 @@ export function renderEditorialGrid(rs: ResolvedSpec, input: EditorialGridInput)
           renderSection(
             rs.spec.primitives.section,
             labelFor(locale, 'experience'),
-            content.experience.map(e => renderExperienceItem(rs.spec.primitives.experienceItem, e, accentKeywords)).join(''),
+            content.experience.map((e, i) => renderExperienceItem(rs.spec.primitives.experienceItem, e, accentKeywords, i)).join(''),
           ) + pullQuoteHtml,
         );
         break;
