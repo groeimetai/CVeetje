@@ -5,9 +5,9 @@
 import { spawnSync } from 'node:child_process';
 import { e2eEnv } from './env';
 
+// Lege strings betekenen "uit" (code checkt `!process.env.X`); expliciet ''
+// zetten zodat waarden uit de shell-env niet doorlekken.
 const env = { ...process.env, ...e2eEnv() };
-// Lege strings betekenen "uit"; verwijder ze zodat code `!process.env.X` ziet.
-for (const [k, v] of Object.entries(env)) if (v === '') delete env[k];
 
 const result = spawnSync('npx', ['next', 'build'], { stdio: 'inherit', env });
 process.exit(result.status ?? 1);

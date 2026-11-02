@@ -81,3 +81,34 @@ test.describe('CV-wizard (gemockte AI)', () => {
     await expect(page.getByRole('button', { name: /Template Kiezen/ })).toBeVisible();
   });
 });
+
+test.describe('Wizard-ingangen', () => {
+  test('/cv/new?profile=<id> laadt het opgeslagen profiel direct', async ({ loggedInPage: page, user }) => {
+    const { api, SAMPLE_PROFILE } = await import('../support/api');
+    const res = await api(user, '/api/profiles', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Profiel voor wizard', parsedData: SAMPLE_PROFILE }),
+    });
+    const json = (await res.json()) as { profile?: { id: string }; id?: string };
+    const id = json.profile?.id ?? json.id!;
+    await page.goto(`/nl/cv/new?profile=${id}`);
+    await expect(page.getByText('Sanne de Vries').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: 'Doorgaan', exact: true })).toBeVisible();
+  });
+});
+
+test.describe('CV-lijst', () => {
+  test('actiemenu opent zonder te navigeren; "Download PDF" start de download', async ({ loggedInPage: page, user }) => {
+    test.setTimeout(150_000);
+    const { seedGeneratedCv } = await import('../support/api');
+    const cvId = await seedGeneratedCv(user);
+    await page.goto('/nl/cv');
+    await page.getByRole('button', { name: 'Acties' }).first().click();
+    await expect(page).toHaveURL(/\/nl\/cv$/);
+    const downloadPromise = page.waitForEvent('download', { timeout: 90_000 });
+    await page.getByRole('menuitem', { name: /PDF/ }).click();
+    await expect(page).toHaveURL(new RegExp(`/nl/cv/${cvId}\\?download=true`));
+    const download = await downloadPromise;
+    expect(await download.path()).toBeTruthy();
+  });
+});

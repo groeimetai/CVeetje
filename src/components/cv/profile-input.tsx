@@ -66,6 +66,7 @@ import type {
 } from '@/types';
 import type { ModelInfo } from '@/lib/ai/models-registry';
 import { supportsFileInput } from '@/lib/ai/models-registry';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 type ProfileTokenStep = 'profile-parse' | 'profile-enrich' | 'linkedin-export';
 
@@ -78,6 +79,8 @@ interface ProfileInputProps {
   onAvatarChange?: (url: string | null) => void;
   modelInfo?: ModelInfo | null;
   apiKey?: { provider: string; model: string } | null;
+  /** Opgeslagen profiel dat direct geladen moet worden (bv. via /cv/new?profile=<id>). */
+  initialProfileId?: string | null;
 }
 
 type Mode = 'input' | 'preview' | 'edit';
@@ -138,6 +141,7 @@ export function ProfileInput({
   onAvatarChange,
   modelInfo,
   apiKey,
+  initialProfileId,
 }: ProfileInputProps) {
   const t = useTranslations('profileInput');
   const { llmMode } = useAuth();
@@ -199,6 +203,7 @@ export function ProfileInput({
     fetchProfiles();
   }, []);
 
+
   // Load a saved profile
   const handleLoadProfile = async (profileId: string) => {
     setIsProcessing(true);
@@ -230,6 +235,16 @@ export function ProfileInput({
       setIsProcessing(false);
     }
   };
+
+  // Bug-fix: "CV maken" vanaf /profiles linkt naar /cv/new?profile=<id>, maar
+  // die parameter werd genegeerd — de gebruiker moest het profiel opnieuw kiezen.
+  const initialProfileLoaded = useRef(false);
+  useEffect(() => {
+    if (!initialProfileId || initialData || initialProfileLoaded.current) return;
+    initialProfileLoaded.current = true;
+    void handleLoadProfile(initialProfileId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfileId, initialData]);
 
   // Save current profile
   const handleSaveProfile = async () => {
@@ -1757,9 +1772,7 @@ export function ProfileInput({
               <>
                 Informatie verwerken
                 {llmMode === 'platform' && hasFileSource && (
-                  <Badge variant="secondary" className="ml-2">
-                    <Coins className="h-3 w-3 mr-1" />1 credit
-                  </Badge>
+                  <CreditBadge operation="profile-parse" />
                 )}
               </>
             )}

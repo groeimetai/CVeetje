@@ -1184,7 +1184,8 @@
     "createCv": "CV Maken",
     "view": "Bekijken",
     "downloadPdf": "Download PDF",
-    "deleteConfirm": "Weet je zeker dat je deze CV wilt verwijderen?"
+    "deleteConfirm": "Weet je zeker dat je deze CV wilt verwijderen?",
+    "actions": "Acties"
   },
   "cvNew": {
     "title": "Nieuwe CV Maken",

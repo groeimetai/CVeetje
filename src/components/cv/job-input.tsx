@@ -12,9 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { X, Plus, Briefcase, Sparkles, CheckCircle, Pencil, ArrowLeft, Loader2, Building2, MapPin, Clock, Euro, ChevronDown, ChevronUp, Gift, TrendingUp, Target, AlertCircle, Coins, ExternalLink, Link2 } from 'lucide-react';
+import { X, Plus, Briefcase, Sparkles, CheckCircle, Pencil, ArrowLeft, Loader2, Building2, MapPin, Clock, Euro, ChevronDown, ChevronUp, Gift, TrendingUp, Target, AlertCircle, ExternalLink, Link2 } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-context';
 import type { JobVacancy, JobCompensation, SalaryEstimate, TokenUsage } from '@/types';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 type Mode = 'input' | 'preview' | 'edit';
 
@@ -335,9 +336,7 @@ export function JobInput({
                   <Sparkles className="h-4 w-4" />
                   Analyseer vacature
                   {llmMode === 'platform' && (
-                    <Badge variant="secondary" className="ml-2">
-                      <Coins className="h-3 w-3 mr-1" />1 credit
-                    </Badge>
+                    <CreditBadge operation="job-parse" />
                   )}
                 </>
               )}

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, Coins } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';

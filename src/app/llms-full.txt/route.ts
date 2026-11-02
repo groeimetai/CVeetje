@@ -260,7 +260,7 @@ Prijs (mei 2026):
 - Popular €12,99 (100 credits, €1,30/CV).
 - Pro €29,99 (300 credits, €1,00/CV).
 - Power €59,99 (600 credits, €1,00/CV).
-- BYOK (eigen Claude/OpenAI/Google key): 0 platform credits voor AI-stappen, 1 credit per PDF-download.
+- BYOK (eigen Claude/OpenAI/Google key): 0 platform credits voor AI-stappen; PDF-downloads zijn gratis.
 Credits verlopen niet. Geen abonnement.
 
 `;

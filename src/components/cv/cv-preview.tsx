@@ -34,6 +34,7 @@ import { DesignTweaksSheet } from './design-tweaks/design-tweaks-sheet';
 import { isCVContentEditMessage } from '@/lib/cv/edit-bridge';
 import type { OutputLanguage, TokenUsage } from '@/types';
 import { escapeHtml } from '@/lib/security/html-escape';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 interface HeaderInfo {
   fullName: string;
@@ -1033,17 +1034,10 @@ export function CVPreview({
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    disabled={!pdfDownloaded && credits < 1}
-                    className="flex-1"
-                  >
+                  {/* PDF-download is gratis (credits gaan op aan cv-generate) */}
+                  <Button className="flex-1">
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
-                    {!pdfDownloaded && (
-                      <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                        <Coins className="h-3 w-3 mr-1" />1 credit
-                      </Badge>
-                    )}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -1083,9 +1077,7 @@ export function CVPreview({
                   <Sparkles className="mr-2 h-4 w-4" />
                   Regenereer
                   {llmMode === 'platform' && (
-                    <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                      <Coins className="h-3 w-3 mr-1" />1 credit
-                    </Badge>
+                    <CreditBadge operation="cv-generate" className="ml-2 hidden sm:inline-flex" />
                   )}
                 </>
               )}
@@ -1104,15 +1096,6 @@ export function CVPreview({
             )}
           </div>
 
-          {/* Credits warning */}
-          {!pdfDownloaded && credits < 1 && (
-            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800 flex items-center gap-2">
-                <Coins className="h-4 w-4" />
-                Je hebt niet genoeg credits om een PDF te downloaden.
-              </p>
-            </div>
-          )}
 
           {/* Motivation Letter Section */}
           {cvId && (

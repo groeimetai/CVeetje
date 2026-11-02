@@ -43,6 +43,8 @@ export const SAMPLE_VACANCY = {
 export async function api(user: TestUser, path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set('Authorization', `Bearer ${user.idToken}`);
+  // Sommige routes (admin, settings) lezen alleen het cookie, zoals de browser het stuurt
+  headers.set('Cookie', `firebase-token=${user.idToken}`);
   if (init.body && typeof init.body === 'string' && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }

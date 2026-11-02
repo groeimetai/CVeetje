@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link, useRouter } from '@/i18n/navigation';
 import {
   ArrowLeft,
   Loader2,
@@ -335,9 +336,19 @@ function FitAnalysisSection({ fitAnalysis, jobVacancy }: { fitAnalysis: FitAnaly
   );
 }
 
+const STATUS_KEY: Record<string, string> = {
+  pdf_ready: 'ready',
+  generated: 'generated',
+  generating: 'generating',
+  failed: 'failed',
+  draft: 'draft',
+};
+
 export default function CVDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tDashboard = useTranslations('dashboard');
   const { firebaseUser, effectiveUserId, credits, refreshCredits } = useAuth();
 
   const [cv, setCV] = useState<(CV & { tokens?: CVDesignTokens }) | null>(null);
@@ -365,9 +376,16 @@ export default function CVDetailPage() {
 
   const fetchCV = useCallback(async () => {
     if (!effectiveUserId || !cvId) return;
-    const cvData = await getCV(effectiveUserId, cvId);
-    setCV(cvData as CV & { tokens?: CVDesignTokens });
-    setLoading(false);
+    // Bug-fix: zonder try/finally bleef de spinner eeuwig draaien als getCV faalde.
+    try {
+      const cvData = await getCV(effectiveUserId, cvId);
+      setCV(cvData as CV & { tokens?: CVDesignTokens });
+    } catch (err) {
+      console.error('[cv/[id]] getCV failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load CV');
+    } finally {
+      setLoading(false);
+    }
   }, [effectiveUserId, cvId]);
 
   useEffect(() => {
@@ -376,8 +394,9 @@ export default function CVDetailPage() {
 
   const pdfDownloaded = cv?.status === 'pdf_ready';
 
+
   const handleDownload = async (pageMode: 'multi-page' | 'single-page' = 'multi-page') => {
-    if (!cvId || (!pdfDownloaded && credits < 1)) return;
+    if (!cvId) return; // PDF-download is gratis
 
     setIsDownloading(true);
     setError(null);
@@ -417,6 +436,16 @@ export default function CVDetailPage() {
       setIsDownloading(false);
     }
   };
+
+  // "Download PDF" vanuit de CV-lijst linkt naar ?download=true; die
+  // parameter werd nergens afgehandeld.
+  const autoDownloadDone = useRef(false);
+  useEffect(() => {
+    if (!cv || autoDownloadDone.current || searchParams?.get('download') !== 'true') return;
+    autoDownloadDone.current = true;
+    void handleDownload('multi-page');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cv, searchParams]);
 
   if (loading) {
     return (
@@ -477,7 +506,7 @@ export default function CVDetailPage() {
               <span>•</span>
               <span>{tokens.styleName}</span>
               <span>•</span>
-              <Badge variant="outline">{cv.status}</Badge>
+              <Badge variant="outline">{tDashboard(`status.${STATUS_KEY[cv.status] ?? 'draft'}`)}</Badge>
             </div>
           </div>
         </div>
@@ -490,17 +519,6 @@ export default function CVDetailPage() {
         </Alert>
       )}
 
-      {!pdfDownloaded && credits < 1 && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <span className="ml-2">
-            You need at least 1 credit to download the PDF.{' '}
-            <Link href="/credits" className="underline">
-              Get more credits
-            </Link>
-          </span>
-        </Alert>
-      )}
 
       {/* Fit Analysis Context */}
       {cv.fitAnalysis && (

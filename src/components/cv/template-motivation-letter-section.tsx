@@ -31,6 +31,7 @@ import type {
   OutputLanguage,
   TokenUsage
 } from '@/types';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 interface TemplateMotivationLetterSectionProps {
   linkedInData: ParsedLinkedIn;
@@ -168,9 +169,7 @@ export function TemplateMotivationLetterSection({
           <CardTitle className="flex items-center gap-2 text-lg">
             <Mail className="h-5 w-5 text-primary" />
             Motivatiebrief Genereren
-            <Badge variant="secondary" className="ml-2">
-              <Coins className="h-3 w-3 mr-1" />1 credit
-            </Badge>
+            <CreditBadge amount={1} />
           </CardTitle>
           {isExpanded ? (
             <ChevronUp className="h-5 w-5 text-muted-foreground" />

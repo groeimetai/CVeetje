@@ -35,6 +35,7 @@ import type { PDFTemplateSummary } from '@/types';
 
 export function TemplatesPage() {
   const t = useTranslations('templatesPage');
+  const tCommon = useTranslations('common');
   const tTemplates = useTranslations('templates');
   const [personalTemplates, setPersonalTemplates] = useState<PDFTemplateSummary[]>([]);
   const [assignedTemplates, setAssignedTemplates] = useState<PDFTemplateSummary[]>([]);
@@ -248,7 +249,7 @@ export function TemplatesPage() {
                   <AlertDialogDescription>{t('confirmDelete')}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{t('rename')}</AlertDialogCancel>
+                  <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => handleDelete(template.id)}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

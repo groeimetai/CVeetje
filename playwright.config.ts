@@ -5,11 +5,12 @@ import { APP_PORT, BASE_URL, MOCK_AI_PORT, PROJECT_ID, e2eEnv } from './e2e/env'
  * E2E-suite: Next.js (`next start` op de `.next-e2e`-build) tegen de Firebase
  * Emulator Suite en een gemockte Anthropic-API. Zie e2e/README.md.
  */
+// Let op: Playwright vult `env` aan met process.env van de shell. Lege
+// waarden moeten daarom expliciet '' blijven (niet verwijderen), anders lekt
+// bv. een GITHUB_TOKEN uit de omgeving door en maken tests echte issues aan.
 const serverEnv: Record<string, string> = {};
-for (const [k, v] of Object.entries({ ...process.env, ...e2eEnv() })) {
-  if (typeof v === 'string' && v !== '') serverEnv[k] = v;
-}
-for (const k of Object.keys(e2eEnv())) if (e2eEnv()[k] === '') delete serverEnv[k];
+for (const [k, v] of Object.entries(process.env)) if (typeof v === 'string') serverEnv[k] = v;
+Object.assign(serverEnv, e2eEnv());
 
 export default defineConfig({
   testDir: './e2e/specs',

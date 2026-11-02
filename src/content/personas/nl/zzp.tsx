@@ -87,8 +87,8 @@ export function Body() {
       <p>
         Als je elke offerte een CV-variant maakt zit je al snel op tien tot dertig CV-generaties per
         maand. Op platform-credits kost dat €15 tot €40. Op BYOK (je eigen Claude- of OpenAI-key) kost
-        het een paar euro aan eigen API-kosten + één credit per PDF-download bij ons (10 credits voor
-        €4,99 per 30 stuks). Dus voor actieve zzp-acquisitie: BYOK aanzetten.
+        het een paar euro aan eigen API-kosten; de PDF-download is gratis. Dus voor actieve
+        zzp-acquisitie: BYOK aanzetten.
       </p>
 
       <h2>Wat niet doen</h2>

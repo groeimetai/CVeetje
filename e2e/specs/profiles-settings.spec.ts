@@ -20,7 +20,7 @@ test.describe('Profielen', () => {
     const id = created.profile?.id ?? created.id!;
 
     await page.goto('/nl/profiles');
-    await expect(page.getByText('Mijn profiel')).toBeVisible();
+    await expect(page.getByText('Mijn profiel', { exact: true })).toBeVisible();
 
     await page.goto(`/nl/profiles/${id}`);
     await expect(page.locator('input[value="Sanne de Vries"]').first()).toBeVisible();

@@ -7,8 +7,9 @@ import { hardenPage } from '@/lib/pdf/harden-page';
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
-// Cache the docx-preview script in module scope (read once)
+// Cache the browser scripts in module scope (read once)
 let docxPreviewScript: string | null = null;
+let jszipScript: string | null = null;
 
 function getDocxPreviewScript(): string {
   if (!docxPreviewScript) {
@@ -19,6 +20,19 @@ function getDocxPreviewScript(): string {
     docxPreviewScript = fs.readFileSync(scriptPath, 'utf-8');
   }
   return docxPreviewScript;
+}
+
+/**
+ * docx-preview's UMD-build verwacht in de browser een globale `JSZip`.
+ * Bug-fix: die werd nooit geïnjecteerd, waardoor elke DOCX→PDF-conversie
+ * faalde met "Cannot read properties of undefined (reading 'loadAsync')".
+ */
+function getJszipScript(): string {
+  if (!jszipScript) {
+    const scriptPath = path.join(process.cwd(), 'node_modules/jszip/dist/jszip.min.js');
+    jszipScript = fs.readFileSync(scriptPath, 'utf-8');
+  }
+  return jszipScript;
 }
 
 async function getBrowser() {
@@ -76,7 +90,8 @@ export async function convertDocxToPdf(docxBytes: ArrayBuffer): Promise<Buffer> 
       { waitUntil: 'domcontentloaded' }
     );
 
-    // Inject docx-preview library
+    // Inject JSZip (dependency) + docx-preview library
+    await page.addScriptTag({ content: getJszipScript() });
     await page.addScriptTag({ content: getDocxPreviewScript() });
 
     // Convert DOCX bytes to base64 for transfer into browser context

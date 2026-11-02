@@ -37,6 +37,7 @@ import type {
   StyleCreativityLevel,
 } from '@/types';
 import type { CVDesignTokens, DecorationIntensity, ExperienceDescriptionFormat } from '@/types/design-tokens';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 const SAMPLE_CONTENT: GeneratedCVContent = {
   headline: 'Senior Professional',
@@ -417,9 +418,7 @@ export function DynamicStylePicker({
             <Sparkles className="mr-2 h-4 w-4" />
             Generate AI Style
             {llmMode === 'platform' && (
-              <Badge variant="secondary" className="ml-2">
-                <Coins className="h-3 w-3 mr-1" />1 credit
-              </Badge>
+              <CreditBadge operation="style-generate" />
             )}
           </Button>
         )}
@@ -713,6 +712,8 @@ export function DynamicStylePicker({
               <Button onClick={handleContinue} className="flex-1">
                 <Check className="mr-2 h-4 w-4" />
                 Use This Style
+                {/* Deze knop start direct de CV-generatie */}
+                {llmMode === 'platform' && <CreditBadge operation="cv-generate" />}
               </Button>
             </div>
           </div>

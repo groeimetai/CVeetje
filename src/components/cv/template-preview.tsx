@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   CheckCircle,
   Download,
-  Coins,
   Briefcase,
   MessageSquare,
 } from 'lucide-react';
@@ -214,16 +213,12 @@ export function TemplatePreview({
               </Button>
             ) : (
               <Button
-                disabled={credits < 1}
                 className="flex-1"
                 size="lg"
                 onClick={() => onDownload('docx')}
               >
                 <Download className="mr-2 h-4 w-4" />
                 {t('download')} (.docx)
-                <Badge variant="secondary" className="ml-2">
-                  <Coins className="h-3 w-3 mr-1" />1 credit
-                </Badge>
               </Button>
             )}
 
@@ -249,15 +244,6 @@ export function TemplatePreview({
             )}
           </div>
 
-          {/* Credits warning */}
-          {credits < 1 && (
-            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800 flex items-center gap-2">
-                <Coins className="h-4 w-4" />
-                {t('insufficientCredits')}
-              </p>
-            </div>
-          )}
 
           {/* Motivation Letter Section */}
           {linkedInData && jobVacancy && (

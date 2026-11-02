@@ -252,6 +252,38 @@ function SidebarContent({
   );
 }
 
+// Sidebar én MobileHeader zijn altijd beide gemount en riepen elk dezelfde
+// drie fetches aan. Gedeelde in-flight promise per user (kort gecached)
+// halveert het aantal requests per paginaload.
+const COUNTS_TTL_MS = 30_000;
+let countsCache: { userId: string; at: number; promise: Promise<SidebarCounts> } | null = null;
+
+function fetchSidebarCounts(userId: string): Promise<SidebarCounts> {
+  if (countsCache && countsCache.userId === userId && Date.now() - countsCache.at < COUNTS_TTL_MS) {
+    return countsCache.promise;
+  }
+  const promise = (async () => {
+    const [cvs, appsRes, profRes] = await Promise.all([
+      getUserCVs(userId).catch(() => []),
+      fetch('/api/applications').catch(() => null),
+      fetch('/api/profiles').catch(() => null),
+    ]);
+    const next: SidebarCounts = {};
+    if (Array.isArray(cvs)) next.cvs = cvs.length;
+    if (appsRes?.ok) {
+      const data = await appsRes.json().catch(() => null);
+      if (Array.isArray(data?.applications)) next.applications = data.applications.length;
+    }
+    if (profRes?.ok) {
+      const data = await profRes.json().catch(() => null);
+      if (Array.isArray(data?.profiles)) next.profiles = data.profiles.length;
+    }
+    return next;
+  })();
+  countsCache = { userId, at: Date.now(), promise };
+  return promise;
+}
+
 function useSidebarCounts(): SidebarCounts {
   const { firebaseUser, effectiveUserId } = useAuth();
   const [counts, setCounts] = useState<SidebarCounts>({});
@@ -259,28 +291,13 @@ function useSidebarCounts(): SidebarCounts {
   useEffect(() => {
     if (!firebaseUser || !effectiveUserId) return;
     let cancelled = false;
-    void (async () => {
-      try {
-        const [cvs, appsRes, profRes] = await Promise.all([
-          getUserCVs(effectiveUserId).catch(() => []),
-          fetch('/api/applications').catch(() => null),
-          fetch('/api/profiles').catch(() => null),
-        ]);
-        const next: SidebarCounts = {};
-        if (Array.isArray(cvs)) next.cvs = cvs.length;
-        if (appsRes?.ok) {
-          const data = await appsRes.json().catch(() => null);
-          if (Array.isArray(data?.applications)) next.applications = data.applications.length;
-        }
-        if (profRes?.ok) {
-          const data = await profRes.json().catch(() => null);
-          if (Array.isArray(data?.profiles)) next.profiles = data.profiles.length;
-        }
+    fetchSidebarCounts(effectiveUserId)
+      .then((next) => {
         if (!cancelled) setCounts(next);
-      } catch {
+      })
+      .catch(() => {
         /* ignore */
-      }
-    })();
+      });
     return () => { cancelled = true; };
   }, [firebaseUser, effectiveUserId]);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Plus, FileText, MoreVertical, Download, Trash2, Eye, Building2, Target, Mail } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,12 +104,14 @@ export default function CVListPage() {
           ) : (
             <div className="space-y-3">
               {cvs.map((cv) => (
-                <Link
+                // A11y-fix: de actie-dropdown zat ín de <Link> (genest interactief
+                // element; klikken in het menu navigeerde soms toch). Nu is alleen
+                // het info-blok de link en staan de acties ernaast.
+                <div
                   key={cv.id}
-                  href={`/cv/${cv.id}`}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border gap-3 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <Link href={`/cv/${cv.id}`} className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                     <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                     </div>
@@ -165,18 +167,15 @@ export default function CVListPage() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Link>
 
-                  <div
-                    className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
                     {getStatusBadge(cv.status)}
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('actions')}>
+                          <MoreVertical className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -204,7 +203,7 @@ export default function CVListPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

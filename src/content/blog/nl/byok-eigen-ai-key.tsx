@@ -35,8 +35,7 @@ export function Body() {
       </p>
       <p>
         Op je dashboard zie je dan &quot;BYOK mode — je betaalt direct aan je provider&quot; en de
-        AI-stappen kosten geen credits aan onze kant. De PDF-download kost wel één credit, omdat die op
-        onze infrastructuur loopt (Puppeteer plus Cloud Run, dat is geen gratis ding).
+        AI-stappen kosten geen credits aan onze kant, en ook de PDF-download is gratis.
       </p>
 
       <h2>Wie heeft hier baat bij?</h2>

@@ -47,10 +47,8 @@ function inferStage(
   applications: ApplicationRecord[],
   recent: RecentJob | null,
 ): InferredNextStep {
-  // 1. Wizard draft in progress
-  if (draft?.generatedContent && draft?.jobVacancy?.title) {
-    return { stage: 'apply', jobTitle: draft.jobVacancy.title, company: draft.jobVacancy.company ?? undefined };
-  }
+  // 1. Wizard draft in progress (de draft bewaart geen gegenereerde content;
+  // een klaar CV staat in Firestore en valt onder de cvs-tak hieronder).
   if (draft?.jobVacancy?.title && draft?.linkedInData) {
     return { stage: 'cv', jobTitle: draft.jobVacancy.title, company: draft.jobVacancy.company ?? undefined };
   }
@@ -107,7 +105,7 @@ function toDate(value: unknown): Date | null {
 }
 
 function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityItem[] {
-  const items: ActivityItem[] = [];
+  const items: Array<ActivityItem & { ts: number }> = [];
 
   for (const cv of cvs.slice(0, 4)) {
     if (cv.status === 'pdf_ready') {
@@ -117,6 +115,7 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
         kind: 'success',
         message: `<strong>CV PDF klaar</strong> · ${escapeHtml(cv.jobVacancy?.company ?? 'Algemene CV')} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
         time: fmtTimeShort(toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
+        ts: (toDate(cv.updatedAt) ?? toDate(cv.createdAt))?.getTime() ?? 0,
       });
     } else if (cv.status === 'generated') {
       items.push({
@@ -125,6 +124,7 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
         kind: 'default',
         message: `<strong>Nieuw CV gegenereerd</strong> · ${escapeHtml(cv.jobVacancy?.company ?? 'Algemene CV')} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
         time: fmtTimeShort(toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
+        ts: (toDate(cv.updatedAt) ?? toDate(cv.createdAt))?.getTime() ?? 0,
       });
     }
   }
@@ -137,12 +137,16 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
         ? `<strong>Sollicitatie verstuurd</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`
         : `<strong>Status: ${escapeHtml(app.status)}</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`,
       time: fmtTimeShort(toDate(app.updatedAt) ?? toDate(app.appliedAt)),
+        ts: (toDate(app.updatedAt) ?? toDate(app.appliedAt))?.getTime() ?? 0,
     });
   }
 
+  // Bug-fix: sorteerde op de geformatteerde tijd-string ("5m" > "2u" > "1d"),
+  // waardoor de volgorde willekeurig was. Nu nieuwste eerst op echte tijd.
   return items
+    .sort((a, b) => b.ts - a.ts)
     .slice(0, 8)
-    .sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
+    .map(({ ts: _ts, ...item }) => item);
 }
 
 function fmtTimeShort(date: Date | null): string {

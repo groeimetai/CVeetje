@@ -24,6 +24,9 @@ import {
   File,
 } from 'lucide-react';
 import type { GeneratedMotivationLetter, OutputLanguage, TokenUsage } from '@/types';
+import { CreditBadge } from '@/components/cv/credit-badge';
+import { useAuth } from '@/components/auth/auth-context';
+import { PLATFORM_CREDIT_COSTS } from '@/lib/ai/platform-config';
 
 interface MotivationLetterSectionProps {
   cvId: string;
@@ -102,6 +105,9 @@ export function MotivationLetterSection({
   onCreditsUsed,
   onTokenUsage,
 }: MotivationLetterSectionProps) {
+  const { llmMode } = useAuth();
+  // Alleen platform-modus kost credits; kosten uit de centrale config
+  const notEnoughCredits = llmMode === 'platform' && credits < PLATFORM_CREDIT_COSTS['motivation-letter'];
   const [isExpanded, setIsExpanded] = useState(false);
   const [personalMotivation, setPersonalMotivation] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -133,7 +139,7 @@ export function MotivationLetterSection({
   }, [cvId]);
 
   const handleGenerate = async () => {
-    if (credits < 1) return;
+    if (notEnoughCredits) return;
 
     setIsGenerating(true);
     setError(null);
@@ -219,9 +225,7 @@ export function MotivationLetterSection({
             <Mail className="h-5 w-5 text-primary" />
             {letter ? 'Motivatiebrief' : 'Motivatiebrief Genereren'}
             {!letter && (
-              <Badge variant="secondary" className="ml-2">
-                <Coins className="h-3 w-3 mr-1" />1 credit
-              </Badge>
+              <CreditBadge operation="motivation-letter" />
             )}
           </CardTitle>
           {isExpanded ? (
@@ -278,7 +282,7 @@ export function MotivationLetterSection({
               {/* Generate button */}
               <Button
                 onClick={handleGenerate}
-                disabled={isGenerating || credits < 1}
+                disabled={isGenerating || notEnoughCredits}
                 className="w-full"
               >
                 {isGenerating ? (
@@ -294,7 +298,7 @@ export function MotivationLetterSection({
                 )}
               </Button>
 
-              {credits < 1 && (
+              {notEnoughCredits && (
                 <p className="text-sm text-amber-600 text-center">
                   Je hebt niet genoeg credits.
                 </p>

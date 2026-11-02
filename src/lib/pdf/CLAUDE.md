@@ -62,6 +62,6 @@ Method op het CV-record: `pdf-acroform` | `coordinates` | `pdf-overlay` | `pdf-h
 
 - HTML generator: `src/lib/cv/CLAUDE.md`
 - AI vision modules: `src/lib/ai/pdf-template-analyzer.ts`, `pdf-content-replacer.ts`, `pdf-html-reconstructor.ts` (zie `src/lib/ai/CLAUDE.md`)
-- API route: `src/app/api/cv/[id]/pdf/route.ts` (zie `src/app/api/CLAUDE.md`) — credit-aftrekpunt (1 credit per download)
+- API route: `src/app/api/cv/[id]/pdf/route.ts` (zie `src/app/api/CLAUDE.md`) — gratis PDF-export
 - DOCX → PDF flow: `src/lib/docx/docx-to-pdf.ts`
 - DOCX template-fill: `src/lib/docx/CLAUDE.md` (5-fase AI-pipeline)

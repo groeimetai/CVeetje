@@ -75,7 +75,7 @@ export function Body() {
       <p>
         If you send a tailored CV with every proposal you&apos;ll quickly do 10–30 generations per
         month. On platform credits that costs €15–€40. On BYOK (your own Claude or OpenAI key) it
-        costs a few euros in your own API fees plus one credit per download on our side. For active
+        costs a few euros in your own API fees, and PDF downloads are free. For active
         proposal work: BYOK.
       </p>
     </>

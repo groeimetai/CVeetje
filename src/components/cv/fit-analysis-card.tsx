@@ -22,10 +22,10 @@ import {
   Lightbulb,
   RefreshCw,
   ArrowRight,
-  Coins,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-context';
 import type { FitAnalysis, FitVerdict, FitWarningSeverity, ParsedLinkedIn, JobVacancy, TokenUsage } from '@/types';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 interface FitAnalysisCardProps {
   linkedInData: ParsedLinkedIn;
@@ -230,9 +230,7 @@ export function FitAnalysisCard({
               <TrendingUp className="h-4 w-4" />
               {t('analyzeButton')}
               {llmMode === 'platform' && (
-                <Badge variant="secondary" className="ml-1">
-                  <Coins className="h-3 w-3 mr-1" />1 credit
-                </Badge>
+                <CreditBadge operation="fit-analysis" className="ml-1" />
               )}
             </Button>
             <Button variant="outline" onClick={onContinue}>
@@ -286,9 +284,7 @@ export function FitAnalysisCard({
               <RefreshCw className="h-4 w-4" />
               {t('retryButton')}
               {llmMode === 'platform' && (
-                <Badge variant="secondary" className="ml-1">
-                  <Coins className="h-3 w-3 mr-1" />1 credit
-                </Badge>
+                <CreditBadge operation="fit-analysis" className="ml-1" />
               )}
             </Button>
             <Button onClick={onContinue}>

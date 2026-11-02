@@ -22,6 +22,15 @@ const nextConfig: NextConfig = {
   // build niet overschrijven. Zie e2e/README.md.
   distDir: process.env.NEXT_DIST_DIR || ".next",
 
+  // Bestanden die server-side via fs.readFileSync in Puppeteer geïnjecteerd
+  // worden (docx-to-pdf) — expliciet meenemen in de standalone-output.
+  outputFileTracingIncludes: {
+    "/api/templates/**": [
+      "./node_modules/docx-preview/dist/docx-preview.min.js",
+      "./node_modules/jszip/dist/jszip.min.js",
+    ],
+  },
+
   // Set turbopack root to this project directory
   turbopack: {
     root: path.resolve(__dirname),

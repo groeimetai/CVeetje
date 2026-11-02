@@ -6,9 +6,9 @@ test.describe('Sollicitaties en feedback', () => {
   test('sollicitatie toevoegen, status wijzigen en verwijderen', async ({ loggedInPage: page, user }) => {
     const slug = await seedJob();
     const create = await api(user, '/api/applications', { method: 'POST', body: JSON.stringify({ jobSlug: slug }) });
-    const created = (await create.json()) as { id?: string; application?: { id: string }; error?: string };
+    const created = (await create.json()) as { applicationId?: string; error?: string };
     expect([200, 201]).toContain(create.status);
-    const id = created.application?.id ?? created.id!;
+    const id = created.applicationId!;
 
     await page.goto('/nl/applications');
     await expect(page.getByText('Senior Frontend Developer').first()).toBeVisible();

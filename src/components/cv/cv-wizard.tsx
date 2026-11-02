@@ -57,6 +57,7 @@ const PLATFORM_MODEL_INFO: ModelInfo = {
 export function CVWizard() {
   const searchParams = useSearchParams();
   const jobIdParam = searchParams?.get('jobId') ?? null;
+  const profileIdParam = searchParams?.get('profile') ?? null;
   const t = useTranslations('cvWizard');
   const { userData, credits, refreshCredits, hasAIAccess, llmMode, effectiveUserId } = useAuth();
 
@@ -694,7 +695,7 @@ export function CVWizard() {
   }, [effectiveUserId, cvId]);
 
   const handleDownload = async (pageMode: PDFPageMode = 'multi-page') => {
-    if (!cvId || (!pdfDownloaded && credits < 1)) return;
+    if (!cvId) return; // PDF-download is gratis
 
     setIsDownloading(true);
     setError(null);
@@ -810,8 +811,13 @@ export function CVWizard() {
       return;
     }
 
-    // Determine which style step to use
-    const styleStep: WizardStep = useTemplateStyleMode ? 'template-style' : 'style';
+    // Determine which style step to use. Bug-fix: op het template-pad ging
+    // Back vanaf de preview naar de AI-stijlkiezer i.p.v. de template-stap.
+    const styleStep: WizardStep = useTemplateMode
+      ? 'template'
+      : useTemplateStyleMode
+        ? 'template-style'
+        : 'style';
     const stepOrder: WizardStep[] = ['linkedin', 'job', 'fit-analysis', 'required-items', 'style-choice', styleStep, 'preview'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
@@ -910,6 +916,7 @@ export function CVWizard() {
           onAvatarChange={setAvatarUrl}
           modelInfo={modelInfo}
           apiKey={userData?.apiKey ? { provider: userData.apiKey.provider, model: userData.apiKey.model } : null}
+          initialProfileId={profileIdParam}
         />
       )}
 

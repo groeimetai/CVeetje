@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
-import { getFirestore, initializeFirestore, Firestore, FirestoreSettings } from 'firebase-admin/firestore';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getStorage, Storage } from 'firebase-admin/storage';
 
 let adminApp: App;
@@ -18,15 +18,6 @@ function getAdminApp(): App {
       }),
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
-    // Configure Firestore once, tied to the app. initializeFirestore() is
-    // idempotent for identical settings, so it survives Next.js HMR / Cloud
-    // Run warm reuse (which previously broke `.settings()` on the singleton).
-    // ignoreUndefinedProperties is passed through to @google-cloud/firestore
-    // but isn't on firebase-admin's narrowed FirestoreSettings type.
-    initializeFirestore(
-      adminApp,
-      { ignoreUndefinedProperties: true } as unknown as FirestoreSettings,
-    );
   } else {
     adminApp = getApps()[0];
   }
@@ -42,20 +33,18 @@ export function getAdminAuth(): Auth {
 
 export function getAdminDb(): Firestore {
   if (!adminDb) {
-    const app = getAdminApp();
-    // Bug-fix: Next bundelt routes los, waardoor een module-instantie de
-    // al-geïnitialiseerde app kan aantreffen (else-tak in getAdminApp) en
-    // getFirestore() dan een instance zónder ignoreUndefinedProperties gaf.
-    // Writes met optionele `undefined`-velden (bv. dispute-regeneratie)
-    // faalden daardoor. initializeFirestore is idempotent bij gelijke
-    // settings; valt terug op getFirestore als de instance al bestaat.
+    adminDb = getFirestore(getAdminApp());
+    // Bug-fix: `initializeFirestore(app, { ignoreUndefinedProperties })` van
+    // firebase-admin geeft deze optie NIET door aan @google-cloud/firestore —
+    // de instelling stond dus nooit aan en writes met optionele `undefined`-
+    // velden faalden (dispute-regeneratie, admin-audit-log, ...). settings()
+    // werkt wel, maar mag maar één keer en vóór het eerste gebruik. De
+    // Firestore-instance is gedeeld per app; een tweede module-instantie die
+    // hier komt krijgt een throw → die instance is dan al geconfigureerd.
     try {
-      adminDb = initializeFirestore(
-        app,
-        { ignoreUndefinedProperties: true } as unknown as FirestoreSettings,
-      );
+      adminDb.settings({ ignoreUndefinedProperties: true });
     } catch {
-      adminDb = getFirestore(app);
+      /* al geconfigureerd door een eerdere module-instantie */
     }
   }
   return adminDb;

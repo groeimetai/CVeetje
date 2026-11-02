@@ -54,11 +54,16 @@ export default function ApplicationsPage() {
   const updateStatus = async (id: string, status: ApplicationStatus) => {
     setSaving(id);
     try {
-      await fetch(`/api/applications/${id}`, {
+      const res = await fetch(`/api/applications/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
+      // Bug-fix: mislukte saves werden stil genegeerd en toch in de UI getoond.
+      if (!res.ok) {
+        setError('Opslaan mislukt. Probeer het opnieuw.');
+        return;
+      }
       setApplications((prev) =>
         prev.map((a) => (a.id === id ? { ...a, status } : a)),
       );
@@ -71,11 +76,16 @@ export default function ApplicationsPage() {
     setSaving(id);
     try {
       const notes = openNotes[id] ?? '';
-      await fetch(`/api/applications/${id}`, {
+      const res = await fetch(`/api/applications/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes }),
       });
+      // Bug-fix: mislukte saves werden stil genegeerd en toch in de UI getoond.
+      if (!res.ok) {
+        setError('Opslaan mislukt. Probeer het opnieuw.');
+        return;
+      }
       setApplications((prev) =>
         prev.map((a) => (a.id === id ? { ...a, notes } : a)),
       );
@@ -88,7 +98,11 @@ export default function ApplicationsPage() {
     if (!confirm('Sollicitatie verwijderen uit je overzicht?')) return;
     setSaving(id);
     try {
-      await fetch(`/api/applications/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        setError('Verwijderen mislukt. Probeer het opnieuw.');
+        return;
+      }
       setApplications((prev) => prev.filter((a) => a.id !== id));
     } finally {
       setSaving(null);
