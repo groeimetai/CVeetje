@@ -122,7 +122,7 @@ export function TemplatePreview({
                 className="gap-2"
               >
                 <MessageSquare className="h-4 w-4" />
-                {language === 'nl' ? 'Assistent' : 'Assistant'}
+                {t('assistant')}
               </Button>
             )}
           </div>
@@ -175,14 +175,14 @@ export function TemplatePreview({
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-muted-foreground">
-                    {language === 'nl' ? 'Document laden...' : 'Loading document...'}
+                    {t('rendering')}
                   </span>
                 </div>
               )}
               {renderError && (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{language === 'nl' ? 'Kon document niet laden' : 'Could not load document'}</p>
+                  <p>{t('loadError')}</p>
                 </div>
               )}
               <div ref={styleContainerRef} className="hidden" />
