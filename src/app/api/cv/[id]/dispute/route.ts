@@ -28,6 +28,8 @@ type DisputeWrite = Omit<import('@/types').CVDispute, 'id' | 'createdAt' | 'reso
 
 // Max allowed disputes per CV. Third one escalates to human admin review.
 const MAX_DISPUTES = 3;
+// Een dispute (gatekeeper + regen) duurt hooguit enkele minuten; daarna vervalt de lock.
+const DISPUTE_LOCK_TTL_MS = 5 * 60 * 1000;
 const MIN_REASON_LENGTH = 20;
 
 const VALID_LEVELS: StyleCreativityLevel[] = ['conservative', 'balanced', 'creative', 'experimental', 'editorial-paper'];
@@ -36,8 +38,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let lockAcquired = false;
+  let lockUserId: string | null = null;
+  let lockCvId: string | null = null;
   try {
     const { id: cvId } = await params;
+    lockCvId = cvId;
 
     // Auth
     const cookieStore = await cookies();
@@ -50,6 +56,7 @@ export async function POST(
     try {
       const decoded = await getAdminAuth().verifyIdToken(token);
       userId = decoded.uid;
+      lockUserId = userId;
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
@@ -73,11 +80,40 @@ export async function POST(
     // Fetch CV
     const db = getAdminDb();
     const cvRef = db.collection('users').doc(userId).collection('cvs').doc(cvId);
-    const cvDoc = await cvRef.get();
-    if (!cvDoc.exists) {
-      return NextResponse.json({ error: 'CV not found' }, { status: 404 });
+    // Security: atomische lock zodat parallelle requests niet allemaal dezelfde
+    // disputeCount lezen en zo MAX_DISPUTES omzeilen. disputeCount zelf is via
+    // firestore.rules niet meer client-schrijfbaar.
+    const lockResult = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(cvRef);
+      if (!snap.exists) return { error: 'not-found' as const };
+      const data = snap.data() as Partial<CV> & { disputeLockAt?: { toMillis?: () => number } };
+      const lockedAt = data.disputeLockAt?.toMillis?.() ?? 0;
+      if (lockedAt && Date.now() - lockedAt < DISPUTE_LOCK_TTL_MS) {
+        return { error: 'locked' as const };
+      }
+      if ((data.disputeCount || 0) >= MAX_DISPUTES) {
+        return { error: 'max' as const };
+      }
+      tx.update(cvRef, { disputeLockAt: AdminTimestamp.now() });
+      return { data };
+    });
+    if ('error' in lockResult) {
+      if (lockResult.error === 'not-found') {
+        return NextResponse.json({ error: 'CV not found' }, { status: 404 });
+      }
+      if (lockResult.error === 'locked') {
+        return NextResponse.json(
+          { error: 'Er loopt al een dispute voor deze CV. Probeer het zo opnieuw.' },
+          { status: 409 },
+        );
+      }
+      return NextResponse.json(
+        { error: 'Maximaal aantal disputes bereikt voor deze CV.' },
+        { status: 400 },
+      );
     }
-    const cvData = cvDoc.data() as Partial<CV>;
+    lockAcquired = true;
+    const cvData = lockResult.data;
     if (!cvData.generatedContent || !cvData.linkedInData) {
       return NextResponse.json({ error: 'CV is nog niet gegenereerd' }, { status: 400 });
     }
@@ -287,9 +323,16 @@ export async function POST(
   } catch (error) {
     console.error('[Dispute] Unexpected error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Onbekende fout' },
+      { error: 'Er ging iets mis bij het verwerken van je dispute.' },
       { status: 500 },
     );
+  } finally {
+    if (lockAcquired && lockUserId && lockCvId) {
+      await getAdminDb()
+        .collection('users').doc(lockUserId).collection('cvs').doc(lockCvId)
+        .update({ disputeLockAt: FieldValue.delete() })
+        .catch(() => {});
+    }
   }
 }
 

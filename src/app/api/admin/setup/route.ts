@@ -31,7 +31,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Setup the admin user
-    const result = await setupInitialAdmin(userEmail);
+    const result = await setupInitialAdmin(userEmail, {
+      emailVerified: decodedToken.email_verified === true,
+      requestingUid: decodedToken.uid,
+    });
 
     if (!result.success) {
       return NextResponse.json(

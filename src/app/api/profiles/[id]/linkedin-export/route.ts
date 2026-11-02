@@ -3,8 +3,12 @@ import { cookies } from 'next/headers';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
-import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
+import {
+  resolveProvider,
+  ProviderError,
+  chargePlatformCredits,
+  refundPlatformCredits,
+} from '@/lib/ai/platform-provider';
 import type { ParsedLinkedIn, TokenUsage, OutputLanguage } from '@/types';
 
 // Schema for LinkedIn-optimized content
@@ -79,26 +83,6 @@ export async function POST(
     }
 
     const db = getAdminDb();
-
-    // Check user credits (LinkedIn export costs 1 credit)
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    // Support both new (free/purchased) and legacy (balance) credit systems
-    const freeCredits = userData?.credits?.free ?? 0;
-    const purchasedCredits = userData?.credits?.purchased ?? 0;
-    const legacyBalance = userData?.credits?.balance ?? 0;
-    // Use new system if available, otherwise fall back to legacy
-    const totalCredits = (freeCredits > 0 || purchasedCredits > 0 || userData?.credits?.free !== undefined)
-      ? freeCredits + purchasedCredits
-      : legacyBalance;
-
-    if (!userData || totalCredits < 1) {
-      return NextResponse.json(
-        { error: 'Onvoldoende credits. Koop meer credits om door te gaan.' },
-        { status: 402 }
-      );
-    }
 
     // Resolve AI provider (skipCreditDeduction — this route handles its own credits)
     let resolved;
@@ -209,44 +193,24 @@ INSTRUCTIES VOOR LINKEDIN OPTIMALISATIE:
    - Focus op wat deze persoon specifiek kan verbeteren
    - ${isNL ? 'Schrijf tips in het Nederlands' : 'Write tips in English'}`;
 
+    // Credit (1) atomisch vooraf afschrijven, refund bij AI-fout.
+    try {
+      await chargePlatformCredits(userId, 1, 'linkedin-export');
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json(
+          { error: 'Onvoldoende credits. Koop meer credits om door te gaan.' },
+          { status: err.statusCode },
+        );
+      }
+      throw err;
+    }
+
     try {
       const { object, usage } = await generateObject({
         model: aiProvider(userModel),
         schema: linkedInExportSchema,
         prompt: linkedInPrompt,
-      });
-
-      // Deduct credit (use free credits first, then purchased, or legacy balance)
-      let creditSource: string;
-      if (freeCredits >= 1) {
-        await db.collection('users').doc(userId).update({
-          'credits.free': FieldValue.increment(-1),
-          updatedAt: new Date(),
-        });
-        creditSource = 'free';
-      } else if (purchasedCredits >= 1) {
-        await db.collection('users').doc(userId).update({
-          'credits.purchased': FieldValue.increment(-1),
-          updatedAt: new Date(),
-        });
-        creditSource = 'purchased';
-      } else {
-        // Legacy balance fallback
-        await db.collection('users').doc(userId).update({
-          'credits.balance': FieldValue.increment(-1),
-          updatedAt: new Date(),
-        });
-        creditSource = 'balance';
-      }
-
-      // Log transaction
-      await db.collection('users').doc(userId).collection('transactions').add({
-        amount: -1,
-        type: 'linkedin_export',
-        description: `LinkedIn profiel export (${creditSource} credit)`,
-        molliePaymentId: null,
-        profileId: id,
-        createdAt: new Date(),
       });
 
       const tokenUsage: TokenUsage | undefined = usage ? {
@@ -261,9 +225,9 @@ INSTRUCTIES VOOR LINKEDIN OPTIMALISATIE:
       });
     } catch (aiError) {
       console.error('AI LinkedIn export error:', aiError);
-      const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
+      await refundPlatformCredits(userId, 'linkedin-export').catch(() => {});
       return NextResponse.json(
-        { error: `LinkedIn export mislukt: ${errorMessage}` },
+        { error: 'LinkedIn export mislukt. Je credit is teruggestort.' },
         { status: 500 }
       );
     }

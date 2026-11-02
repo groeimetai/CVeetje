@@ -85,24 +85,22 @@ service cloud.firestore {
       match /cvs/{cvId} {
         allow read: if isOwner(userId) || isAdmin();
 
-        // Create: eigenaar mag, mits minimale velden aanwezig zijn.
-        // Status moet op 'draft' beginnen (geen direct 'published' kunstgreep).
-        allow create: if isOwner(userId) && validCVCreate();
+        // Create: alleen server-side (Admin SDK) — /api/cv/generate en
+        // /api/templates/[id]/fill maken CV-records aan. Security: een
+        // client-aangemaakte CV met zelfgekozen generatedContent kon voorheen
+        // gratis door de PDF- en dispute-routes.
+        allow create: if false;
 
-        // Update: eigenaar — pdfUrl wordt server-side gezet maar
-        // we leggen geen veld-restrictie op om de wizard niet te breken.
-        allow update: if isOwner(userId);
+        // Update: eigenaar mag ALLEEN de inline-edit overrides bijwerken.
+        // Server-velden (generatedContent, designTokens, status, disputeCount,
+        // creativityLevel, pdfUrl, aiUsage, motivationLetter, …) worden door
+        // API-routes vertrouwd en zijn daarom Admin-SDK-only. Voorheen kon een
+        // gebruiker disputeCount resetten en zo onbeperkt gratis regenereren.
+        allow update: if isOwner(userId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['elementOverrides', 'updatedAt']);
 
         allow delete: if isOwner(userId);
-
-        function validCVCreate() {
-          let data = request.resource.data;
-          return fieldExists(data.linkedInData)
-            && fieldExists(data.template)
-            && fieldExists(data.colorScheme)
-            && fieldExists(data.status)
-            && data.status == 'draft';
-        }
 
         // ============ Disputes Subcollection ============
         // /users/{userId}/cvs/{cvId}/disputes/{disputeId}

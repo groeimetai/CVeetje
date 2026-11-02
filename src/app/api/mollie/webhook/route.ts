@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const params = new URLSearchParams(bodyText);
     const paymentId = params.get('id');
 
-    if (!paymentId) {
+    if (!paymentId || !/^tr_[A-Za-z0-9]{4,64}$/.test(paymentId)) {
       return NextResponse.json(
         { error: 'Payment ID required' },
         { status: 400 }
@@ -71,35 +71,42 @@ export async function POST(request: NextRequest) {
 
     const db = getAdminDb();
 
-    // Check if this payment was already processed (idempotency)
-    const existingTx = await db
-      .collection('users')
-      .doc(userId)
-      .collection('transactions')
-      .where('molliePaymentId', '==', paymentId)
-      .get();
+    // Idempotency — atomisch. Security: voorheen was dit een query-check
+    // gevolgd door een losse increment; parallelle webhook-calls (de endpoint
+    // is publiek en paymentId staat in de checkout-response) konden zo
+    // dezelfde betaling meerdere keren bijschrijven. Nu claimt een
+    // transactie `processedPayments/{paymentId}` met create-semantiek.
+    const processedRef = db.collection('processedPayments').doc(paymentId);
+    const userRef = db.collection('users').doc(userId);
+    const applied = await db.runTransaction(async (tx) => {
+      const existing = await tx.get(processedRef);
+      if (existing.exists) return false;
+      // Betalingen van vóór deze fix hebben geen processedPayments-doc maar
+      // wel een transactie-record; die mogen ook niet opnieuw tellen.
+      const legacy = await tx.get(
+        userRef.collection('transactions').where('molliePaymentId', '==', paymentId).limit(1),
+      );
+      if (!legacy.empty) return false;
+      tx.create(processedRef, { userId, credits, processedAt: new Date() });
+      tx.update(userRef, {
+        'credits.purchased': FieldValue.increment(credits),
+        updatedAt: new Date(),
+      });
+      tx.set(userRef.collection('transactions').doc(), {
+        amount: credits,
+        type: 'purchase',
+        description: `Purchased ${credits} credits`,
+        molliePaymentId: paymentId,
+        cvId: null,
+        createdAt: new Date(),
+      });
+      return true;
+    });
 
-    if (!existingTx.empty) {
-      // Payment already processed
+    if (!applied) {
       console.log(`Payment ${paymentId} already processed`);
       return NextResponse.json({ received: true });
     }
-
-    // Add credits to user's purchased bucket (separate from free monthly credits)
-    await db.collection('users').doc(userId).update({
-      'credits.purchased': FieldValue.increment(credits),
-      updatedAt: new Date(),
-    });
-
-    // Log transaction
-    await db.collection('users').doc(userId).collection('transactions').add({
-      amount: credits,
-      type: 'purchase',
-      description: `Purchased ${credits} credits`,
-      molliePaymentId: paymentId,
-      cvId: null,
-      createdAt: new Date(),
-    });
 
     console.log(`Added ${credits} credits to user ${userId} from payment ${paymentId}`);
 
