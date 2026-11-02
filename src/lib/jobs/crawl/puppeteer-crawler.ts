@@ -12,6 +12,7 @@
 import puppeteer, { type Browser } from 'puppeteer';
 import chromium from '@sparticuz/chromium';
 import { validateURL } from '@/lib/security/url-validator';
+import { assertPublicHost } from '@/lib/security/safe-fetch';
 
 const NAV_TIMEOUT_MS = 15_000;
 const SETTLE_TIMEOUT_MS = 3_000;
@@ -67,13 +68,34 @@ export async function puppeteerCrawl(
     const page = await browser.newPage();
     await page.setUserAgent(USER_AGENT);
     await page.setRequestInterception(true);
+    // Security: ELKE request (document, xhr, fetch, script, subframe) wordt
+    // gevalideerd — voorheen alleen de start- en eind-URL, waardoor JS op een
+    // aanvallers-pagina interne endpoints kon fetchen en in de DOM zetten.
+    const hostCheckCache = new Map<string, Promise<boolean>>();
+    const isPublic = (rawUrl: string): Promise<boolean> => {
+      if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:') || rawUrl === 'about:blank') {
+        return Promise.resolve(true);
+      }
+      const v = validateURL(rawUrl, { allowAnyHost: true });
+      if (!v.valid || !v.sanitizedUrl) return Promise.resolve(false);
+      const host = new URL(v.sanitizedUrl).hostname;
+      let p = hostCheckCache.get(host);
+      if (!p) {
+        p = assertPublicHost(host).then(() => true, () => false);
+        hostCheckCache.set(host, p);
+      }
+      return p;
+    };
     page.on('request', (req) => {
       const t = req.resourceType();
       if (t === 'image' || t === 'media' || t === 'font' || t === 'stylesheet') {
         req.abort().catch(() => { /* ignore */ });
-      } else {
-        req.continue().catch(() => { /* ignore */ });
+        return;
       }
+      isPublic(req.url()).then((ok) => {
+        if (ok) req.continue().catch(() => { /* ignore */ });
+        else req.abort('blockedbyclient').catch(() => { /* ignore */ });
+      });
     });
 
     let response;

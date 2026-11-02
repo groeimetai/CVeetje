@@ -6,8 +6,9 @@
  * landing page is JS-rendered. Result is cached per source URL for 7 days
  * (see src/lib/jobs/crawl/cache.ts).
  *
- * Auth: requires a valid Firebase ID token (Bearer or `firebase-token` cookie).
- * No rate limit — the cache + auth are the natural rate-limiters.
+ * Auth: admin-only (Bearer of `firebase-token` cookie). Security: deze route
+ * start Puppeteer op willekeurige URL's en werd door geen enkele user-flow
+ * gebruikt; voorheen kon elke ingelogde gebruiker hem aanroepen (SSRF + DoS).
  *
  * Request:  { url: string }
  * Response: { ok, fullText, finalUrl, method, cached, bytes, title, error? }
@@ -15,6 +16,7 @@
 
 import { NextResponse } from 'next/server';
 import { getAdminAuth } from '@/lib/firebase/admin';
+import { verifyAdminRequest } from '@/lib/firebase/admin-utils';
 import { crawlVacancy } from '@/lib/jobs/crawl';
 
 export const runtime = 'nodejs';
@@ -36,6 +38,7 @@ async function getUserIdFromRequest(request: Request): Promise<string | null> {
   if (!token) return null;
   try {
     const decoded = await getAdminAuth().verifyIdToken(token);
+    if (!(await verifyAdminRequest(token))) return null;
     return decoded.uid;
   } catch {
     return null;

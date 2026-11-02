@@ -20,6 +20,7 @@ import { reconstructPDFFromBlueprint } from '@/lib/ai/pdf-html-reconstructor';
 import type { LLMProvider } from '@/lib/ai/providers';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import { validateAvatarURL } from '@/lib/security/url-validator';
+import { safeFetch } from '@/lib/security/safe-fetch';
 
 const MIN_FONT_SIZE = 7;
 const OVERLAY_FIT_THRESHOLD = 0.75; // ≥75% fields must fit (after shrink) to use overlay path
@@ -127,7 +128,8 @@ export async function smartFillPDF(opts: SmartFillPDFOptions): Promise<SmartFill
       model,
       jobVacancy,
       language,
-      avatarUrl: avatarUrl ?? null,
+      // Alleen een gevalideerde avatar-URL doorgeven aan de HTML-render
+      avatarUrl: avatarUrl ? validateAvatarURL(avatarUrl).sanitizedUrl ?? null : null,
     });
     pdfBytes = reconstructed.pdfBytes;
     method = 'pdf-html-reconstruct';
@@ -353,9 +355,10 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 
 async function fetchAvatar(url: string): Promise<Uint8Array | null> {
   try {
-    const res = await fetch(url);
+    // safeFetch: DNS-check + gevalideerde redirects + byte-limiet (SSRF)
+    const res = await safeFetch(url, { avatar: true, timeoutMs: 5000, maxBytes: 8 * 1024 * 1024 });
     if (!res.ok) return null;
-    return new Uint8Array(await res.arrayBuffer());
+    return new Uint8Array(res.body);
   } catch {
     return null;
   }

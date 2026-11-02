@@ -11,6 +11,7 @@
  */
 
 import { validateURL } from '@/lib/security/url-validator';
+import { assertPublicHost } from '@/lib/security/safe-fetch';
 import { detectAtsFromUrl, type DetectedAts } from '../ats-detector';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -197,6 +198,13 @@ export async function httpCrawl(
     const validation = validateURL(current, { allowAnyHost: true });
     if (!validation.valid) {
       result.error = `ssrf-blocked:${validation.error}`;
+      return result;
+    }
+    // DNS-check: hostnames die naar interne adressen resolven blokkeren
+    try {
+      await assertPublicHost(new URL(current).hostname);
+    } catch (e) {
+      result.error = `ssrf-blocked:${e instanceof Error ? e.message : 'dns'}`;
       return result;
     }
 
