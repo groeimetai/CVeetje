@@ -60,7 +60,11 @@ test.describe('CV-wizard (gemockte AI)', () => {
 
     // PDF-download
     const downloadPromise = page.waitForEvent('download', { timeout: 90_000 });
-    await page.getByRole('button', { name: /Download PDF/ }).first().click();
+    // Het dropdown-menu kan net na de preview-render nog niet reageren; retry openen.
+    await expect(async () => {
+      await page.getByRole('button', { name: /Download PDF/ }).first().click();
+      await expect(page.getByRole('menuitem', { name: /A4 Pagina/ })).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
     await page.getByRole('menuitem', { name: /A4 Pagina/ }).click();
     const download = await downloadPromise;
     const pdfPath = await download.path();
