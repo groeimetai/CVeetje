@@ -3,6 +3,8 @@ import chromium from '@sparticuz/chromium';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { fontPairings, typeScales, spacingScales } from '@/lib/cv/templates/themes';
+import { escapeHtml, sanitizeCssColor } from '@/lib/security/html-escape';
+import { setContentHardened } from './harden-page';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -94,6 +96,67 @@ interface MotivationLetterData {
   senderPhone?: string;
   senderLocation?: string;
   date?: string;
+  /** Taal van de brief; zonder waarde afgeleid uit de tekst. */
+  language?: 'nl' | 'en';
+}
+
+const DATE_LINE = /^\s*(\d{1,2}\s+\p{L}+\s+\d{4}|\p{L}+\s+\d{1,2},\s+\d{4})\s*$/u;
+const SUBJECT_LINE = /^\s*(Betreft|Re|Subject|Onderwerp)\s*:\s*/i;
+
+interface PreparedLetter {
+  language: 'nl' | 'en';
+  dateText: string;
+  subject: string;
+  paragraphs: string[];
+  closing: string;
+}
+
+/**
+ * Bereid de brief voor op opmaak. Bug-fixes t.o.v. de oude renderer:
+ * - de datum stond er twee keer in (header + eerste alinea van fullText);
+ * - er stond altijd een hardcoded kop "Motivatiebrief" naast de
+ *   "Betreft/Re"-regel uit fullText;
+ * - Engelse brieven eindigden met "Met vriendelijke groet" en kregen een
+ *   Nederlandse datum en `lang="nl"`.
+ */
+function prepareLetter(data: MotivationLetterData): PreparedLetter {
+  const rawParagraphs = data.fullText
+    .split('\n\n')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const language: 'nl' | 'en' =
+    data.language ??
+    (/\b(Kind regards|Best regards|Dear|Sincerely|Re:)/.test(data.fullText) &&
+    !/\b(Met vriendelijke groet|Geachte|Betreft)\b/.test(data.fullText)
+      ? 'en'
+      : 'nl');
+
+  let paragraphs = stripSignOffParagraphs(rawParagraphs, data.senderName);
+  // Datumregel uit fullText weghalen: de header toont de datum al.
+  paragraphs = paragraphs.filter((p, i) => !(i < 2 && DATE_LINE.test(p)));
+  // "Betreft:/Re:"-regel wordt de onderwerpregel.
+  let subject = language === 'nl' ? 'Sollicitatie' : 'Application';
+  const subjectIdx = paragraphs.findIndex((p, i) => i < 3 && SUBJECT_LINE.test(p));
+  if (subjectIdx >= 0) {
+    subject = paragraphs[subjectIdx].replace(SUBJECT_LINE, '').trim() || subject;
+    paragraphs = paragraphs.filter((_, i) => i !== subjectIdx);
+  }
+
+  const dateText =
+    data.date ||
+    new Date().toLocaleDateString(language === 'nl' ? 'nl-NL' : 'en-GB', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+  return {
+    language,
+    dateText,
+    subject,
+    paragraphs,
+    closing: language === 'nl' ? 'Met vriendelijke groet,' : 'Kind regards,',
+  };
 }
 
 /**
@@ -117,22 +180,9 @@ function generateMotivationLetterHTML(
   const typeScale = typeScales[tokens.scale];
   const spacingScale = spacingScales[tokens.spacing];
 
-  const today = data.date || new Date().toLocaleDateString('nl-NL', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  // Split text into paragraphs and strip the sign-off paragraphs.
-  // formatFullLetter already includes a "Met vriendelijke groet, /
-  // {name}" block in fullText (for the text preview), but THIS renderer
-  // adds its own styled sign-off below, so we filter the text-based one
-  // out to avoid a double ending.
-  const rawParagraphs = data.fullText
-    .split('\n\n')
-    .filter(p => p.trim())
-    .map(p => p.trim());
-  const paragraphs = stripSignOffParagraphs(rawParagraphs, data.senderName);
+  const letter = prepareLetter(data);
+  const today = letter.dateText;
+  const paragraphs = letter.paragraphs;
 
   // Build Google Fonts links
   const fontLinks = [fontConfig.heading.googleUrl, fontConfig.body.googleUrl]
@@ -141,11 +191,11 @@ function generateMotivationLetterHTML(
     .join('\n  ');
 
   return `<!DOCTYPE html>
-<html lang="nl">
+<html lang="${letter.language}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Motivatiebrief - ${data.senderName}</title>
+  <title>${letter.language === 'nl' ? 'Motivatiebrief' : 'Cover letter'} - ${escapeHtml(data.senderName)}</title>
   ${fontLinks}
   <style>
     * {
@@ -158,7 +208,7 @@ function generateMotivationLetterHTML(
       font-family: ${fontConfig.body.family};
       font-size: ${typeScale.body}pt;
       line-height: 1.6;
-      color: ${tokens.colors.text};
+      color: ${sanitizeCssColor(tokens.colors.text, '#333333')};
       background: white;
       padding: 40mm 25mm;
       max-width: 210mm;
@@ -178,18 +228,18 @@ function generateMotivationLetterHTML(
       font-family: ${fontConfig.heading.family}, sans-serif;
       font-size: ${typeScale.heading}pt;
       font-weight: 600;
-      color: ${tokens.colors.primary};
+      color: ${sanitizeCssColor(tokens.colors.primary, '#333333')};
     }
 
     .sender-contact {
       font-size: ${typeScale.small}pt;
-      color: ${tokens.colors.muted};
+      color: ${sanitizeCssColor(tokens.colors.muted, '#333333')};
       margin-top: 4px;
     }
 
     .date {
       text-align: right;
-      color: ${tokens.colors.muted};
+      color: ${sanitizeCssColor(tokens.colors.muted, '#333333')};
       font-size: ${typeScale.small}pt;
       margin-bottom: ${spacingScale.section};
     }
@@ -206,10 +256,10 @@ function generateMotivationLetterHTML(
       font-family: ${fontConfig.heading.family}, sans-serif;
       font-size: ${typeScale.heading}pt;
       font-weight: 600;
-      color: ${tokens.colors.primary};
+      color: ${sanitizeCssColor(tokens.colors.primary, '#333333')};
       margin-bottom: ${spacingScale.section};
       padding-bottom: 8px;
-      border-bottom: 2px solid ${tokens.colors.accent};
+      border-bottom: 2px solid ${sanitizeCssColor(tokens.colors.accent, '#333333')};
     }
 
     .content {
@@ -232,7 +282,7 @@ function generateMotivationLetterHTML(
     .signature-name {
       font-family: ${fontConfig.heading.family}, sans-serif;
       font-weight: 600;
-      color: ${tokens.colors.primary};
+      color: ${sanitizeCssColor(tokens.colors.primary, '#333333')};
     }
 
     @media print {
@@ -245,31 +295,31 @@ function generateMotivationLetterHTML(
 <body>
   <div class="header">
     <div class="sender-info">
-      <div class="sender-name">${data.senderName}</div>
+      <div class="sender-name">${escapeHtml(data.senderName)}</div>
       <div class="sender-contact">
-        ${[data.senderEmail, data.senderPhone, data.senderLocation].filter(Boolean).join(' | ')}
+        ${[data.senderEmail, data.senderPhone, data.senderLocation].filter(Boolean).map(escapeHtml).join(' | ')}
       </div>
     </div>
-    <div class="date">${today}</div>
+    <div class="date">${escapeHtml(today)}</div>
   </div>
 
   ${data.recipientCompany ? `
   <div class="recipient">
-    ${data.recipientName ? `<div>${data.recipientName}</div>` : ''}
-    <div class="recipient-company">${data.recipientCompany}</div>
+    ${data.recipientName ? `<div>${escapeHtml(data.recipientName)}</div>` : ''}
+    <div class="recipient-company">${escapeHtml(data.recipientCompany)}</div>
   </div>
   ` : ''}
 
-  <div class="subject">Motivatiebrief</div>
+  <div class="subject">${escapeHtml(letter.subject)}</div>
 
   <div class="content">
-    ${paragraphs.map(p => `<p class="paragraph">${p}</p>`).join('\n    ')}
+    ${paragraphs.map(p => `<p class="paragraph">${escapeHtml(p)}</p>`).join('\n    ')}
   </div>
 
   <div class="closing">
-    <p>Met vriendelijke groet,</p>
+    <p>${letter.closing}</p>
     <div class="signature">
-      <div class="signature-name">${data.senderName}</div>
+      <div class="signature-name">${escapeHtml(data.senderName)}</div>
     </div>
   </div>
 </body>
@@ -286,9 +336,10 @@ export async function generateMotivationLetterPDF(
   const html = generateMotivationLetterHTML(data, tokens);
 
   const browser = await getBrowser();
+  try {
   const page = await browser.newPage();
 
-  await page.setContent(html, { waitUntil: 'networkidle0' });
+  await setContentHardened(page, html);
 
   const pdf = await page.pdf({
     format: 'A4',
@@ -301,9 +352,10 @@ export async function generateMotivationLetterPDF(
     },
   });
 
-  await browser.close();
-
   return Buffer.from(pdf);
+  } finally {
+    await browser.close().catch(() => {});
+  }
 }
 
 /**
@@ -315,19 +367,9 @@ export async function generateMotivationLetterDOCX(
 ): Promise<Buffer> {
   const fontConfig = fontPairings[tokens.fontPairing];
 
-  const today = data.date || new Date().toLocaleDateString('nl-NL', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  // Split text into paragraphs and strip the sign-off (same reason as
-  // the PDF generator — fullText includes one, we add our own styled one).
-  const rawParagraphs = data.fullText
-    .split('\n\n')
-    .filter(p => p.trim())
-    .map(p => p.trim());
-  const paragraphs = stripSignOffParagraphs(rawParagraphs, data.senderName);
+  const letter = prepareLetter(data);
+  const today = letter.dateText;
+  const paragraphs = letter.paragraphs;
 
   // Build document sections
   const children: Paragraph[] = [];
@@ -414,9 +456,9 @@ export async function generateMotivationLetterDOCX(
       spacing: { before: 200, after: 400 },
       children: [
         new TextRun({
-          text: 'Motivatiebrief',
+          text: letter.subject,
           bold: true,
-          size: 28,
+          size: 24,
           font: extractFontName(fontConfig.heading.family),
         }),
       ],
@@ -444,7 +486,7 @@ export async function generateMotivationLetterDOCX(
       spacing: { before: 400 },
       children: [
         new TextRun({
-          text: 'Met vriendelijke groet,',
+          text: letter.closing,
           font: extractFontName(fontConfig.body.family),
         }),
       ],

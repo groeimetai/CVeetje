@@ -60,6 +60,8 @@ export interface PDFTemplate {
   fileName: string;
   fileType: TemplateFileType;
   storageUrl: string;
+  /** Pad in de Storage-bucket (nieuwe uploads); oudere docs hebben alleen storageUrl. */
+  storagePath?: string;
   pageCount: number;
   fields: PDFTemplateField[];
   placeholders?: DocxPlaceholder[];

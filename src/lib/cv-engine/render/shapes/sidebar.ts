@@ -32,8 +32,8 @@ function renderMainHeader(fullName: string, headline: string, nameTagline?: stri
     ? `<div class="cv-name-tagline">${escHtml(nameTagline)}</div>`
     : '';
   return `<header class="cv-main-header">
-  <h1 class="cv-name">${escHtml(fullName)}</h1>
-  ${headline ? `<div class="cv-headline">${escHtml(headline)}</div>` : ''}
+  <h1 class="cv-name" data-id="header-name">${escHtml(fullName)}</h1>
+  ${headline ? `<div class="cv-headline" data-id="headline">${escHtml(headline)}</div>` : ''}
   ${tagline}
 </header>`;
 }
@@ -46,17 +46,17 @@ function renderSummary(
 ): string {
   let body = applyAccentHighlights(escHtml(summary), accentKeywords);
   if (decorators?.dropCap) body = applyDropCap(body, dropCapLetter);
-  return `<p class="cv-summary">${body}</p>`;
+  return `<p class="cv-summary" data-id="summary">${body}</p>`;
 }
 
 function renderEducation(items: GeneratedCVContent['education']): string {
   return items
     .map(
-      e => `<article class="cv-experience-item">
+      (e, i) => `<article class="cv-experience-item">
   <div class="cv-role-line">
-    <span class="cv-role-title">${escHtml(e.degree)}</span>
-    <span class="cv-role-meta">${escHtml(e.institution)}</span>
-    <span class="cv-role-period">${escHtml(e.year)}</span>
+    <span class="cv-role-title" data-id="edu-${i}-degree">${escHtml(e.degree)}</span>
+    <span class="cv-role-meta" data-id="edu-${i}-institution">${escHtml(e.institution)}</span>
+    <span class="cv-role-period" data-id="edu-${i}-year">${escHtml(e.year)}</span>
   </div>
   ${e.details ? `<p class="cv-experience-desc">${escHtml(e.details)}</p>` : ''}
 </article>`,
@@ -139,7 +139,7 @@ export function renderSidebarShape(rs: ResolvedSpec, input: SidebarShapeInput): 
           renderSection(
             rs.spec.primitives.section,
             labelFor(locale, 'experience'),
-            content.experience.map(e => renderExperienceItem(rs.spec.primitives.experienceItem, e, accentKeywords)).join(''),
+            content.experience.map((e, i) => renderExperienceItem(rs.spec.primitives.experienceItem, e, accentKeywords, i)).join(''),
           ) + pullQuoteHtml,
         );
         break;

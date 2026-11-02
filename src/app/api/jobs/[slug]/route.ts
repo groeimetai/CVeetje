@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { resolveJobBySlug } from '@/lib/jobs/resolve';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 export const runtime = 'nodejs';
 
@@ -25,7 +26,6 @@ export async function GET(
     });
   } catch (err) {
     console.error('[/api/jobs/[slug]]', err);
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: sanitizeError(err, 'jobs-slug').message }, { status: 500 });
   }
 }

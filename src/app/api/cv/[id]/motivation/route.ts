@@ -12,6 +12,7 @@ import type {
   OutputLanguage,
   GeneratedMotivationLetter,
 } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 export async function POST(
   request: NextRequest,
@@ -48,6 +49,9 @@ export async function POST(
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'cv-motivation', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     const db = getAdminDb();
 

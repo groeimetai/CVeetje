@@ -16,9 +16,11 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import type { KanbanBoard } from '@/types';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export function BoardList() {
   const t = useTranslations('admin.kanban');
+  const confirmDialog = useConfirm();
   const router = useRouter();
 
   const [boards, setBoards] = useState<KanbanBoard[]>([]);
@@ -154,12 +156,13 @@ export function BoardList() {
 
               {/* Delete button */}
               <button
-                onClick={e => {
+                onClick={async e => {
                   e.stopPropagation();
-                  if (confirm(t('deleteBoardConfirm', { title: board.title }))) {
+                  if (await confirmDialog({ title: t('deleteBoardConfirm', { title: board.title }), destructive: true })) {
                     handleDelete(board.id);
                   }
                 }}
+                aria-label={t('deleteBoardConfirm', { title: board.title })}
                 disabled={deletingId === board.id}
                 className="absolute top-3 right-3 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
               >

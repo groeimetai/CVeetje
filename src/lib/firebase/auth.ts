@@ -13,6 +13,7 @@ import {
   sendEmailVerification as firebaseSendEmailVerification,
 } from 'firebase/auth';
 import { auth } from './config';
+import { executeRecaptcha } from '@/lib/recaptcha/client';
 
 const googleProvider = new GoogleAuthProvider();
 const appleProvider = new OAuthProvider('apple.com');
@@ -25,6 +26,10 @@ async function initUserDocument(
   opts?: { ageConfirmed?: boolean }
 ): Promise<void> {
   const token = await firebaseUser.getIdToken();
+  // Verse reCAPTCHA-token: de server kent alleen bij een geldige token de
+  // gratis starter-credits toe (anti account-farming). Tokens zijn single-use,
+  // dus deze staat los van de token voor /api/auth/verify-captcha.
+  const captchaToken = await executeRecaptcha('init_user');
   const response = await fetch('/api/auth/init-user', {
     method: 'POST',
     headers: {
@@ -33,6 +38,7 @@ async function initUserDocument(
     },
     body: JSON.stringify({
       ageConfirmed: opts?.ageConfirmed === true,
+      captchaToken,
     }),
   });
 

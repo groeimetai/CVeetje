@@ -151,67 +151,91 @@ async function resolvePlatformProvider(
 // Credit management helpers
 // ---------------------------------------------------------------------------
 
+// Laatste afschrijving per user+operatie, zodat een refund in hetzelfde
+// request terug kan naar de juiste bucket (free vs purchased). Refunds
+// gebeuren altijd in dezelfde request/instance als de afschrijving.
+const lastCharges = new Map<string, { fromFree: number; fromPurchased: number }>();
+
+/**
+ * Trek credits atomisch af in één Firestore-transactie.
+ *
+ * Security: voorheen was dit check-then-deduct op een stale snapshot, waardoor
+ * N parallelle requests met 1 credit allemaal slaagden en het saldo negatief
+ * werd (wat de maandelijkse reset vervolgens kwijtschold). Nu wordt het saldo
+ * binnen de transactie vers gelezen, gecheckt en nooit onder 0 gezet.
+ */
 async function deductPlatformCredits(
   userId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  userData: any,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  _staleUserData: any,
   cost: number,
   operation: string,
 ): Promise<void> {
+  if (!Number.isFinite(cost) || cost <= 0) return;
   const db = getAdminDb();
-  const freeCredits: number = userData.credits?.free ?? 0;
-  const purchasedCredits: number = userData.credits?.purchased ?? 0;
-  const totalCredits = freeCredits + purchasedCredits;
+  const userRef = db.collection('users').doc(userId);
 
-  if (totalCredits < cost) {
-    throw new ProviderError(
-      `Onvoldoende credits. Je hebt ${totalCredits} credit(s), maar deze actie kost ${cost} credit(s). Koop meer credits of gebruik je eigen API key.`,
-      402,
-    );
-  }
+  const result = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    if (!snap.exists) {
+      throw new ProviderError('User not found', 404);
+    }
+    const data = snap.data()!;
+    const freeCredits = Math.max(0, Number(data.credits?.free ?? 0));
+    const purchasedCredits = Math.max(0, Number(data.credits?.purchased ?? 0));
+    const totalCredits = freeCredits + purchasedCredits;
 
-  // Deduct from free credits first, then purchased
-  let remainingCost = cost;
+    if (totalCredits < cost) {
+      throw new ProviderError(
+        `Onvoldoende credits. Je hebt ${totalCredits} credit(s), maar deze actie kost ${cost} credit(s). Koop meer credits of gebruik je eigen API key.`,
+        402,
+      );
+    }
 
-  if (freeCredits > 0) {
-    const fromFree = Math.min(freeCredits, remainingCost);
-    await db.collection('users').doc(userId).update({
-      'credits.free': FieldValue.increment(-fromFree),
+    // Free credits eerst, dan purchased
+    const fromFree = Math.min(freeCredits, cost);
+    const fromPurchased = cost - fromFree;
+
+    tx.update(userRef, {
+      'credits.free': freeCredits - fromFree,
+      'credits.purchased': purchasedCredits - fromPurchased,
       updatedAt: new Date(),
     });
-    remainingCost -= fromFree;
-  }
 
-  if (remainingCost > 0) {
-    await db.collection('users').doc(userId).update({
-      'credits.purchased': FieldValue.increment(-remainingCost),
-      updatedAt: new Date(),
+    const txRef = userRef.collection('transactions').doc();
+    tx.set(txRef, {
+      amount: -cost,
+      type: 'platform_ai',
+      operation,
+      fromFree,
+      fromPurchased,
+      description: `Platform AI: ${operation} (${fromPurchased > 0 ? 'purchased' : 'free'} credit)`,
+      molliePaymentId: null,
+      cvId: null,
+      createdAt: new Date(),
     });
-  }
 
-  // Log transaction
-  const creditSource = freeCredits >= cost ? 'free' : 'purchased';
-  await db.collection('users').doc(userId).collection('transactions').add({
-    amount: -cost,
-    type: 'platform_ai',
-    description: `Platform AI: ${operation} (${creditSource} credit)`,
-    molliePaymentId: null,
-    cvId: null,
-    createdAt: new Date(),
+    return {
+      fromFree,
+      fromPurchased,
+      remaining: totalCredits - cost,
+      email: data.email as string | undefined,
+      displayName: data.displayName as string | undefined,
+    };
+  });
+
+  lastCharges.set(`${userId}:${operation}`, {
+    fromFree: result.fromFree,
+    fromPurchased: result.fromPurchased,
   });
 
   // Send low credits warning when balance drops to 2 or below
-  const remaining = totalCredits - cost;
-  if (remaining <= 2 && remaining >= 0) {
-    const userDoc = await db.collection('users').doc(userId).get();
-    const email = userDoc.data()?.email;
-    if (email) {
-      const { subject, html } = renderCreditsLowEmail({
-        displayName: userDoc.data()?.displayName || 'daar',
-        remaining,
-      });
-      queueEmail(email, subject, html);
-    }
+  if (result.remaining <= 2 && result.remaining >= 0 && result.email) {
+    const { subject, html } = renderCreditsLowEmail({
+      displayName: result.displayName || 'daar',
+      remaining: result.remaining,
+    });
+    queueEmail(result.email, subject, html);
   }
 }
 
@@ -226,13 +250,7 @@ export async function chargePlatformCredits(
   cost: number,
   operation: string,
 ): Promise<void> {
-  const db = getAdminDb();
-  const userDoc = await db.collection('users').doc(userId).get();
-  if (!userDoc.exists) {
-    throw new ProviderError('User not found', 404);
-  }
-  const userData = userDoc.data()!;
-  await deductPlatformCredits(userId, userData, cost, operation);
+  await deductPlatformCredits(userId, null, cost, operation);
 }
 
 /**
@@ -241,14 +259,24 @@ export async function chargePlatformCredits(
  */
 export async function refundPlatformCredits(
   userId: string,
-  operation: PlatformOperation,
+  operation: PlatformOperation | string,
 ): Promise<void> {
-  const cost = PLATFORM_CREDIT_COSTS[operation] ?? 1;
   const db = getAdminDb();
+  const key = `${userId}:${operation}`;
+  const last = lastCharges.get(key);
+  lastCharges.delete(key);
+  // Terug naar de bucket waaruit afgeschreven is; zonder bekende afschrijving
+  // (andere instance) valt het terug op de free bucket.
+  const fromFree = last
+    ? last.fromFree
+    : PLATFORM_CREDIT_COSTS[operation as PlatformOperation] ?? 1;
+  const fromPurchased = last ? last.fromPurchased : 0;
+  const cost = fromFree + fromPurchased;
+  if (cost <= 0) return;
 
-  // Add credits back to free bucket (simplest approach)
   await db.collection('users').doc(userId).update({
-    'credits.free': FieldValue.increment(cost),
+    ...(fromFree > 0 ? { 'credits.free': FieldValue.increment(fromFree) } : {}),
+    ...(fromPurchased > 0 ? { 'credits.purchased': FieldValue.increment(fromPurchased) } : {}),
     updatedAt: new Date(),
   });
 

@@ -123,8 +123,8 @@ export const FAQ_GROUPS: FaqGroup[] = [
           en: 'Can I use my own AI key (BYOK)?',
         },
         a: {
-          nl: 'Ja. Sla je Claude-, OpenAI- of Google-API-key versleuteld op (AES-256) en alle AI-stappen kosten 0 platform-credits. Alleen de PDF-download kost 1 credit aan onze kant. Je betaalt direct aan de provider — typisch een paar eurocent per CV. Aanrader voor wie meer dan ~20 CV&apos;s per maand maakt.',
-          en: 'Yes. Store your Claude, OpenAI, or Google API key encrypted (AES-256) and all AI steps cost 0 platform credits. Only the PDF download costs 1 credit on our side. You pay your provider directly — typically a few cents per CV. Recommended above ~20 CVs/month.',
+          nl: 'Ja. Sla je Claude-, OpenAI- of Google-API-key versleuteld op (AES-256) en alle AI-stappen kosten 0 platform-credits. PDF-downloads zijn gratis. Je betaalt direct aan de provider — typisch een paar eurocent per CV. Aanrader voor wie meer dan ~20 CV&apos;s per maand maakt.',
+          en: 'Yes. Store your Claude, OpenAI, or Google API key encrypted (AES-256) and all AI steps cost 0 platform credits. PDF downloads are free. You pay your provider directly — typically a few cents per CV. Recommended above ~20 CVs/month.',
         },
       },
       {

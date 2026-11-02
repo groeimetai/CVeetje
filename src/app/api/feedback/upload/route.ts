@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomUUID } from 'crypto';
 import { getAdminAuth, getAdminStorage } from '@/lib/firebase/admin';
+import { sniffImage } from '@/lib/security/image-upload';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { publicObjectUrl, makeObjectPublic } from '@/lib/firebase/storage-files';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,6 +24,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const rateLimited = await enforceRateLimit(userId, 'feedback-upload', PERSISTENT_RATE_LIMITS.upload);
+    if (rateLimited) return rateLimited;
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
@@ -39,8 +45,12 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const fileExtension = file.type.split('/')[1] || 'jpg';
-    const filename = `feedback/${userId}/${randomUUID()}.${fileExtension}`;
+    // Type + extensie bepalen op basis van de bytes, niet de client-header
+    const sniffed = sniffImage(buffer);
+    if (!sniffed) {
+      return NextResponse.json({ error: 'Alleen PNG, JPEG of WebP toegestaan' }, { status: 400 });
+    }
+    const filename = `feedback/${userId}/${randomUUID()}.${sniffed.ext}`;
 
     const storage = getAdminStorage();
     const bucket = storage.bucket();
@@ -48,7 +58,8 @@ export async function POST(request: NextRequest) {
 
     await fileRef.save(buffer, {
       metadata: {
-        contentType: file.type,
+        contentType: sniffed.mime,
+        contentDisposition: 'inline',
         metadata: {
           uploadedBy: userId,
           uploadedAt: new Date().toISOString(),
@@ -56,9 +67,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await fileRef.makePublic();
+    await makeObjectPublic(filename);
 
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+    const publicUrl = publicObjectUrl(bucket.name, filename);
 
     return NextResponse.json({ success: true, url: publicUrl });
   } catch (error) {

@@ -6,6 +6,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { decrypt } from '@/lib/encryption';
 import type { DetectedTemplateField, TemplateAnalysisResult, ProfileFieldMapping } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 // Schema for AI-detected fields
 const detectedFieldSchema = z.object({
@@ -91,6 +92,9 @@ export async function POST(
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'template-analyze', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     const db = getAdminDb();
 

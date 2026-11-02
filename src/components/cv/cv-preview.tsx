@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useTranslations, useFormatter } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import {
 import type { GeneratedCVContent, CVElementOverrides, ElementOverride, EditableElementType, CVContactInfo, JobVacancy, ParsedLinkedIn, FitAnalysis } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { useAuth } from '@/components/auth/auth-context';
-import { renderCV, isV2Tokens } from '@/lib/cv-engine/dispatch';
+import { renderCV, isV2Tokens, getStyleLabel } from '@/lib/cv-engine/dispatch';
 import { getRecipeById } from '@/lib/cv-engine/recipes/registry';
 import { oklchToCSS } from '@/lib/cv-engine/render/css/oklch';
 import type { CVStyleTokensV2 } from '@/lib/cv-engine/tokens';
@@ -33,6 +34,8 @@ import { MotivationLetterSection } from './motivation-letter-section';
 import { DesignTweaksSheet } from './design-tweaks/design-tweaks-sheet';
 import { isCVContentEditMessage } from '@/lib/cv/edit-bridge';
 import type { OutputLanguage, TokenUsage } from '@/types';
+import { escapeHtml } from '@/lib/security/html-escape';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 interface HeaderInfo {
   fullName: string;
@@ -56,6 +59,11 @@ function applyContentEdit(
   if (id === 'summary') {
     if (content.summary === text) return content;
     return { ...content, summary: text };
+  }
+  // v2-renderer toont de headline uit de content
+  if (id === 'headline') {
+    if (content.headline === text) return content;
+    return { ...content, headline: text };
   }
   // Experience fields: exp-{i}-{title|company|period|description|highlight-{j}|location}
   let m = id.match(/^exp-(\d+)-(title|company|period|description|location)$/);
@@ -224,6 +232,8 @@ export function CVPreview({
   onDisputeApproved,
 }: CVPreviewProps) {
   const { llmMode, refreshToken } = useAuth();
+  const t = useTranslations('cvPreview');
+  const format = useFormatter();
   const [activeTab, setActiveTab] = useState('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -245,6 +255,25 @@ export function CVPreview({
   const [elementColors, setElementColors] = useState<ElementColorOverrides>({});
   const [isTweaksOpen, setIsTweaksOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Mobiel: de CV is A4-breed (794px). Op smallere schermen renderen we de
+  // iframe op A4-breedte en schalen we hem visueel naar de containerbreedte,
+  // anders valt de rechterkant van het CV weg.
+  const [previewScale, setPreviewScale] = useState(1);
+  const [frameHeight, setFrameHeight] = useState(800);
+  const previewObserver = useRef<ResizeObserver | null>(null);
+  // Callback-ref: Radix Tabs unmount inactieve tabs, dus de wrapper kan
+  // opnieuw gemount worden — dan moet de observer mee.
+  const previewWrapRef = useCallback((el: HTMLDivElement | null) => {
+    previewObserver.current?.disconnect();
+    previewObserver.current = null;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      setPreviewScale(w > 0 && w < A4_PREVIEW_WIDTH ? w / A4_PREVIEW_WIDTH : 1);
+    });
+    ro.observe(el);
+    previewObserver.current = ro;
+  }, []);
 
   // Update local overrides when prop changes
   useEffect(() => {
@@ -278,7 +307,14 @@ export function CVPreview({
   // → generateCVHTML → iframe srcDoc cycle for live re-render.
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      // Security: alleen berichten uit ónze preview-iframe accepteren. Zonder
+      // deze check kon elke pagina die de app framet/opent CV-content wijzigen.
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
       const msg = event.data;
+      if (isPreviewHeightMessage(msg)) {
+        setFrameHeight(Math.max(Math.ceil(msg.height) + 40, 500));
+        return;
+      }
       if (!isCVContentEditMessage(msg)) return;
 
       const { id, text } = msg;
@@ -391,7 +427,7 @@ export function CVPreview({
   // Wrapped in try/catch so a render failure doesn't crash the whole page.
   const cvHTML = useMemo(() => {
     try {
-      return renderCV(
+      return withHeightReporter(renderCV(
         editedContent,
         effectiveTokens,
         {
@@ -401,16 +437,18 @@ export function CVPreview({
           overrides: effectiveOverrides,
           contactInfo: editedHeader.contactInfo,
           legacyOptions: { previewProtection: true, watermarkText: 'CVeetje PREVIEW' },
+          // v2: click-to-edit-bridge (legacy injecteert hem zelf)
+          editable: true,
           // Drive v2 section labels off the CV's output language so an English
           // CV shows "Interests/Experience" instead of defaulting to Dutch.
           locale: language,
         },
-      );
+      ));
     } catch (err) {
       console.error('[cv-preview] renderCV failed:', err);
-      return `<!doctype html><html><body style="font-family:system-ui;padding:40px;color:#a00"><h2>Preview render error</h2><pre>${err instanceof Error ? err.message : String(err)}</pre></body></html>`;
+      return `<!doctype html><html><body style="font-family:system-ui;padding:40px;color:#a00"><h2>${escapeHtml(t('renderError'))}</h2><pre>${escapeHtml(err instanceof Error ? err.message : String(err))}</pre></body></html>`;
     }
-  }, [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides, language]);
+  }, [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides, language, t]);
 
   // Check if content, header, tokens, or element colors have been edited
   const hasEdits = useMemo(() => {
@@ -423,31 +461,8 @@ export function CVPreview({
     return contentChanged || headerChanged || tokensChanged || elementColorsChanged;
   }, [content, editedContent, fullName, headline, contactInfo, editedHeader, tokens, editedTokens, elementColors]);
 
-  // Auto-resize iframe to content height
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const resizeIframe = () => {
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (doc && doc.body) {
-          const height = doc.body.scrollHeight + 40;
-          iframe.style.height = `${Math.max(height, 800)}px`;
-        }
-      } catch {
-        // Cross-origin errors are expected, ignore them
-      }
-    };
-
-    const handleLoad = () => {
-      resizeIframe();
-      setTimeout(resizeIframe, 500);
-    };
-
-    iframe.addEventListener('load', handleLoad);
-    return () => iframe.removeEventListener('load', handleLoad);
-  }, [cvHTML]);
+  // Auto-resize: de iframe draait sandboxed zonder allow-same-origin (opaque
+  // origin), dus de hoogte komt via postMessage van withHeightReporter().
 
   // Get style summary from tokens — legacy v1 path only. v2 tokens have
   // none of these fields, so the derived configs become undefined; we wrap
@@ -466,12 +481,14 @@ export function CVPreview({
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex items-center gap-3">
             <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              CV Preview
+              <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
+              {t('title')}
             </CardTitle>
-            <Badge variant="secondary" className="text-xs">
-              {tokens.styleName}
-            </Badge>
+            {getStyleLabel(tokens) && (
+              <Badge variant="secondary" className="hidden sm:inline-flex text-xs">
+                {getStyleLabel(tokens)}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {cvId && (
@@ -479,9 +496,10 @@ export function CVPreview({
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsDisputeOpen(true)}
-                title="Klopt deze CV niet? Vraag een heroverweging aan."
+                title={t('disputeTooltip')}
+                aria-label={t('disputeTooltip')}
               >
-                <Scale className="h-4 w-4" />
+                <Scale className="h-4 w-4" aria-hidden="true" />
               </Button>
             )}
             {linkedInData && (
@@ -489,26 +507,30 @@ export function CVPreview({
                 variant={isChatOpen ? 'secondary' : 'ghost'}
                 size="icon"
                 onClick={() => setIsChatOpen(!isChatOpen)}
-                title={isChatOpen ? 'Sluit CV Assistent' : 'Open CV Assistent'}
+                title={isChatOpen ? t('closeAssistant') : t('openAssistant')}
+                aria-label={isChatOpen ? t('closeAssistant') : t('openAssistant')}
+                aria-pressed={isChatOpen}
               >
-                <MessageSquare className="h-4 w-4" />
+                <MessageSquare className="h-4 w-4" aria-hidden="true" />
               </Button>
             )}
             <Button
               variant={isTweaksOpen ? 'secondary' : 'ghost'}
               size="icon"
               onClick={() => setIsTweaksOpen(true)}
-              title="Tweaks — kleuren, fonts en stijl aanpassen"
+              title={t('tweaksTooltip')}
+              aria-label={t('tweaksTooltip')}
             >
-              <Wand2 className="h-4 w-4" />
+              <Wand2 className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              title={isFullscreen ? t('exitFullscreen') : t('fullscreen')}
+              aria-label={isFullscreen ? t('exitFullscreen') : t('fullscreen')}
             >
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isFullscreen ? <Minimize2 className="h-4 w-4" aria-hidden="true" /> : <Maximize2 className="h-4 w-4" aria-hidden="true" />}
             </Button>
           </div>
         </CardHeader>
@@ -520,8 +542,8 @@ export function CVPreview({
               <AccordionTrigger className="px-4 hover:no-underline">
                 <div className="flex items-center gap-2">
                   <Lightbulb className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">Overzicht</span>
-                  <Badge variant="outline" className="ml-2">TLDR</Badge>
+                  <span className="font-semibold">{t('overview')}</span>
+                  <Badge variant="outline" className="ml-2">{t('tldr')}</Badge>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
@@ -530,18 +552,18 @@ export function CVPreview({
                   <div className="space-y-2 p-3 border rounded-lg bg-background">
                     <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                       <User className="h-4 w-4" />
-                      Profiel
+                      {t('profile')}
                     </h4>
                     <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Naam:</span> {editedHeader.fullName}</p>
+                      <p><span className="font-medium">{t('labelName')}</span> {editedHeader.fullName}</p>
                       {editedHeader.headline && (
-                        <p><span className="font-medium">Functie:</span> {editedHeader.headline}</p>
+                        <p><span className="font-medium">{t('labelJobTitle')}</span> {editedHeader.headline}</p>
                       )}
                       {editedHeader.contactInfo?.email && (
-                        <p><span className="font-medium">Email:</span> {editedHeader.contactInfo.email}</p>
+                        <p><span className="font-medium">{t('labelEmail')}</span> {editedHeader.contactInfo.email}</p>
                       )}
                       {editedHeader.contactInfo?.location && (
-                        <p><span className="font-medium">Locatie:</span> {editedHeader.contactInfo.location}</p>
+                        <p><span className="font-medium">{t('labelLocation')}</span> {editedHeader.contactInfo.location}</p>
                       )}
                     </div>
                   </div>
@@ -551,12 +573,12 @@ export function CVPreview({
                     <div className="space-y-2 p-3 border rounded-lg bg-background">
                       <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                         <Building2 className="h-4 w-4" />
-                        Vacature
+                        {t('vacancy')}
                       </h4>
                       <div className="space-y-1 text-sm">
-                        <p><span className="font-medium">Functie:</span> {jobVacancy.title}</p>
+                        <p><span className="font-medium">{t('labelJobTitle')}</span> {jobVacancy.title}</p>
                         {jobVacancy.company && (
-                          <p><span className="font-medium">Bedrijf:</span> {jobVacancy.company}</p>
+                          <p><span className="font-medium">{t('labelCompany')}</span> {jobVacancy.company}</p>
                         )}
                         {jobVacancy.location && (
                           <p className="flex items-center gap-1">
@@ -571,7 +593,7 @@ export function CVPreview({
                           </p>
                         )}
                         {jobVacancy.industry && (
-                          <p><span className="font-medium">Industrie:</span> {jobVacancy.industry}</p>
+                          <p><span className="font-medium">{t('labelIndustry')}</span> {jobVacancy.industry}</p>
                         )}
                       </div>
                     </div>
@@ -582,11 +604,11 @@ export function CVPreview({
                     <div className="space-y-2 p-3 border rounded-lg bg-background">
                       <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                         <DollarSign className="h-4 w-4" />
-                        Salaris Inschatting
+                        {t('salaryEstimate')}
                       </h4>
                       <div className="space-y-1 text-sm">
                         <p className="font-medium text-base">
-                          €{jobVacancy.salaryEstimate.estimatedMin.toLocaleString('nl-NL')} - €{jobVacancy.salaryEstimate.estimatedMax.toLocaleString('nl-NL')}
+                          €{format.number(jobVacancy.salaryEstimate.estimatedMin)} - €{format.number(jobVacancy.salaryEstimate.estimatedMax)}
                         </p>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">
@@ -599,7 +621,7 @@ export function CVPreview({
                             }
                             className="text-xs"
                           >
-                            {jobVacancy.salaryEstimate.confidence} confidence
+                            {t('confidence', { level: jobVacancy.salaryEstimate.confidence })}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">{jobVacancy.salaryEstimate.reasoning}</p>
@@ -612,7 +634,7 @@ export function CVPreview({
                     <div className="space-y-2 p-3 border rounded-lg bg-background">
                       <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                         <Target className="h-4 w-4" />
-                        Keywords
+                        {t('keywords')}
                       </h4>
                       <div className="flex flex-wrap gap-1">
                         {jobVacancy.keywords.slice(0, 10).map((keyword, idx) => (
@@ -622,7 +644,7 @@ export function CVPreview({
                         ))}
                         {jobVacancy.keywords.length > 10 && (
                           <Badge variant="outline" className="text-xs">
-                            +{jobVacancy.keywords.length - 10} meer
+                            {t('moreCount', { count: jobVacancy.keywords.length - 10 })}
                           </Badge>
                         )}
                       </div>
@@ -634,12 +656,12 @@ export function CVPreview({
                   <div className="space-y-2 p-3 border rounded-lg bg-background">
                     <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                       <Palette className="h-4 w-4" />
-                      Stijl
+                      {t('style')}
                     </h4>
                     <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Naam:</span> {tokens.styleName}</p>
-                      <p><span className="font-medium">Theme:</span> {tokens.themeBase}</p>
-                      <p><span className="font-medium">Industrie fit:</span> {tokens.industryFit}</p>
+                      <p><span className="font-medium">{t('labelName')}</span> {tokens.styleName}</p>
+                      <p><span className="font-medium">{t('labelTheme')}</span> {tokens.themeBase}</p>
+                      <p><span className="font-medium">{t('labelIndustryFit')}</span> {tokens.industryFit}</p>
                       <div className="flex gap-1 mt-1">
                         {Object.entries(tokens.colors).map(([key, color]) => (
                           <div
@@ -664,12 +686,12 @@ export function CVPreview({
                       <div className="space-y-2 p-3 border rounded-lg bg-background">
                         <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                           <Palette className="h-4 w-4" />
-                          Stijl
+                          {t('style')}
                         </h4>
                         <div className="space-y-1 text-sm">
-                          <p><span className="font-medium">Recipe:</span> {recipe.displayName}</p>
-                          <p><span className="font-medium">Shape:</span> {recipe.layoutShape}</p>
-                          <p><span className="font-medium">Density:</span> {recipe.density}</p>
+                          <p><span className="font-medium">{t('labelRecipe')}</span> {recipe.displayName}</p>
+                          <p><span className="font-medium">{t('labelShape')}</span> {recipe.layoutShape}</p>
+                          <p><span className="font-medium">{t('labelDensity')}</span> {recipe.density}</p>
                           <div className="flex gap-1 mt-1">
                             {roles.map(role => {
                               const oklch = v2.paletteOverride?.[role] ?? recipe.palette[role].anchor;
@@ -692,25 +714,25 @@ export function CVPreview({
                   <div className="space-y-2 p-3 border rounded-lg bg-background">
                     <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
                       <TrendingUp className="h-4 w-4" />
-                      Gegenereerde Content
+                      {t('generatedContent')}
                     </h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center gap-1">
                         <Award className="h-3 w-3 text-muted-foreground" />
-                        <span>{(editedContent.skills?.technical?.length || 0) + (editedContent.skills?.soft?.length || 0)} skills</span>
+                        <span>{t('skillsCount', { count: (editedContent.skills?.technical?.length || 0) + (editedContent.skills?.soft?.length || 0) })}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Building2 className="h-3 w-3 text-muted-foreground" />
-                        <span>{editedContent.experience?.length || 0} ervaringen</span>
+                        <span>{t('experienceCount', { count: editedContent.experience?.length || 0 })}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <FileText className="h-3 w-3 text-muted-foreground" />
-                        <span>{editedContent.education?.length || 0} opleidingen</span>
+                        <span>{t('educationCount', { count: editedContent.education?.length || 0 })}</span>
                       </div>
                       {editedContent.languages && editedContent.languages.length > 0 && (
                         <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">🌐</span>
-                          <span>{editedContent.languages.length} talen</span>
+                          <span className="text-muted-foreground" aria-hidden="true">🌐</span>
+                          <span>{t('languagesCount', { count: editedContent.languages.length })}</span>
                         </div>
                       )}
                     </div>
@@ -724,37 +746,50 @@ export function CVPreview({
           </Accordion>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 h-auto">
-              <TabsTrigger value="preview" className="text-xs sm:text-sm">Preview</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 mb-4 h-auto">
+              <TabsTrigger value="preview" className="text-xs sm:text-sm">{t('tabPreview')}</TabsTrigger>
               <TabsTrigger value="edit" className="flex items-center gap-1 text-xs sm:text-sm">
                 <Pencil className="h-3 w-3" />
-                <span className="hidden sm:inline">Structuur</span>
-                <span className="sm:hidden">Struct.</span>
+                <span className="hidden sm:inline">{t('tabStructure')}</span>
+                <span className="sm:hidden">{t('tabStructureShort')}</span>
                 {hasEdits && <span className="ml-1 h-2 w-2 rounded-full bg-primary" />}
               </TabsTrigger>
               <TabsTrigger value="style" className="text-xs sm:text-sm">
-                <span className="hidden sm:inline">Stijl Details</span>
-                <span className="sm:hidden">Stijl</span>
+                <span className="hidden sm:inline">{t('tabStyleDetails')}</span>
+                <span className="sm:hidden">{t('style')}</span>
               </TabsTrigger>
-              <TabsTrigger value="html" className="text-xs sm:text-sm">HTML</TabsTrigger>
             </TabsList>
 
             <TabsContent value="preview" className="space-y-4">
               {/* Preview iframe */}
-              <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+              <div
+                ref={previewWrapRef}
+                className="border rounded-lg bg-white overflow-hidden shadow-sm"
+                style={previewScale < 1 ? { height: frameHeight * previewScale } : undefined}
+              >
                 <iframe
                   ref={iframeRef}
                   srcDoc={cvHTML}
-                  title="CV Preview"
-                  className="w-full min-h-[500px] sm:min-h-[800px] border-0"
-                  sandbox="allow-same-origin allow-scripts"
+                  title={t('title')}
+                  className="border-0"
+                  style={
+                    previewScale < 1
+                      ? {
+                          width: A4_PREVIEW_WIDTH,
+                          height: frameHeight,
+                          transform: `scale(${previewScale})`,
+                          transformOrigin: 'top left',
+                        }
+                      : { width: '100%', height: frameHeight }
+                  }
+                  sandbox="allow-scripts"
                 />
               </div>
               {hasEdits && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800 flex items-center gap-2">
                     <Pencil className="h-4 w-4" />
-                    Je hebt wijzigingen aangebracht aan de CV inhoud. Deze worden meegenomen bij het downloaden.
+                    {t('editsNotice')}
                   </p>
                 </div>
               )}
@@ -766,12 +801,9 @@ export function CVPreview({
                   structural ops (add/remove/reorder items) that don't fit
                   the inline flow yet. */}
               <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-foreground">Tip: tekst wijzigen?</p>
+                <p className="font-medium text-foreground">{t('editTipTitle')}</p>
                 <p className="mt-1">
-                  Klik direct op de tekst in de preview (naam, titel, bullets, samenvatting…) en typ je
-                  aanpassing. Gebruik dit paneel voor structurele edits zoals items toevoegen of
-                  verwijderen. Voor kleuren, fonts en stijl: gebruik de <strong>Tweaks</strong>-knop
-                  rechtsboven.
+                  {t.rich('editTipBody', { strong: (chunks) => <strong>{chunks}</strong> })}
                 </p>
               </div>
               <CVContentEditor
@@ -796,14 +828,14 @@ export function CVPreview({
                   }}
                   disabled={!hasEdits}
                 >
-                  Reset naar origineel
+                  {t('resetToOriginal')}
                 </Button>
                 <Button
                   variant="default"
                   size="sm"
                   onClick={() => setActiveTab('preview')}
                 >
-                  Bekijk preview
+                  {t('viewPreview')}
                 </Button>
               </div>
             </TabsContent>
@@ -816,15 +848,15 @@ export function CVPreview({
                 {/* Theme & Colors */}
                 <div className="space-y-3 p-4 border rounded-lg">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Theme & Kleuren
+                    {t('themeColors')}
                   </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Theme</span>
+                      <span className="text-sm">{t('theme')}</span>
                       <Badge variant="outline">{tokens.themeBase}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Industry Fit</span>
+                      <span className="text-sm">{t('industryFit')}</span>
                       <span className="text-sm text-muted-foreground">{tokens.industryFit}</span>
                     </div>
                   </div>
@@ -832,27 +864,27 @@ export function CVPreview({
                     <div
                       className="w-8 h-8 rounded border"
                       style={{ backgroundColor: tokens.colors.primary }}
-                      title={`Primary: ${tokens.colors.primary}`}
+                      title={`${t('colorPrimary')}: ${tokens.colors.primary}`}
                     />
                     <div
                       className="w-8 h-8 rounded border"
                       style={{ backgroundColor: tokens.colors.secondary }}
-                      title={`Secondary: ${tokens.colors.secondary}`}
+                      title={`${t('colorSecondary')}: ${tokens.colors.secondary}`}
                     />
                     <div
                       className="w-8 h-8 rounded border"
                       style={{ backgroundColor: tokens.colors.accent }}
-                      title={`Accent: ${tokens.colors.accent}`}
+                      title={`${t('colorAccent')}: ${tokens.colors.accent}`}
                     />
                     <div
                       className="w-8 h-8 rounded border"
                       style={{ backgroundColor: tokens.colors.text }}
-                      title={`Text: ${tokens.colors.text}`}
+                      title={`${t('colorText')}: ${tokens.colors.text}`}
                     />
                     <div
                       className="w-8 h-8 rounded border"
                       style={{ backgroundColor: tokens.colors.muted }}
-                      title={`Muted: ${tokens.colors.muted}`}
+                      title={`${t('colorMuted')}: ${tokens.colors.muted}`}
                     />
                   </div>
                 </div>
@@ -860,23 +892,23 @@ export function CVPreview({
                 {/* Typography */}
                 <div className="space-y-3 p-4 border rounded-lg">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Typography
+                    {t('typography')}
                   </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Font Pairing</span>
+                      <span className="text-sm">{t('fontPairing')}</span>
                       <span className="text-sm text-muted-foreground">{tokens.fontPairing}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Scale</span>
+                      <span className="text-sm">{t('scale')}</span>
                       <Badge variant="outline">{tokens.scale}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Name Size</span>
+                      <span className="text-sm">{t('nameSize')}</span>
                       <span className="text-sm text-muted-foreground">{typeScale?.name ?? '—'}pt</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Body Size</span>
+                      <span className="text-sm">{t('bodySize')}</span>
                       <span className="text-sm text-muted-foreground">{typeScale?.body ?? '—'}pt</span>
                     </div>
                   </div>
@@ -885,23 +917,23 @@ export function CVPreview({
                 {/* Layout */}
                 <div className="space-y-3 p-4 border rounded-lg">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Layout
+                    {t('layout')}
                   </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Header</span>
+                      <span className="text-sm">{t('header')}</span>
                       <Badge variant="outline">{tokens.headerVariant}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Sections</span>
+                      <span className="text-sm">{t('sections')}</span>
                       <Badge variant="outline">{tokens.sectionStyle}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Spacing</span>
+                      <span className="text-sm">{t('spacing')}</span>
                       <Badge variant="outline">{tokens.spacing}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Skills</span>
+                      <span className="text-sm">{t('skills')}</span>
                       <Badge variant="outline">{tokens.skillsDisplay}</Badge>
                     </div>
                   </div>
@@ -910,25 +942,25 @@ export function CVPreview({
                 {/* Features */}
                 <div className="space-y-3 p-4 border rounded-lg">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                    Features
+                    {t('features')}
                   </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Foto</span>
+                      <span className="text-sm">{t('photo')}</span>
                       <Badge variant={tokens.showPhoto ? 'default' : 'secondary'}>
-                        {tokens.showPhoto ? 'Aan' : 'Uit'}
+                        {tokens.showPhoto ? t('on') : t('off')}
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Iconen</span>
+                      <span className="text-sm">{t('icons')}</span>
                       <Badge variant={tokens.useIcons ? 'default' : 'secondary'}>
-                        {tokens.useIcons ? 'Aan' : 'Uit'}
+                        {tokens.useIcons ? t('on') : t('off')}
                       </Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Afgeronde hoeken</span>
+                      <span className="text-sm">{t('roundedCorners')}</span>
                       <Badge variant={tokens.roundedCorners ? 'default' : 'secondary'}>
-                        {tokens.roundedCorners ? 'Aan' : 'Uit'}
+                        {tokens.roundedCorners ? t('on') : t('off')}
                       </Badge>
                     </div>
                   </div>
@@ -938,7 +970,7 @@ export function CVPreview({
               {/* Rationale */}
               <div className="p-4 border rounded-lg bg-muted/30">
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
-                  Stijl Rationale
+                  {t('styleRationale')}
                 </h3>
                 <p className="text-sm text-muted-foreground">{tokens.styleRationale}</p>
               </div>
@@ -952,7 +984,7 @@ export function CVPreview({
                 if (!recipe) {
                   return (
                     <div className="p-4 border rounded-lg bg-muted/30 text-sm text-muted-foreground">
-                      Recipe <code>{v2.recipeId}</code> niet gevonden in registry.
+                      {t.rich('recipeNotFound', { id: v2.recipeId, code: (chunks) => <code>{chunks}</code> })}
                     </div>
                   );
                 }
@@ -962,15 +994,15 @@ export function CVPreview({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-3 p-4 border rounded-lg">
                         <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                          Recipe & Palet
+                          {t('recipePalette')}
                         </h3>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">Recipe</span>
+                            <span className="text-sm">{t('recipe')}</span>
                             <Badge variant="outline">{recipe.displayName}</Badge>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">Route</span>
+                            <span className="text-sm">{t('route')}</span>
                             <span className="text-sm text-muted-foreground">{recipe.route}</span>
                           </div>
                         </div>
@@ -990,25 +1022,25 @@ export function CVPreview({
                       </div>
                       <div className="space-y-3 p-4 border rounded-lg">
                         <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                          Layout & Typografie
+                          {t('layoutTypography')}
                         </h3>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">Shape</span>
+                            <span className="text-sm">{t('shape')}</span>
                             <Badge variant="outline">{recipe.layoutShape}</Badge>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">Density</span>
+                            <span className="text-sm">{t('density')}</span>
                             <Badge variant="outline">{recipe.density}</Badge>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">Font</span>
+                            <span className="text-sm">{t('font')}</span>
                             <span className="text-sm text-muted-foreground">
                               {v2.fontOverride ?? recipe.allowedFontPairings[0]}
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">Page mode</span>
+                            <span className="text-sm">{t('pageMode')}</span>
                             <Badge variant="outline">{v2.pageMode ?? 'a4-paged'}</Badge>
                           </div>
                         </div>
@@ -1016,7 +1048,7 @@ export function CVPreview({
                     </div>
                     <div className="p-4 border rounded-lg bg-muted/30">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
-                        Recipe-brief
+                        {t('recipeBrief')}
                       </h3>
                       <p className="text-sm text-muted-foreground">{recipe.description}</p>
                     </div>
@@ -1025,14 +1057,6 @@ export function CVPreview({
               })()}
             </TabsContent>
 
-            <TabsContent value="html" className="space-y-4">
-              {/* HTML source */}
-              <div className="relative">
-                <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto max-h-[300px] sm:max-h-[600px]">
-                  <code>{cvHTML}</code>
-                </pre>
-              </div>
-            </TabsContent>
           </Tabs>
 
           {/* Action buttons */}
@@ -1043,39 +1067,32 @@ export function CVPreview({
                 className="flex-1"
               >
                 <Download className="mr-2 h-4 w-4 animate-bounce" />
-                PDF Genereren...
+                {t('generatingPdf')}
               </Button>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    disabled={!pdfDownloaded && credits < 1}
-                    className="flex-1"
-                  >
+                  {/* PDF-download is gratis (credits gaan op aan cv-generate) */}
+                  <Button className="flex-1">
                     <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                    {!pdfDownloaded && (
-                      <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                        <Coins className="h-3 w-3 mr-1" />1 credit
-                      </Badge>
-                    )}
+                    {t('download')}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuItem onClick={() => onDownload('multi-page')}>
                     <div className="flex flex-col">
-                      <span className="font-medium">A4 Pagina&apos;s</span>
+                      <span className="font-medium">{t('a4Pages')}</span>
                       <span className="text-xs text-muted-foreground">
-                        Standaard PDF met meerdere pagina&apos;s
+                        {t('a4PagesDesc')}
                       </span>
                     </div>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onDownload('single-page')}>
                     <div className="flex flex-col">
-                      <span className="font-medium">Enkele Lange Pagina</span>
+                      <span className="font-medium">{t('singleLongPage')}</span>
                       <span className="text-xs text-muted-foreground">
-                        Eén doorlopende pagina zonder witruimte
+                        {t('singleLongPageDesc')}
                       </span>
                     </div>
                   </DropdownMenuItem>
@@ -1091,16 +1108,14 @@ export function CVPreview({
               {isRegenerating ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Regenereren...
+                  {t('regenerating')}
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Regenereer
+                  {t('regenerate')}
                   {llmMode === 'platform' && (
-                    <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                      <Coins className="h-3 w-3 mr-1" />1 credit
-                    </Badge>
+                    <CreditBadge operation="cv-generate" className="ml-2 hidden sm:inline-flex" />
                   )}
                 </>
               )}
@@ -1113,21 +1128,12 @@ export function CVPreview({
                 disabled={isDownloading || isRegenerating}
               >
                 <Briefcase className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Nieuwe Vacature</span>
-                <span className="sm:hidden">Nieuw</span>
+                <span className="hidden sm:inline">{t('newVacancy')}</span>
+                <span className="sm:hidden">{t('newVacancyShort')}</span>
               </Button>
             )}
           </div>
 
-          {/* Credits warning */}
-          {!pdfDownloaded && credits < 1 && (
-            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800 flex items-center gap-2">
-                <Coins className="h-4 w-4" />
-                Je hebt niet genoeg credits om een PDF te downloaden.
-              </p>
-            </div>
-          )}
 
           {/* Motivation Letter Section */}
           {cvId && (
@@ -1186,3 +1192,35 @@ export function CVPreview({
 }
 
 export default CVPreview;
+
+
+// ============ Sandboxed preview helpers ============
+//
+// Security: de preview-iframe draaide met `allow-same-origin allow-scripts`,
+// wat de sandbox volledig opheft — script in de CV-HTML (bijv. via
+// geïnjecteerde tokens) liep dan op de app-origin, ook in de browser van een
+// admin die impersoneert. Nu draait de iframe op een opaque origin en meldt
+// hij zijn hoogte via postMessage.
+
+interface PreviewHeightMessage {
+  type: 'cv-preview-height';
+  height: number;
+}
+
+function isPreviewHeightMessage(v: unknown): v is PreviewHeightMessage {
+  if (!v || typeof v !== 'object') return false;
+  const m = v as Record<string, unknown>;
+  return m.type === 'cv-preview-height' && typeof m.height === 'number' && Number.isFinite(m.height);
+}
+
+// Zelfde timing als de oude same-origin resize (load + 500ms); geen
+// ResizeObserver om een groei-feedbackloop met de iframe-hoogte te vermijden.
+/** A4-breedte in CSS-px (210mm @ 96dpi) — basis voor de mobiele schaal. */
+const A4_PREVIEW_WIDTH = 794;
+
+const HEIGHT_REPORTER_SCRIPT = `<script data-cv-height="1">(function(){function s(){try{if(document.body){parent.postMessage({type:'cv-preview-height',height:document.body.scrollHeight},'*')}}catch(e){}}window.addEventListener('load',function(){s();setTimeout(s,500)})})();</script>`;
+
+function withHeightReporter(html: string): string {
+  const idx = html.lastIndexOf('</body>');
+  return idx === -1 ? html + HEIGHT_REPORTER_SCRIPT : html.slice(0, idx) + HEIGHT_REPORTER_SCRIPT + html.slice(idx);
+}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import type { CV, GeneratedCVContent, CVStyleConfig } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 // Debug endpoint to see the HTML that would be generated for PDF
 export async function GET(
@@ -34,6 +35,9 @@ export async function GET(
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'cv-preview-html', PERSISTENT_RATE_LIMITS.render);
+    if (rateLimited) return rateLimited;
 
     const db = getAdminDb();
 

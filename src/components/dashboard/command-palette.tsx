@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/auth-context';
 import { getUserCVs } from '@/lib/firebase/firestore';
 import { getRecentJobs, type RecentJob } from '@/lib/recent-jobs';
@@ -21,7 +22,13 @@ import {
   Send,
   Cpu,
   Scale,
+  Mail,
+  Columns3,
+  User,
 } from 'lucide-react';
+
+/** Event om de palette te openen vanaf elders (bv. de mobiele header). */
+export const OPEN_PALETTE_EVENT = 'cveetje:open-command-palette';
 
 type IconType = typeof FileText;
 
@@ -52,54 +59,59 @@ interface CommandPaletteProps {
   onClose: () => void;
 }
 
-const NAV_ENTRIES: PaletteEntry[] = [
-  { group: 'Navigatie', key: 'nav-dashboard', label: 'Dashboard',       icon: Home,              href: '/dashboard' },
-  { group: 'Navigatie', key: 'nav-cv',        label: "Mijn CV's",        icon: FileText,          href: '/cv' },
-  { group: 'Navigatie', key: 'nav-profiles',  label: 'Profielen',        icon: Users,             href: '/profiles' },
-  { group: 'Navigatie', key: 'nav-templates', label: 'Templates',        icon: LayoutTemplate,    href: '/templates' },
-  { group: 'Navigatie', key: 'nav-jobs',      label: 'Vacatures',        icon: Briefcase,         href: '/jobs' },
-  { group: 'Navigatie', key: 'nav-apps',      label: 'Sollicitaties',    icon: Send,              href: '/applications' },
-  { group: 'Navigatie', key: 'nav-credits',   label: 'Credits',          icon: CreditCard,        href: '/credits' },
-  { group: 'Navigatie', key: 'nav-settings',  label: 'Instellingen',     icon: Settings,          href: '/settings' },
-  { group: 'Navigatie', key: 'nav-feedback',  label: 'Feedback',         icon: MessageSquarePlus, href: '/feedback' },
+// Labels zijn navigation-keys (vertaald bij render) — gelijk aan de sidebar.
+const NAV_ENTRIES: Array<Omit<PaletteEntry, 'label' | 'group'> & { labelKey: string }> = [
+  { key: 'nav-dashboard', labelKey: 'dashboard',    icon: Home,              href: '/dashboard' },
+  { key: 'nav-cv',        labelKey: 'myCvs',        icon: FileText,          href: '/cv' },
+  { key: 'nav-profiles',  labelKey: 'profiles',     icon: Users,             href: '/profiles' },
+  { key: 'nav-templates', labelKey: 'templates',    icon: LayoutTemplate,    href: '/templates' },
+  { key: 'nav-jobs',      labelKey: 'jobs',         icon: Briefcase,         href: '/jobs' },
+  { key: 'nav-apps',      labelKey: 'applications', icon: Send,              href: '/applications' },
+  { key: 'nav-credits',   labelKey: 'credits',      icon: CreditCard,        href: '/credits' },
+  { key: 'nav-settings',  labelKey: 'settings',     icon: Settings,          href: '/settings' },
+  { key: 'nav-feedback',  labelKey: 'feedback',     icon: MessageSquarePlus, href: '/feedback' },
 ];
 
-const ADMIN_NAV: PaletteEntry[] = [
-  { group: 'Admin', key: 'adm-users',     label: 'Admin · Users',     icon: Users,             href: '/admin/users' },
-  { group: 'Admin', key: 'adm-cvs',       label: 'Admin · CVs',       icon: FileText,          href: '/admin/cvs' },
-  { group: 'Admin', key: 'adm-disputes',  label: 'Admin · Disputes',  icon: Scale,             href: '/admin/disputes' },
-  { group: 'Admin', key: 'adm-platform',  label: 'Admin · Platform',  icon: Cpu,               href: '/admin/platform' },
-  { group: 'Admin', key: 'adm-feedback',  label: 'Admin · Feedback',  icon: MessageSquarePlus, href: '/admin/feedback' },
+// Zelfde admin-items als de sidebar (was een subset van 5).
+const ADMIN_NAV: Array<Omit<PaletteEntry, 'label' | 'group'> & { labelKey: string }> = [
+  { key: 'adm-users',     labelKey: 'adminUsers',     icon: Users,             href: '/admin/users' },
+  { key: 'adm-profiles',  labelKey: 'adminProfiles',  icon: User,              href: '/admin/profielen' },
+  { key: 'adm-cvs',       labelKey: 'adminCvs',       icon: FileText,          href: '/admin/cvs' },
+  { key: 'adm-disputes',  labelKey: 'adminDisputes',  icon: Scale,             href: '/admin/disputes' },
+  { key: 'adm-emails',    labelKey: 'adminEmails',    icon: Mail,              href: '/admin/emails' },
+  { key: 'adm-templates', labelKey: 'adminTemplates', icon: LayoutTemplate,    href: '/admin/templates' },
+  { key: 'adm-kanban',    labelKey: 'adminKanban',    icon: Columns3,          href: '/admin/kanban' },
+  { key: 'adm-feedback',  labelKey: 'adminFeedback',  icon: MessageSquarePlus, href: '/admin/feedback' },
+  { key: 'adm-platform',  labelKey: 'adminPlatform',  icon: Cpu,               href: '/admin/platform' },
 ];
 
-function fmtCV(cv: CV): PaletteEntry {
+function fmtCV(cv: CV, group: string, untitled: string): PaletteEntry {
   const company = cv.jobVacancy?.company;
   const title = cv.jobVacancy?.title;
-  const label = company && title ? `${title} · ${company}` : title || cv.linkedInData?.fullName || 'Naamloos CV';
+  const label = company && title ? `${title} · ${company}` : title || cv.linkedInData?.fullName || untitled;
   return {
-    group: "CV's",
+    group,
     key: `cv-${cv.id ?? Math.random()}`,
     label,
-    hint: cv.status,
     icon: FileText,
     href: cv.id ? `/cv/${cv.id}` : '/cv',
   };
 }
 
-function fmtProfile(p: SavedProfile): PaletteEntry {
+function fmtProfile(p: SavedProfile, group: string): PaletteEntry {
   return {
-    group: 'Profielen',
+    group,
     key: `prof-${p.id}`,
-    label: p.name || p.headline || 'Profiel',
+    label: p.name || p.headline || group,
     hint: p.headline,
     icon: Users,
     href: `/profiles/${p.id}`,
   };
 }
 
-function fmtJob(j: JobSearchResult | RecentJob): PaletteEntry {
+function fmtJob(j: JobSearchResult | RecentJob, group: string): PaletteEntry {
   return {
-    group: 'Vacatures',
+    group,
     key: `job-${j.slug}`,
     label: j.title,
     hint: j.company ?? undefined,
@@ -111,6 +123,8 @@ function fmtJob(j: JobSearchResult | RecentJob): PaletteEntry {
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const router = useRouter();
   const { effectiveUserId, isAdmin } = useAuth();
+  const t = useTranslations('commandPalette');
+  const tNav = useTranslations('navigation');
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
@@ -161,10 +175,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     const ctrl = new AbortController();
     const t = setTimeout(() => {
       setJobsLoading(true);
-      void fetch(`/api/jobs/search?query=${encodeURIComponent(query)}&limit=6`, { signal: ctrl.signal })
+      // Bug-fix: de API leest `q` (niet `query`) en geeft `results` terug
+      // (niet `jobs`) — vacatures zoeken in de palette deed daardoor niets.
+      void fetch(`/api/jobs/search?q=${encodeURIComponent(query)}`, { signal: ctrl.signal })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
-          if (Array.isArray(data?.jobs)) setJobResults(data.jobs.slice(0, 6));
+          if (Array.isArray(data?.results)) setJobResults(data.results.slice(0, 6));
         })
         .catch(() => { /* ignore */ })
         .finally(() => setJobsLoading(false));
@@ -174,11 +190,11 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const entries = useMemo<PaletteEntry[]>(() => {
     const all: PaletteEntry[] = [];
-    for (const cv of cvs.slice(0, 15)) all.push(fmtCV(cv));
-    for (const p of profiles.slice(0, 10)) all.push(fmtProfile(p));
-    for (const j of jobResults.length ? jobResults : recentJobs.slice(0, 6)) all.push(fmtJob(j));
-    all.push(...NAV_ENTRIES);
-    if (isAdmin) all.push(...ADMIN_NAV);
+    for (const cv of cvs.slice(0, 15)) all.push(fmtCV(cv, t('groups.cvs'), t('untitledCv')));
+    for (const p of profiles.slice(0, 10)) all.push(fmtProfile(p, t('groups.profiles')));
+    for (const j of jobResults.length ? jobResults : recentJobs.slice(0, 6)) all.push(fmtJob(j, t('groups.jobs')));
+    all.push(...NAV_ENTRIES.map((e) => ({ ...e, group: t('groups.navigation'), label: tNav(e.labelKey) })));
+    if (isAdmin) all.push(...ADMIN_NAV.map((e) => ({ ...e, group: t('groups.admin'), label: tNav(e.labelKey) })));
 
     if (!query.trim()) return all;
     const q = query.trim().toLowerCase();
@@ -187,7 +203,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       (e.hint?.toLowerCase().includes(q) ?? false) ||
       e.group.toLowerCase().includes(q),
     );
-  }, [cvs, profiles, jobResults, recentJobs, query, isAdmin]);
+  }, [cvs, profiles, jobResults, recentJobs, query, isAdmin, t, tNav]);
 
   // Reset highlight when results change
   useEffect(() => { setHighlight(0); }, [query, entries.length]);
@@ -228,7 +244,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   // Portal to <body> so we escape sticky/backdrop-filter containing blocks in the topbar.
   return createPortal(
     <div className="cmdk-backdrop" onClick={onClose} role="presentation">
-      <div className="cmdk" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Zoeken">
+      <div className="cmdk" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('dialogLabel')}>
         <div className="cmdk__head">
           <Search size={16} />
           <input
@@ -236,22 +252,26 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Zoek CV's, vacatures, profielen…"
-            aria-label="Zoek-input"
+            placeholder={t('placeholder')}
+            aria-label={t('placeholder')}
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="cmdk-listbox"
+            aria-activedescendant={entries[highlight] ? `cmdk-opt-${entries[highlight].key}` : undefined}
           />
-          <button type="button" className="cmdk__close" onClick={onClose} aria-label="Sluiten">
+          <button type="button" className="cmdk__close" onClick={onClose} aria-label={t('close')}>
             <X size={14} />
           </button>
         </div>
-        <div className="cmdk__list">
+        <div className="cmdk__list" id="cmdk-listbox" role="listbox" aria-label={t('dialogLabel')}>
           {entries.length === 0 && (
             <div className="cmdk__empty">
-              {jobsLoading ? 'Bezig met zoeken…' : 'Geen resultaten.'}
+              {jobsLoading ? t('searching') : t('noResults')}
             </div>
           )}
           {Object.entries(grouped).map(([groupLabel, items]) => (
-            <div key={groupLabel}>
-              <div className="cmdk__group">{groupLabel}</div>
+            <div key={groupLabel} role="group" aria-label={groupLabel}>
+              <div className="cmdk__group" aria-hidden="true">{groupLabel}</div>
               {items.map((entry) => {
                 const Icon = entry.icon;
                 const idx = entries.indexOf(entry);
@@ -260,6 +280,9 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                   <button
                     type="button"
                     key={entry.key}
+                    id={`cmdk-opt-${entry.key}`}
+                    role="option"
+                    aria-selected={active}
                     className={`cmdk__item${active ? ' is-active' : ''}`}
                     onMouseEnter={() => setHighlight(idx)}
                     onClick={() => { router.push(entry.href); onClose(); }}
@@ -274,9 +297,9 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
           ))}
         </div>
         <div className="cmdk__foot">
-          <span><kbd>↑</kbd><kbd>↓</kbd> navigeren</span>
-          <span><kbd>↵</kbd> openen</span>
-          <span><kbd>esc</kbd> sluiten</span>
+          <span><kbd>↑</kbd><kbd>↓</kbd> {t('hintNavigate')}</span>
+          <span><kbd>↵</kbd> {t('hintOpen')}</span>
+          <span><kbd>esc</kbd> {t('hintClose')}</span>
         </div>
       </div>
     </div>,

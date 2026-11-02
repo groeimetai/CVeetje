@@ -23,9 +23,9 @@ function toggle(set: Set<number>, idx: number): Set<number> {
   return next;
 }
 
-function formatPeriod(start: string | null, end: string | null): string {
+function formatPeriod(start: string | null, end: string | null, presentLabel: string): string {
   if (!start && !end) return '';
-  return `${start ?? '?'} – ${end ?? 'heden'}`;
+  return `${start ?? '?'} – ${end ?? presentLabel}`;
 }
 
 export function RequiredItemsSelector({
@@ -121,7 +121,7 @@ export function RequiredItemsSelector({
                 checked={experiences.has(i)}
                 onToggle={() => setExperiences((prev) => toggle(prev, i))}
                 primary={`${exp.title} — ${exp.company}`}
-                secondary={formatPeriod(exp.startDate, exp.endDate)}
+                secondary={formatPeriod(exp.startDate, exp.endDate, t('present'))}
               />
             ))}
           </Section>
@@ -141,7 +141,7 @@ export function RequiredItemsSelector({
                 onToggle={() => setProjects((prev) => toggle(prev, i))}
                 primary={proj.title}
                 secondary={
-                  [proj.role, formatPeriod(proj.startDate, proj.endDate)]
+                  [proj.role, formatPeriod(proj.startDate, proj.endDate, t('present'))]
                     .filter((s): s is string => Boolean(s && s.length > 0))
                     .join(' · ') || null
                 }

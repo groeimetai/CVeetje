@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Upload, X, Loader2, User } from 'lucide-react';
+import { X, Loader2, User } from 'lucide-react';
 
 interface AvatarUploadProps {
   avatarUrl: string | null;
@@ -16,6 +17,7 @@ export function AvatarUpload({
   onAvatarChange,
   className,
 }: AvatarUploadProps) {
+  const t = useTranslations('avatarUpload');
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,13 +26,13 @@ export function AvatarUpload({
   const handleFile = useCallback(async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
+      setError(t('errors.notImage'));
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be smaller than 5MB');
+      setError(t('errors.tooLarge'));
       return;
     }
 
@@ -39,7 +41,12 @@ export function AvatarUpload({
 
     try {
       // Resize image client-side before upload
-      const resizedBlob = await resizeImage(file, 400, 400);
+      let resizedBlob: Blob;
+      try {
+        resizedBlob = await resizeImage(file, 400, 400);
+      } catch {
+        throw new Error(t('errors.processFailed'));
+      }
 
       // Create FormData for upload
       const formData = new FormData();
@@ -53,16 +60,16 @@ export function AvatarUpload({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to upload avatar');
+        throw new Error(result.error || t('errors.uploadFailed'));
       }
 
       onAvatarChange(result.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : t('errors.uploadFailed'));
     } finally {
       setIsUploading(false);
     }
-  }, [onAvatarChange]);
+  }, [onAvatarChange, t]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -99,13 +106,13 @@ export function AvatarUpload({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <p className="text-sm font-medium">Profile Photo (optional)</p>
+      <p className="text-sm font-medium">{t('title')}</p>
 
       {avatarUrl ? (
         <div className="relative inline-block">
           <img
             src={avatarUrl}
-            alt="Profile"
+            alt={t('alt')}
             className="h-24 w-24 rounded-full object-cover border-2 border-border"
           />
           <Button
@@ -113,8 +120,9 @@ export function AvatarUpload({
             size="icon"
             className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
             onClick={handleRemove}
+            aria-label={t('remove')}
           >
-            <X className="h-3 w-3" />
+            <X className="h-3 w-3" aria-hidden="true" />
           </Button>
         </div>
       ) : (
@@ -137,7 +145,7 @@ export function AvatarUpload({
           ) : (
             <div className="text-center">
               <User className="h-6 w-6 mx-auto text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Upload</span>
+              <span className="text-xs text-muted-foreground">{t('upload')}</span>
             </div>
           )}
         </div>
@@ -156,7 +164,7 @@ export function AvatarUpload({
       )}
 
       <p className="text-xs text-muted-foreground">
-        Drag & drop or click to upload. Max 5MB.
+        {t('hint')}
       </p>
     </div>
   );

@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generateCV } from '@/lib/ai/cv-generator';
 import {
-  checkRateLimit,
+  checkRateLimitPersistent,
   RATE_LIMITS,
   getRequestIdentifier,
 } from '@/lib/security/rate-limiter';
@@ -18,6 +18,8 @@ import type {
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { RequiredItemsSelection } from '@/types/cv';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
+import { alignEmphasisWithContent } from '@/lib/cv-engine/ai/normalize';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting for AI generation (expensive operation)
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimitPersistent(
       getRequestIdentifier(userId),
       'cv-generation',
       RATE_LIMITS.aiGeneration
@@ -162,6 +164,10 @@ export async function POST(request: NextRequest) {
           accent: designTokens.colors.accent,
         };
 
+    // Emphasis (pull-quote/accent-keywords) afstemmen op de echte content —
+    // de stijl is vóór de content gegenereerd.
+    const alignedTokens = alignEmphasisWithContent(designTokens as never, content) as typeof designTokens;
+
     const cvRef = await db.collection('users').doc(userId).collection('cvs').add({
       linkedInData,
       jobVacancy,
@@ -171,12 +177,12 @@ export async function POST(request: NextRequest) {
       // styleConfig stays null for new CVs — legacy field kept on the CV type
       // for backwards-compatible reads of older Firestore docs.
       styleConfig: null,
-      designTokens,
+      designTokens: alignedTokens,
       // Snapshot the AI-generated tokens so the live design-tweaks panel
       // can offer a Reset that returns to this baseline. Deep clone so a
       // later in-place mutation on `designTokens` doesn't drift the
       // snapshot.
-      originalDesignTokens: JSON.parse(JSON.stringify(designTokens)) as typeof designTokens,
+      originalDesignTokens: JSON.parse(JSON.stringify(alignedTokens)) as typeof designTokens,
       avatarUrl: avatarUrl || null,
       generatedContent: content,
       pdfUrl: null,
@@ -210,6 +216,7 @@ export async function POST(request: NextRequest) {
       success: true,
       cvId: cvRef.id,
       content,
+      designTokens: alignedTokens,
       usage,
     });
   } catch (error) {
@@ -233,7 +240,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: errorMessage },
+      { error: sanitizeError(error, 'cv-generate').message },
       { status: 500 }
     );
   }

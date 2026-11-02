@@ -2,12 +2,15 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { streamText, tool, convertToModelMessages, stepCountIs } from 'ai';
 import { z } from 'zod';
-import { getAdminAuth } from '@/lib/firebase/admin';
+import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getModelId } from '@/lib/ai/providers';
 import { resolveProvider, chargePlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import { CHAT_CHAR_LIMIT } from '@/lib/ai/platform-config';
 import type { CVChatContext } from '@/types/chat';
 import type { UIMessage } from 'ai';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 // Build the system prompt with full context
 function buildSystemPrompt(context: CVChatContext): string {
@@ -176,16 +179,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const rateLimited = await enforceRateLimit(userId, 'cv-chat', PERSISTENT_RATE_LIMITS.chat);
+    if (rateLimited) return rateLimited;
+
     // Get request body
     const body = await request.json();
-    const { messages, context, chargedCredits: clientChargedCredits } = body as {
+    // Security: `chargedCredits` uit de body wordt bewust genegeerd — wat al
+    // betaald is houden we server-side bij per chat-sessie (zie chargeChatSession).
+    const { messages, context, id: chatSessionId } = body as {
       messages: UIMessage[];
       context: CVChatContext;
-      chargedCredits?: number;
+      id?: string;
     };
-    const chargedCredits = typeof clientChargedCredits === 'number' ? clientChargedCredits : 0;
 
-    if (!messages || !context || !context.currentContent) {
+    if (JSON.stringify(context ?? {}).length > MAX_CONTEXT_CHARS || (Array.isArray(messages) && messages.length > MAX_MESSAGES)) {
+      return new Response(JSON.stringify({ error: 'Request te groot' }), {
+        status: 413,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!Array.isArray(messages) || !context || !context.currentContent || !context.linkedInData?.fullName) {
       return new Response(JSON.stringify({ error: 'Onvolledige request data' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -222,11 +236,12 @@ export async function POST(request: NextRequest) {
         return sum + text.length;
       }, 0);
       const requiredCredits = Math.max(1, Math.ceil(totalChars / CHAT_CHAR_LIMIT));
-      const diff = requiredCredits - chargedCredits;
+      const diff = await reserveChatSessionCredits(userId, chatSessionId, requiredCredits, messages.length);
       if (diff > 0) {
         try {
           await chargePlatformCredits(userId, diff, 'cv-chat');
         } catch (err) {
+          await releaseChatSessionCredits(userId, chatSessionId, diff);
           if (err instanceof ProviderError) {
             return new Response(JSON.stringify({ error: err.message }), {
               status: err.statusCode,
@@ -517,8 +532,61 @@ export async function POST(request: NextRequest) {
     }
 
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: sanitizeError(error, 'cv-chat').message }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
+}
+
+
+// ==================== Chat-sessie billing (server-side) ====================
+
+const MAX_CONTEXT_CHARS = 300_000;
+const MAX_MESSAGES = 200;
+
+function chatSessionRef(userId: string, sessionId: string) {
+  return getAdminDb().collection('users').doc(userId).collection('chatSessions').doc(sessionId);
+}
+
+function isValidSessionId(id: unknown): id is string {
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{6,64}$/.test(id);
+}
+
+/**
+ * Bepaal atomisch hoeveel credits er nog afgerekend moeten worden voor deze
+ * chat-sessie en reserveer ze. Is het aantal berichten kleiner dan bij de
+ * vorige request (chat geleegd), dan geldt het als een nieuwe sessie.
+ */
+async function reserveChatSessionCredits(
+  userId: string,
+  sessionId: string | undefined,
+  requiredCredits: number,
+  messageCount: number,
+): Promise<number> {
+  if (!isValidSessionId(sessionId)) return requiredCredits;
+  const ref = chatSessionRef(userId, sessionId);
+  return getAdminDb().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.exists ? snap.data()! : null;
+    const prevCount = Number(data?.messageCount ?? 0);
+    const charged = data && messageCount >= prevCount ? Number(data.chargedCredits ?? 0) : 0;
+    const diff = Math.max(0, requiredCredits - charged);
+    tx.set(ref, {
+      chargedCredits: charged + diff,
+      messageCount,
+      updatedAt: new Date(),
+    });
+    return diff;
+  });
+}
+
+async function releaseChatSessionCredits(
+  userId: string,
+  sessionId: string | undefined,
+  amount: number,
+): Promise<void> {
+  if (!isValidSessionId(sessionId) || amount <= 0) return;
+  await chatSessionRef(userId, sessionId)
+    .update({ chargedCredits: FieldValue.increment(-amount) })
+    .catch(() => {});
 }

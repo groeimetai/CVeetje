@@ -9,6 +9,8 @@ import { addWatermarkToPdf } from '@/lib/pdf/add-watermark';
 import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { downloadTemplateFile } from '@/lib/firebase/storage-files';
 
 // POST - Fill a template with profile data
 export async function POST(
@@ -35,6 +37,9 @@ export async function POST(
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'template-fill', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     const db = getAdminDb();
 
@@ -103,7 +108,15 @@ export async function POST(
     // Parse query parameters
     const url = new URL(request.url);
     const outputFormat = url.searchParams.get('format'); // 'pdf' | 'docx' | null
-    const skipCredit = url.searchParams.get('skipCredit') === 'true';
+    // `skipCredit=true` is een *verzoek* om een gratis refill (PDF-redownload
+    // of template-chat-aanpassing). Security: dit werd voorheen blind
+    // vertrouwd, waardoor iedereen onbeperkt gratis AI-fills kon draaien. Nu
+    // honoreren we het alleen als er een server-side receipt bestaat van een
+    // betaalde fill van dezelfde template (<24u, max FILL_RECEIPT_MAX_REFILLS).
+    const refillRequested = url.searchParams.get('skipCredit') === 'true';
+    const skipCredit = refillRequested
+      ? await consumeFillReceipt(db, userId, template.id)
+      : false;
     const isPreview = url.searchParams.get('preview') === 'true'; // Add watermark for preview
 
     // Parse request body
@@ -127,15 +140,20 @@ export async function POST(
     }
 
     // Download the template PDF
-    const templateResponse = await fetch(template.storageUrl);
-    if (!templateResponse.ok) {
+    let templateBuffer: ArrayBuffer;
+    try {
+      const file = await downloadTemplateFile({
+        storagePath: templateData?.storagePath,
+        storageUrl: template.storageUrl,
+      });
+      templateBuffer = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
+    } catch (err) {
+      console.error('[template-fill] template download failed:', err);
       return NextResponse.json(
         { error: 'Failed to fetch template file' },
         { status: 500 }
       );
     }
-
-    const templateBuffer = await templateResponse.arrayBuffer();
     const templateBytes = new Uint8Array(templateBuffer);
 
     let filledBytes: Uint8Array;
@@ -306,6 +324,14 @@ export async function POST(
         updatedAt: new Date(),
       });
 
+      // Receipt voor latere gratis refills (PDF-redownload / template-chat).
+      await db
+        .collection('users')
+        .doc(userId)
+        .collection('templateFills')
+        .doc(template.id)
+        .set({ templateId: template.id, cvId: cvRef.id, paidAt: new Date(), refills: 0 });
+
       // PDF AcroForm / coordinate flow skipped the AI path → charge the flat template-fill cost.
       // DOCX + PDF AI flows already paid via resolveProvider in their respective branches.
       if (template.fileType !== 'docx' && !pdfWentThroughAi) {
@@ -419,6 +445,33 @@ export async function POST(
 }
 
 // ==================== Helpers ====================
+
+const FILL_RECEIPT_TTL_MS = 24 * 60 * 60 * 1000;
+const FILL_RECEIPT_MAX_REFILLS = 25;
+
+/**
+ * Atomisch een gratis refill "opmaken" op basis van de receipt die bij een
+ * betaalde fill wordt geschreven. Geeft `false` terug als er geen geldige
+ * receipt is — de request wordt dan gewoon normaal afgerekend.
+ */
+async function consumeFillReceipt(
+  db: ReturnType<typeof getAdminDb>,
+  userId: string,
+  templateId: string,
+): Promise<boolean> {
+  const ref = db.collection('users').doc(userId).collection('templateFills').doc(templateId);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return false;
+    const data = snap.data()!;
+    const paidAt: Date | undefined = data.paidAt?.toDate?.() ?? data.paidAt;
+    const refills = Number(data.refills ?? 0);
+    if (!paidAt || Date.now() - new Date(paidAt).getTime() > FILL_RECEIPT_TTL_MS) return false;
+    if (refills >= FILL_RECEIPT_MAX_REFILLS) return false;
+    tx.update(ref, { refills: refills + 1, lastRefillAt: new Date() });
+    return true;
+  });
+}
 
 interface RunSmartFillPDFArgs {
   userId: string;

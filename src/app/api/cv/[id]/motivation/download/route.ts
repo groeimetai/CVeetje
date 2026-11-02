@@ -6,6 +6,8 @@ import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
 import { getDefaultTokens } from '@/lib/cv/html-generator';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { CV, CVStyleConfig, GeneratedMotivationLetter } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { isV2Tokens } from '@/lib/cv-engine/dispatch';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -32,6 +34,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'motivation-download', PERSISTENT_RATE_LIMITS.render);
+    if (rateLimited) return rateLimited;
 
     // Parse request body
     const body = await request.json();
@@ -64,9 +69,13 @@ export async function POST(request: NextRequest, context: RouteParams) {
     const cvData = cvDoc.data() as CV & { tokens?: CVDesignTokens };
 
     // Get tokens - prefer stored tokens, then convert from styleConfig, then use defaults
+    // Bug-fix: las `cvData.tokens` (bestaat niet) i.p.v. `designTokens`. De
+    // brief-renderer werkt met legacy-tokens (fontPairing/scale/spacing); v2-
+    // tokens hebben die velden niet en vallen terug op de default-stijl.
+    const stored = (cvData.designTokens ?? cvData.tokens) as CVDesignTokens | undefined;
     let tokens: CVDesignTokens;
-    if (cvData.tokens) {
-      tokens = cvData.tokens;
+    if (stored && !isV2Tokens(stored as never) && stored.fontPairing) {
+      tokens = stored;
     } else if (cvData.styleConfig) {
       tokens = styleConfigToTokens(cvData.styleConfig as CVStyleConfig);
     } else {
@@ -81,6 +90,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       senderPhone: cvData.linkedInData?.phone,
       senderLocation: cvData.linkedInData?.location || undefined,
       recipientCompany: cvData.jobVacancy?.company || undefined,
+      language: (cvData.language === 'en' ? 'en' : 'nl') as 'nl' | 'en',
     };
 
     // Generate file based on format

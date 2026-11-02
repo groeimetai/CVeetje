@@ -128,6 +128,8 @@ function enrichWithAtsDetection(job: NormalizedJob): NormalizedJob {
 const MAX_JOBS_PER_SEEDED_COMPANY = 100;
 
 async function searchSeededAts(params: JobSearchParams): Promise<NormalizedJob[]> {
+  // E2E/offline: geen live ATS-calls (deterministische tests, geen netwerk).
+  if (process.env.JOBS_DISABLE_SEEDED_ATS === '1') return [];
   const companies = getCompanies();
   const lists = await Promise.all(
     companies.map(async (company) => {

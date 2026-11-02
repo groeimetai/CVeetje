@@ -72,10 +72,95 @@ export interface URLValidationResult {
 }
 
 /**
+ * Parse een IPv4-adres (dotted quad) naar 4 octets, of null.
+ */
+function parseIPv4(host: string): number[] | null {
+  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!m) return null;
+  const parts = m.slice(1).map(Number);
+  return parts.every((n) => n >= 0 && n <= 255) ? parts : null;
+}
+
+function isPrivateIPv4(p: number[]): boolean {
+  const [a, b, c] = p;
+  return (
+    a === 0 ||                                  // 0.0.0.0/8
+    a === 10 ||                                 // 10/8
+    a === 127 ||                                // loopback
+    (a === 100 && b >= 64 && b <= 127) ||       // 100.64/10 CGNAT
+    (a === 169 && b === 254) ||                 // link-local / metadata
+    (a === 172 && b >= 16 && b <= 31) ||        // 172.16/12
+    (a === 192 && b === 168) ||                 // 192.168/16
+    (a === 192 && b === 0 && c === 0) ||        // 192.0.0/24
+    (a === 198 && (b === 18 || b === 19)) ||    // 198.18/15 benchmarking
+    a >= 224                                    // multicast + reserved
+  );
+}
+
+/**
+ * Expandeer een IPv6-adres naar 8 hextets, of null als het geen IPv6 is.
+ * Ondersteunt `::`-compressie en een IPv4-staart (`::ffff:1.2.3.4`).
+ */
+function parseIPv6(host: string): number[] | null {
+  let h = host;
+  if (h.startsWith('[') && h.endsWith(']')) h = h.slice(1, -1);
+  if (!h.includes(':')) return null;
+  h = h.split('%')[0]; // zone id
+  let tail: number[] = [];
+  const v4Match = h.match(/(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (v4Match) {
+    const v4 = parseIPv4(v4Match[1]);
+    if (!v4) return null;
+    tail = [(v4[0] << 8) | v4[1], (v4[2] << 8) | v4[3]];
+    h = h.slice(0, -v4Match[1].length).replace(/:$/, ':0').replace(/:0$/, '') || '';
+    if (h.endsWith(':') && !h.endsWith('::')) h = h.slice(0, -1);
+  }
+  const halves = h.split('::');
+  if (halves.length > 2) return null;
+  const toNums = (seg: string) => (seg ? seg.split(':').filter(Boolean).map((x) => parseInt(x, 16)) : []);
+  const head = toNums(halves[0]);
+  const rest = halves.length === 2 ? toNums(halves[1]) : [];
+  const fill = 8 - tail.length - head.length - rest.length;
+  if (halves.length === 1 && fill !== 0) return null;
+  if (fill < 0) return null;
+  const all = [...head, ...Array(halves.length === 2 ? fill : 0).fill(0), ...rest, ...tail];
+  if (all.length !== 8 || all.some((n) => Number.isNaN(n) || n < 0 || n > 0xffff)) return null;
+  return all;
+}
+
+function isPrivateIPv6(h: number[]): boolean {
+  const allZeroPrefix = h.slice(0, 5).every((x) => x === 0);
+  // IPv4-mapped (::ffff:a.b.c.d) en IPv4-compatible (::a.b.c.d)
+  if (allZeroPrefix && (h[5] === 0xffff || h[5] === 0)) {
+    if (h[5] === 0 && h[6] === 0 && (h[7] === 0 || h[7] === 1)) return true; // :: en ::1
+    return isPrivateIPv4([h[6] >> 8, h[6] & 0xff, h[7] >> 8, h[7] & 0xff]);
+  }
+  if ((h[0] & 0xfe00) === 0xfc00) return true; // fc00::/7 unique local
+  if ((h[0] & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  if ((h[0] & 0xff00) === 0xff00) return true; // multicast
+  if (h[0] === 0x64 && h[1] === 0xff9b) {       // 64:ff9b::/96 NAT64
+    return isPrivateIPv4([h[6] >> 8, h[6] & 0xff, h[7] >> 8, h[7] & 0xff]);
+  }
+  return false;
+}
+
+/**
+ * True als het adres (IPv4 of IPv6, met of zonder brackets) intern/privé is.
+ * Exporteren zodat safe-fetch na DNS-resolutie hetzelfde beleid toepast.
+ */
+export function isPrivateAddress(address: string): boolean {
+  const v4 = parseIPv4(address);
+  if (v4) return isPrivateIPv4(v4);
+  const v6 = parseIPv6(address);
+  if (v6) return isPrivateIPv6(v6);
+  return false;
+}
+
+/**
  * Check if an IP address matches any blocked pattern
  */
 function isBlockedIP(hostname: string): boolean {
-  // Check direct IP patterns
+  if (isPrivateAddress(hostname)) return true;
   for (const pattern of BLOCKED_IP_PATTERNS) {
     if (pattern.test(hostname)) {
       return true;
@@ -149,8 +234,13 @@ export function validateURL(
     return { valid: false, error: 'Only HTTPS URLs are allowed' };
   }
 
-  // Get hostname
-  const hostname = url.hostname.toLowerCase();
+  // Credentials in URL nooit doorlaten
+  if (url.username || url.password) {
+    return { valid: false, error: 'Credentials in URL are not allowed' };
+  }
+
+  // Get hostname (trailing dot strippen: `localhost.` / `metadata.google.internal.`)
+  const hostname = url.hostname.toLowerCase().replace(/\.+$/, '');
 
   // Block internal IPs
   if (isBlockedIP(hostname)) {
@@ -191,6 +281,20 @@ export function validateAvatarURL(
   // Null/empty is valid (no avatar)
   if (!urlString || !urlString.trim()) {
     return { valid: true, sanitizedUrl: undefined };
+  }
+
+  // E2E: avatars uit de lokale Storage-emulator toestaan (alleen als die
+  // expliciet geconfigureerd is — nooit in productie).
+  const emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST?.replace(/^https?:\/\//, '');
+  if (emulatorHost) {
+    try {
+      const u = new URL(urlString.trim());
+      if (u.host === emulatorHost && u.protocol === 'http:') {
+        return { valid: true, sanitizedUrl: u.toString() };
+      }
+    } catch {
+      // fallthrough naar normale validatie
+    }
   }
 
   const result = validateURL(urlString, {

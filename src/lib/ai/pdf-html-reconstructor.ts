@@ -14,12 +14,15 @@
 
 import { generateText } from 'ai';
 import puppeteer from 'puppeteer';
+import { jsonForScript, safeHttpUrl } from '@/lib/security/html-escape';
+import { setContentHardened } from '@/lib/pdf/harden-page';
 import chromium from '@sparticuz/chromium';
 import { createAIProvider, type LLMProvider } from './providers';
 import { withRetry } from './retry';
 import type { RenderedPage } from '@/lib/pdf/pdf-to-image';
 import type { PDFBlueprint } from './pdf-template-analyzer';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage } from '@/types';
+import { resolveTemperature } from '@/lib/ai/temperature';
 
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
@@ -77,7 +80,7 @@ async function generateHTML(opts: ReconstructPDFOptions): Promise<string> {
     .map((f) => {
       const v = values.get(f.id) ?? '';
       if (!v.trim()) return null;
-      return `  ${f.id} (${f.kind}/${f.profileField}${typeof f.index === 'number' ? `[${f.index}]` : ''}): ${JSON.stringify(v.slice(0, 240))}`;
+      return `  ${f.id} (${f.kind}/${f.profileField}${typeof f.index === 'number' ? `[${f.index}]` : ''}): ${JSON.stringify(v.slice(0, 1200))}`;
     })
     .filter(Boolean)
     .join('\n');
@@ -123,7 +126,7 @@ LAYOUT FIT: target A4 (210×297mm). Aim for a single page; let content overflow 
       model: aiProvider(model),
       system: systemPrompt,
       messages: [{ role: 'user', content: userContent }],
-      temperature: 0.3,
+      temperature: resolveTemperature(provider, model, 0.3),
     })
   );
 
@@ -140,11 +143,13 @@ LAYOUT FIT: target A4 (210×297mm). Aim for a single page; let content overflow 
 // ==================== HTML wrapping + Puppeteer ====================
 
 function wrapInDocument(mainHtml: string, avatarUrl: string | null, language: OutputLanguage): string {
-  const photoTag = avatarUrl
+  // Alleen http(s)-URL's; jsonForScript voorkomt `</script>`-breakout.
+  const safeAvatar = safeHttpUrl(avatarUrl);
+  const photoTag = safeAvatar
     ? `<script>
         document.querySelectorAll('[data-photo-slot]').forEach((el) => {
           const img = document.createElement('img');
-          img.src = ${JSON.stringify(avatarUrl)};
+          img.src = ${jsonForScript(safeAvatar)};
           img.alt = 'Profielfoto';
           img.style.width = '100%';
           img.style.height = '100%';
@@ -159,7 +164,7 @@ function wrapInDocument(mainHtml: string, avatarUrl: string | null, language: Ou
 <head>
 <meta charset="utf-8" />
 <title>CV</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <style>
   html, body { margin: 0; padding: 0; background: white; color: #111; }
   @page { size: A4; margin: 0; }
@@ -197,7 +202,7 @@ async function renderHTMLToPDF(
   const browser = await getBrowser();
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await setContentHardened(page, html);
     await page.emulateMediaType('print');
 
     const pdfOpts: Parameters<typeof page.pdf>[0] = opts.isA4
@@ -217,7 +222,7 @@ async function renderHTMLToPDF(
     const pdf = await page.pdf(pdfOpts);
     return new Uint8Array(pdf);
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
   }
 }
 

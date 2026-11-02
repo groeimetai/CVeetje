@@ -664,23 +664,41 @@ export async function getAdminProfileFull(
  * Setup initial admin user based on ADMIN_EMAIL env var
  * This should only be called once during initial setup
  */
-export async function setupInitialAdmin(requestingUserEmail: string): Promise<{ success: boolean; message: string }> {
+export async function setupInitialAdmin(
+  requestingUserEmail: string,
+  opts: { emailVerified: boolean; requestingUid: string },
+): Promise<{ success: boolean; message: string }> {
   const adminEmail = process.env.ADMIN_EMAIL;
 
   if (!adminEmail) {
     return { success: false, message: 'ADMIN_EMAIL environment variable not set' };
   }
 
-  if (requestingUserEmail !== adminEmail) {
+  if (requestingUserEmail.trim().toLowerCase() !== adminEmail.trim().toLowerCase()) {
     return { success: false, message: 'Your email does not match the configured admin email' };
+  }
+
+  // Security: zonder deze check kon iemand die als eerste een email/password-
+  // account op ADMIN_EMAIL registreert (zonder het adres te bezitten) admin worden.
+  if (!opts.emailVerified) {
+    return { success: false, message: 'Verify your email address first' };
   }
 
   const auth = getAdminAuth();
   const db = getAdminDb();
 
   try {
+    // One-time: weiger zodra er al een (andere) admin bestaat.
+    const existingAdmins = await db.collection('users').where('role', '==', 'admin').limit(5).get();
+    if (existingAdmins.docs.some((d) => d.id !== opts.requestingUid)) {
+      return { success: false, message: 'Initial admin setup has already been completed' };
+    }
+
     // Find the user by email
     const userRecord = await auth.getUserByEmail(adminEmail);
+    if (userRecord.uid !== opts.requestingUid || !userRecord.emailVerified) {
+      return { success: false, message: 'Your account does not match the configured admin account' };
+    }
 
     // Set custom claims
     await auth.setCustomUserClaims(userRecord.uid, { admin: true });

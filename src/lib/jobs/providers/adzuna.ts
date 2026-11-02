@@ -34,6 +34,13 @@ export function isAdzunaConfigured(): boolean {
   return Boolean(process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY);
 }
 
+
+/** Adzuna levert snippets die HTML kunnen bevatten; we slaan platte tekst op. */
+function stripTags(input: string | undefined): string {
+  if (!input) return '';
+  return input.replace(/<[^>]*>?/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function getCredentials() {
   const appId = process.env.ADZUNA_APP_ID;
   const appKey = process.env.ADZUNA_APP_KEY;
@@ -57,10 +64,10 @@ export function mapAdzunaJob(raw: AdzunaRawJob): NormalizedJob {
     providerCompanyKey: companyKey,
     providerCompanyId: null,
     slug: [titleSlug, 'az', companyKey, raw.id].filter(Boolean).join('-'),
-    title: raw.title?.trim() || 'Untitled position',
+    title: stripTags(raw.title) || 'Untitled position',
     company: companyName,
     location: raw.location?.display_name?.trim() || null,
-    description: raw.description?.trim() || '',
+    description: stripTags(raw.description),
     industry: raw.category?.label?.trim() || null,
     employmentType:
       [raw.contract_time, raw.contract_type].filter(Boolean).join(' / ') || null,

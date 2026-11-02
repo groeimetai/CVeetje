@@ -10,6 +10,8 @@ import type {
   JobVacancy,
   StyleCreativityLevel,
 } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 // Reduced from 120s since we only make 1 API call now (was 12+)
 export const maxDuration = 60; // seconds
@@ -42,6 +44,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'cv-style', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     // Get request body
     const body = await request.json();
@@ -167,10 +172,9 @@ export async function POST(request: NextRequest) {
             if (resolved.mode === 'platform') {
               await refundPlatformCredits(userId, 'style-generate');
             }
-            const errorMessage = error instanceof Error ? error.message : 'Failed to generate style';
             const errorResult = JSON.stringify({
               type: 'error',
-              error: errorMessage,
+              error: sanitizeError(error, 'cv-style').message,
             });
             controller.enqueue(encoder.encode(`data: ${errorResult}\n\n`));
             controller.close();
@@ -252,7 +256,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: errorMessage },
+      { error: sanitizeError(error, 'cv-style').message },
       { status: 500 }
     );
   }

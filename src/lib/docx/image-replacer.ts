@@ -15,6 +15,7 @@
 
 import type JSZip from 'jszip';
 import { validateAvatarURL } from '@/lib/security/url-validator';
+import { safeFetch } from '@/lib/security/safe-fetch';
 
 // EMU (English Metric Units): 1 cm = 360000 EMU
 const MIN_SIZE_EMU = 360000; // 1cm — filter out icons/bullets
@@ -204,7 +205,7 @@ function selectBestCandidate(candidates: ImageCandidate[]): ImageCandidate | nul
 /**
  * Get file extension from Content-Type header or URL.
  */
-function getExtensionFromResponse(response: Response, url: string): string {
+function getExtensionFromResponse(response: { headers: Headers }, url: string): string {
   const contentType = response.headers.get('content-type')?.split(';')[0]?.trim();
 
   switch (contentType) {
@@ -389,23 +390,30 @@ export async function replaceProfileImage(
   let imageBuffer: ArrayBuffer;
   let avatarExtension: string;
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(safeUrl, {
-      signal: controller.signal,
+    // safeFetch: DNS-check + gevalideerde redirects + byte-limiet (SSRF)
+    const response = await safeFetch(safeUrl, {
+      avatar: true,
+      timeoutMs: 5000,
+      maxBytes: 8 * 1024 * 1024,
       headers: {
         'User-Agent': 'CVeetje/1.0',
       },
     });
-    clearTimeout(timeout);
 
     if (!response.ok) {
       console.warn(`[image-replacer] Failed to download avatar: HTTP ${response.status}`);
       return { replaced: false, warning: `Failed to download avatar: HTTP ${response.status}` };
     }
 
-    imageBuffer = await response.arrayBuffer();
+    const contentType = response.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
+    if (!contentType.startsWith('image/') || contentType === 'image/svg+xml') {
+      return { replaced: false, warning: 'Avatar URL did not return a raster image' };
+    }
+
+    imageBuffer = response.body.buffer.slice(
+      response.body.byteOffset,
+      response.body.byteOffset + response.body.byteLength,
+    ) as ArrayBuffer;
     avatarExtension = getExtensionFromResponse(response, safeUrl);
 
     // Basic sanity check — image should be at least 1KB

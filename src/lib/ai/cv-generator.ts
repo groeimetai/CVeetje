@@ -30,8 +30,8 @@ const cvContentSchema = z.object({
       title: z.string().describe('Job title - reframed toward the target role when the described work supports it (see instructions).'),
       company: z.string(),
       location: z.string().nullable(),
-      period: z.string().describe('Format: "Month Year - Month Year" or "Month Year - Present"'),
-      highlights: z.array(z.string()).describe('2-5 bullet points. More bullets for highly relevant roles.'),
+      period: z.string().describe('In the CV output language. NL: "jan 2020 – heden" / "mrt 2016 – dec 2019"; EN: "Jan 2020 – Present".'),
+      highlights: z.array(z.string()).describe('0-5 bullet points (see Step 6). Only facts from the profile; fewer bullets beats invented ones.'),
       description: z.string().optional().describe('2-3 sentences of prose; used when format is paragraph instead of bullets.'),
       relevanceScore: z.number().describe('1-5, where 5=highly relevant to the target job'),
     })
@@ -51,7 +51,7 @@ const cvContentSchema = z.object({
   languages: z.array(
     z.object({
       language: z.string(),
-      level: z.string().describe('Proficiency level: Native, Fluent, Professional, Conversational, Basic'),
+      level: z.string().describe('Proficiency level in the CV output language. NL: Moedertaal, Vloeiend, Professioneel, Goed, Basis. EN: Native, Fluent, Professional, Conversational, Basic.'),
     })
   ).optional(),
   certifications: z.array(z.string()).optional().describe('Relevant certifications'),
@@ -576,7 +576,7 @@ ${linkedIn.experience
 - **${exp.title}** at ${exp.company}
   ${exp.location ? `Location: ${exp.location}` : ''}
   ${exp.startDate} - ${exp.endDate || 'Present'}${perRole.has(i) ? ` (${perRole.get(i)})` : ''}
-  ${exp.description ? `Description: ${exp.description}` : '[No description in profile — write 1-2 bullets describing the GENERIC responsibilities typical of this title at this kind of company. Do NOT invent metrics, project names, team sizes, technologies, or specific achievements. Prefer fewer bullets over fabricated ones.]'}
+  ${exp.description ? `Description: ${exp.description}` : '[No description in profile — write at most ONE short, neutral line that only restates what the title itself says (the role, not specific tasks), or leave highlights empty. Do NOT invent tasks, metrics, project names, team sizes, technologies or achievements.]'}
 `
   )
   .join('\n')}
@@ -803,13 +803,14 @@ ${topKeywords ? `- Naturally includes keywords like: ${topKeywords}` : ''}
 - Closes with value proposition relevant to ${jobVacancy.company || 'this opportunity'}
 
 **Step 6 - Experience Tailoring by Relevance:**
-- **Score 5-4 roles:** 4-5 detailed bullet points, lead with job-relevant achievements
-- **Score 3 roles:** 3 bullet points, focus on transferable skills
-- **Score 2-1 roles:** 2 brief bullet points OR omit if CV is already long enough
+- **Score 5-4 roles:** 3-5 bullet points, lead with job-relevant achievements
+- **Score 3 roles:** 2-3 bullet points, focus on transferable skills
+- **Score 2-1 roles:** 1-2 brief bullet points OR omit if CV is already long enough
+- In all cases: never more bullets than the profile's description supports with facts.
 
 For ALL roles:
 - REWRITE highlights using vocabulary FROM the job posting (apply the Step 0 mapping)
-- QUANTIFY achievements where possible (%, numbers, scale, impact)
+- QUANTIFY only with numbers that literally appear in the profile (%, amounts, team sizes, scale). Never estimate or round up — no number is better than an invented one.
 - Lead with the most job-relevant accomplishments
 
 **Step 7 - Skills Optimization:**
@@ -852,7 +853,7 @@ unique career duration provided above the experience list. Never estimate, infla
 infer extra years from overlapping roles, side projects, or adjacent experience.
 
 ### Professional Summary Rules:
-- Start with a strong positioning statement: "Results-driven [title]" or a similarly grounded role statement
+- Start with a grounded positioning statement: the candidate's role and core expertise (e.g. "Frontend developer met acht jaar ervaring in React en TypeScript"). No clichés such as "results-driven" / "resultaatgericht".
 - ONLY mention "[X years]" when that number is directly supported by the pre-computed unique career duration above
 - Include 2-3 key competencies that directly match the job requirements
 - End with a clear value proposition (what you bring to the employer)
@@ -904,7 +905,7 @@ Both styles are excellent. The fabricated-metric anti-pattern is worse than eith
 ❌ "Responsible for" → Replace with "Managed" or "Led"
 ❌ "Helped with" → Replace with "Contributed to" or "Supported"
 ❌ "Worked on" → Use specific action verb
-❌ "Various" or "Multiple" → Be specific with numbers
+❌ "Various" or "Multiple" → Be specific (name the actual things from the profile; no invented counts)
 ❌ "Successfully" → The result shows success, this word is redundant
 ❌ "Utilized" → Use "Used" or more specific verb
 ❌ "Leveraged" → Often overused, be specific about what you did
@@ -968,8 +969,10 @@ generate a non-empty CV:
   string or just whitespace.
 - \`experience\` MUST contain at least one entry copied/reframed from the
   profile's experience list (it always has entries). Never return [].
-- \`skills.technical\` and \`skills.soft\` MUST each contain at least 3
-  items drawn from the profile.
+- \`skills.technical\` MUST contain the profile's relevant hard skills (at
+  least 3 when the profile lists that many).
+- \`skills.soft\` contains ONLY soft skills that are evidenced in the profile
+  text (about/descriptions). It may be empty — do not invent soft skills.
 
 Returning empty arrays/strings while the profile has data is a contract
 violation, not a safety default. Fill the fields with what's in the profile.`;

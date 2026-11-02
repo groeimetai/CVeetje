@@ -3,8 +3,8 @@ import { cookies } from 'next/headers';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
-import { decrypt } from '@/lib/encryption';
-import { createAIProvider } from '@/lib/ai/providers';
+import { resolveProvider, ProviderError, refundPlatformCredits } from '@/lib/ai/platform-provider';
+import { resolveTemperature } from '@/lib/ai/temperature';
 import type {
   ParsedLinkedIn,
   LinkedInExperience,
@@ -14,6 +14,8 @@ import type {
   LinkedInProject,
   TokenUsage,
 } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 // ============================================================================
 // Schema
@@ -553,6 +555,9 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const rateLimited = await enforceRateLimit(userId, 'profile-enrich', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
+
     const db = getAdminDb();
 
     const profileDoc = await db
@@ -570,28 +575,25 @@ export async function POST(
     const profileData = profileDoc.data() as any;
     const existingProfile = profileData.parsedData as ParsedLinkedIn;
 
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    if (!userData?.apiKey) {
-      return NextResponse.json(
-        { error: 'API key niet geconfigureerd. Voeg je API key toe in Instellingen.' },
-        { status: 400 }
-      );
+    // Bug-fix: decrypteerde altijd de eigen API-key, waardoor platform-
+    // gebruikers (de standaard) "API key niet geconfigureerd" kregen. Nu via
+    // resolveProvider (BYOK + platform met credit-afrekening).
+    let resolved;
+    try {
+      resolved = await resolveProvider({ userId, operation: 'profile-enrich' });
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json({ error: err.message }, { status: err.statusCode });
+      }
+      throw err;
     }
-
-    const apiKey = decrypt(userData.apiKey.encryptedKey);
-    const userProvider = userData.apiKey.provider;
-    const userModel = userData.apiKey.model;
-
-    const aiProvider = createAIProvider(userProvider, apiKey);
 
     try {
       const { object, usage } = await generateObject({
-        model: aiProvider(userModel),
+        model: resolved.provider(resolved.model),
         schema: enrichmentSchema,
         prompt: buildPrompt(existingProfile, enrichmentText),
-        temperature: 0.2,
+        temperature: resolveTemperature(resolved.providerName, resolved.model, 0.2),
       });
 
       const merge = mergeEnrichment(existingProfile, object);
@@ -718,9 +720,11 @@ export async function POST(
       });
     } catch (aiError) {
       console.error('AI enrichment error:', aiError);
-      const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
+      if (resolved.mode === 'platform') {
+        await refundPlatformCredits(userId, 'profile-enrich').catch(() => {});
+      }
       return NextResponse.json(
-        { error: `Profiel verrijking mislukt: ${errorMessage}` },
+        { error: `Profiel verrijking mislukt: ${sanitizeError(aiError, 'profile-enrich').message}` },
         { status: 500 }
       );
     }

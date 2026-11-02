@@ -5,6 +5,8 @@ import { analyzeFit } from '@/lib/ai/fit-analyzer';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type { ParsedLinkedIn, JobVacancy, FitAnalysisResponse } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +33,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'cv-fit-analysis', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     // Get request body
     const body = await request.json();
@@ -125,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     const response: FitAnalysisResponse = {
       success: false,
-      error: errorMessage,
+      error: sanitizeError(error, 'cv-fit-analysis').message,
     };
 
     return NextResponse.json(response, { status: 500 });

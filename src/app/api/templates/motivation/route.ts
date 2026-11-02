@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
+import { getAdminAuth } from '@/lib/firebase/admin';
 import { generateMotivationLetter } from '@/lib/ai/motivation-generator';
-import { FieldValue } from 'firebase-admin/firestore';
-import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
+import {
+  resolveProvider,
+  ProviderError,
+  chargePlatformCredits,
+  refundPlatformCredits,
+} from '@/lib/ai/platform-provider';
 import type {
   GeneratedCVContent,
   ParsedLinkedIn,
   JobVacancy,
   OutputLanguage,
 } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 /**
  * POST /api/templates/motivation
@@ -19,6 +24,8 @@ import type {
  * It takes the profile and job data directly in the request body.
  */
 export async function POST(request: NextRequest) {
+  let creditCharged = false;
+  let chargedUserId: string | null = null;
   try {
     // Parse request body
     const body = await request.json();
@@ -52,6 +59,7 @@ export async function POST(request: NextRequest) {
     try {
       const decodedToken = await getAdminAuth().verifyIdToken(token);
       userId = decodedToken.uid;
+      chargedUserId = userId;
     } catch {
       return NextResponse.json(
         { error: 'Invalid token' },
@@ -59,22 +67,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getAdminDb();
+    const rateLimited = await enforceRateLimit(userId, 'template-motivation', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
-    // Check user credits (motivation letter costs 1 credit)
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
 
-    const freeCredits = userData?.credits?.free ?? 0;
-    const purchasedCredits = userData?.credits?.purchased ?? 0;
-    const totalCredits = freeCredits + purchasedCredits;
-
-    if (!userData || totalCredits < 1) {
-      return NextResponse.json(
-        { error: 'Insufficient credits. Please purchase more credits.' },
-        { status: 402 }
-      );
+    // Credit (1) atomisch vooraf afschrijven — voorheen check-then-deduct ná de
+    // AI-call, waardoor parallelle requests gratis generaties opleverden.
+    try {
+      await chargePlatformCredits(userId, 1, 'template-motivation-letter');
+    } catch (err) {
+      if (err instanceof ProviderError) {
+        return NextResponse.json(
+          { error: 'Insufficient credits. Please purchase more credits.' },
+          { status: err.statusCode },
+        );
+      }
+      throw err;
     }
+    creditCharged = true;
 
     // Resolve AI provider (skipCreditDeduction — this route handles its own credits)
     let resolved;
@@ -131,29 +141,6 @@ export async function POST(request: NextRequest) {
       personalMotivation
     );
 
-    // Deduct credit (use free credits first, then purchased)
-    if (freeCredits >= 1) {
-      await db.collection('users').doc(userId).update({
-        'credits.free': FieldValue.increment(-1),
-        updatedAt: new Date(),
-      });
-    } else {
-      await db.collection('users').doc(userId).update({
-        'credits.purchased': FieldValue.increment(-1),
-        updatedAt: new Date(),
-      });
-    }
-
-    // Log transaction
-    const creditSource = freeCredits >= 1 ? 'free' : 'purchased';
-    await db.collection('users').doc(userId).collection('transactions').add({
-      amount: -1,
-      type: 'template_motivation_letter',
-      description: `Template motivation letter generation (${creditSource} credit)`,
-      molliePaymentId: null,
-      createdAt: new Date(),
-    });
-
     return NextResponse.json({
       success: true,
       letter,
@@ -161,11 +148,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Template motivation letter generation error:', error);
-    const message = error instanceof Error && error.message
-      ? error.message
-      : 'Failed to generate motivation letter';
+    if (creditCharged && chargedUserId) {
+      await refundPlatformCredits(chargedUserId, 'template-motivation-letter').catch(() => {});
+    }
     return NextResponse.json(
-      { error: message },
+      { error: 'Failed to generate motivation letter' },
       { status: 500 }
     );
   }

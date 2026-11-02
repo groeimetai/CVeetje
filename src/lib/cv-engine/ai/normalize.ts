@@ -122,3 +122,34 @@ function clampPaletteOverride(recipe: DesignSpec, override: PaletteOverride): Pa
   }
   return out;
 }
+
+/**
+ * Stem `emphasis` af op de daadwerkelijk gegenereerde content.
+ *
+ * De stijl wordt in de wizard vóór de CV-content gegenereerd. De AI moet dan
+ * accent-keywords en een "letterlijke" pull-quote kiezen uit tekst die nog
+ * niet bestaat — met als risico een citaat in het CV dat nergens in de
+ * content staat. Na generatie: alleen keywords behouden die echt voorkomen,
+ * en de pull-quote laten vallen als hij niet letterlijk in de content staat
+ * (de renderer valt dan terug op de eerste highlight).
+ */
+export function alignEmphasisWithContent<T extends { engineVersion?: string; emphasis?: Record<string, unknown> }>(
+  tokens: T,
+  content: unknown,
+): T {
+  if (!tokens || tokens.engineVersion !== 'v2' || !tokens.emphasis) return tokens;
+  const haystack = JSON.stringify(content ?? {}).toLowerCase();
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const emphasis = { ...tokens.emphasis } as Record<string, unknown>;
+
+  if (Array.isArray(emphasis.accentKeywords)) {
+    emphasis.accentKeywords = (emphasis.accentKeywords as unknown[]).filter(
+      (k): k is string => typeof k === 'string' && k.trim().length > 0 && haystack.includes(norm(k)),
+    );
+  }
+  if (typeof emphasis.pullQuoteText === 'string' && !haystack.includes(norm(emphasis.pullQuoteText))) {
+    delete emphasis.pullQuoteText;
+    delete emphasis.pullQuoteAttribution;
+  }
+  return { ...tokens, emphasis };
+}

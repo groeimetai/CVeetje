@@ -13,6 +13,7 @@ import {
   User,
   Users,
   Menu,
+  Search,
   LayoutTemplate,
   Mail,
   Columns3,
@@ -37,6 +38,9 @@ import { Logo } from '@/components/ui/logo';
 import { useAuth } from '@/components/auth/auth-context';
 import { signOut } from '@/lib/firebase/auth';
 import { getUserCVs } from '@/lib/firebase/firestore';
+import { ThemeSwitcher } from '@/components/theme-switcher';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { OPEN_PALETTE_EVENT } from '@/components/dashboard/command-palette';
 
 type IconType = typeof Home;
 type NavItem = { key: string; href: string; icon: IconType; pill?: number };
@@ -141,8 +145,9 @@ function SidebarContent({
             type="button"
             className="dash-sb__head-collapse"
             onClick={onToggle}
-            title={collapsed ? 'Uitvouwen' : 'Inklappen'}
-            aria-label={collapsed ? 'Sidebar uitvouwen' : 'Sidebar inklappen'}
+            title={collapsed ? tSidebar('expand') : tSidebar('collapse')}
+            aria-label={collapsed ? tSidebar('expandSidebar') : tSidebar('collapseSidebar')}
+            aria-expanded={!collapsed}
           >
             <ChevronRight
               size={14}
@@ -159,7 +164,7 @@ function SidebarContent({
         </span>
       </Link>
 
-      <nav className="dash-sb__nav" aria-label="Dashboard navigation">
+      <nav className="dash-sb__nav" aria-label={tSidebar('navLabel')}>
         {groups.map((group) => (
           <div key={group.label}>
             <div className="dash-sb__section-label">{tSidebar(`groups.${group.label}`)}</div>
@@ -209,12 +214,12 @@ function SidebarContent({
       </nav>
 
       <div className="dash-sb__creditcard">
-        <div className="dash-sb__credit-label">Credits</div>
+        <div className="dash-sb__credit-label">{t('credits')}</div>
         <div className="dash-sb__credit-num">{credits}</div>
         <div className="dash-sb__credit-meta">
-          <span><strong>{freeCredits}</strong> {tSidebar('freeCredits', { count: freeCredits }).replace(/^\d+\s*/, '')}</span>
+          <span>{tSidebar.rich('freeCreditsRich', { count: freeCredits, strong: (chunks) => <strong>{chunks}</strong> })}</span>
           <span style={{ opacity: 0.4 }}>·</span>
-          <span><strong>{purchasedCredits}</strong> {tSidebar('purchasedCredits', { count: purchasedCredits }).replace(/^\d+\s*/, '')}</span>
+          <span>{tSidebar.rich('purchasedCreditsRich', { count: purchasedCredits, strong: (chunks) => <strong>{chunks}</strong> })}</span>
         </div>
         <Link href="/credits" onClick={onNavigate} className="dash-sb__credit-cta">
           + {tSidebar('buyMoreCredits')} <ArrowRight size={11} />
@@ -252,6 +257,38 @@ function SidebarContent({
   );
 }
 
+// Sidebar én MobileHeader zijn altijd beide gemount en riepen elk dezelfde
+// drie fetches aan. Gedeelde in-flight promise per user (kort gecached)
+// halveert het aantal requests per paginaload.
+const COUNTS_TTL_MS = 30_000;
+let countsCache: { userId: string; at: number; promise: Promise<SidebarCounts> } | null = null;
+
+function fetchSidebarCounts(userId: string): Promise<SidebarCounts> {
+  if (countsCache && countsCache.userId === userId && Date.now() - countsCache.at < COUNTS_TTL_MS) {
+    return countsCache.promise;
+  }
+  const promise = (async () => {
+    const [cvs, appsRes, profRes] = await Promise.all([
+      getUserCVs(userId).catch(() => []),
+      fetch('/api/applications').catch(() => null),
+      fetch('/api/profiles').catch(() => null),
+    ]);
+    const next: SidebarCounts = {};
+    if (Array.isArray(cvs)) next.cvs = cvs.length;
+    if (appsRes?.ok) {
+      const data = await appsRes.json().catch(() => null);
+      if (Array.isArray(data?.applications)) next.applications = data.applications.length;
+    }
+    if (profRes?.ok) {
+      const data = await profRes.json().catch(() => null);
+      if (Array.isArray(data?.profiles)) next.profiles = data.profiles.length;
+    }
+    return next;
+  })();
+  countsCache = { userId, at: Date.now(), promise };
+  return promise;
+}
+
 function useSidebarCounts(): SidebarCounts {
   const { firebaseUser, effectiveUserId } = useAuth();
   const [counts, setCounts] = useState<SidebarCounts>({});
@@ -259,28 +296,13 @@ function useSidebarCounts(): SidebarCounts {
   useEffect(() => {
     if (!firebaseUser || !effectiveUserId) return;
     let cancelled = false;
-    void (async () => {
-      try {
-        const [cvs, appsRes, profRes] = await Promise.all([
-          getUserCVs(effectiveUserId).catch(() => []),
-          fetch('/api/applications').catch(() => null),
-          fetch('/api/profiles').catch(() => null),
-        ]);
-        const next: SidebarCounts = {};
-        if (Array.isArray(cvs)) next.cvs = cvs.length;
-        if (appsRes?.ok) {
-          const data = await appsRes.json().catch(() => null);
-          if (Array.isArray(data?.applications)) next.applications = data.applications.length;
-        }
-        if (profRes?.ok) {
-          const data = await profRes.json().catch(() => null);
-          if (Array.isArray(data?.profiles)) next.profiles = data.profiles.length;
-        }
+    fetchSidebarCounts(effectiveUserId)
+      .then((next) => {
         if (!cancelled) setCounts(next);
-      } catch {
+      })
+      .catch(() => {
         /* ignore */
-      }
-    })();
+      });
     return () => { cancelled = true; };
   }, [firebaseUser, effectiveUserId]);
 
@@ -315,6 +337,8 @@ export function Sidebar() {
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
+  const tDash = useTranslations('dashboard');
+  const tSidebar = useTranslations('sidebar');
   const counts = useSidebarCounts();
 
   return (
@@ -322,11 +346,24 @@ export function MobileHeader() {
       <Link href="/dashboard">
         <Logo size="sm" />
       </Link>
+      {/* Op mobiel verdwijnt de topbar (CSS < 880px); zoeken, thema en taal
+          waren daar onbereikbaar. */}
+      <div className="ml-auto flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={tDash('searchPlaceholder')}
+          onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
+        >
+          <Search className="h-5 w-5" aria-hidden="true" />
+        </Button>
+        <ThemeSwitcher />
+        <LanguageSwitcher />
+      </div>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Menu</span>
+          <Button variant="ghost" size="sm" aria-label={tSidebar('openMenu')}>
+            <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-[var(--sidebar-w)] max-w-[300px]">

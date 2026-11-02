@@ -5,6 +5,8 @@ import { parseJobVacancy } from '@/lib/ai/job-parser';
 import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/platform-provider';
 import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import { crawlVacancy } from '@/lib/jobs/crawl';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -34,6 +36,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'cv-job-parse', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     // Get request body
     const body = await request.json();
@@ -140,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: errorMessage },
+      { error: sanitizeError(error, 'cv-job-parse').message },
       { status: 500 }
     );
   }

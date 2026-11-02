@@ -434,13 +434,12 @@ export function useCVChat({ context, onContentChange, onTokensChange }: UseCVCha
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const addToolOutputRef = useRef<(args: any) => void | PromiseLike<void>>(undefined);
 
-  // Create transport with context + chargedCredits in body
-  // chargedCredits uses a getter so the transport always reads the latest ref value
+  // Create transport with context in body. Wat al betaald is wordt server-side
+  // per chat-id bijgehouden; chargedCredits hieronder is alleen voor de UI-teller.
   const transport = useMemo(() => new DefaultChatTransport({
     api: '/api/cv/chat',
     body: {
       context,
-      get chargedCredits() { return chargedCreditsRef.current; },
     },
   }), [context]);
 

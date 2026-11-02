@@ -8,6 +8,7 @@
 import mammoth from 'mammoth';
 import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
+import { setContentHardened } from '@/lib/pdf/harden-page';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -181,7 +182,7 @@ export async function docxToImage(arrayBuffer: ArrayBuffer): Promise<DocxToImage
 
     // Set the HTML content
     const styledHtml = wrapInStyledHtml(html);
-    await page.setContent(styledHtml, { waitUntil: 'networkidle0' });
+    await setContentHardened(page, styledHtml);
 
     // Wait a bit for fonts to load
     await page.evaluate(() => document.fonts.ready);

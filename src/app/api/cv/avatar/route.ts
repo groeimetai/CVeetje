@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomUUID } from 'crypto';
 import { getAdminAuth, getAdminStorage } from '@/lib/firebase/admin';
+import { sniffImage } from '@/lib/security/image-upload';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { publicObjectUrl, makeObjectPublic } from '@/lib/firebase/storage-files';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +31,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'avatar-upload', PERSISTENT_RATE_LIMITS.upload);
+    if (rateLimited) return rateLimited;
 
     // Get the file from the request
     const formData = await request.formData();
@@ -61,8 +67,12 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     // Generate unique filename
-    const fileExtension = file.type.split('/')[1] || 'jpg';
-    const filename = `avatars/${userId}/${randomUUID()}.${fileExtension}`;
+    // Type + extensie bepalen op basis van de bytes, niet de client-header
+    const sniffed = sniffImage(buffer);
+    if (!sniffed) {
+      return NextResponse.json({ error: 'Alleen PNG, JPEG of WebP toegestaan' }, { status: 400 });
+    }
+    const filename = `avatars/${userId}/${randomUUID()}.${sniffed.ext}`;
 
     // Upload to Firebase Storage
     const storage = getAdminStorage();
@@ -71,7 +81,8 @@ export async function POST(request: NextRequest) {
 
     await fileRef.save(buffer, {
       metadata: {
-        contentType: file.type,
+        contentType: sniffed.mime,
+        contentDisposition: 'inline',
         metadata: {
           uploadedBy: userId,
           uploadedAt: new Date().toISOString(),
@@ -80,10 +91,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Make the file publicly accessible
-    await fileRef.makePublic();
+    await makeObjectPublic(filename);
 
     // Get the public URL
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+    const publicUrl = publicObjectUrl(bucket.name, filename);
 
     return NextResponse.json({
       success: true,
@@ -93,7 +104,7 @@ export async function POST(request: NextRequest) {
     console.error('Avatar upload error:', error);
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to upload avatar' },
+      { error: 'Failed to upload avatar' },
       { status: 500 }
     );
   }

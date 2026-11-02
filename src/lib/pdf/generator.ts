@@ -4,6 +4,7 @@ import type { GeneratedCVContent, CVElementOverrides, CVContactInfo } from '@/ty
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { generateCVHTML, getDefaultTokens } from '@/lib/cv/html-generator';
 import { renderCV, isV2Tokens } from '@/lib/cv-engine/dispatch';
+import { setContentHardened } from './harden-page';
 
 // Check if we're in a serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -73,10 +74,11 @@ export async function generatePDF(
   );
 
   const browser = await getBrowser();
+  try {
   const page = await browser.newPage();
 
-  // Set content
-  await page.setContent(html, { waitUntil: 'networkidle0' });
+  // Set content — hardened: blokkeert requests buiten de allowlist (SSRF)
+  await setContentHardened(page, html);
 
   const isFullBleed = effectiveTokens.headerFullBleed === true;
 
@@ -172,7 +174,8 @@ export async function generatePDF(
     });
   }
 
-  await browser.close();
-
   return Buffer.from(pdf);
+  } finally {
+    await browser.close().catch(() => {});
+  }
 }

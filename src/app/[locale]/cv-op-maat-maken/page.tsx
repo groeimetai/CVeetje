@@ -99,8 +99,8 @@ export default async function CvOpMaatMakenPage({ params }: Props) {
       <h2>{nl ? 'Prijs' : 'Pricing'}</h2>
       <p>
         {nl
-          ? 'Gratis: 15 credits/maand (1 volledig CV). Starter €4,99 (30 credits, ~€1,66/CV). Popular €12,99 (100 credits, ~€1,30/CV). Pro €29,99 (300 credits). Power €59,99 (600 credits, ~€1,00/CV). BYOK: 0 credits voor AI, 1 credit per PDF-download. Credits verlopen niet.'
-          : 'Free: 15 credits/month (1 full CV). Starter €4.99 (30 credits, ~€1.66/CV). Popular €12.99 (100 credits, ~€1.30/CV). Pro €29.99 (300 credits). Power €59.99 (600 credits, ~€1.00/CV). BYOK: 0 credits for AI, 1 credit per PDF download. Credits never expire.'}
+          ? 'Gratis: 15 credits/maand (1 volledig CV). Starter €4,99 (30 credits, ~€1,66/CV). Popular €12,99 (100 credits, ~€1,30/CV). Pro €29,99 (300 credits). Power €59,99 (600 credits, ~€1,00/CV). BYOK: 0 credits voor AI. PDF-downloads zijn gratis. Credits verlopen niet.'
+          : 'Free: 15 credits/month (1 full CV). Starter €4.99 (30 credits, ~€1.66/CV). Popular €12.99 (100 credits, ~€1.30/CV). Pro €29.99 (300 credits). Power €59.99 (600 credits, ~€1.00/CV). BYOK: 0 credits for AI. PDF downloads are free. Credits never expire.'}
       </p>
     </ArticleLayout>
   );

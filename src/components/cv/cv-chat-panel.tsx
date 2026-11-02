@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Send, Loader2, MessageSquare, Bot, User, Trash2, AlertCircle, Coins, TriangleAlert, Check, Wrench } from 'lucide-react';
@@ -23,13 +24,9 @@ interface CVChatPanelProps {
   onTokensChange?: (tokens: CVDesignTokens) => void;
 }
 
-// Quick action suggestions
-const quickActions = [
-  { label: 'Samenvatting korter', prompt: 'Maak mijn samenvatting korter en krachtiger.' },
-  { label: 'Meer cijfers', prompt: 'Voeg meer cijfers en statistieken toe aan mijn werkervaring bullets.' },
-  { label: 'Skills ordenen', prompt: 'Orden mijn technische skills op relevantie voor de vacature.' },
-  { label: 'Headline verbeteren', prompt: 'Verbeter mijn headline zodat het beter aansluit bij de vacature.' },
-];
+// Quick action suggestions — label + prompt live in messages under
+// `cvChat.quickActions.<id>.{label,prompt}`.
+const QUICK_ACTION_IDS = ['shorterSummary', 'moreNumbers', 'orderSkills', 'improveHeadline'] as const;
 
 // Helper to extract text content from message parts
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
@@ -39,39 +36,13 @@ function getMessageText(message: { parts: Array<{ type: string; text?: string }>
     .join('');
 }
 
-// Map raw tool names to short Dutch labels for the user-facing chip.
-// Falls back to a humanized version of the raw name when unknown.
-function getToolLabel(toolName: string): string {
-  const labels: Record<string, string> = {
-    update_summary: 'Samenvatting bijgewerkt',
-    update_headline: 'Headline bijgewerkt',
-    update_experience: 'Werkervaring bijgewerkt',
-    update_experience_highlight: 'Highlight bijgewerkt',
-    add_experience_highlight: 'Highlight toegevoegd',
-    remove_experience_highlight: 'Highlight verwijderd',
-    update_education: 'Opleiding bijgewerkt',
-    add_skill: 'Vaardigheid toegevoegd',
-    remove_skill: 'Vaardigheid verwijderd',
-    reorder_skills: 'Vaardigheden geherordend',
-    update_project: 'Project bijgewerkt',
-    update_project_highlight: 'Project highlight bijgewerkt',
-    add_project_highlight: 'Project highlight toegevoegd',
-    remove_project_highlight: 'Project highlight verwijderd',
-    update_header_variant: 'Header stijl gewijzigd',
-    update_colors: 'Kleuren aangepast',
-    update_font_pairing: 'Lettertype gewijzigd',
-    update_spacing: 'Witruimte aangepast',
-    update_section_style: 'Sectie stijl gewijzigd',
-    update_layout: 'Layout gewijzigd',
-    update_contact_layout: 'Contact layout gewijzigd',
-    update_skills_display: 'Skills weergave gewijzigd',
-    update_accent_style: 'Accent stijl gewijzigd',
-    update_name_style: 'Naam stijl gewijzigd',
-    update_skill_tag_style: 'Skill tag stijl gewijzigd',
-    update_scale: 'Tekstschaal gewijzigd',
-    toggle_feature: 'Feature aan/uit',
-  };
-  if (labels[toolName]) return labels[toolName];
+// Map raw tool names to short labels for the user-facing chip (messages under
+// `cvChat.tools.<toolName>`). Falls back to a humanized version of the raw
+// name when unknown.
+type ChatTranslator = { (key: string): string; has: (key: string) => boolean };
+function getToolLabel(toolName: string, t: ChatTranslator): string {
+  const key = `tools.${toolName}`;
+  if (/^[a-z0-9_]+$/i.test(toolName) && t.has(key)) return t(key);
   // Humanize unknown names: "do_something_cool" → "Do something cool"
   return toolName
     .replace(/^tool_/, '')
@@ -105,6 +76,8 @@ export function CVChatPanel({
   onTokensChange,
 }: CVChatPanelProps) {
   const { llmMode } = useAuth();
+  const t = useTranslations('cvChat');
+  const tCommon = useTranslations('common');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showQuickActions, setShowQuickActions] = useState(true);
@@ -183,11 +156,11 @@ export function CVChatPanel({
       <div className="flex items-center justify-between p-4 border-b bg-muted/30">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold">CV Assistent</h2>
+          <h2 className="font-semibold">{t('title')}</h2>
           {isLoading && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Bezig...
+              {t('busy')}
             </span>
           )}
         </div>
@@ -197,14 +170,15 @@ export function CVChatPanel({
               variant="ghost"
               size="icon"
               onClick={clearChat}
-              title="Chat wissen"
+              title={t('clearChat')}
+              aria-label={t('clearChat')}
               className="h-8 w-8"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8" aria-label={tCommon('close')}>
+            <X className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -219,21 +193,21 @@ export function CVChatPanel({
             </div>
             <div className="flex-1 space-y-2">
               <p className="text-sm bg-muted rounded-lg p-3">
-                Hoi! Ik ben je CV-assistent. Ik kan je helpen om je CV te verfijnen. Vertel me wat je wilt aanpassen, of kies een snelle actie hieronder.
+                {t('welcome')}
               </p>
 
               {/* Quick actions */}
               {showQuickActions && (
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {quickActions.map((action, idx) => (
+                  {QUICK_ACTION_IDS.map((id) => (
                     <Button
-                      key={idx}
+                      key={id}
                       variant="outline"
                       size="sm"
-                      onClick={() => handleQuickAction(action.prompt)}
+                      onClick={() => handleQuickAction(t(`quickActions.${id}.prompt`))}
                       className="text-xs"
                     >
-                      {action.label}
+                      {t(`quickActions.${id}.label`)}
                     </Button>
                   ))}
                 </div>
@@ -292,7 +266,7 @@ export function CVChatPanel({
                         className="inline-flex items-center gap-1 text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5"
                       >
                         <Check className="h-3 w-3" />
-                        {getToolLabel(toolName)}
+                        {getToolLabel(toolName, t)}
                       </span>
                     ))}
                   </div>
@@ -304,7 +278,7 @@ export function CVChatPanel({
                 {message.role === 'assistant' && !hasContent && (
                   <div className="text-xs text-muted-foreground italic flex items-center gap-1.5">
                     <Wrench className="h-3 w-3" />
-                    Aanpassing toegepast
+                    {t('changeApplied')}
                   </div>
                 )}
               </div>
@@ -320,7 +294,7 @@ export function CVChatPanel({
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Denken...</span>
+              <span>{t('thinking')}</span>
             </div>
           </div>
         )}
@@ -329,7 +303,7 @@ export function CVChatPanel({
         {error && (
           <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-lg">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <p>{error.message || 'Er is een fout opgetreden. Probeer het opnieuw.'}</p>
+            <p>{error.message || t('genericError')}</p>
           </div>
         )}
 
@@ -340,7 +314,7 @@ export function CVChatPanel({
       {llmMode === 'platform' && creditWarning && (
         <div className="flex items-center gap-2 px-4 py-2 text-xs text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/30 border-t">
           <TriangleAlert className="h-3.5 w-3.5 flex-shrink-0" />
-          <span>Je volgende bericht kost 1 extra credit.</span>
+          <span>{t('creditWarning')}</span>
         </div>
       )}
 
@@ -352,7 +326,8 @@ export function CVChatPanel({
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Typ je vraag of verzoek..."
+            placeholder={t('placeholder')}
+            aria-label={t('placeholder')}
             className="min-h-[44px] max-h-[120px] resize-none"
             disabled={isLoading}
             rows={1}
@@ -362,19 +337,20 @@ export function CVChatPanel({
             size="icon"
             disabled={!input.trim() || isLoading}
             className="h-[44px] w-[44px] flex-shrink-0"
+            aria-label={t('send')}
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4" aria-hidden="true" />
             )}
           </Button>
         </form>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Shift+Enter voor nieuwe regel
+          {t('shiftEnterHint')}
           {llmMode !== 'platform' && (
             <span className="inline-flex items-center ml-2">
-              · <Coins className="h-3 w-3 mx-1" />{(totalChars / 1000).toFixed(1)}k / 40k tekens
+              · <Coins className="h-3 w-3 mx-1" aria-hidden="true" />{t('charCount', { used: (totalChars / 1000).toFixed(1) })}
             </span>
           )}
         </p>

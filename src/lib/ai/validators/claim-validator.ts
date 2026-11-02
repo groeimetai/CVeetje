@@ -132,14 +132,59 @@ function hasEvidence(claim: string, exactSet: Set<string>, evidenceText: string)
   // 2. Full normalized claim appears as substring in evidence
   if (evidenceText.includes(normalized)) return true;
 
-  // 3. All key tokens of the claim appear individually in evidence
+  // 3. Parenthetical core term: "Container orchestration (Kubernetes)" is
+  //    gedekt zodra "Kubernetes" in het profiel staat. De oude implementatie
+  //    claimde dit in de header-comment, maar eiste dat ÁLLE tokens (ook
+  //    "container" en "orchestration") voorkwamen — legitieme framing die de
+  //    prompt zelf voorschrijft werd dus stil weggegooid.
+  const paren = claim.match(/\(([^)]+)\)/);
+  if (paren && hasEvidence(paren[1], exactSet, evidenceText)) return true;
+
+  // 4. All key tokens of the claim appear individually in evidence; generieke
+  //    beschrijvende woorden ("development", "beheer", ...) tellen niet mee.
   const claimTokens = tokensOf(claim);
   if (claimTokens.length === 0) {
     // Claim was only stopwords — treat as unverifiable, strip it
     return false;
   }
-  return claimTokens.every(token => evidenceText.includes(token));
+  const significant = claimTokens.filter((t) => !GENERIC_DESCRIPTORS.has(t));
+  if (significant.length === 0) return false;
+  return significant.every(token => evidenceText.includes(token));
 }
+
+/**
+ * Beschrijvende woorden die het model mag toevoegen rond een echte skill
+ * ("React development", "Salesforce beheer"). Ze bewijzen niets, maar maken
+ * een claim ook niet onwaar zolang de kernterm in het profiel staat.
+ */
+const GENERIC_DESCRIPTORS = new Set([
+  'development', 'developer', 'ontwikkeling', 'engineering', 'management', 'beheer',
+  'design', 'ontwerp', 'framework', 'frameworks', 'tools', 'tooling', 'testing',
+  'basics', 'basis', 'advanced', 'gevorderd', 'expert', 'ervaring', 'experience',
+  'kennis', 'knowledge', 'skills', 'vaardigheden', 'systems', 'systemen',
+  'orchestration', 'container', 'containers', 'platform', 'platforms',
+]);
+
+/**
+ * Taalnamen NL ↔ EN. Een Engelstalig profiel zegt "English", een Nederlands
+ * CV "Engels" — dat is een vertaling, geen verzonnen taal.
+ */
+const LANGUAGE_ALIASES: Record<string, string[]> = {
+  nederlands: ['dutch'], dutch: ['nederlands'],
+  engels: ['english'], english: ['engels'],
+  duits: ['german', 'deutsch'], german: ['duits', 'deutsch'],
+  frans: ['french', 'francais'], french: ['frans', 'francais'],
+  spaans: ['spanish', 'espanol'], spanish: ['spaans', 'espanol'],
+  italiaans: ['italian'], italian: ['italiaans'],
+  portugees: ['portuguese'], portuguese: ['portugees'],
+  arabisch: ['arabic'], arabic: ['arabisch'],
+  turks: ['turkish'], turkish: ['turks'],
+  pools: ['polish'], polish: ['pools'],
+  chinees: ['chinese', 'mandarijn', 'mandarin'], chinese: ['chinees', 'mandarijn'],
+  mandarin: ['mandarijn', 'chinees'], mandarijn: ['mandarin', 'chinese'],
+  russisch: ['russian'], russian: ['russisch'],
+  fries: ['frisian'], frisian: ['fries'],
+};
 
 export interface ValidationResult<T> {
   kept: T[];
@@ -200,7 +245,11 @@ export function validateLanguages<T extends { language: string }>(
   langs: T[],
   evidence: ProfileEvidence,
 ): ValidationResult<T> {
-  return partition(langs, l => hasEvidence(l.language, evidence.languageSet, evidence.evidenceText));
+  return partition(langs, (l) => {
+    if (hasEvidence(l.language, evidence.languageSet, evidence.evidenceText)) return true;
+    const aliases = LANGUAGE_ALIASES[normalizeText(l.language)] ?? [];
+    return aliases.some((a) => evidence.languageSet.has(a));
+  });
 }
 
 /**

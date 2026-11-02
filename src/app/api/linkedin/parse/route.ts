@@ -7,6 +7,8 @@ import { decrypt } from '@/lib/encryption';
 import { createAIProvider } from '@/lib/ai/providers';
 import { parseLinkedInProfile } from '@/lib/linkedin/parser';
 import type { LinkedInInputSource, ParsedLinkedIn } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 // Schema for structured LinkedIn profile extraction via LLM
 const linkedInSchema = z.object({
@@ -54,8 +56,15 @@ const linkedInSchema = z.object({
   ).describe('Certifications'),
 });
 
+
+const MAX_BODY_BYTES = 20 * 1024 * 1024;
 export async function POST(request: NextRequest) {
   try {
+    // Body-limiet vóór parsen (base64-bestanden gaan 1-op-1 naar de AI-provider)
+    const contentLength = Number(request.headers.get('content-length') || 0);
+    if (contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: 'Bestanden te groot (max 20MB totaal)' }, { status: 413 });
+    }
     const body = await request.json();
 
     // Check if this is a file-based parse request
@@ -122,6 +131,9 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
+
+      const rateLimited = await enforceRateLimit(userId, 'linkedin-parse', PERSISTENT_RATE_LIMITS.ai);
+      if (rateLimited) return rateLimited;
 
       // Get user's API key
       const db = getAdminDb();
@@ -231,7 +243,7 @@ Be thorough and extract as much information as possible. If a field is not visib
         }
 
         return NextResponse.json(
-          { error: `Failed to extract profile from file: ${errorMessage}` },
+          { error: `Failed to extract profile from file: ${sanitizeError(aiError, 'linkedin-parse').message}` },
           { status: 500 }
         );
       }

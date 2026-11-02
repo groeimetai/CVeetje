@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Helper to set the token cookie
   const setTokenCookie = useCallback((token: string) => {
     // Set cookie to expire in 55 minutes (before the 1 hour Firebase token expiry)
-    document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
+    document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict${location.protocol === 'https:' ? '; Secure' : ''}`;
   }, []);
 
   // Refresh the Firebase token and update the cookie
