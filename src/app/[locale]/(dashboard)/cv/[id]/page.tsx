@@ -34,6 +34,7 @@ import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
 import { getDefaultTokens } from '@/lib/cv/html-generator';
 import type { CV, GeneratedCVContent, CVStyleConfig, CVElementOverrides, FitAnalysis, FitVerdict, FitWarningSeverity } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import { getStyleLabel } from '@/lib/cv-engine/dispatch';
 
 function getVerdictConfig(verdict: FitVerdict) {
   switch (verdict) {
@@ -507,9 +508,13 @@ export default function CVDetailPage() {
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-muted-foreground">
               <span>{cv.jobVacancy?.title || tDashboard('recentCvs.generalCv')}</span>
-              <span>•</span>
-              <span>{tokens.styleName}</span>
-              <span>•</span>
+              {getStyleLabel(tokens) && (
+                <>
+                  <span aria-hidden="true">•</span>
+                  <span>{getStyleLabel(tokens)}</span>
+                </>
+              )}
+              <span aria-hidden="true">•</span>
               <Badge variant="outline">{tDashboard(`status.${STATUS_KEY[cv.status] ?? 'draft'}`)}</Badge>
             </div>
           </div>

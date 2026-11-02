@@ -22,7 +22,7 @@ import {
 import type { GeneratedCVContent, CVElementOverrides, ElementOverride, EditableElementType, CVContactInfo, JobVacancy, ParsedLinkedIn, FitAnalysis } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import { useAuth } from '@/components/auth/auth-context';
-import { renderCV, isV2Tokens } from '@/lib/cv-engine/dispatch';
+import { renderCV, isV2Tokens, getStyleLabel } from '@/lib/cv-engine/dispatch';
 import { getRecipeById } from '@/lib/cv-engine/recipes/registry';
 import { oklchToCSS } from '@/lib/cv-engine/render/css/oklch';
 import type { CVStyleTokensV2 } from '@/lib/cv-engine/tokens';
@@ -255,6 +255,25 @@ export function CVPreview({
   const [elementColors, setElementColors] = useState<ElementColorOverrides>({});
   const [isTweaksOpen, setIsTweaksOpen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Mobiel: de CV is A4-breed (794px). Op smallere schermen renderen we de
+  // iframe op A4-breedte en schalen we hem visueel naar de containerbreedte,
+  // anders valt de rechterkant van het CV weg.
+  const [previewScale, setPreviewScale] = useState(1);
+  const [frameHeight, setFrameHeight] = useState(800);
+  const previewObserver = useRef<ResizeObserver | null>(null);
+  // Callback-ref: Radix Tabs unmount inactieve tabs, dus de wrapper kan
+  // opnieuw gemount worden — dan moet de observer mee.
+  const previewWrapRef = useCallback((el: HTMLDivElement | null) => {
+    previewObserver.current?.disconnect();
+    previewObserver.current = null;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      setPreviewScale(w > 0 && w < A4_PREVIEW_WIDTH ? w / A4_PREVIEW_WIDTH : 1);
+    });
+    ro.observe(el);
+    previewObserver.current = ro;
+  }, []);
 
   // Update local overrides when prop changes
   useEffect(() => {
@@ -293,7 +312,7 @@ export function CVPreview({
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
       const msg = event.data;
       if (isPreviewHeightMessage(msg)) {
-        iframeRef.current.style.height = `${Math.max(Math.ceil(msg.height) + 40, 800)}px`;
+        setFrameHeight(Math.max(Math.ceil(msg.height) + 40, 500));
         return;
       }
       if (!isCVContentEditMessage(msg)) return;
@@ -465,9 +484,11 @@ export function CVPreview({
               <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
               {t('title')}
             </CardTitle>
-            <Badge variant="secondary" className="text-xs">
-              {tokens.styleName}
-            </Badge>
+            {getStyleLabel(tokens) && (
+              <Badge variant="secondary" className="hidden sm:inline-flex text-xs">
+                {getStyleLabel(tokens)}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {cvId && (
@@ -741,12 +762,26 @@ export function CVPreview({
 
             <TabsContent value="preview" className="space-y-4">
               {/* Preview iframe */}
-              <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+              <div
+                ref={previewWrapRef}
+                className="border rounded-lg bg-white overflow-hidden shadow-sm"
+                style={previewScale < 1 ? { height: frameHeight * previewScale } : undefined}
+              >
                 <iframe
                   ref={iframeRef}
                   srcDoc={cvHTML}
                   title={t('title')}
-                  className="w-full min-h-[500px] sm:min-h-[800px] border-0"
+                  className="border-0"
+                  style={
+                    previewScale < 1
+                      ? {
+                          width: A4_PREVIEW_WIDTH,
+                          height: frameHeight,
+                          transform: `scale(${previewScale})`,
+                          transformOrigin: 'top left',
+                        }
+                      : { width: '100%', height: frameHeight }
+                  }
                   sandbox="allow-scripts"
                 />
               </div>
@@ -1180,6 +1215,9 @@ function isPreviewHeightMessage(v: unknown): v is PreviewHeightMessage {
 
 // Zelfde timing als de oude same-origin resize (load + 500ms); geen
 // ResizeObserver om een groei-feedbackloop met de iframe-hoogte te vermijden.
+/** A4-breedte in CSS-px (210mm @ 96dpi) — basis voor de mobiele schaal. */
+const A4_PREVIEW_WIDTH = 794;
+
 const HEIGHT_REPORTER_SCRIPT = `<script data-cv-height="1">(function(){function s(){try{if(document.body){parent.postMessage({type:'cv-preview-height',height:document.body.scrollHeight},'*')}}catch(e){}}window.addEventListener('load',function(){s();setTimeout(s,500)})})();</script>`;
 
 function withHeightReporter(html: string): string {

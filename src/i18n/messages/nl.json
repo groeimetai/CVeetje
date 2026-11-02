@@ -405,7 +405,7 @@
         "done": "Klaar",
         "skip": "—",
         "oneClick": "1-klik",
-        "oneCredit": "1 credit"
+        "generateCost": "{credits, plural, one {# credit} other {# credits}}"
       }
     },
     "statRow": {

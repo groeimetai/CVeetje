@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { ArrowRight } from 'lucide-react';
+import { PLATFORM_CREDIT_COSTS } from '@/lib/ai/platform-config';
 
 export type WizardStage = 'profile' | 'job' | 'cv' | 'apply';
 
@@ -59,7 +60,7 @@ export function NextStepCard({ stage, jobTitle, company, matchPercent, primaryHr
   const steps: { num: string; text: string; hint: string; done: boolean; active: boolean }[] = [
     { num: '01', text: tP('profile'), hint: tP('done'), done: stepNum > 1, active: stepNum === 1 },
     { num: '02', text: tP('vacancy'), hint: company ?? tP('skip'), done: stepNum > 2, active: stepNum === 2 },
-    { num: '03', text: tP('generate'), hint: tP('oneCredit'), done: stepNum > 3, active: stepNum === 3 },
+    { num: '03', text: tP('generate'), hint: tP('generateCost', { credits: PLATFORM_CREDIT_COSTS['cv-generate'] }), done: stepNum > 3, active: stepNum === 3 },
     { num: '04', text: tP('apply'), hint: tP('oneClick'), done: stepNum > 4, active: stepNum === 4 },
   ];
 
