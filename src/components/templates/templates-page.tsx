@@ -147,13 +147,7 @@ export function TemplatesPage() {
     setPreviewLoading(true);
 
     try {
-      const response = await fetch(`/api/templates/${template.id}`);
-      if (!response.ok) throw new Error('Failed to fetch template');
-      const data = await response.json();
-      const storageUrl = data.template?.storageUrl;
-      if (!storageUrl) throw new Error('No storage URL');
-
-      const fileResponse = await fetch(storageUrl);
+      const fileResponse = await fetch(`/api/templates/${template.id}/file`);
       if (!fileResponse.ok) throw new Error('Failed to fetch file');
       const blob = await fileResponse.blob();
 

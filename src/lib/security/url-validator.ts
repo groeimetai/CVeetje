@@ -283,6 +283,20 @@ export function validateAvatarURL(
     return { valid: true, sanitizedUrl: undefined };
   }
 
+  // E2E: avatars uit de lokale Storage-emulator toestaan (alleen als die
+  // expliciet geconfigureerd is — nooit in productie).
+  const emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST?.replace(/^https?:\/\//, '');
+  if (emulatorHost) {
+    try {
+      const u = new URL(urlString.trim());
+      if (u.host === emulatorHost && u.protocol === 'http:') {
+        return { valid: true, sanitizedUrl: u.toString() };
+      }
+    } catch {
+      // fallthrough naar normale validatie
+    }
+  }
+
   const result = validateURL(urlString, {
     httpsOnly: true,
     allowAnyHost: false,

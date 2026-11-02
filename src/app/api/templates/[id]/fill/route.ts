@@ -10,6 +10,7 @@ import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { downloadTemplateFile } from '@/lib/firebase/storage-files';
 
 // POST - Fill a template with profile data
 export async function POST(
@@ -139,15 +140,20 @@ export async function POST(
     }
 
     // Download the template PDF
-    const templateResponse = await fetch(template.storageUrl);
-    if (!templateResponse.ok) {
+    let templateBuffer: ArrayBuffer;
+    try {
+      const file = await downloadTemplateFile({
+        storagePath: templateData?.storagePath,
+        storageUrl: template.storageUrl,
+      });
+      templateBuffer = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
+    } catch (err) {
+      console.error('[template-fill] template download failed:', err);
       return NextResponse.json(
         { error: 'Failed to fetch template file' },
         { status: 500 }
       );
     }
-
-    const templateBuffer = await templateResponse.arrayBuffer();
     const templateBytes = new Uint8Array(templateBuffer);
 
     let filledBytes: Uint8Array;
