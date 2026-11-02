@@ -160,7 +160,7 @@ try {
       await writeFile(htmlPath, html, 'utf-8');
 
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'load' });
 
       if (mode === 'a4-paged') {
         await page.pdf({
