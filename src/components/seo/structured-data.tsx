@@ -1,3 +1,5 @@
+import { jsonForScript } from '@/lib/security/html-escape';
+
 export function WebsiteStructuredData() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cveetje.nl';
 
@@ -42,7 +44,7 @@ export function WebsiteStructuredData() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(structuredData) }}
     />
   );
 }
@@ -98,7 +100,7 @@ export function FAQStructuredData() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(faqData) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(faqData) }}
     />
   );
 }
@@ -131,7 +133,7 @@ export function OrganizationStructuredData() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(organizationData) }}
     />
   );
 }
@@ -153,7 +155,7 @@ export function BreadcrumbStructuredData({ items }: { items: { name: string; url
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbData) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(breadcrumbData) }}
     />
   );
 }
@@ -198,7 +200,7 @@ export function ArticleStructuredData(p: ArticleProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(data) }}
     />
   );
 }
@@ -230,7 +232,7 @@ export function HowToStructuredData(p: HowToProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(data) }}
     />
   );
 }
@@ -251,7 +253,7 @@ export function FAQPageStructuredData({ items, id }: { items: FAQItem[]; id?: st
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(data) }}
     />
   );
 }
@@ -276,7 +278,7 @@ export function PersonStructuredData(p: PersonProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(data) }}
     />
   );
 }

@@ -129,7 +129,14 @@ service cloud.firestore {
         function isValidApplicationUpdate() {
           let affected = request.resource.data.diff(resource.data).affectedKeys();
           let allowed = ['status', 'notes', 'updatedAt'];
-          return affected.hasOnly(allowed);
+          let data = request.resource.data;
+          // status/notes worden elders als HTML/tekst getoond — beperk tot
+          // de bekende enum en een redelijke lengte.
+          return affected.hasOnly(allowed)
+            && (!('status' in affected) || data.status in
+                ['applied', 'interview', 'offer', 'rejected', 'accepted', 'withdrawn'])
+            && (!('notes' in affected) || data.notes == null
+                || (data.notes is string && data.notes.size() <= 5000));
         }
       }
 

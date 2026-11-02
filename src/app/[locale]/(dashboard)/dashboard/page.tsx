@@ -13,6 +13,7 @@ import { JobsFeed } from '@/components/dashboard/jobs-feed';
 import { ActivityList, type ActivityItem } from '@/components/dashboard/activity-list';
 import type { CV } from '@/types';
 import type { ApplicationRecord } from '@/types/application';
+import { escapeHtml } from '@/lib/security/html-escape';
 
 type DraftSnapshot = {
   linkedInData?: unknown;
@@ -114,7 +115,7 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
         id: `cv-pdf-${cv.id}`,
         icon: 'check',
         kind: 'success',
-        message: `<strong>CV PDF klaar</strong> · ${cv.jobVacancy?.company ?? 'Algemene CV'} — ${cv.jobVacancy?.title ?? 'CV'}`,
+        message: `<strong>CV PDF klaar</strong> · ${escapeHtml(cv.jobVacancy?.company ?? 'Algemene CV')} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
         time: fmtTimeShort(toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
       });
     } else if (cv.status === 'generated') {
@@ -122,7 +123,7 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
         id: `cv-gen-${cv.id}`,
         icon: 'spark',
         kind: 'default',
-        message: `<strong>Nieuw CV gegenereerd</strong> · ${cv.jobVacancy?.company ?? 'Algemene CV'} — ${cv.jobVacancy?.title ?? 'CV'}`,
+        message: `<strong>Nieuw CV gegenereerd</strong> · ${escapeHtml(cv.jobVacancy?.company ?? 'Algemene CV')} — ${escapeHtml(cv.jobVacancy?.title ?? 'CV')}`,
         time: fmtTimeShort(toDate(cv.updatedAt) ?? toDate(cv.createdAt)),
       });
     }
@@ -133,8 +134,8 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
       icon: app.status === 'interview' || app.status === 'offer' || app.status === 'accepted' ? 'check' : 'send',
       kind: app.status === 'interview' || app.status === 'offer' || app.status === 'accepted' ? 'success' : 'accent',
       message: app.status === 'applied'
-        ? `<strong>Sollicitatie verstuurd</strong> · ${app.jobCompany ?? '—'} — ${app.jobTitle}`
-        : `<strong>Status: ${app.status}</strong> · ${app.jobCompany ?? '—'} — ${app.jobTitle}`,
+        ? `<strong>Sollicitatie verstuurd</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`
+        : `<strong>Status: ${escapeHtml(app.status)}</strong> · ${escapeHtml(app.jobCompany ?? '—')} — ${escapeHtml(app.jobTitle)}`,
       time: fmtTimeShort(toDate(app.updatedAt) ?? toDate(app.appliedAt)),
     });
   }

@@ -153,10 +153,12 @@ export default async function JobDetailPage({ params }: Props) {
 
         <section className="prose prose-sm md:prose-base dark:prose-invert max-w-none">
           <h2>{t('detail.descriptionHeading')}</h2>
-          <div
-            className="leading-relaxed whitespace-pre-line"
-            dangerouslySetInnerHTML={{ __html: job.description }}
-          />
+          {/* Security: description komt van externe ATS-feeds (Adzuna,
+              Recruitee, …) en is al naar platte tekst gestript — render als
+              tekst, nooit als HTML (stored XSS op publieke pagina). */}
+          <div className="leading-relaxed whitespace-pre-line">
+            {job.description}
+          </div>
         </section>
 
         <p className="text-xs text-muted-foreground pt-4 border-t">{t('poweredBy')}</p>

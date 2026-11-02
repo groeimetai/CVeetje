@@ -33,6 +33,7 @@ import { MotivationLetterSection } from './motivation-letter-section';
 import { DesignTweaksSheet } from './design-tweaks/design-tweaks-sheet';
 import { isCVContentEditMessage } from '@/lib/cv/edit-bridge';
 import type { OutputLanguage, TokenUsage } from '@/types';
+import { escapeHtml } from '@/lib/security/html-escape';
 
 interface HeaderInfo {
   fullName: string;
@@ -278,7 +279,14 @@ export function CVPreview({
   // → generateCVHTML → iframe srcDoc cycle for live re-render.
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      // Security: alleen berichten uit ónze preview-iframe accepteren. Zonder
+      // deze check kon elke pagina die de app framet/opent CV-content wijzigen.
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
       const msg = event.data;
+      if (isPreviewHeightMessage(msg)) {
+        iframeRef.current.style.height = `${Math.max(Math.ceil(msg.height) + 40, 800)}px`;
+        return;
+      }
       if (!isCVContentEditMessage(msg)) return;
 
       const { id, text } = msg;
@@ -391,7 +399,7 @@ export function CVPreview({
   // Wrapped in try/catch so a render failure doesn't crash the whole page.
   const cvHTML = useMemo(() => {
     try {
-      return renderCV(
+      return withHeightReporter(renderCV(
         editedContent,
         effectiveTokens,
         {
@@ -405,10 +413,10 @@ export function CVPreview({
           // CV shows "Interests/Experience" instead of defaulting to Dutch.
           locale: language,
         },
-      );
+      ));
     } catch (err) {
       console.error('[cv-preview] renderCV failed:', err);
-      return `<!doctype html><html><body style="font-family:system-ui;padding:40px;color:#a00"><h2>Preview render error</h2><pre>${err instanceof Error ? err.message : String(err)}</pre></body></html>`;
+      return `<!doctype html><html><body style="font-family:system-ui;padding:40px;color:#a00"><h2>Preview render error</h2><pre>${escapeHtml(err instanceof Error ? err.message : String(err))}</pre></body></html>`;
     }
   }, [editedContent, effectiveTokens, editedHeader, avatarUrl, effectiveOverrides, language]);
 
@@ -423,31 +431,8 @@ export function CVPreview({
     return contentChanged || headerChanged || tokensChanged || elementColorsChanged;
   }, [content, editedContent, fullName, headline, contactInfo, editedHeader, tokens, editedTokens, elementColors]);
 
-  // Auto-resize iframe to content height
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const resizeIframe = () => {
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (doc && doc.body) {
-          const height = doc.body.scrollHeight + 40;
-          iframe.style.height = `${Math.max(height, 800)}px`;
-        }
-      } catch {
-        // Cross-origin errors are expected, ignore them
-      }
-    };
-
-    const handleLoad = () => {
-      resizeIframe();
-      setTimeout(resizeIframe, 500);
-    };
-
-    iframe.addEventListener('load', handleLoad);
-    return () => iframe.removeEventListener('load', handleLoad);
-  }, [cvHTML]);
+  // Auto-resize: de iframe draait sandboxed zonder allow-same-origin (opaque
+  // origin), dus de hoogte komt via postMessage van withHeightReporter().
 
   // Get style summary from tokens — legacy v1 path only. v2 tokens have
   // none of these fields, so the derived configs become undefined; we wrap
@@ -747,7 +732,7 @@ export function CVPreview({
                   srcDoc={cvHTML}
                   title="CV Preview"
                   className="w-full min-h-[500px] sm:min-h-[800px] border-0"
-                  sandbox="allow-same-origin allow-scripts"
+                  sandbox="allow-scripts"
                 />
               </div>
               {hasEdits && (
@@ -1186,3 +1171,32 @@ export function CVPreview({
 }
 
 export default CVPreview;
+
+
+// ============ Sandboxed preview helpers ============
+//
+// Security: de preview-iframe draaide met `allow-same-origin allow-scripts`,
+// wat de sandbox volledig opheft — script in de CV-HTML (bijv. via
+// geïnjecteerde tokens) liep dan op de app-origin, ook in de browser van een
+// admin die impersoneert. Nu draait de iframe op een opaque origin en meldt
+// hij zijn hoogte via postMessage.
+
+interface PreviewHeightMessage {
+  type: 'cv-preview-height';
+  height: number;
+}
+
+function isPreviewHeightMessage(v: unknown): v is PreviewHeightMessage {
+  if (!v || typeof v !== 'object') return false;
+  const m = v as Record<string, unknown>;
+  return m.type === 'cv-preview-height' && typeof m.height === 'number' && Number.isFinite(m.height);
+}
+
+// Zelfde timing als de oude same-origin resize (load + 500ms); geen
+// ResizeObserver om een groei-feedbackloop met de iframe-hoogte te vermijden.
+const HEIGHT_REPORTER_SCRIPT = `<script data-cv-height="1">(function(){function s(){try{if(document.body){parent.postMessage({type:'cv-preview-height',height:document.body.scrollHeight},'*')}}catch(e){}}window.addEventListener('load',function(){s();setTimeout(s,500)})})();</script>`;
+
+function withHeightReporter(html: string): string {
+  const idx = html.lastIndexOf('</body>');
+  return idx === -1 ? html + HEIGHT_REPORTER_SCRIPT : html.slice(0, idx) + HEIGHT_REPORTER_SCRIPT + html.slice(idx);
+}

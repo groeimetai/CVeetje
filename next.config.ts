@@ -4,6 +4,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+const isDev = process.env.NODE_ENV !== "production";
+
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker deployment
   output: "standalone",
@@ -62,7 +64,9 @@ const nextConfig: NextConfig = {
             // Default to self
             "default-src 'self'",
             // Allow scripts from self and inline (needed for Next.js)
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.firebaseapp.com https://www.google.com https://www.gstatic.com",
+            // 'unsafe-eval' alleen in development (React/Turbopack dev tooling);
+            // 'unsafe-inline' is nodig voor Next.js inline hydration-scripts.
+            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://apis.google.com https://*.firebaseapp.com https://www.google.com https://www.gstatic.com`,
             // Allow styles from self, inline, and Google Fonts
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             // Allow fonts from self and Google Fonts
@@ -75,8 +79,10 @@ const nextConfig: NextConfig = {
             "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com https://recaptcha.google.com",
             // Form submissions only to self
             "form-action 'self'",
-            // Allow iframe embedding from anywhere
-            "frame-ancestors *",
+            // Clickjacking-bescherming: alleen eigen origin mag de app framen.
+            // Extra origins (bijv. een partner-embed) via FRAME_ANCESTORS env.
+            `frame-ancestors 'self'${process.env.FRAME_ANCESTORS ? ' ' + process.env.FRAME_ANCESTORS : ''}`,
+            "object-src 'none'",
             // Restrict base URIs
             "base-uri 'self'",
             // Report violations (optional - uncomment if you have a reporting endpoint)

@@ -1,4 +1,5 @@
 import type { CachedJob } from '@/lib/jobs/cache';
+import { jsonForScript } from '@/lib/security/html-escape';
 
 interface JobPostingStructuredDataProps {
   job: CachedJob;
@@ -67,7 +68,7 @@ export function JobPostingStructuredData({ job, url }: JobPostingStructuredDataP
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(data) }}
     />
   );
 }
