@@ -25,6 +25,7 @@ import { useAuth } from '@/components/auth/auth-context';
 import type { ProviderInfo } from '@/lib/ai/models-registry';
 import type { LLMMode } from '@/types';
 import { PageHeader } from '@/components/brand/page-header';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const apiKeySchema = z.object({
   provider: z.string().min(1, 'Please select a provider'),
@@ -58,6 +59,7 @@ function formatPrice(price: number): string {
 export default function SettingsPage() {
   const { userData, firebaseUser, credits, refreshUserData, logout, llmMode } = useAuth();
   const t = useTranslations('settings');
+  const confirmDialog = useConfirm();
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingModel, setSavingModel] = useState(false);
@@ -197,7 +199,7 @@ export default function SettingsPage() {
   };
 
   const handleRemoveApiKey = async () => {
-    if (!confirm(t('messages.confirmRemove'))) return;
+    if (!(await confirmDialog({ title: t('messages.confirmRemove'), destructive: true }))) return;
 
     setRemoving(true);
     setMessage(null);

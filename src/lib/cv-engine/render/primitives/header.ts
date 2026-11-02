@@ -41,7 +41,7 @@ export function renderHeader(_variant: HeaderVariant, input: HeaderInput): strin
     ? `<div class="cv-name-tagline">${escHtml(input.nameTagline)}</div>`
     : '';
   const headline = input.headline
-    ? `<div class="cv-headline">${escHtml(input.headline)}</div>`
+    ? `<div class="cv-headline" data-id="headline">${escHtml(input.headline)}</div>`
     : '';
 
   const photo = input.avatarUrl
@@ -50,7 +50,7 @@ export function renderHeader(_variant: HeaderVariant, input: HeaderInput): strin
 
   return `<header class="cv-header${input.avatarUrl ? ' has-photo' : ''}">
   <div class="cv-header-content">
-    <h1 class="cv-name">${escHtml(input.fullName)}</h1>
+    <h1 class="cv-name" data-id="header-name">${escHtml(input.fullName)}</h1>
     ${headline}
     ${tagline}
     ${renderContactLine(input.contact)}

@@ -15,6 +15,7 @@ import { CREDIT_PACKAGES } from '@/lib/mollie/client';
 import { getDaysUntilReset, getNextResetDate } from '@/lib/credits/manager';
 import type { CreditTransaction } from '@/types';
 import { PageHeader } from '@/components/brand/page-header';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 export default function CreditsPage() {
   const searchParams = useSearchParams();
@@ -180,7 +181,7 @@ export default function CreditsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center text-muted-foreground py-4">{tCommon('loading')}</p>
+            <ListSkeleton rows={3} />
           ) : transactions.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
               {t('history.noTransactions')}

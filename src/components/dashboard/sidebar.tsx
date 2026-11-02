@@ -13,6 +13,7 @@ import {
   User,
   Users,
   Menu,
+  Search,
   LayoutTemplate,
   Mail,
   Columns3,
@@ -37,6 +38,9 @@ import { Logo } from '@/components/ui/logo';
 import { useAuth } from '@/components/auth/auth-context';
 import { signOut } from '@/lib/firebase/auth';
 import { getUserCVs } from '@/lib/firebase/firestore';
+import { ThemeSwitcher } from '@/components/theme-switcher';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { OPEN_PALETTE_EVENT } from '@/components/dashboard/command-palette';
 
 type IconType = typeof Home;
 type NavItem = { key: string; href: string; icon: IconType; pill?: number };
@@ -332,6 +336,7 @@ export function Sidebar() {
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false);
+  const tDash = useTranslations('dashboard');
   const counts = useSidebarCounts();
 
   return (
@@ -339,11 +344,24 @@ export function MobileHeader() {
       <Link href="/dashboard">
         <Logo size="sm" />
       </Link>
+      {/* Op mobiel verdwijnt de topbar (CSS < 880px); zoeken, thema en taal
+          waren daar onbereikbaar. */}
+      <div className="ml-auto flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={tDash('searchPlaceholder')}
+          onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
+        >
+          <Search className="h-5 w-5" aria-hidden="true" />
+        </Button>
+        <ThemeSwitcher />
+        <LanguageSwitcher />
+      </div>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Menu</span>
+          <Button variant="ghost" size="sm" aria-label="Menu">
+            <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0 w-[var(--sidebar-w)] max-w-[300px]">

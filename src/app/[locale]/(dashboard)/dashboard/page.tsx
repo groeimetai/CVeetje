@@ -14,6 +14,7 @@ import { ActivityList, type ActivityItem } from '@/components/dashboard/activity
 import type { CV } from '@/types';
 import type { ApplicationRecord } from '@/types/application';
 import { escapeHtml } from '@/lib/security/html-escape';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type DraftSnapshot = {
   linkedInData?: unknown;
@@ -146,7 +147,7 @@ function buildActivity(cvs: CV[], applications: ApplicationRecord[]): ActivityIt
   return items
     .sort((a, b) => b.ts - a.ts)
     .slice(0, 8)
-    .map(({ ts: _ts, ...item }) => item);
+    .map((item) => ({ id: item.id, icon: item.icon, kind: item.kind, message: item.message, time: item.time }));
 }
 
 function fmtTimeShort(date: Date | null): string {
@@ -267,6 +268,25 @@ export default function DashboardPage() {
 
   const activity = useMemo(() => buildActivity(cvs, applications), [cvs, applications]);
 
+  // Tijdens het laden geen nullen + "maak je eerste CV" tonen, maar een skeleton.
+  if (loading) {
+    return (
+      <div className="space-y-6" role="status" aria-busy="true">
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <NextStepCard
@@ -304,11 +324,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {loading && cvs.length === 0 && (
-        <p style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          Bezig met laden…
-        </p>
-      )}
     </>
   );
 }

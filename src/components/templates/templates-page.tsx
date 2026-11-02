@@ -32,6 +32,7 @@ import {
   Eye,
 } from 'lucide-react';
 import type { PDFTemplateSummary } from '@/types';
+import { toast } from 'sonner';
 
 export function TemplatesPage() {
   const t = useTranslations('templatesPage');
@@ -79,12 +80,12 @@ export function TemplatesPage() {
       'application/pdf',
     ];
     if (!validTypes.includes(file.type)) {
-      alert(tTemplates('errors.invalidFileType'));
+      toast.error(tTemplates('errors.invalidFileType'));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(tTemplates('errors.fileTooLarge'));
+      toast.error(tTemplates('errors.fileTooLarge'));
       return;
     }
 
@@ -107,7 +108,7 @@ export function TemplatesPage() {
       await fetchTemplates();
     } catch (error) {
       console.error('Upload failed:', error);
-      alert(error instanceof Error ? error.message : 'Upload failed');
+      toast.error(error instanceof Error ? error.message : 'Upload failed');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

@@ -71,7 +71,8 @@
     "adminPlatform": "Platform AI",
     "new": "Nieuw",
     "edit": "Bewerken",
-    "preview": "Voorbeeld"
+    "preview": "Voorbeeld",
+    "details": "Details"
   },
   "auth": {
     "signIn": "Inloggen",
@@ -714,7 +715,8 @@
         "addCertification": "Certificaat toevoegen",
         "addProject": "Project toevoegen",
         "addInterest": "Interesse toevoegen"
-      }
+      },
+      "createCv": "CV maken"
     },
     "enrich": {
       "title": "Verrijken met AI",
@@ -1032,13 +1034,28 @@
       "balance": "{credits} credit(s) beschikbaar",
       "insufficient": "Onvoldoende credits voor deze actie",
       "buyMore": "Koop meer credits",
-      "saveTip": "Bespaar credits door je eigen API key toe te voegen"
+      "saveTip": "Bespaar credits door je eigen API key toe te voegen",
+      "estimate": "een CV met vacature kost ca. {credits} credits"
     },
     "generating": {
       "title": "Je CV wordt gegenereerd...",
       "analyzing": "Je profiel en vacature worden geanalyseerd...",
       "creating": "Je gepersonaliseerde CV wordt gemaakt...",
-      "aiDisclosure": "Je CV wordt gegenereerd met behulp van AI. Controleer de inhoud voordat je downloadt."
+      "aiDisclosure": "Je CV wordt gegenereerd met behulp van AI. Controleer de inhoud voordat je downloadt.",
+      "phases": [
+        "Profiel en vacature analyseren",
+        "Ervaring afstemmen op de vacature",
+        "Inhoud schrijven",
+        "Controleren op juistheid",
+        "Opmaak toepassen"
+      ],
+      "templatePhases": [
+        "Template-structuur lezen",
+        "Velden koppelen aan je profiel",
+        "Template invullen",
+        "Document opmaken"
+      ],
+      "duration": "Dit duurt meestal 30–90 seconden."
     },
     "error": {
       "title": "Er ging iets mis",
@@ -1053,7 +1070,16 @@
       "saved": "Opgeslagen",
       "resume": "Doorgaan",
       "startNew": "Opnieuw Beginnen"
-    }
+    },
+    "phases": {
+      "profile": "Profiel",
+      "job": "Vacature",
+      "match": "Match",
+      "design": "Ontwerp",
+      "result": "Resultaat"
+    },
+    "phaseSkipped": "overgeslagen",
+    "progressLabel": "Voortgang CV maken"
   },
   "requiredItems": {
     "title": "Wat moet er beslist op je CV?",
@@ -1876,6 +1902,24 @@
         "title": "9. Contact en Vragen",
         "content": "Heb je vragen over hoe CVeetje AI gebruikt? Neem contact met ons op:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nNederland\n\nKvK-nummer: 90102304\nBTW-nummer: NL004787305B79\nE-mail: info@groeimetai.io\n\nWij streven ernaar binnen 5 werkdagen te reageren."
       }
+    }
+  },
+  "commandPalette": {
+    "dialogLabel": "Zoeken",
+    "placeholder": "Zoek CV's, vacatures, profielen…",
+    "close": "Sluiten",
+    "searching": "Bezig met zoeken…",
+    "noResults": "Geen resultaten.",
+    "untitledCv": "Naamloos CV",
+    "hintNavigate": "navigeren",
+    "hintOpen": "openen",
+    "hintClose": "sluiten",
+    "groups": {
+      "navigation": "Navigatie",
+      "admin": "Beheer",
+      "cvs": "CV's",
+      "profiles": "Profielen",
+      "jobs": "Vacatures"
     }
   }
 }

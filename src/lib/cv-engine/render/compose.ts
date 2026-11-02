@@ -23,6 +23,8 @@ import { primitivesCSS } from './css/primitives.css';
 import { decoratorCSS } from './primitives/decorators';
 import { getFontLinkTags } from './css/fonts';
 import type { Locale } from './labels';
+import { buildEditBridgeMarkup } from '@/lib/cv/edit-bridge';
+import { escHtml } from './html';
 
 export interface ComposeOptions {
   fullName: string;
@@ -32,6 +34,8 @@ export interface ComposeOptions {
   /** 'a4-paged' (default) paginates as standard A4; 'single-long' renders
    *  one continuous tall page (no page breaks) — see project memory. */
   pageMode?: PageMode;
+  /** Preview: voeg de click-to-edit-bridge toe (nooit voor PDF). */
+  editable?: boolean;
 }
 
 export type { PageMode } from './css/reset.css';
@@ -110,7 +114,8 @@ export function composeCV(
   }
 
   const fontLinks = getFontLinkTags(rs.fontPairing);
-  const docTitle = `${opts.fullName} — CV`;
+  // Security: fullName komt uit het profiel — escapen in <title>.
+  const docTitle = `${escHtml(opts.fullName)} — CV`;
 
   const html = `<!doctype html>
 <html lang="${locale}">
@@ -123,6 +128,7 @@ ${fontLinks}
 </head>
 <body>
 ${body}
+${opts.editable ? buildEditBridgeMarkup({ forPdf: false }) : ''}
 </body>
 </html>`;
 

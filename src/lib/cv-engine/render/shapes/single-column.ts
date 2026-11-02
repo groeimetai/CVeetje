@@ -31,7 +31,7 @@ function renderSummary(
   if (decorators?.dropCap) {
     body = applyDropCap(body, dropCapLetter);
   }
-  return `<p class="cv-summary">${body}</p>`;
+  return `<p class="cv-summary" data-id="summary">${body}</p>`;
 }
 
 /** Derive a pull-quote text from experience when the AI hasn't supplied one. */
@@ -46,11 +46,11 @@ function deriveDefaultPullQuote(content: GeneratedCVContent): { text: string; at
 function renderEducation(items: GeneratedCVContent['education']): string {
   return items
     .map(
-      e => `<article class="cv-experience-item">
+      (e, i) => `<article class="cv-experience-item">
   <div class="cv-role-line">
-    <span class="cv-role-title">${escHtml(e.degree)}</span>
-    <span class="cv-role-meta">${escHtml(e.institution)}</span>
-    <span class="cv-role-period">${escHtml(e.year)}</span>
+    <span class="cv-role-title" data-id="edu-${i}-degree">${escHtml(e.degree)}</span>
+    <span class="cv-role-meta" data-id="edu-${i}-institution">${escHtml(e.institution)}</span>
+    <span class="cv-role-period" data-id="edu-${i}-year">${escHtml(e.year)}</span>
   </div>
   ${e.details ? `<p class="cv-experience-desc">${escHtml(e.details)}</p>` : ''}
 </article>`,
@@ -145,7 +145,7 @@ export function renderSingleColumn(rs: ResolvedSpec, input: SingleColumnInput): 
           return renderSection(
             rs.spec.primitives.section,
             labelFor(locale, 'experience'),
-            content.experience.map(e => renderExperienceItem(rs.spec.primitives.experienceItem, e, accentKeywords)).join(''),
+            content.experience.map((e, i) => renderExperienceItem(rs.spec.primitives.experienceItem, e, accentKeywords, i)).join(''),
           ) + pullQuoteHtml;
         case 'education':
           if (!content.education?.length) return '';

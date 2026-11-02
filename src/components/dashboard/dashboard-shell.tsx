@@ -3,6 +3,7 @@
 import { Sidebar, MobileHeader } from '@/components/dashboard/sidebar';
 import { DashTopbar } from '@/components/dashboard/topbar';
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export function DashboardShell({ children, noIndex = true }: DashboardShellProps
       >
         Skip to main content
       </a>
+      <ConfirmProvider>
       <div className="dash">
         <Sidebar />
         <div className="dash-main">
@@ -35,6 +37,7 @@ export function DashboardShell({ children, noIndex = true }: DashboardShellProps
           </main>
         </div>
       </div>
+      </ConfirmProvider>
     </>
   );
 }

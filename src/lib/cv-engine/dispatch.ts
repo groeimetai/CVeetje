@@ -47,6 +47,8 @@ export interface RenderCVOptions {
   pageMode?: PageMode;
   /** v2 locale. Defaults to 'nl'. */
   locale?: 'nl' | 'en';
+  /** v2 preview: click-to-edit-bridge injecteren. */
+  editable?: boolean;
 }
 
 export function renderCV(
@@ -62,6 +64,7 @@ export function renderCV(
       locale: opts.locale ?? 'nl',
       // Per-render override beats token-stored pageMode; default 'a4-paged'.
       pageMode: opts.pageMode ?? tokens.pageMode ?? 'a4-paged',
+      editable: opts.editable === true,
     });
     return html;
   }

@@ -59,6 +59,11 @@ function applyContentEdit(
     if (content.summary === text) return content;
     return { ...content, summary: text };
   }
+  // v2-renderer toont de headline uit de content
+  if (id === 'headline') {
+    if (content.headline === text) return content;
+    return { ...content, headline: text };
+  }
   // Experience fields: exp-{i}-{title|company|period|description|highlight-{j}|location}
   let m = id.match(/^exp-(\d+)-(title|company|period|description|location)$/);
   if (m) {
@@ -410,6 +415,8 @@ export function CVPreview({
           overrides: effectiveOverrides,
           contactInfo: editedHeader.contactInfo,
           legacyOptions: { previewProtection: true, watermarkText: 'CVeetje PREVIEW' },
+          // v2: click-to-edit-bridge (legacy injecteert hem zelf)
+          editable: true,
           // Drive v2 section labels off the CV's output language so an English
           // CV shows "Interests/Experience" instead of defaulting to Dutch.
           locale: language,

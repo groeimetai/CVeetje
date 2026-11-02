@@ -71,7 +71,8 @@
     "adminPlatform": "Platform AI",
     "new": "New",
     "edit": "Edit",
-    "preview": "Preview"
+    "preview": "Preview",
+    "details": "Details"
   },
   "auth": {
     "signIn": "Sign In",
@@ -714,7 +715,8 @@
         "addCertification": "Add certification",
         "addProject": "Add project",
         "addInterest": "Add interest"
-      }
+      },
+      "createCv": "Create CV"
     },
     "enrich": {
       "title": "Enrich with AI",
@@ -1032,13 +1034,28 @@
       "balance": "{credits} credit(s) available",
       "insufficient": "Insufficient credits for this action",
       "buyMore": "Buy more credits",
-      "saveTip": "Save credits by adding your own API key"
+      "saveTip": "Save credits by adding your own API key",
+      "estimate": "a CV with a vacancy costs about {credits} credits"
     },
     "generating": {
       "title": "Your CV is being generated...",
       "analyzing": "Analyzing your profile and job posting...",
       "creating": "Creating your personalized CV...",
-      "aiDisclosure": "Your CV is being generated using AI. Please review the content before downloading."
+      "aiDisclosure": "Your CV is being generated using AI. Please review the content before downloading.",
+      "phases": [
+        "Analysing profile and vacancy",
+        "Matching experience to the vacancy",
+        "Writing the content",
+        "Checking for accuracy",
+        "Applying the layout"
+      ],
+      "templatePhases": [
+        "Reading the template structure",
+        "Mapping fields to your profile",
+        "Filling the template",
+        "Formatting the document"
+      ],
+      "duration": "This usually takes 30–90 seconds."
     },
     "error": {
       "title": "Something went wrong",
@@ -1053,7 +1070,16 @@
       "saved": "Saved",
       "resume": "Continue",
       "startNew": "Start New"
-    }
+    },
+    "phases": {
+      "profile": "Profile",
+      "job": "Vacancy",
+      "match": "Match",
+      "design": "Design",
+      "result": "Result"
+    },
+    "phaseSkipped": "skipped",
+    "progressLabel": "CV creation progress"
   },
   "requiredItems": {
     "title": "What must definitely be on your CV?",
@@ -1876,6 +1902,24 @@
         "title": "9. Contact and Questions",
         "content": "Do you have questions about how CVeetje uses AI? Contact us:\n\nGroeimetAI\nFabriekstraat 20\n7311GP Apeldoorn\nThe Netherlands\n\nChamber of Commerce (KvK): 90102304\nVAT number: NL004787305B79\nEmail: info@groeimetai.io\n\nWe aim to respond within 5 business days."
       }
+    }
+  },
+  "commandPalette": {
+    "dialogLabel": "Search",
+    "placeholder": "Search CVs, jobs, profiles…",
+    "close": "Close",
+    "searching": "Searching…",
+    "noResults": "No results.",
+    "untitledCv": "Untitled CV",
+    "hintNavigate": "navigate",
+    "hintOpen": "open",
+    "hintClose": "close",
+    "groups": {
+      "navigation": "Navigation",
+      "admin": "Admin",
+      "cvs": "CVs",
+      "profiles": "Profiles",
+      "jobs": "Jobs"
     }
   }
 }

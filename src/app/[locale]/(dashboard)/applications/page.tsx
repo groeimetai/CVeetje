@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Building2, MapPin, ExternalLink, Trash2, Save, Briefcase } from 'lucide-react';
+import { Building2, MapPin, ExternalLink, Trash2, Save, Briefcase } from 'lucide-react';
 import type { ApplicationRecord, ApplicationStatus } from '@/types/application';
 import { PageHeader } from '@/components/brand/page-header';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 const STATUSES: Array<{ value: ApplicationStatus; label: string; color: string }> = [
   { value: 'applied', label: 'Verzonden', color: 'bg-blue-100 text-blue-800' },
@@ -26,6 +28,7 @@ function getStatusMeta(status: ApplicationStatus) {
 
 export default function ApplicationsPage() {
   const t = useTranslations();
+  const confirmDialog = useConfirm();
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +98,7 @@ export default function ApplicationsPage() {
   };
 
   const removeApplication = async (id: string) => {
-    if (!confirm('Sollicitatie verwijderen uit je overzicht?')) return;
+    if (!(await confirmDialog({ title: 'Sollicitatie verwijderen uit je overzicht?', destructive: true }))) return;
     setSaving(id);
     try {
       const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
@@ -111,9 +114,7 @@ export default function ApplicationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <ListSkeleton rows={3} className="py-4" />
     );
   }
 
