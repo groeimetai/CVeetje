@@ -11,6 +11,7 @@ import { getCurrentDateContext } from '@/lib/ai/date-context';
 import type { ProfileInputSource, ParsedLinkedIn } from '@/types';
 import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 import { sanitizeError } from '@/lib/security/error-sanitizer';
+import { resolveTemperature } from '@/lib/ai/temperature';
 
 // Schema for structured profile extraction via LLM
 // Note: Reduced nullable fields to stay under 16 union parameter limit
@@ -166,13 +167,12 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    const userProvider = provider || resolved.providerName;
-    const userModel = model || resolved.model;
-
-    // Create AI provider (use resolved key, but allow provider/model override from request)
-    const aiProvider = userProvider === resolved.providerName
-      ? resolved.provider
-      : createAIProvider(userProvider, resolved.apiKey);
+    // Security/billing-fix: de client mocht provider/model kiezen terwijl de
+    // resolved key gebruikt werd — in platform-modus kon zo elk model op de
+    // platform-key gedraaid worden. Altijd de resolved provider/model.
+    const userProvider = resolved.providerName;
+    const userModel = resolved.model;
+    const aiProvider = resolved.provider;
 
     // Build the prompt for multi-source extraction
     const sourceDescriptions: string[] = [];
@@ -294,7 +294,7 @@ Be thorough about extracting what IS there. Be empty/null about what ISN'T there
         // Low temperature: extraction is mechanical reading, not creative writing.
         // High temperature encourages "helpful" embellishments which here means
         // inventing fields that aren't actually in the source.
-        temperature: 0.1,
+        temperature: resolveTemperature(userProvider, userModel, 0.1),
       });
 
       // Helper to convert empty strings to null for compatibility

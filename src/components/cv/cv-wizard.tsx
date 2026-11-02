@@ -40,7 +40,7 @@ import { ApplyForm } from '@/components/jobs/apply-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { ModelInfo, ProviderInfo } from '@/lib/ai/models-registry';
 import { findModelInProviders } from '@/lib/ai/models-registry';
-import { PLATFORM_MODEL } from '@/lib/ai/platform-config';
+import { PLATFORM_MODEL, MODEL_PRICING_USD_PER_MTOK, DEFAULT_MODEL_PRICING } from '@/lib/ai/platform-config';
 
 const PLATFORM_MODEL_INFO: ModelInfo = {
   id: PLATFORM_MODEL.modelId,
@@ -49,7 +49,11 @@ const PLATFORM_MODEL_INFO: ModelInfo = {
   provider: 'Anthropic',
   providerId: PLATFORM_MODEL.provider,
   capabilities: { toolCall: true, reasoning: true, structuredOutput: true },
-  pricing: { input: 15, output: 75 },
+  // Uit de centrale prijstabel (stond hardcoded op de oude $15/$75)
+  pricing: {
+    input: (MODEL_PRICING_USD_PER_MTOK[PLATFORM_MODEL.modelId] ?? DEFAULT_MODEL_PRICING).input,
+    output: (MODEL_PRICING_USD_PER_MTOK[PLATFORM_MODEL.modelId] ?? DEFAULT_MODEL_PRICING).output,
+  },
   limits: { context: 200000, output: 32000 },
   modalities: { input: ['text', 'image', 'pdf'], output: ['text'] },
 };
@@ -582,6 +586,7 @@ export function CVWizard() {
 
       setGeneratedContent(result.content);
       setCvId(result.cvId);
+      if (result.designTokens) setDesignTokens(result.designTokens);
       setCurrentStep('preview');
       // Clear draft since CV was successfully generated
       clearDraft();
@@ -630,6 +635,7 @@ export function CVWizard() {
 
       setGeneratedContent(result.content);
       setCvId(result.cvId);
+      if (result.designTokens) setDesignTokens(result.designTokens);
       // Refresh credits in case platform AI was used
       if (llmMode === 'platform') refreshCredits();
     } catch (err) {

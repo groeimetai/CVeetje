@@ -9,11 +9,10 @@
  * used by both the standalone fill call and the combined analyze+fill call.
  */
 
-import { generateObject } from 'ai';
 import { z } from 'zod';
-import { createAIProvider, type LLMProvider } from './providers';
+import type { LLMProvider } from './providers';
 import { resolveTemperature } from './temperature';
-import { withRetry } from './retry';
+import { generateObjectResilient } from './generate-resilient';
 import type { ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
 import type { ExperienceDescriptionFormat } from '@/types/design-tokens';
 import type { TemplateBlueprint } from './template-analyzer';
@@ -55,7 +54,6 @@ export async function fillStructuredSegments(
   descriptionFormat: ExperienceDescriptionFormat = 'bullets',
   customValues?: Record<string, string>,
 ): Promise<SegmentFillResult> {
-  const aiProvider = createAIProvider(provider, apiKey);
   const isEn = language === 'en';
 
   const profileSummary = buildProfileSummary(profileData, language, customValues);
@@ -103,26 +101,46 @@ ${isEn ? 'Fill all segments with the correct profile data. Return fills as { seg
   : 'Vul alle segmenten in met de juiste profieldata. Retourneer fills als { segmentId, value } objecten.'}`;
 
   try {
-    const result = await withRetry(() =>
-      generateObject({
-        model: aiProvider(model),
-        schema: segmentFillSchema,
-        system: systemPrompt,
-        prompt: userPrompt,
-        // Low temperature: template segment filling is mechanical mapping, not creative
-        // generation. High temperature here causes the model to "improve" cells by adding
-        // marketing flair (verzonnen achievements, embellished tasks).
-        temperature: resolveTemperature(provider, model, 0.2),
-      })
-    );
+    // Segment-ID's die echt in de template-map staan. Door de AI verzonnen
+    // ID's werden voorheen blind toegepast (no-op of verkeerde plek).
+    const knownIds = new Set(Array.from(templateMap.matchAll(/\b(s\d+)\b/g), (m) => m[1]));
+
+    // Resilient i.p.v. kale generateObject: retries + Opus-fallback en
+    // detectie van lege/`{data:…}`-gewrapte antwoorden (zoals de CV-generator).
+    const { value: object, usage } = await generateObjectResilient({
+      provider,
+      apiKey,
+      model,
+      schema: segmentFillSchema,
+      system: systemPrompt,
+      prompt: userPrompt,
+      // Low temperature: template segment filling is mechanical mapping, not creative
+      // generation. High temperature here causes the model to "improve" cells by adding
+      // marketing flair (verzonnen achievements, embellished tasks).
+      temperature: resolveTemperature(provider, model, 0.2),
+      logTag: 'DOCX fill',
+      normalize: (raw) => {
+        const parsed = segmentFillSchema.parse(raw);
+        if (!parsed.fills || parsed.fills.length === 0) {
+          throw new Error('DOCX fill: empty fills');
+        }
+        return parsed;
+      },
+    });
 
     const fills: Record<string, string> = {};
-    for (const f of result.object.fills) {
+    let unknownIds = 0;
+    for (const f of object.fills) {
+      if (knownIds.size > 0 && !knownIds.has(f.segmentId)) {
+        unknownIds++;
+        continue;
+      }
       fills[f.segmentId] = f.value;
     }
 
     // Post-processing: filter work-experience content that leaked into special_notes
-    const warnings = result.object.warnings || [];
+    const warnings = object.warnings || [];
+    if (unknownIds > 0) warnings.push(`Ignored ${unknownIds} fill(s) for unknown segment IDs.`);
     if (blueprint) {
       const specialNotesIds = new Set<string>();
       for (const section of blueprint.sections) {
@@ -150,8 +168,8 @@ ${isEn ? 'Fill all segments with the correct profile data. Return fills as { seg
       fills,
       warnings,
       usage: {
-        inputTokens: result.usage?.inputTokens ?? 0,
-        outputTokens: result.usage?.outputTokens ?? 0,
+        inputTokens: usage.promptTokens ?? 0,
+        outputTokens: usage.completionTokens ?? 0,
       },
     };
   } catch (error) {

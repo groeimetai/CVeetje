@@ -81,7 +81,9 @@ Orchestrator + drempel-logica zit in `src/lib/pdf/smart-pdf-filler.ts` (zie `src
 - AI-credit operaties **altijd** via `resolveProvider({ userId, operation })`. Niet eigen credit-logica schrijven.
 - Character-based billing (cv-chat): `chargePlatformCredits()` apart aanroepen na de operatie.
 - Flaky Anthropic structured-output: gebruik `generateObjectResilient` (heeft Opus 4.6 fallback).
-- Honesty rules zitten **inline** in `cv-generator.ts` — prompts verbieden expliciet het verzinnen van ervaring of skills.
+- Honesty rules zitten **inline** in `cv-generator.ts` — prompts verbieden expliciet het verzinnen van ervaring of skills. Geen tegenstrijdige instructies toevoegen (bv. "quantify" zonder "alleen cijfers uit het profiel"); de eval in `eval/` meet verzonnen getallen.
+- **Claim-validator** (`validators/claim-validator.ts`) strip na generatie claims zonder bewijs in het profiel. Matching: exact → substring → kernterm tussen haakjes → alle significante tokens (generieke beschrijvers als "development"/"beheer" tellen niet mee); talen NL↔EN via een alias-tabel.
+- **Evaluatie:** `npm run eval:docgen` (zie `eval/README.md`) — fixtures, automatische checks en optionele LLM-judge. Draai vóór en na prompt-wijzigingen.
 - Motivatiebrieven krijgen **altijd** een humanizer pass — `generateMotivationLetter` → `humanizeMotivationLetter`.
 - Disputes: gatekeeper LLM-call **voor** regeneratie zodat credits niet verspild worden als de user fout heeft.
 
