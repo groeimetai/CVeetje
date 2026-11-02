@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       senderLocation: linkedInData?.location || undefined,
       recipientCompany: jobVacancy?.company || undefined,
       // Zonder expliciete taal leidt de renderer die af uit de brieftekst
-      language: language === 'en' || language === 'nl' ? language : undefined,
+      language: (language === 'en' || language === 'nl' ? language : undefined) as 'nl' | 'en' | undefined,
     };
 
     // Generate file based on format
