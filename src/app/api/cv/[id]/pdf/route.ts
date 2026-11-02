@@ -11,6 +11,7 @@ import {
 import { validateAvatarURL } from '@/lib/security/url-validator';
 import type { CV, GeneratedCVContent, CVStyleConfig, CVContactInfo, CVElementOverrides, ElementOverride, EditableElementType } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
+import { CVStyleTokensV2Schema } from '@/lib/cv-engine/tokens';
 
 export async function POST(
   request: NextRequest,
@@ -34,8 +35,15 @@ export async function POST(
       if (body.content) {
         editedContent = body.content as GeneratedCVContent;
       }
-      if (body.tokens) {
-        editedTokens = body.tokens as CVDesignTokens;
+      if (body.tokens && typeof body.tokens === 'object') {
+        // v2-tokens uit de body valideren i.p.v. blind overnemen; legacy
+        // tokens worden in de renderer gesanitized (sanitizeLegacyTokens).
+        if ((body.tokens as { engineVersion?: string }).engineVersion === 'v2') {
+          const parsed = CVStyleTokensV2Schema.safeParse(body.tokens);
+          if (parsed.success) editedTokens = parsed.data as unknown as CVDesignTokens;
+        } else {
+          editedTokens = body.tokens as CVDesignTokens;
+        }
       }
       if (body.header) {
         editedHeader = body.header;
@@ -137,6 +145,11 @@ export async function POST(
     let tokens: CVDesignTokens | null = null;
     if (editedTokens) {
       tokens = editedTokens;
+    } else if (cvData.designTokens) {
+      // Bug-fix: las `cvData.tokens`, maar CV's slaan `designTokens` op. Zonder
+      // tokens in de body (bv. Quick Apply) werd het CV in de legacy-defaultstijl
+      // gerenderd i.p.v. de eigen stijl.
+      tokens = cvData.designTokens as CVDesignTokens;
     } else if (cvData.tokens) {
       tokens = cvData.tokens;
     } else if (cvData.styleConfig) {

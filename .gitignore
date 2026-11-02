@@ -70,3 +70,15 @@ next-env.d.ts
 # Private/sensitive local scratch — never commit real CVs, recruiter
 # templates, customer data, or anything containing personal info.
 /private/
+
+# E2E (Playwright + Firebase emulators)
+/.next-e2e/
+/e2e/.cache/
+/playwright-report/
+/test-results/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Docgen-evaluatie output
+/eval/output/

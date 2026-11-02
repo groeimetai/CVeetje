@@ -15,6 +15,7 @@ import type { CVDesignTokens } from '@/types/design-tokens';
 import { generateCVHTML } from '@/lib/cv/html-generator';
 import type { CVStyleTokensV2 } from './tokens';
 import { composeCV } from './render/compose';
+import { getRecipeById } from './recipes/registry';
 import type { ContactInfo } from './render/primitives/header';
 import type { PageMode } from './render/css/reset.css';
 
@@ -22,6 +23,13 @@ export type AnyCVTokens = CVDesignTokens | CVStyleTokensV2 | null | undefined;
 
 export function isV2Tokens(t: AnyCVTokens): t is CVStyleTokensV2 {
   return !!t && (t as CVStyleTokensV2).engineVersion === 'v2';
+}
+
+/** Leesbare stijlnaam voor UI-labels: v2 → recipe displayName, v1 → styleName. */
+export function getStyleLabel(t: AnyCVTokens): string {
+  if (!t) return '';
+  if (isV2Tokens(t)) return getRecipeById(t.recipeId)?.displayName ?? '';
+  return t.styleName ?? '';
 }
 
 function toV2Contact(c: CVContactInfo | null | undefined): ContactInfo {
@@ -47,6 +55,8 @@ export interface RenderCVOptions {
   pageMode?: PageMode;
   /** v2 locale. Defaults to 'nl'. */
   locale?: 'nl' | 'en';
+  /** v2 preview: click-to-edit-bridge injecteren. */
+  editable?: boolean;
 }
 
 export function renderCV(
@@ -62,6 +72,7 @@ export function renderCV(
       locale: opts.locale ?? 'nl',
       // Per-render override beats token-stored pageMode; default 'a4-paged'.
       pageMode: opts.pageMode ?? tokens.pageMode ?? 'a4-paged',
+      editable: opts.editable === true,
     });
     return html;
   }

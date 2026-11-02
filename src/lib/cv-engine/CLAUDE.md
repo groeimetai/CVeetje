@@ -108,7 +108,9 @@ src/lib/cv-engine/
 
 ## pageMode
 
-`tokens.pageMode === 'single-long'`: één doorlopende lange pagina, geen page-breaks. Default `'a4-paged'`. Per-render override mogelijk via `composeCV()`'s `pageMode` optie (PDF route mapt `'single-page'` → `'single-long'`).
+`tokens.pageMode === 'single-long'`: één doorlopende lange pagina, geen page-breaks. Default `'a4-paged'`: meerdere A4-pagina's; `box-decoration-break: clone` op `.cv-page` en de kolommen van sidebar/editorial-grid/poster herhaalt padding + achtergrond per pagina, koppen hebben `break-after: avoid` (zie `render/css/reset.css.ts`). Per-render override mogelijk via `composeCV()`'s `pageMode` optie (PDF route mapt `'single-page'` → `'single-long'`).
+
+**Emphasis vs. content:** de stijl wordt vóór de content gegenereerd. `alignEmphasisWithContent()` (`ai/normalize.ts`) wordt in `/api/cv/generate` aangeroepen en laat accent-keywords en een pull-quote vallen die niet letterlijk in de gegenereerde content staan.
 
 ## engineVersion routing — touchpoints
 

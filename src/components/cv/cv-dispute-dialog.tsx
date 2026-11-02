@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -35,12 +36,13 @@ interface CVDisputeDialogProps {
 const MAX_DISPUTES = 3;
 const MIN_REASON = 20;
 
-const LEVELS: { value: StyleCreativityLevel; label: string; description: string }[] = [
-  { value: 'conservative', label: 'Veilig', description: 'ATS-vriendelijk, traditioneel' },
-  { value: 'balanced', label: 'Gebalanceerd', description: 'Modern maar professioneel' },
-  { value: 'creative', label: 'Creatief', description: 'Editorial/magazine layout' },
-  { value: 'experimental', label: 'Experimenteel', description: 'Bold/Canva-stijl met kleur' },
-  { value: 'editorial-paper', label: 'Editorial Paper', description: 'Cveetje-look: cream paper + ink + clay accent' },
+// Labels/descriptions live in `cvDispute.levels.<value>.{label,description}`.
+const LEVELS: StyleCreativityLevel[] = [
+  'conservative',
+  'balanced',
+  'creative',
+  'experimental',
+  'editorial-paper',
 ];
 
 type DialogState =
@@ -57,6 +59,8 @@ export function CVDisputeDialog({
   onApproved,
 }: CVDisputeDialogProps) {
   const { refreshToken } = useAuth();
+  const t = useTranslations('cvDispute');
+  const tCommon = useTranslations('common');
   const [state, setState] = useState<DialogState>({ kind: 'form' });
   const [reason, setReason] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<StyleCreativityLevel | null>(null);
@@ -69,15 +73,15 @@ export function CVDisputeDialog({
   const handleSubmit = async () => {
     setError(null);
     if (reason.trim().length < MIN_REASON) {
-      setError(`Reden moet minstens ${MIN_REASON} tekens bevatten`);
+      setError(t('errors.reasonTooShort', { min: MIN_REASON }));
       return;
     }
     if (!selectedLevel) {
-      setError('Kies een ander stijl-niveau');
+      setError(t('errors.chooseLevel'));
       return;
     }
     if (selectedLevel === currentLevel) {
-      setError('Het gekozen niveau is hetzelfde als het huidige');
+      setError(t('errors.sameLevel'));
       return;
     }
 
@@ -94,7 +98,7 @@ export function CVDisputeDialog({
       });
       const data = await response.json();
       if (!response.ok) {
-        setError(data.error || 'Onbekende fout');
+        setError(data.error || t('errors.unknown'));
         setState({ kind: 'form' });
         return;
       }
@@ -116,12 +120,12 @@ export function CVDisputeDialog({
           // Toast import is intentional here instead of at the top because
           // this is a rarely-used branch — keeps the bundle lean.
           const { toast } = await import('sonner');
-          toast.info('Je tweaks zijn vervangen door de nieuwe AI-stijl');
+          toast.info(t('tweaksDiscarded'));
         }
         onApproved?.();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Onbekende fout');
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
       setState({ kind: 'form' });
     }
   };
@@ -143,12 +147,10 @@ export function CVDisputeDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Scale className="h-5 w-5" />
-            CV laten heroverwegen
+            {t('title')}
           </DialogTitle>
           <DialogDescription>
-            Klopt er iets niet in je CV? Je kunt tot 3 keer om een heroverweging
-            vragen. Een onafhankelijke AI beoordeelt je klacht — bij de derde
-            poging komt het bij een admin terecht.
+            {t('description', { max: MAX_DISPUTES })}
           </DialogDescription>
         </DialogHeader>
 
@@ -156,40 +158,41 @@ export function CVDisputeDialog({
           <div className="text-center py-8 space-y-2">
             <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
             <p className="text-sm">
-              Maximaal aantal disputes bereikt voor deze CV ({MAX_DISPUTES}/{MAX_DISPUTES}).
+              {t('maxReached', { max: MAX_DISPUTES })}
             </p>
           </div>
         ) : state.kind === 'form' || state.kind === 'submitting' ? (
           <>
             <div className="space-y-4">
               <div className="text-xs text-muted-foreground">
-                Poging {disputeCount + 1} van {MAX_DISPUTES}
+                {t('attempt', { current: disputeCount + 1, max: MAX_DISPUTES })}
                 {isLast && (
                   <span className="ml-2 text-orange-600 font-medium">
-                    (laatste — wordt handmatig beoordeeld)
+                    {t('lastAttempt')}
                   </span>
                 )}
               </div>
 
               <div>
-                <label className="text-sm font-medium">
-                  Kies een ander stijl-niveau
-                </label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {LEVELS.filter((l) => l.value !== currentLevel).map((level) => (
+                <p className="text-sm font-medium" id="dispute-level-label">
+                  {t('errors.chooseLevel')}
+                </p>
+                <div className="grid grid-cols-2 gap-2 mt-2" role="group" aria-labelledby="dispute-level-label">
+                  {LEVELS.filter((l) => l !== currentLevel).map((level) => (
                     <button
-                      key={level.value}
+                      key={level}
                       type="button"
-                      onClick={() => setSelectedLevel(level.value)}
+                      aria-pressed={selectedLevel === level}
+                      onClick={() => setSelectedLevel(level)}
                       className={`p-3 rounded-md border text-left transition-colors ${
-                        selectedLevel === level.value
+                        selectedLevel === level
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:bg-accent'
                       }`}
                     >
-                      <p className="font-medium text-sm">{level.label}</p>
+                      <p className="font-medium text-sm">{t(`levels.${level}.label`)}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {level.description}
+                        {t(`levels.${level}.description`)}
                       </p>
                     </button>
                   ))}
@@ -197,22 +200,23 @@ export function CVDisputeDialog({
               </div>
 
               <div>
-                <label className="text-sm font-medium">
-                  Wat klopt er niet?
+                <label className="text-sm font-medium" htmlFor="dispute-reason">
+                  {t('reasonLabel')}
                   <span className="text-muted-foreground font-normal">
-                    {' '}(min. {MIN_REASON} tekens)
+                    {' '}{t('reasonMin', { min: MIN_REASON })}
                   </span>
                 </label>
                 <Textarea
+                  id="dispute-reason"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Bijvoorbeeld: de datum van mijn afstuderen staat er niet op, of: de kleuren passen niet bij een finance-rol..."
+                  placeholder={t('reasonPlaceholder')}
                   rows={4}
                   className="mt-1"
                   disabled={state.kind === 'submitting'}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {reason.length}/{MIN_REASON} tekens
+                  {t('reasonCount', { count: reason.length, min: MIN_REASON })}
                 </p>
               </div>
 
@@ -225,7 +229,7 @@ export function CVDisputeDialog({
 
             <DialogFooter>
               <Button variant="outline" onClick={() => handleClose(false)} disabled={state.kind === 'submitting'}>
-                Annuleren
+                {tCommon('cancel')}
               </Button>
               <Button
                 onClick={handleSubmit}
@@ -236,9 +240,9 @@ export function CVDisputeDialog({
                 }
               >
                 {state.kind === 'submitting' ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-1" />Bezig met beoordelen...</>
+                  <><Loader2 className="h-4 w-4 animate-spin mr-1" />{t('submitting')}</>
                 ) : (
-                  'Dispute indienen'
+                  t('submit')
                 )}
               </Button>
             </DialogFooter>
@@ -249,15 +253,17 @@ export function CVDisputeDialog({
               <div className="bg-green-500/10 border border-green-500/30 p-4 rounded space-y-2">
                 <div className="flex items-center gap-2 text-green-700">
                   <CheckCircle2 className="h-5 w-5" />
-                  <p className="font-semibold">Dispute goedgekeurd</p>
+                  <p className="font-semibold">{t('approved.title')}</p>
                 </div>
                 <p className="text-sm">
-                  Je CV is opnieuw gegenereerd in het niveau{' '}
-                  <strong>{LEVELS.find(l => l.value === state.newLevel)?.label}</strong>.
+                  {t.rich('approved.body', {
+                    level: state.newLevel ? t(`levels.${state.newLevel}.label`) : '',
+                    strong: (chunks) => <strong>{chunks}</strong>,
+                  })}
                 </p>
                 {state.rationale && (
                   <p className="text-xs text-muted-foreground italic">
-                    AI: "{state.rationale}"
+                    {t('aiRationale', { rationale: state.rationale })}
                   </p>
                 )}
               </div>
@@ -266,19 +272,19 @@ export function CVDisputeDialog({
               <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded space-y-2">
                 <div className="flex items-center gap-2 text-orange-700">
                   <XCircle className="h-5 w-5" />
-                  <p className="font-semibold">Dispute afgewezen</p>
+                  <p className="font-semibold">{t('rejected.title')}</p>
                 </div>
                 <p className="text-sm">
-                  De AI-beoordelaar vindt deze CV passend. De CV blijft zoals hij is.
+                  {t('rejected.body')}
                 </p>
                 {state.rationale && (
                   <p className="text-xs text-muted-foreground italic">
-                    AI: "{state.rationale}"
+                    {t('aiRationale', { rationale: state.rationale })}
                   </p>
                 )}
                 {state.remainingAttempts !== undefined && state.remainingAttempts > 0 && (
                   <p className="text-xs">
-                    Je hebt nog {state.remainingAttempts} dispute(s) over.
+                    {t('rejected.remaining', { count: state.remainingAttempts })}
                   </p>
                 )}
               </div>
@@ -287,10 +293,10 @@ export function CVDisputeDialog({
               <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded space-y-2">
                 <div className="flex items-center gap-2 text-blue-700">
                   <UserIcon className="h-5 w-5" />
-                  <p className="font-semibold">Wacht op handmatige beoordeling</p>
+                  <p className="font-semibold">{t('needsHuman.title')}</p>
                 </div>
                 <p className="text-sm">
-                  {state.message || 'Dit is je derde dispute. Een admin beoordeelt hem zo snel mogelijk handmatig.'}
+                  {state.message || t('needsHuman.body')}
                 </p>
               </div>
             )}
@@ -298,10 +304,10 @@ export function CVDisputeDialog({
             <DialogFooter>
               {state.status === 'approved' ? (
                 <Button onClick={() => handleClose(false)}>
-                  Bekijk nieuwe CV
+                  {t('viewNewCv')}
                 </Button>
               ) : (
-                <Button onClick={() => handleClose(false)}>Sluiten</Button>
+                <Button onClick={() => handleClose(false)}>{tCommon('close')}</Button>
               )}
             </DialogFooter>
           </div>

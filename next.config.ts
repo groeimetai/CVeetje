@@ -6,9 +6,30 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const isDev = process.env.NODE_ENV !== "production";
 
+// E2E: Firebase Emulator Suite-origins alleen toestaan als de emulator-modus
+// expliciet aan staat (nooit in productie-builds).
+const useEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "1";
+const emulatorConnect = useEmulators
+  ? " http://127.0.0.1:9099 http://127.0.0.1:8080 ws://127.0.0.1:8080 http://127.0.0.1:9199 http://localhost:9099 http://localhost:8080 http://localhost:9199"
+  : "";
+const emulatorImg = useEmulators ? " http://127.0.0.1:9199 http://localhost:9199" : "";
+
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker deployment
   output: "standalone",
+
+  // E2E-builds (emulator-modus) gaan naar een aparte map zodat ze de normale
+  // build niet overschrijven. Zie e2e/README.md.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
+
+  // Bestanden die server-side via fs.readFileSync in Puppeteer geïnjecteerd
+  // worden (docx-to-pdf) — expliciet meenemen in de standalone-output.
+  outputFileTracingIncludes: {
+    "/api/templates/**": [
+      "./node_modules/docx-preview/dist/docx-preview.min.js",
+      "./node_modules/jszip/dist/jszip.min.js",
+    ],
+  },
 
   // Set turbopack root to this project directory
   turbopack: {
@@ -72,9 +93,9 @@ const nextConfig: NextConfig = {
             // Allow fonts from self and Google Fonts
             "font-src 'self' https://fonts.gstatic.com data:",
             // Allow images from various sources (avatars, Firebase Storage, etc.)
-            "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://lh3.googleusercontent.com https://media.licdn.com https://*.licdn.com https://avatars.githubusercontent.com https://pbs.twimg.com",
+            `img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://lh3.googleusercontent.com https://media.licdn.com https://*.licdn.com https://avatars.githubusercontent.com https://pbs.twimg.com${emulatorImg}`,
             // Allow connections to Firebase, AI providers, and Mollie
-            "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.groq.com https://api.mollie.com https://fonts.googleapis.com https://fonts.gstatic.com",
+            `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.groq.com https://api.mollie.com https://fonts.googleapis.com https://fonts.gstatic.com${emulatorConnect}`,
             // Allow frames for Firebase Auth and reCAPTCHA
             "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://www.google.com https://recaptcha.google.com",
             // Form submissions only to self

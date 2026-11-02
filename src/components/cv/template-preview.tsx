@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   CheckCircle,
   Download,
-  Coins,
   Briefcase,
   MessageSquare,
 } from 'lucide-react';
@@ -123,7 +122,7 @@ export function TemplatePreview({
                 className="gap-2"
               >
                 <MessageSquare className="h-4 w-4" />
-                {language === 'nl' ? 'Assistent' : 'Assistant'}
+                {t('assistant')}
               </Button>
             )}
           </div>
@@ -176,14 +175,14 @@ export function TemplatePreview({
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-muted-foreground">
-                    {language === 'nl' ? 'Document laden...' : 'Loading document...'}
+                    {t('rendering')}
                   </span>
                 </div>
               )}
               {renderError && (
                 <div className="text-center py-12 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{language === 'nl' ? 'Kon document niet laden' : 'Could not load document'}</p>
+                  <p>{t('loadError')}</p>
                 </div>
               )}
               <div ref={styleContainerRef} className="hidden" />
@@ -214,16 +213,12 @@ export function TemplatePreview({
               </Button>
             ) : (
               <Button
-                disabled={credits < 1}
                 className="flex-1"
                 size="lg"
                 onClick={() => onDownload('docx')}
               >
                 <Download className="mr-2 h-4 w-4" />
                 {t('download')} (.docx)
-                <Badge variant="secondary" className="ml-2">
-                  <Coins className="h-3 w-3 mr-1" />1 credit
-                </Badge>
               </Button>
             )}
 
@@ -249,15 +244,6 @@ export function TemplatePreview({
             )}
           </div>
 
-          {/* Credits warning */}
-          {credits < 1 && (
-            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800 flex items-center gap-2">
-                <Coins className="h-4 w-4" />
-                {t('insufficientCredits')}
-              </p>
-            </div>
-          )}
 
           {/* Motivation Letter Section */}
           {linkedInData && jobVacancy && (

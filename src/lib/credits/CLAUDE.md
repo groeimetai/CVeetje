@@ -1,6 +1,6 @@
 # Credits — `src/lib/credits/`
 
-Free monthly credits + purchased credits via Mollie. **1 credit per PDF download**.
+Free monthly credits + purchased credits via Mollie. **PDF-downloads zijn gratis**; credits gaan op aan AI-operaties (platform-modus).
 
 ## File
 
@@ -18,7 +18,7 @@ Free monthly credits + purchased credits via Mollie. **1 credit per PDF download
 
 | Operatie | Waar | Methode |
 |---|---|---|
-| PDF download | `/api/cv/[id]/pdf` | 1 credit |
+| PDF download | `/api/cv/[id]/pdf` | gratis (alleen `status: pdf_ready` voor analytics) |
 | AI operaties (platform mode) | overal via `resolveProvider({ userId, operation })` | per-op cost |
 | Character-based chat | `/api/cv/chat` | `chargePlatformCredits()` vóór de stream; wat al betaald is staat server-side in `users/{uid}/chatSessions/{chatId}` (client-waarde wordt genegeerd) |
 | Template-fill refill | `/api/templates/[id]/fill?skipCredit=true` | Alleen gratis met receipt `users/{uid}/templateFills/{templateId}` (<24u, max 25) |

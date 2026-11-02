@@ -20,7 +20,7 @@ Alle protected routes verifiëren tokens via Firebase Admin SDK:
 | `cv/fit-analysis/route.ts` | POST | Fit-analyse profile vs vacancy |
 | `cv/job/parse/route.ts` | POST | Parse vacancy text → JobVacancy |
 | `cv/chat/route.ts` | POST | Interactive CV-edit chat (`streamText` + `tool()` calls) |
-| `cv/[id]/pdf/route.ts` | POST | PDF-export — **credit-aftrekpunt** (1 credit per download) |
+| `cv/[id]/pdf/route.ts` | POST | PDF-export — gratis (credits gaan op aan `cv-generate`) |
 | `cv/[id]/preview-html/route.ts` | GET | HTML preview |
 | `cv/[id]/motivation/route.ts` | POST | Motivatiebrief genereren (met humanizer pass) |
 | `cv/[id]/motivation/download/route.ts` | GET | Download PDF/DOCX |

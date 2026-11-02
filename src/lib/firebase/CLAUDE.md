@@ -6,7 +6,7 @@ Firebase Auth + Firestore + Storage. Client + Admin SDK.
 
 | File | Exports |
 |---|---|
-| `admin.ts` | `getAdminAuth()`, `getAdminDb()`, `getAdminStorage()` — singleton pattern. Firestore `settings()` idempotent via `initializeFirestore` (zie commit `b2f23d4`). |
+| `admin.ts` | `getAdminAuth()`, `getAdminDb()`, `getAdminStorage()` — singleton pattern. Firestore `settings({ ignoreUndefinedProperties })` eenmalig in `getAdminDb()` (try/catch: de instance is gedeeld per app). Let op: `initializeFirestore()` van firebase-admin geeft deze optie niet door. |
 | `admin-utils.ts` | `verifyAdminRequest`, `getUserIdFromToken`, `setUserRole`, `disableUser`, `enableUser`, `getAllUsers`, `getUserById`, `updateUserCredits`, `deleteUser`, `getAllCVs`, `getAdminCVFull`, `deleteAdminCV`, `setupInitialAdmin` |
 | `config.ts` | Firebase client config |
 | `auth.ts` | Client-side auth helpers (`signIn`, `signUp`, OAuth, etc.) |

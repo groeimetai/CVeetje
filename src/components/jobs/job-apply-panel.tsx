@@ -303,13 +303,6 @@ export function JobApplyPanel({ job, locale }: JobApplyPanelProps) {
                 </div>
               )}
 
-              {selectedCv && selectedCv.status !== 'pdf_ready' && (
-                <p className="text-xs text-muted-foreground">
-                  {locale === 'nl'
-                    ? 'Let op: voor dit CV is nog geen PDF gegenereerd — er wordt 1 credit afgetrokken bij het renderen.'
-                    : 'Note: no PDF has been rendered yet for this CV — 1 credit will be charged when preparing it.'}
-                </p>
-              )}
 
               <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
                 <Button asChild variant="outline" size="sm">

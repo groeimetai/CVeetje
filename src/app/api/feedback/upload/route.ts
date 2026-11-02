@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { getAdminAuth, getAdminStorage } from '@/lib/firebase/admin';
 import { sniffImage } from '@/lib/security/image-upload';
 import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { publicObjectUrl, makeObjectPublic } from '@/lib/firebase/storage-files';
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,9 +67,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await fileRef.makePublic();
+    await makeObjectPublic(filename);
 
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+    const publicUrl = publicObjectUrl(bucket.name, filename);
 
     return NextResponse.json({ success: true, url: publicUrl });
   } catch (error) {

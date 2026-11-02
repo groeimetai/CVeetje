@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,11 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  formatTimeAgo,
-  type WizardDraft,
-  type WizardStep,
-} from '@/hooks/use-wizard-persistence';
+import type { WizardDraft, WizardStep } from '@/hooks/use-wizard-persistence';
 
 interface ResumeDraftDialogProps {
   draft: WizardDraft;
@@ -23,7 +19,7 @@ interface ResumeDraftDialogProps {
 }
 
 export function ResumeDraftDialog({ draft, onResume, onDiscard }: ResumeDraftDialogProps) {
-  const locale = useLocale();
+  const format = useFormatter();
   const t = useTranslations('cvWizard');
 
   const stepLabels: Record<WizardStep, string> = {
@@ -70,7 +66,7 @@ export function ResumeDraftDialog({ draft, onResume, onDiscard }: ResumeDraftDia
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t('resumeDraft.saved')}:</span>
-              <span className="font-medium">{formatTimeAgo(draft.savedAt, locale)}</span>
+              <span className="font-medium">{format.relativeTime(new Date(draft.savedAt), new Date())}</span>
             </div>
           </div>
 

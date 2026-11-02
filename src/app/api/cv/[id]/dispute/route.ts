@@ -298,7 +298,9 @@ export async function POST(
 
     await cvRef.update({
       generatedContent: regenResult.content,
-      designTokens: regenResult.tokens,
+      // JSON-roundtrip: genormaliseerde v2-tokens bevatten optionele velden
+      // met `undefined` (bv. paletteOverride), die Firestore weigert.
+      designTokens: JSON.parse(JSON.stringify(regenResult.tokens)) as typeof regenResult.tokens,
       originalDesignTokens: JSON.parse(JSON.stringify(regenResult.tokens)) as typeof regenResult.tokens,
       creativityLevel: newLevel,
       creativityLevelHistory: FieldValue.arrayUnion(newLevel),

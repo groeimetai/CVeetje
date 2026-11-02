@@ -1,6 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -21,6 +21,19 @@ if (typeof window !== 'undefined') {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   auth = getAuth(app);
   db = getFirestore(app);
+
+  // E2E / lokale ontwikkeling tegen de Firebase Emulator Suite. Wordt bij
+  // `next build` ingebakken, dus de flag moet al bij de build gezet zijn.
+  if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === '1') {
+    const g = globalThis as { __cveetjeFirebaseEmulators?: boolean };
+    if (!g.__cveetjeFirebaseEmulators) {
+      const authHost = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099';
+      const [fsHost, fsPort] = (process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080').split(':');
+      connectAuthEmulator(auth, `http://${authHost}`, { disableWarnings: true });
+      connectFirestoreEmulator(db, fsHost, Number(fsPort));
+      g.__cveetjeFirebaseEmulators = true;
+    }
+  }
 }
 
 export { app, auth, db };

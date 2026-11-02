@@ -117,8 +117,7 @@ export function Body() {
         coaches, bureaus) is dit het schoonste model.
       </p>
       <p>
-        We rekenen één credit voor de PDF-download zelf, omdat dat op onze infrastructuur loopt.
-        Verder kost dezelfde tool die je in platform-modus op €1,30 per CV uitkomt, in BYOK-modus
+        De PDF-download zelf is gratis. Dezelfde tool die je in platform-modus op €1,30 per CV uitkomt, in BYOK-modus
         ongeveer €0,15.
       </p>
 

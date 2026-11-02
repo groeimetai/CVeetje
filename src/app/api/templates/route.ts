@@ -252,6 +252,7 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
       fileType,
       storageUrl: signedUrl,
+      storagePath,
       pageCount,
       fields: [], // Fields will be added later via configuration (for PDFs)
       placeholders: [], // Legacy field - smart filler detects patterns dynamically

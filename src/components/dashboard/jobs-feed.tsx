@@ -28,6 +28,7 @@ function initialsFor(name: string): string {
 
 export function JobsFeed() {
   const t = useTranslations('dashboard.jobsFeed');
+  const tCommon = useTranslations('common');
   const [jobs, setJobs] = useState<NormalizedJob[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -63,7 +64,7 @@ export function JobsFeed() {
         <div className="jobs-feed">
           {!loaded && (
             <div style={{ padding: '20px 24px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-              Bezig met laden…
+              {tCommon('loading')}
             </div>
           )}
           {loaded && jobs.length === 0 && (
@@ -104,8 +105,8 @@ export function JobsFeed() {
                 <Link
                   href={`/cv/new?jobId=${encodeURIComponent(j.slug)}`}
                   className="jobs-feed__quick"
-                  title="Genereer CV voor deze vacature"
-                  aria-label="Genereer CV"
+                  title={t('quickGenerateTitle')}
+                  aria-label={t('quickGenerateLabel', { title: j.title })}
                   onClick={handleView}
                 >
                   <Plus size={14} />

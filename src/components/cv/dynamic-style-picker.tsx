@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ import type {
   StyleCreativityLevel,
 } from '@/types';
 import type { CVDesignTokens, DecorationIntensity, ExperienceDescriptionFormat } from '@/types/design-tokens';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 const SAMPLE_CONTENT: GeneratedCVContent = {
   headline: 'Senior Professional',
@@ -80,6 +82,7 @@ function StylePreviewFrame({
   fullName: string;
   avatarUrl?: string | null;
 }) {
+  const t = useTranslations('dynamicStylePicker');
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
 
@@ -105,7 +108,7 @@ function StylePreviewFrame({
 
   return (
     <div className="rounded-lg border p-4 space-y-2">
-      <p className="text-xs text-muted-foreground mb-2">Preview</p>
+      <p className="text-xs text-muted-foreground mb-2">{t('preview')}</p>
       <div
         ref={containerRef}
         className="relative w-full overflow-hidden rounded-md border bg-white"
@@ -113,7 +116,7 @@ function StylePreviewFrame({
       >
         <iframe
           srcDoc={html}
-          title="Style preview"
+          title={t('previewFrameTitle')}
           className="pointer-events-none absolute left-0 top-0"
           style={{
             width: `${A4_WIDTH_PX}px`,
@@ -148,6 +151,7 @@ export function DynamicStylePicker({
   onCreditsRefresh,
   initialTokens,
 }: DynamicStylePickerProps) {
+  const t = useTranslations('dynamicStylePicker');
   const { llmMode } = useAuth();
   const [userPreferences, setUserPreferences] = useState('');
   const [creativityLevel, setCreativityLevel] = useState<StyleCreativityLevel>('balanced');
@@ -170,27 +174,27 @@ export function DynamicStylePicker({
   const creativityLevels = [
     {
       value: 'conservative' as StyleCreativityLevel,
-      label: 'Veilig',
+      label: t('levels.conservative.label'),
       icon: Shield,
-      desc: 'ATS-vriendelijk, geen risico'
+      desc: t('levels.conservative.desc')
     },
     {
       value: 'balanced' as StyleCreativityLevel,
-      label: 'Gebalanceerd',
+      label: t('levels.balanced.label'),
       icon: Scale,
-      desc: 'Professioneel met accenten'
+      desc: t('levels.balanced.desc')
     },
     {
       value: 'creative' as StyleCreativityLevel,
-      label: 'Creatief',
+      label: t('levels.creative.label'),
       icon: Sparkles,
-      desc: 'Moderne, opvallende designs'
+      desc: t('levels.creative.desc')
     },
     {
       value: 'experimental' as StyleCreativityLevel,
-      label: 'Experimenteel',
+      label: t('levels.experimental.label'),
       icon: Zap,
-      desc: 'Maximale visuele impact'
+      desc: t('levels.experimental.desc')
     },
     // 'editorial-paper' is intentionally omitted — in the cv-engine its
     // brand palette lives in `balanced/press`. Legacy CVs that used it still
@@ -200,7 +204,7 @@ export function DynamicStylePicker({
   const handleGenerateStyle = useCallback(async () => {
     setIsGenerating(true);
     setError(null);
-    setGenerationMessage('Initialiseren...');
+    setGenerationMessage(t('initializing'));
     setTokens(null);
 
     try {
@@ -221,7 +225,7 @@ export function DynamicStylePicker({
 
       if (!response.ok) {
         const errorResult = await response.json();
-        throw new Error(errorResult.error || 'Failed to generate style');
+        throw new Error(errorResult.error || t('errors.generateFailed'));
       }
 
       // Handle SSE stream
@@ -229,7 +233,7 @@ export function DynamicStylePicker({
       const decoder = new TextDecoder();
 
       if (!reader) {
-        throw new Error('No response body');
+        throw new Error(t('errors.noResponseBody'));
       }
 
       let buffer = '';
@@ -256,7 +260,7 @@ export function DynamicStylePicker({
                     onCreditsRefresh?.();
                   }
                   if (data.type === 'error') {
-                    throw new Error(data.error || 'Failed to generate style');
+                    throw new Error(data.error || t('errors.generateFailed'));
                   }
                 } catch (e) {
                   if (!(e instanceof SyntaxError)) throw e;
@@ -279,7 +283,7 @@ export function DynamicStylePicker({
 
               // Handle progress update (v2 API format)
               if (data.type === 'progress') {
-                setGenerationMessage(data.message || 'Stijl genereren...');
+                setGenerationMessage(data.message || t('generating'));
                 console.log('[Style Picker] Progress:', data.message);
               }
 
@@ -296,7 +300,7 @@ export function DynamicStylePicker({
 
               // Handle error
               if (data.type === 'error') {
-                throw new Error(data.error || 'Failed to generate style');
+                throw new Error(data.error || t('errors.generateFailed'));
               }
             } catch (parseError) {
               // Ignore parse errors for incomplete data
@@ -311,12 +315,12 @@ export function DynamicStylePicker({
       }
     } catch (err) {
       console.error('[Style Picker] Error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setIsGenerating(false);
       setGenerationMessage('');
     }
-  }, [linkedInData, jobVacancy, avatarUrl, userPreferences, creativityLevel, onTokenUsage, onCreditsRefresh]);
+  }, [linkedInData, jobVacancy, avatarUrl, userPreferences, creativityLevel, onTokenUsage, onCreditsRefresh, t]);
 
   const handleContinue = () => {
     if (tokens) {
@@ -349,16 +353,16 @@ export function DynamicStylePicker({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wand2 className="h-5 w-5" />
-          AI Style Generation
+          {t('title')}
         </CardTitle>
         <CardDescription>
-          Let AI create a unique style based on the job and your profile
+          {t('description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Creativity Level Selector */}
         <div className="space-y-3">
-          <Label>Creativiteit Niveau</Label>
+          <Label>{t('creativityLevel')}</Label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {creativityLevels.map((level) => {
               const Icon = level.icon;
@@ -385,16 +389,16 @@ export function DynamicStylePicker({
 
         {/* Preferences Input */}
         <div className="space-y-3">
-          <Label htmlFor="preferences">Style Preferences (optional)</Label>
+          <Label htmlFor="preferences">{t('preferencesLabel')}</Label>
           <Textarea
             id="preferences"
             value={userPreferences}
             onChange={(e) => setUserPreferences(e.target.value)}
-            placeholder="e.g., 'formal and traditional', 'modern with blue accents', 'minimalistic', 'creative and bold'..."
+            placeholder={t('preferencesPlaceholder')}
             className="min-h-[80px]"
           />
           <p className="text-xs text-muted-foreground">
-            Describe your preferred style, colors, or vibe. Leave empty for AI to decide based on the job.
+            {t('preferencesHint')}
           </p>
         </div>
 
@@ -415,11 +419,9 @@ export function DynamicStylePicker({
             size="lg"
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            Generate AI Style
+            {t('generate')}
             {llmMode === 'platform' && (
-              <Badge variant="secondary" className="ml-2">
-                <Coins className="h-3 w-3 mr-1" />1 credit
-              </Badge>
+              <CreditBadge operation="style-generate" />
             )}
           </Button>
         )}
@@ -433,10 +435,10 @@ export function DynamicStylePicker({
             </div>
             <div className="text-center space-y-1">
               <p className="text-sm font-medium text-primary">
-                {generationMessage || 'Stijl genereren...'}
+                {generationMessage || t('generating')}
               </p>
               <p className="text-xs text-muted-foreground">
-                AI analyseert je profiel en vacature
+                {t('analyzing')}
               </p>
             </div>
           </div>
@@ -486,7 +488,7 @@ export function DynamicStylePicker({
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg">{tokens.styleName}</h3>
                 <Badge variant="secondary">
-                  {tokens.themeBase === 'creative' || tokens.themeBase === 'bold' ? 'casual' : 'professional'}
+                  {tokens.themeBase === 'creative' || tokens.themeBase === 'bold' ? t('tone.casual') : t('tone.professional')}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">{tokens.styleRationale}</p>
@@ -499,48 +501,48 @@ export function DynamicStylePicker({
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-sm">Colors</span>
+                <span className="font-medium text-sm">{t('colors')}</span>
               </div>
               <div className="flex gap-3">
                 <div className="text-center">
                   <div
                     className="h-10 w-10 rounded-full mx-auto shadow-sm"
                     style={{ backgroundColor: tokens.colors.primary }}
-                    title="Primary"
+                    title={t('colorRoles.primary')}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Primary</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('colorRoles.primary')}</p>
                 </div>
                 <div className="text-center">
                   <div
                     className="h-10 w-10 rounded-full mx-auto border shadow-sm"
                     style={{ backgroundColor: tokens.colors.secondary }}
-                    title="Secondary"
+                    title={t('colorRoles.secondary')}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Secondary</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('colorRoles.secondary')}</p>
                 </div>
                 <div className="text-center">
                   <div
                     className="h-10 w-10 rounded-full mx-auto shadow-sm"
                     style={{ backgroundColor: tokens.colors.accent }}
-                    title="Accent"
+                    title={t('colorRoles.accent')}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Accent</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('colorRoles.accent')}</p>
                 </div>
                 <div className="text-center">
                   <div
                     className="h-10 w-10 rounded-full mx-auto shadow-sm"
                     style={{ backgroundColor: tokens.colors.text }}
-                    title="Text"
+                    title={t('colorRoles.text')}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Text</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('colorRoles.text')}</p>
                 </div>
                 <div className="text-center">
                   <div
                     className="h-10 w-10 rounded-full mx-auto shadow-sm"
                     style={{ backgroundColor: tokens.colors.muted }}
-                    title="Muted"
+                    title={t('colorRoles.muted')}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Muted</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('colorRoles.muted')}</p>
                 </div>
               </div>
             </div>
@@ -550,23 +552,23 @@ export function DynamicStylePicker({
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <Layout className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium text-sm">Layout</span>
+                  <span className="font-medium text-sm">{t('layout')}</span>
                 </div>
                 <div className="space-y-1 text-sm">
                   <p>
-                    <span className="text-muted-foreground">Theme:</span>{' '}
+                    <span className="text-muted-foreground">{t('fields.theme')}</span>{' '}
                     {tokens.themeBase}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Header:</span>{' '}
+                    <span className="text-muted-foreground">{t('fields.header')}</span>{' '}
                     {tokens.headerVariant}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Sections:</span>{' '}
+                    <span className="text-muted-foreground">{t('fields.sections')}</span>{' '}
                     {tokens.sectionStyle}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Skills:</span>{' '}
+                    <span className="text-muted-foreground">{t('fields.skills')}</span>{' '}
                     {tokens.skillsDisplay}
                   </p>
                 </div>
@@ -575,19 +577,19 @@ export function DynamicStylePicker({
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <Type className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium text-sm">Typography</span>
+                  <span className="font-medium text-sm">{t('typography')}</span>
                 </div>
                 <div className="space-y-1 text-sm">
                   <p>
-                    <span className="text-muted-foreground">Fonts:</span>{' '}
+                    <span className="text-muted-foreground">{t('fields.fonts')}</span>{' '}
                     {fontPairingLabels[tokens.fontPairing] || tokens.fontPairing}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Scale:</span>{' '}
+                    <span className="text-muted-foreground">{t('fields.scale')}</span>{' '}
                     {tokens.scale}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Name Size:</span>{' '}
+                    <span className="text-muted-foreground">{t('fields.nameSize')}</span>{' '}
                     {typeScales[tokens.scale].name}pt
                   </p>
                 </div>
@@ -596,22 +598,22 @@ export function DynamicStylePicker({
 
             {/* Style Details Preview */}
             <div className="rounded-lg border p-4 space-y-2">
-              <span className="font-medium text-sm">Style Details</span>
+              <span className="font-medium text-sm">{t('styleDetails')}</span>
               <div className="flex flex-wrap gap-2">
                 {tokens.showPhoto && (
-                  <Badge variant="default">Photo</Badge>
+                  <Badge variant="default">{t('photo')}</Badge>
                 )}
                 {tokens.useIcons && (
-                  <Badge variant="outline">Icons</Badge>
+                  <Badge variant="outline">{t('icons')}</Badge>
                 )}
                 {tokens.roundedCorners && (
-                  <Badge variant="outline">Rounded</Badge>
+                  <Badge variant="outline">{t('rounded')}</Badge>
                 )}
                 <Badge variant="outline">
-                  Spacing: {tokens.spacing}
+                  {t('spacing', { value: tokens.spacing })}
                 </Badge>
                 <Badge variant="outline">
-                  Contact: {tokens.contactLayout}
+                  {t('contact', { value: tokens.contactLayout })}
                 </Badge>
               </div>
             </div>
@@ -620,9 +622,9 @@ export function DynamicStylePicker({
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium text-sm">Achtergrond Decoraties</span>
+                  <span className="font-medium text-sm">{t('decorations.title')}</span>
                   <p className="text-xs text-muted-foreground">
-                    Subtiele SVG vormen als achtergrond
+                    {t('decorations.hint')}
                   </p>
                 </div>
               </div>
@@ -639,10 +641,7 @@ export function DynamicStylePicker({
                         : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                     )}
                   >
-                    {intensity === 'none' && 'Geen'}
-                    {intensity === 'minimal' && 'Minimaal'}
-                    {intensity === 'moderate' && 'Gemiddeld'}
-                    {intensity === 'abundant' && 'Veel'}
+                    {t(`decorations.${intensity}`)}
                   </button>
                 ))}
               </div>
@@ -652,16 +651,16 @@ export function DynamicStylePicker({
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium text-sm">Werkervaring Formaat</span>
+                  <span className="font-medium text-sm">{t('experienceFormat.title')}</span>
                   <p className="text-xs text-muted-foreground">
-                    Kies tussen opsommingstekens of doorlopende tekst
+                    {t('experienceFormat.hint')}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { value: 'bullets' as ExperienceDescriptionFormat, label: 'Bullets', desc: 'Opsommingstekens' },
-                  { value: 'paragraph' as ExperienceDescriptionFormat, label: 'Paragraaf', desc: 'Doorlopende tekst' },
+                  { value: 'bullets' as ExperienceDescriptionFormat, label: t('experienceFormat.bullets'), desc: t('experienceFormat.bulletsDesc') },
+                  { value: 'paragraph' as ExperienceDescriptionFormat, label: t('experienceFormat.paragraph'), desc: t('experienceFormat.paragraphDesc') },
                 ] as const).map((format) => (
                   <button
                     key={format.value}
@@ -703,7 +702,7 @@ export function DynamicStylePicker({
                 ) : (
                   <RefreshCw className="mr-2 h-4 w-4" />
                 )}
-                Regenerate
+                {t('regenerate')}
                 {llmMode === 'platform' && (
                   <Badge variant="secondary" className="ml-2">
                     <Coins className="h-3 w-3 mr-1" />1
@@ -712,7 +711,9 @@ export function DynamicStylePicker({
               </Button>
               <Button onClick={handleContinue} className="flex-1">
                 <Check className="mr-2 h-4 w-4" />
-                Use This Style
+                {t('useStyle')}
+                {/* Deze knop start direct de CV-generatie */}
+                {llmMode === 'platform' && <CreditBadge operation="cv-generate" />}
               </Button>
             </div>
           </div>

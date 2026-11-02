@@ -34,6 +34,9 @@ export function isAllowedRenderRequest(rawUrl: string): boolean {
   } catch {
     return false;
   }
+  // E2E: Storage-emulator (alleen als expliciet geconfigureerd)
+  const emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST?.replace(/^https?:\/\//, '');
+  if (emulatorHost && url.protocol === 'http:' && url.host === emulatorHost) return true;
   if (url.protocol !== 'https:') return false;
   if (url.username || url.password) return false;
   if (url.port && url.port !== '443') return false;

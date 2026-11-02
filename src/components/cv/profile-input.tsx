@@ -66,6 +66,7 @@ import type {
 } from '@/types';
 import type { ModelInfo } from '@/lib/ai/models-registry';
 import { supportsFileInput } from '@/lib/ai/models-registry';
+import { CreditBadge } from '@/components/cv/credit-badge';
 
 type ProfileTokenStep = 'profile-parse' | 'profile-enrich' | 'linkedin-export';
 
@@ -78,6 +79,8 @@ interface ProfileInputProps {
   onAvatarChange?: (url: string | null) => void;
   modelInfo?: ModelInfo | null;
   apiKey?: { provider: string; model: string } | null;
+  /** Opgeslagen profiel dat direct geladen moet worden (bv. via /cv/new?profile=<id>). */
+  initialProfileId?: string | null;
 }
 
 type Mode = 'input' | 'preview' | 'edit';
@@ -138,8 +141,10 @@ export function ProfileInput({
   onAvatarChange,
   modelInfo,
   apiKey,
+  initialProfileId,
 }: ProfileInputProps) {
   const t = useTranslations('profileInput');
+  const tCommon = useTranslations('common');
   const { llmMode } = useAuth();
   const [mode, setMode] = useState<Mode>(initialData ? 'preview' : 'input');
   const [sources, setSources] = useState<ProfileInputSource[]>([]);
@@ -199,6 +204,7 @@ export function ProfileInput({
     fetchProfiles();
   }, []);
 
+
   // Load a saved profile
   const handleLoadProfile = async (profileId: string) => {
     setIsProcessing(true);
@@ -206,7 +212,7 @@ export function ProfileInput({
     try {
       const response = await fetch(`/api/profiles/${profileId}`);
       if (!response.ok) {
-        throw new Error('Kon profiel niet laden');
+        throw new Error(t('errors.couldNotLoad'));
       }
       const data = await response.json();
       if (data.success && data.profile?.parsedData) {
@@ -225,11 +231,21 @@ export function ProfileInput({
         // Don't call onParsed here - let user review and click "Doorgaan"
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kon profiel niet laden');
+      setError(err instanceof Error ? err.message : t('errors.couldNotLoad'));
     } finally {
       setIsProcessing(false);
     }
   };
+
+  // Bug-fix: "CV maken" vanaf /profiles linkt naar /cv/new?profile=<id>, maar
+  // die parameter werd genegeerd — de gebruiker moest het profiel opnieuw kiezen.
+  const initialProfileLoaded = useRef(false);
+  useEffect(() => {
+    if (!initialProfileId || initialData || initialProfileLoaded.current) return;
+    initialProfileLoaded.current = true;
+    void handleLoadProfile(initialProfileId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfileId, initialData]);
 
   // Save current profile
   const handleSaveProfile = async () => {
@@ -266,7 +282,7 @@ export function ProfileInput({
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('[Profile Save] Error response:', errorData);
-        throw new Error(errorData.error || 'Kon profiel niet opslaan');
+        throw new Error(errorData.error || t('errors.couldNotSave'));
       }
 
       const data = await response.json();
@@ -293,7 +309,7 @@ export function ProfileInput({
       setSaveAsDefault(false);
     } catch (err) {
       console.error('[Profile Save] Error:', err);
-      setError(err instanceof Error ? err.message : 'Kon profiel niet opslaan');
+      setError(err instanceof Error ? err.message : t('errors.couldNotSave'));
     } finally {
       setIsSavingProfile(false);
     }
@@ -352,7 +368,7 @@ export function ProfileInput({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Kon profiel niet bijwerken');
+        throw new Error(errorData.error || t('errors.couldNotUpdate'));
       }
 
       const data = await response.json();
@@ -373,7 +389,7 @@ export function ProfileInput({
       }
     } catch (err) {
       console.error('[Profile Update] Error:', err);
-      setError(err instanceof Error ? err.message : 'Kon profiel niet bijwerken');
+      setError(err instanceof Error ? err.message : t('errors.couldNotUpdate'));
     } finally {
       setIsSavingProfile(false);
     }
@@ -392,7 +408,7 @@ export function ProfileInput({
   // Add text source
   const handleAddText = () => {
     if (!textInputValue.trim()) {
-      setError('Voer tekst in om toe te voegen');
+      setError(t('errors.enterText'));
       return;
     }
 
@@ -420,13 +436,13 @@ export function ProfileInput({
       for (const file of Array.from(files)) {
         // Validate file type
         if (!validTypes.includes(file.type)) {
-          setError(`${file.name}: Alleen PDF of afbeeldingen (PNG, JPG, WebP) toegestaan`);
+          setError(t('errors.invalidFileType', { name: file.name }));
           continue;
         }
 
         // Validate file size (max 10MB per file)
         if (file.size > 10 * 1024 * 1024) {
-          setError(`${file.name}: Bestand is te groot. Maximum is 10MB.`);
+          setError(t('errors.fileTooLarge', { name: file.name }));
           continue;
         }
 
@@ -439,7 +455,7 @@ export function ProfileInput({
             const base64Data = dataUrl.split(',')[1];
             resolve(base64Data);
           };
-          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.onerror = () => reject(new Error(t('errors.readFailed')));
           reader.readAsDataURL(file);
         });
 
@@ -458,7 +474,7 @@ export function ProfileInput({
         setSources(prev => [...prev, ...newSources]);
       }
     },
-    []
+    [t]
   );
 
   // Handle drag and drop
@@ -493,7 +509,7 @@ export function ProfileInput({
   // Process all sources
   const handleProcess = async () => {
     if (sources.length === 0) {
-      setError('Voeg minimaal 1 bron toe');
+      setError(t('errors.addSource'));
       return;
     }
 
@@ -522,7 +538,7 @@ export function ProfileInput({
         const result = parseLinkedInProfile(combinedText);
 
         if (!result.fullName) {
-          setError('Kon geen naam vinden. Controleer of je de volledige profielinformatie hebt toegevoegd.');
+          setError(t('errors.noNameFound'));
           return;
         }
 
@@ -534,7 +550,7 @@ export function ProfileInput({
 
       // Has files: use AI API
       if (!apiKey && llmMode !== 'platform') {
-        setError('Configureer je API key in Instellingen om bestanden te verwerken.');
+        setError(t('errors.configureApiKey'));
         return;
       }
 
@@ -550,11 +566,11 @@ export function ProfileInput({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Verwerking mislukt');
+        throw new Error(result.error || t('errors.processingFailed'));
       }
 
       if (!result.data?.fullName) {
-        setError('Kon geen profiel informatie extraheren. Probeer andere bronnen.');
+        setError(t('errors.noProfileInfo'));
         return;
       }
 
@@ -609,7 +625,7 @@ export function ProfileInput({
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verwerking mislukt');
+      setError(err instanceof Error ? err.message : t('errors.processingFailed'));
     } finally {
       setIsProcessing(false);
     }
@@ -775,52 +791,52 @@ export function ProfileInput({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Pencil className="h-5 w-5 text-primary" />
-            Profiel Bewerken
+            {t('editProfile.title')}
           </CardTitle>
           <CardDescription>
-            Pas de geëxtraheerde informatie aan indien nodig
+            {t('editProfile.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Basic Fields */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Basis Gegevens</h3>
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t('editProfile.basicInfo')}</h3>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="edit-fullName">Naam</Label>
+                <Label htmlFor="edit-fullName">{t('editProfile.fields.name')}</Label>
                 <Input
                   id="edit-fullName"
                   value={editData.fullName}
                   onChange={(e) => updateEditField('fullName', e.target.value)}
-                  placeholder="Volledige naam"
+                  placeholder={t('editProfile.fields.namePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-headline">Titel / Headline</Label>
+                <Label htmlFor="edit-headline">{t('editProfile.fields.headline')}</Label>
                 <Input
                   id="edit-headline"
                   value={editData.headline || ''}
                   onChange={(e) => updateEditField('headline', e.target.value || null)}
-                  placeholder="Functietitel"
+                  placeholder={t('editProfile.fields.headlinePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-location">Locatie</Label>
+                <Label htmlFor="edit-location">{t('editProfile.fields.location')}</Label>
                 <Input
                   id="edit-location"
                   value={editData.location || ''}
                   onChange={(e) => updateEditField('location', e.target.value || null)}
-                  placeholder="Amsterdam, Nederland"
+                  placeholder={t('editProfile.fields.locationPlaceholder')}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-about">Over mij</Label>
+              <Label htmlFor="edit-about">{t('editProfile.fields.about')}</Label>
               <Textarea
                 id="edit-about"
                 value={editData.about || ''}
                 onChange={(e) => updateEditField('about', e.target.value || null)}
-                placeholder="Korte beschrijving..."
+                placeholder={t('editProfile.fields.aboutPlaceholder')}
                 rows={3}
               />
             </div>
@@ -829,59 +845,59 @@ export function ProfileInput({
           {/* Experience Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Werkervaring</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t('editProfile.experience')}</h3>
               <Button type="button" variant="outline" size="sm" onClick={addExperience}>
                 <Plus className="h-4 w-4 mr-1" />
-                Toevoegen
+                {t('editProfile.addExperience')}
               </Button>
             </div>
             {editData.experience.map((exp, index) => (
               <div key={index} className="border rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-muted-foreground">Ervaring {index + 1}</span>
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeExperience(index)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                  <span className="text-sm font-medium text-muted-foreground">{t('editProfile.experienceNum', { num: index + 1 })}</span>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeExperience(index)} aria-label={t('editProfile.removeExperience', { num: index + 1 })}>
+                    <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                   </Button>
                 </div>
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-1">
-                    <Label className="text-xs">Functie</Label>
+                    <Label className="text-xs">{t('editProfile.fields.jobTitle')}</Label>
                     <Input
                       value={exp.title}
                       onChange={(e) => updateExperience(index, 'title', e.target.value)}
-                      placeholder="Software Developer"
+                      placeholder={t('editProfile.fields.jobTitlePlaceholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Bedrijf</Label>
+                    <Label className="text-xs">{t('editProfile.fields.company')}</Label>
                     <Input
                       value={exp.company}
                       onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                      placeholder="Bedrijfsnaam"
+                      placeholder={t('editProfile.fields.companyPlaceholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Locatie</Label>
+                    <Label className="text-xs">{t('editProfile.fields.location')}</Label>
                     <Input
                       value={exp.location || ''}
                       onChange={(e) => updateExperience(index, 'location', e.target.value || null)}
-                      placeholder="Amsterdam"
+                      placeholder={t('editProfile.fields.cityPlaceholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Startdatum</Label>
+                    <Label className="text-xs">{t('editProfile.fields.startDate')}</Label>
                     <Input
                       value={exp.startDate}
                       onChange={(e) => updateExperience(index, 'startDate', e.target.value)}
-                      placeholder="jan 2020"
+                      placeholder={t('editProfile.fields.startDatePlaceholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Einddatum</Label>
+                    <Label className="text-xs">{t('editProfile.fields.endDate')}</Label>
                     <Input
                       value={exp.endDate || ''}
                       onChange={(e) => updateExperience(index, 'endDate', e.target.value || null)}
-                      placeholder="heden"
+                      placeholder={t('editProfile.fields.endDatePlaceholder')}
                       disabled={exp.isCurrentRole}
                     />
                   </div>
@@ -893,15 +909,15 @@ export function ProfileInput({
                       onChange={(e) => updateExperience(index, 'isCurrentRole', e.target.checked)}
                       className="h-4 w-4"
                     />
-                    <Label htmlFor={`current-${index}`} className="text-xs">Huidige functie</Label>
+                    <Label htmlFor={`current-${index}`} className="text-xs">{t('editProfile.fields.currentRole')}</Label>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Beschrijving</Label>
+                  <Label className="text-xs">{t('editProfile.fields.description')}</Label>
                   <Textarea
                     value={exp.description || ''}
                     onChange={(e) => updateExperience(index, 'description', e.target.value || null)}
-                    placeholder="Beschrijving van werkzaamheden..."
+                    placeholder={t('editProfile.fields.descriptionPlaceholder')}
                     rows={2}
                   />
                 </div>
@@ -912,48 +928,48 @@ export function ProfileInput({
           {/* Education Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Opleiding</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t('editProfile.education')}</h3>
               <Button type="button" variant="outline" size="sm" onClick={addEducation}>
                 <Plus className="h-4 w-4 mr-1" />
-                Toevoegen
+                {t('editProfile.addEducation')}
               </Button>
             </div>
             {editData.education.map((edu, index) => (
               <div key={index} className="border rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-muted-foreground">Opleiding {index + 1}</span>
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeEducation(index)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                  <span className="text-sm font-medium text-muted-foreground">{t('editProfile.educationNum', { num: index + 1 })}</span>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeEducation(index)} aria-label={t('editProfile.removeEducation', { num: index + 1 })}>
+                    <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                   </Button>
                 </div>
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-1">
-                    <Label className="text-xs">School / Universiteit</Label>
+                    <Label className="text-xs">{t('editProfile.fields.school')}</Label>
                     <Input
                       value={edu.school}
                       onChange={(e) => updateEducation(index, 'school', e.target.value)}
-                      placeholder="Universiteit van Amsterdam"
+                      placeholder={t('editProfile.fields.schoolPlaceholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Diploma</Label>
+                    <Label className="text-xs">{t('editProfile.fields.degree')}</Label>
                     <Input
                       value={edu.degree || ''}
                       onChange={(e) => updateEducation(index, 'degree', e.target.value || null)}
-                      placeholder="Bachelor / Master"
+                      placeholder={t('editProfile.fields.degreePlaceholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Studierichting</Label>
+                    <Label className="text-xs">{t('editProfile.fields.fieldOfStudy')}</Label>
                     <Input
                       value={edu.fieldOfStudy || ''}
                       onChange={(e) => updateEducation(index, 'fieldOfStudy', e.target.value || null)}
-                      placeholder="Informatica"
+                      placeholder={t('editProfile.fields.fieldOfStudyPlaceholder')}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <Label className="text-xs">Startjaar</Label>
+                      <Label className="text-xs">{t('editProfile.fields.startYear')}</Label>
                       <Input
                         value={edu.startYear || ''}
                         onChange={(e) => updateEducation(index, 'startYear', e.target.value || null)}
@@ -961,7 +977,7 @@ export function ProfileInput({
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Eindjaar</Label>
+                      <Label className="text-xs">{t('editProfile.fields.endYear')}</Label>
                       <Input
                         value={edu.endYear || ''}
                         onChange={(e) => updateEducation(index, 'endYear', e.target.value || null)}
@@ -977,10 +993,10 @@ export function ProfileInput({
           {/* Skills Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Vaardigheden</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t('editProfile.skills')}</h3>
               <Button type="button" variant="outline" size="sm" onClick={addSkill}>
                 <Plus className="h-4 w-4 mr-1" />
-                Toevoegen
+                {t('editProfile.addSkill')}
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -990,10 +1006,10 @@ export function ProfileInput({
                     value={skill.name}
                     onChange={(e) => updateSkill(index, e.target.value)}
                     className="h-6 w-32 border-0 bg-transparent p-0 text-sm"
-                    placeholder="Vaardigheid"
+                    placeholder={t('editProfile.skillPlaceholder')}
                   />
-                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeSkill(index)}>
-                    <X className="h-3 w-3" />
+                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeSkill(index)} aria-label={t('editProfile.removeSkill')}>
+                    <X className="h-3 w-3" aria-hidden="true" />
                   </Button>
                 </div>
               ))}
@@ -1003,10 +1019,10 @@ export function ProfileInput({
           {/* Languages Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Talen</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t('editProfile.languages')}</h3>
               <Button type="button" variant="outline" size="sm" onClick={addLanguage}>
                 <Plus className="h-4 w-4 mr-1" />
-                Toevoegen
+                {t('editProfile.addLanguage')}
               </Button>
             </div>
             {editData.languages.map((lang, index) => (
@@ -1014,17 +1030,17 @@ export function ProfileInput({
                 <Input
                   value={lang.language}
                   onChange={(e) => updateLanguage(index, 'language', e.target.value)}
-                  placeholder="Nederlands"
+                  placeholder={t('editProfile.fields.languagePlaceholder')}
                   className="flex-1"
                 />
                 <Input
                   value={lang.proficiency || ''}
                   onChange={(e) => updateLanguage(index, 'proficiency', e.target.value || null)}
-                  placeholder="Moedertaal"
+                  placeholder={t('editProfile.fields.proficiencyPlaceholder')}
                   className="w-32"
                 />
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeLanguage(index)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                <Button type="button" variant="ghost" size="icon" onClick={() => removeLanguage(index)} aria-label={t('editProfile.removeLanguage')}>
+                  <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                 </Button>
               </div>
             ))}
@@ -1033,10 +1049,10 @@ export function ProfileInput({
           {/* Certifications Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Certificaten</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t('editProfile.certifications')}</h3>
               <Button type="button" variant="outline" size="sm" onClick={addCertification}>
                 <Plus className="h-4 w-4 mr-1" />
-                Toevoegen
+                {t('editProfile.addCertification')}
               </Button>
             </div>
             {editData.certifications.map((cert, index) => (
@@ -1044,23 +1060,23 @@ export function ProfileInput({
                 <Input
                   value={cert.name}
                   onChange={(e) => updateCertification(index, 'name', e.target.value)}
-                  placeholder="Certificaat naam"
+                  placeholder={t('editProfile.fields.certNamePlaceholder')}
                   className="flex-1"
                 />
                 <Input
                   value={cert.issuer || ''}
                   onChange={(e) => updateCertification(index, 'issuer', e.target.value || null)}
-                  placeholder="Uitgever"
+                  placeholder={t('editProfile.fields.issuerPlaceholder')}
                   className="w-32"
                 />
                 <Input
                   value={cert.issueDate || ''}
                   onChange={(e) => updateCertification(index, 'issueDate', e.target.value || null)}
-                  placeholder="Datum"
+                  placeholder={t('editProfile.fields.datePlaceholder')}
                   className="w-24"
                 />
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeCertification(index)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                <Button type="button" variant="ghost" size="icon" onClick={() => removeCertification(index)} aria-label={t('editProfile.removeCertification')}>
+                  <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                 </Button>
               </div>
             ))}
@@ -1069,10 +1085,10 @@ export function ProfileInput({
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4 border-t">
             <Button onClick={handleSaveEdit}>
-              Opslaan
+              {t('editProfile.save')}
             </Button>
             <Button variant="outline" onClick={handleCancelEdit}>
-              Annuleren
+              {t('cancel')}
             </Button>
           </div>
         </CardContent>
@@ -1097,12 +1113,12 @@ export function ProfileInput({
         <CardContent className="space-y-4">
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Naam</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('processed.name')}</p>
               <p className="text-lg font-semibold">{parsed.fullName}</p>
             </div>
             {parsed.headline && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Titel</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('processed.headline')}</p>
                 <p>{parsed.headline}</p>
               </div>
             )}
@@ -1110,41 +1126,45 @@ export function ProfileInput({
 
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary">
-              {parsed.experience.length} Werkervaring{parsed.experience.length !== 1 ? 'en' : ''}
+              {t('processed.badges.experience', { count: parsed.experience.length })}
             </Badge>
             <Badge variant="secondary">
-              {parsed.education.length} Opleiding{parsed.education.length !== 1 ? 'en' : ''}
+              {t('processed.badges.education', { count: parsed.education.length })}
             </Badge>
             <Badge variant="secondary">
-              {parsed.skills.length} Vaardighed{parsed.skills.length !== 1 ? 'en' : ''}
+              {t('processed.badges.skills', { count: parsed.skills.length })}
             </Badge>
             <Badge variant="secondary">
-              {parsed.languages.length} Tal{parsed.languages.length !== 1 ? 'en' : ''}
+              {t('processed.badges.languages', { count: parsed.languages.length })}
             </Badge>
             {(parsed.projects?.length || 0) > 0 && (
               <Badge variant="secondary">
-                {parsed.projects!.length} Project{parsed.projects!.length !== 1 ? 'en' : ''}
+                {t('processed.badges.projects', { count: parsed.projects!.length })}
               </Badge>
             )}
             {(parsed.interests?.length || 0) > 0 && (
               <Badge variant="secondary">
-                {parsed.interests!.length} Interesse{parsed.interests!.length !== 1 ? 's' : ''}
+                {t('processed.badges.interests', { count: parsed.interests!.length })}
               </Badge>
             )}
           </div>
 
           {parsed.experience.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Werkervaring Preview</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{t('processed.experiencePreview')}</p>
               <ul className="space-y-1 text-sm">
                 {parsed.experience.slice(0, 3).map((exp, i) => (
                   <li key={i}>
-                    <span className="font-medium">{exp.title}</span> bij {exp.company}
+                    {t.rich('processed.experienceAt', {
+                      jobTitle: exp.title,
+                      company: exp.company,
+                      strong: (chunks) => <span className="font-medium">{chunks}</span>,
+                    })}
                   </li>
                 ))}
                 {parsed.experience.length > 3 && (
                   <li className="text-muted-foreground">
-                    +{parsed.experience.length - 3} meer posities
+                    {t('processed.morePositions', { count: parsed.experience.length - 3 })}
                   </li>
                 )}
               </ul>
@@ -1153,7 +1173,7 @@ export function ProfileInput({
 
           {parsed.projects && parsed.projects.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Projecten Preview</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{t('processed.projectsPreview')}</p>
               <ul className="space-y-1 text-sm">
                 {parsed.projects.slice(0, 3).map((proj, i) => (
                   <li key={i}>
@@ -1165,7 +1185,7 @@ export function ProfileInput({
                 ))}
                 {parsed.projects.length > 3 && (
                   <li className="text-muted-foreground">
-                    +{parsed.projects.length - 3} meer projecten
+                    {t('processed.moreProjects', { count: parsed.projects.length - 3 })}
                   </li>
                 )}
               </ul>
@@ -1179,80 +1199,80 @@ export function ProfileInput({
               onAvatarChange={handleAvatarChange}
             />
             <p className="text-xs text-muted-foreground mt-2">
-              Je foto wordt getoond in de CV als de gekozen stijl dit ondersteunt.
+              {t('processed.photoHint')}
             </p>
           </div>
 
           {/* Contact Info Section - Prominent */}
           <div className="border-2 border-primary/20 rounded-lg p-4 mt-4 bg-primary/5">
             <p className="text-sm font-semibold text-primary mb-1">
-              Contactgegevens voor je CV
+              {t('contactInfo.title')}
             </p>
             <p className="text-xs text-muted-foreground mb-3">
-              LinkedIn exporteert geen contactgegevens - vul deze hieronder in!
+              {t('contactInfo.description')}
             </p>
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="email" className="text-xs text-muted-foreground">Email *</Label>
+                <Label htmlFor="email" className="text-xs text-muted-foreground">{t('contactInfo.email')}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="naam@email.com"
+                  placeholder={t('contactInfo.emailPlaceholder')}
                   value={parsed.email || ''}
                   onChange={(e) => setParsed({ ...parsed, email: e.target.value || undefined })}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="phone" className="text-xs text-muted-foreground">Telefoon</Label>
+                <Label htmlFor="phone" className="text-xs text-muted-foreground">{t('contactInfo.phone')}</Label>
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+31 6 12345678"
+                  placeholder={t('contactInfo.phonePlaceholder')}
                   value={parsed.phone || ''}
                   onChange={(e) => setParsed({ ...parsed, phone: e.target.value || undefined })}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="linkedinUrl" className="text-xs text-muted-foreground">LinkedIn URL</Label>
+                <Label htmlFor="linkedinUrl" className="text-xs text-muted-foreground">{t('contactInfo.linkedinUrl')}</Label>
                 <Input
                   id="linkedinUrl"
                   type="url"
-                  placeholder="linkedin.com/in/jouw-naam"
+                  placeholder={t('contactInfo.linkedinPlaceholder')}
                   value={parsed.linkedinUrl || ''}
                   onChange={(e) => setParsed({ ...parsed, linkedinUrl: e.target.value || undefined })}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="website" className="text-xs text-muted-foreground">Website / Portfolio</Label>
+                <Label htmlFor="website" className="text-xs text-muted-foreground">{t('contactInfo.website')}</Label>
                 <Input
                   id="website"
                   type="url"
-                  placeholder="jouwwebsite.nl"
+                  placeholder={t('contactInfo.websitePlaceholder')}
                   value={parsed.website || ''}
                   onChange={(e) => setParsed({ ...parsed, website: e.target.value || undefined })}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="github" className="text-xs text-muted-foreground">GitHub (optioneel)</Label>
+                <Label htmlFor="github" className="text-xs text-muted-foreground">{t('contactInfo.github')}</Label>
                 <Input
                   id="github"
-                  placeholder="github.com/username"
+                  placeholder={t('contactInfo.githubPlaceholder')}
                   value={parsed.github || ''}
                   onChange={(e) => setParsed({ ...parsed, github: e.target.value || undefined })}
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="location" className="text-xs text-muted-foreground">Locatie</Label>
+                <Label htmlFor="location" className="text-xs text-muted-foreground">{t('contactInfo.location')}</Label>
                 <Input
                   id="location"
-                  placeholder="Amsterdam, Nederland"
+                  placeholder={t('contactInfo.locationPlaceholder')}
                   value={parsed.location || ''}
                   onChange={(e) => setParsed({ ...parsed, location: e.target.value || null })}
                 />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              * Email is verplicht voor een professionele CV
+              {t('contactInfo.emailRequired')}
             </p>
           </div>
 
@@ -1286,7 +1306,7 @@ export function ProfileInput({
                             )}
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            {profile.headline || `${profile.experienceCount} ervaringen`}
+                            {profile.headline || t('savedProfiles.experienceCount', { count: profile.experienceCount })}
                           </span>
                         </div>
                         {selectedProfileId === profile.id && (
@@ -1307,11 +1327,11 @@ export function ProfileInput({
 
           <div className="flex flex-wrap gap-2 pt-2">
             <Button onClick={handleContinue}>
-              Doorgaan
+              {t('continue')}
             </Button>
             <Button variant="outline" onClick={handleStartEdit}>
               <Pencil className="h-4 w-4 mr-2" />
-              Bewerken
+              {tCommon('edit')}
             </Button>
             {!selectedProfileId && (
               <Button
@@ -1323,7 +1343,7 @@ export function ProfileInput({
                 }}
               >
                 <Save className="h-4 w-4 mr-2" />
-                Profiel opslaan
+                {t('saveProfile.saveButton')}
               </Button>
             )}
             {selectedProfileId && (
@@ -1338,7 +1358,7 @@ export function ProfileInput({
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  Profiel bijwerken
+                  {t('saveProfile.updateButton')}
                 </Button>
                 {/* Manual editing, AI enrichment and LinkedIn export all
                     live on the dedicated profile edit page now. */}
@@ -1349,7 +1369,7 @@ export function ProfileInput({
                     rel="noopener noreferrer"
                   >
                     <Pencil className="h-4 w-4 mr-2" />
-                    Bewerk in profielen
+                    {t('processed.editInProfiles')}
                   </a>
                 </Button>
                 <Button
@@ -1360,13 +1380,13 @@ export function ProfileInput({
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Als nieuw opslaan
+                  {t('saveProfile.saveAsNew')}
                 </Button>
               </>
             )}
             <Button variant="ghost" onClick={handleReset}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Opnieuw
+              {t('processed.startOver')}
             </Button>
           </div>
         </CardContent>
@@ -1378,30 +1398,30 @@ export function ProfileInput({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Save className="h-5 w-5 text-primary" />
-              Profiel Opslaan
+              {t('saveProfile.title')}
             </DialogTitle>
             <DialogDescription>
-              Sla dit profiel op om het later snel te kunnen hergebruiken voor andere vacatures.
+              {t('saveProfile.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="profile-name">Naam *</Label>
+              <Label htmlFor="profile-name">{t('saveProfile.nameLabel')}</Label>
               <Input
                 id="profile-name"
-                placeholder="bijv. ServiceNow Developer Profiel"
+                placeholder={t('saveProfile.namePlaceholder')}
                 value={saveProfileName}
                 onChange={(e) => setSaveProfileName(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Geef een herkenbare naam voor dit profiel
+                {t('saveProfile.nameHint')}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profile-description">Beschrijving (optioneel)</Label>
+              <Label htmlFor="profile-description">{t('saveProfile.descriptionLabel')}</Label>
               <Textarea
                 id="profile-description"
-                placeholder="bijv. Gericht op ServiceNow implementatie projecten..."
+                placeholder={t('saveProfile.descriptionPlaceholder')}
                 value={saveProfileDescription}
                 onChange={(e) => setSaveProfileDescription(e.target.value)}
                 rows={2}
@@ -1416,13 +1436,13 @@ export function ProfileInput({
                 className="h-4 w-4"
               />
               <Label htmlFor="save-as-default" className="text-sm font-normal">
-                Als standaard profiel instellen
+                {t('saveProfile.setDefault')}
               </Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
-              Annuleren
+              {t('cancel')}
             </Button>
             <Button
               onClick={handleSaveProfile}
@@ -1431,12 +1451,12 @@ export function ProfileInput({
               {isSavingProfile ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Opslaan...
+                  {t('saveProfile.saving')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Opslaan
+                  {t('saveProfile.save')}
                 </>
               )}
             </Button>
@@ -1499,14 +1519,14 @@ export function ProfileInput({
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {profile.headline || `${profile.experienceCount} ervaringen`}
+                          {profile.headline || t('savedProfiles.experienceCount', { count: profile.experienceCount })}
                         </p>
                       </div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('savedProfiles.actions', { name: profile.name })}>
+                          <MoreVertical className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -1517,7 +1537,7 @@ export function ProfileInput({
                         {!profile.isDefault && (
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleSetDefault(profile.id); }}>
                             <Star className="h-4 w-4 mr-2" />
-                            Als standaard instellen
+                            {t('savedProfiles.setDefault')}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
@@ -1526,7 +1546,7 @@ export function ProfileInput({
                           onClick={(e) => { e.stopPropagation(); handleDeleteProfile(profile.id); }}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Verwijderen
+                          {tCommon('delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1535,7 +1555,7 @@ export function ProfileInput({
               </div>
               <div className="mt-3 pt-3 border-t">
                 <p className="text-xs text-muted-foreground text-center">
-                  Of voeg hieronder nieuw profiel informatie toe
+                  {t('addNewBelow')}
                 </p>
               </div>
             </div>
@@ -1581,10 +1601,10 @@ export function ProfileInput({
             <Alert>
               <Info className="h-4 w-4" />
               <div className="ml-2">
-                <p className="font-medium">Bestand uploaden niet beschikbaar</p>
+                <p className="font-medium">{t('fileUploadUnavailable')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Je geselecteerde AI model ({modelInfo?.name || 'Onbekend'}) ondersteunt geen afbeelding/PDF input.
-                  Gebruik een model dat vision ondersteunt (zoals GPT-4o, Claude Sonnet, of Gemini) of plak je profiel als tekst.
+                  {t('modelNoVision', { model: modelInfo?.name || t('unknownModel') })}{' '}
+                  {t('visionRequired')}
                 </p>
               </div>
             </Alert>
@@ -1595,9 +1615,9 @@ export function ProfileInput({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <div className="ml-2">
-                <p className="font-medium">API key vereist</p>
+                <p className="font-medium">{t('apiKeyRequired')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Configureer je AI API key in Instellingen om bestanden te uploaden.
+                  {t('configureApiKey')}
                 </p>
               </div>
             </Alert>
@@ -1607,13 +1627,13 @@ export function ProfileInput({
           {showTextInput && (
             <div className="border rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <Label>Extra tekst informatie</Label>
-                <Button variant="ghost" size="icon" onClick={() => setShowTextInput(false)}>
-                  <X className="h-4 w-4" />
+                <Label>{t('extraTextInfo')}</Label>
+                <Button variant="ghost" size="icon" onClick={() => setShowTextInput(false)} aria-label={t('closeTextInput')}>
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
               <Textarea
-                placeholder="Plak hier je LinkedIn profiel tekst, extra ervaring, of andere relevante informatie..."
+                placeholder={t('textPlaceholder')}
                 value={textInputValue}
                 onChange={(e) => setTextInputValue(e.target.value)}
                 rows={6}
@@ -1621,10 +1641,10 @@ export function ProfileInput({
               />
               <div className="flex justify-between items-center">
                 <p className="text-xs text-muted-foreground">
-                  Tip: Selecteer en kopieer je LinkedIn profiel pagina (Ctrl+A, Ctrl+C)
+                  {t('textTip')}
                 </p>
                 <Button size="sm" onClick={handleAddText} disabled={!textInputValue.trim()}>
-                  Toevoegen
+                  {t('add')}
                 </Button>
               </div>
             </div>
@@ -1643,7 +1663,7 @@ export function ProfileInput({
                 {t('dropzone')}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                PDF, PNG, JPG, WebP (max 10MB per bestand)
+                {t('fileTypesHint')}
               </p>
             </div>
           )}
@@ -1651,7 +1671,7 @@ export function ProfileInput({
           {/* Sources list */}
           {sources.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Toegevoegde bronnen ({sources.length})</Label>
+              <Label className="text-sm text-muted-foreground">{t('addedSourcesCount', { count: sources.length })}</Label>
               <div className="space-y-2">
                 {sources.map((source) => (
                   <div
@@ -1667,7 +1687,7 @@ export function ProfileInput({
                           <div>
                             <p className="font-medium text-sm">{source.file.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {source.file.mediaType === 'application/pdf' ? 'PDF' : 'Afbeelding'}
+                              {source.file.mediaType === 'application/pdf' ? t('fileTypePdf') : t('fileTypeImage')}
                             </p>
                           </div>
                         </>
@@ -1677,7 +1697,7 @@ export function ProfileInput({
                             <FileText className="h-5 w-5 text-green-500" />
                           </div>
                           <div>
-                            <p className="font-medium text-sm">Tekst invoer</p>
+                            <p className="font-medium text-sm">{t('textInput')}</p>
                             <p className="text-xs text-muted-foreground truncate max-w-[200px]">
                               {source.text?.substring(0, 50)}...
                             </p>
@@ -1689,8 +1709,9 @@ export function ProfileInput({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveSource(source.id)}
+                      aria-label={t('removeSource')}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 ))}
@@ -1706,7 +1727,7 @@ export function ProfileInput({
                 >
                   <p className="text-sm text-muted-foreground">
                     <Plus className="h-4 w-4 inline mr-1" />
-                    Meer bestanden toevoegen
+                    {t('addMoreFiles')}
                   </p>
                 </div>
               )}
@@ -1719,14 +1740,14 @@ export function ProfileInput({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Coins className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Geschatte tokens</span>
+                  <span className="text-sm font-medium">{t('estimatedTokens')}</span>
                 </div>
                 <span className="text-sm font-mono">
                   {formatTokenCount(tokenEstimate.estimatedTokens)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Geschatte kosten</span>
+                <span className="text-sm text-muted-foreground">{t('estimatedCost')}</span>
                 <span className="text-sm font-mono">
                   {formatCost(tokenEstimate.estimatedCost)}
                 </span>
@@ -1735,7 +1756,7 @@ export function ProfileInput({
                 <Alert className="mt-2">
                   <AlertTriangle className="h-4 w-4" />
                   <span className="ml-2 text-sm">
-                    Dit is een grote request. Overweeg om minder bestanden toe te voegen.
+                    {t('largeRequest')}
                   </span>
                 </Alert>
               )}
@@ -1751,15 +1772,13 @@ export function ProfileInput({
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Informatie verwerken...
+                {t('processingInfo')}
               </>
             ) : (
               <>
-                Informatie verwerken
+                {t('processInfo')}
                 {llmMode === 'platform' && hasFileSource && (
-                  <Badge variant="secondary" className="ml-2">
-                    <Coins className="h-3 w-3 mr-1" />1 credit
-                  </Badge>
+                  <CreditBadge operation="profile-parse" />
                 )}
               </>
             )}
@@ -1768,7 +1787,7 @@ export function ProfileInput({
           {/* Hint for text-only */}
           {sources.length > 0 && !hasFileSource && (
             <p className="text-xs text-center text-muted-foreground">
-              Alleen tekst bronnen → gratis verwerking (geen AI call)
+              {t('textOnlyFree')}
             </p>
           )}
         </CardContent>
@@ -1780,24 +1799,26 @@ export function ProfileInput({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Grote Request
+              {t('largeRequestDialog.title')}
             </DialogTitle>
             <DialogDescription>
-              Dit is een grote request met geschatte {formatTokenCount(tokenEstimate.estimatedTokens)} tokens
-              ({formatCost(tokenEstimate.estimatedCost)} kosten).
+              {t('largeRequestDialog.description', {
+                tokens: formatTokenCount(tokenEstimate.estimatedTokens),
+                cost: formatCost(tokenEstimate.estimatedCost),
+              })}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground">
-              Weet je zeker dat je wilt doorgaan? Je kunt ook minder bestanden toevoegen om kosten te besparen.
+              {t('confirmLargeRequest')}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowWarningDialog(false)}>
-              Annuleren
+              {t('cancel')}
             </Button>
             <Button onClick={processSourcesInternal}>
-              Ja, verwerken
+              {t('largeRequestDialog.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1809,30 +1830,30 @@ export function ProfileInput({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Save className="h-5 w-5 text-primary" />
-              Profiel Opslaan
+              {t('saveProfile.title')}
             </DialogTitle>
             <DialogDescription>
-              Sla dit profiel op om het later snel te kunnen hergebruiken voor andere vacatures.
+              {t('saveProfile.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="profile-name">Naam *</Label>
+              <Label htmlFor="profile-name">{t('saveProfile.nameLabel')}</Label>
               <Input
                 id="profile-name"
-                placeholder="bijv. ServiceNow Developer Profiel"
+                placeholder={t('saveProfile.namePlaceholder')}
                 value={saveProfileName}
                 onChange={(e) => setSaveProfileName(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Geef een herkenbare naam voor dit profiel
+                {t('saveProfile.nameHint')}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profile-description">Beschrijving (optioneel)</Label>
+              <Label htmlFor="profile-description">{t('saveProfile.descriptionLabel')}</Label>
               <Textarea
                 id="profile-description"
-                placeholder="bijv. Gericht op ServiceNow implementatie projecten..."
+                placeholder={t('saveProfile.descriptionPlaceholder')}
                 value={saveProfileDescription}
                 onChange={(e) => setSaveProfileDescription(e.target.value)}
                 rows={2}
@@ -1847,13 +1868,13 @@ export function ProfileInput({
                 className="h-4 w-4"
               />
               <Label htmlFor="save-as-default" className="text-sm font-normal">
-                Als standaard profiel instellen
+                {t('saveProfile.setDefault')}
               </Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
-              Annuleren
+              {t('cancel')}
             </Button>
             <Button
               onClick={handleSaveProfile}
@@ -1862,12 +1883,12 @@ export function ProfileInput({
               {isSavingProfile ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Opslaan...
+                  {t('saveProfile.saving')}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Opslaan
+                  {t('saveProfile.save')}
                 </>
               )}
             </Button>

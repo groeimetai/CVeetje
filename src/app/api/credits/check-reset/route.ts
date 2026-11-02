@@ -14,6 +14,9 @@ const RESET_DAY_OF_MONTH = 1;
  * Checks if user is eligible for monthly credit reset and performs reset if needed.
  * This must be done server-side to prevent credit manipulation.
  */
+
+/** Zo lang na sign-up laat het safety-net init-user zijn werk doen. */
+const SAFETY_NET_GRACE_MS = 2 * 60 * 1000;
 export async function POST(request: NextRequest) {
   try {
     // Get auth token
@@ -39,10 +42,21 @@ export async function POST(request: NextRequest) {
     const userDoc = await userRef.get();
     const userData = userDoc.data();
 
-    // Safety net: if user document doesn't exist (init-user failed), create it now
+    // Safety net: if user document doesn't exist (init-user failed), create it now.
+    //
+    // Bug-fix: AuthProvider roept check-reset direct na sign-up aan, vaak vóór
+    // /api/auth/init-user klaar is. Dit safety-net won die race, waardoor
+    // nieuwe accounts zonder ageConfirmed (AVG art. 8), zonder welkomstmail en
+    // met 15 i.p.v. de captcha-gated starter-credits werden aangemaakt. Nu
+    // grijpt het alleen in voor accounts ouder dan 2 minuten, en zonder
+    // starter-credits (de maandelijkse reset kent die later toe).
     if (!userDoc.exists || !userData) {
       const auth = getAdminAuth();
       const authUser = await auth.getUser(userId);
+      const createdAt = new Date(authUser.metadata.creationTime).getTime();
+      if (Number.isFinite(createdAt) && Date.now() - createdAt < SAFETY_NET_GRACE_MS) {
+        return NextResponse.json({ success: true, reset: false, pending: true });
+      }
       await userRef.set({
         email: authUser.email || '',
         displayName: authUser.displayName || null,
@@ -50,22 +64,15 @@ export async function POST(request: NextRequest) {
         apiKey: null,
         llmMode: 'platform',
         credits: {
-          free: MONTHLY_FREE_CREDITS,
+          free: 0,
           purchased: 0,
           lastFreeReset: new Date(),
         },
         role: 'user',
+        ageConfirmed: false,
+        ageConfirmedAt: null,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
-      });
-
-      await userRef.collection('transactions').add({
-        amount: MONTHLY_FREE_CREDITS,
-        type: 'monthly_free',
-        description: `Initial free credits (safety net recovery)`,
-        molliePaymentId: null,
-        cvId: null,
-        createdAt: new Date(),
       });
 
       return NextResponse.json({
