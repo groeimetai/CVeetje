@@ -87,10 +87,11 @@ Onderstaande tabel toont **alleen top-level oriëntatiepunten**. Diepere sub-sub
 | `src/lib/linkedin/` | LinkedIn-specifieke parser | (klein) |
 | `src/lib/mollie/` | Mollie API client wrapper | (klein) |
 | `src/lib/recaptcha/` | reCAPTCHA v3 verify (client + server) | (klein) |
-| `src/lib/security/` | rate-limiter, url-validator, error-sanitizer | (klein) |
+| `src/lib/security/` | rate-limiter (in-memory + Firestore), url-validator, safe-fetch (SSRF), html-escape, image-upload, docx-guard, error-sanitizer | (zie security-patronen in `src/app/api/CLAUDE.md`) |
 | `src/lib/template/` | `docx-to-image.ts` (screenshot voor AI vision) | (klein) |
 | `src/lib/validation/` | Shared Zod schemas | (klein) |
 | `src/middleware.ts` | Locale prefix + auth route guards | – |
+| `docs/security/` | Security-audits (bevindingen, fixes, restrisico's) | – (zie `docs/security/2026-11-security-audit.md`) |
 | `docs/compliance/` | AVG + EU AI Act dossier (RoPA, DPIA, FRIA, TIA, DSR, incident-response, retention, vendor-review) | ✅ `docs/compliance/README.md` |
 
 ## Deployment

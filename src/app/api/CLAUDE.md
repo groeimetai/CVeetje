@@ -110,6 +110,18 @@ Alle protected routes verifiëren tokens via Firebase Admin SDK:
 |---|---|---|
 | `models/route.ts` | GET | Lijst beschikbare AI-modellen |
 
+## Security-patronen (verplicht voor nieuwe routes)
+
+Zie `docs/security/2026-11-security-audit.md` voor de achtergrond.
+
+- **Rate limiting:** dure AI-/Puppeteer-/upload-routes roepen direct na auth `enforceRateLimit(userId, '<endpoint>', PERSISTENT_RATE_LIMITS.<ai|chat|render|upload|low>)` aan (`src/lib/security/rate-limiter.ts`, Firestore-backed, multi-instance).
+- **Fouten:** stuur nooit ruwe `error.message` naar de client; gebruik `sanitizeError(error, '<ctx>').message` (`src/lib/security/error-sanitizer.ts`). `ProviderError.message` is wel user-safe.
+- **Body-velden:** geen `...rest` spreiden in Firestore-docs; gebruik een allow-list en zet vertrouwde velden (userId, status) ná de user-velden.
+- **Server-side fetch van user-URL's:** altijd `safeFetch()` / `assertPublicHost()` (`src/lib/security/safe-fetch.ts`), nooit kale `fetch()`.
+- **Puppeteer-renders:** altijd `setContentHardened(page, html)` of `hardenPage(page)` (`src/lib/pdf/harden-page.ts`) en user-data escapen met `escapeHtml` / `sanitizeCssColor` / `jsonForScript` (`src/lib/security/html-escape.ts`).
+- **Uploads:** type bepalen via `sniffImage()` (`src/lib/security/image-upload.ts`); DOCX via `assertDocxSafe()` (`src/lib/security/docx-guard.ts`).
+- **Credits:** zie de security-invarianten in `src/lib/credits/CLAUDE.md`.
+
 ## Nieuwe API route toevoegen
 
 1. Maak `src/app/api/<path>/route.ts`
