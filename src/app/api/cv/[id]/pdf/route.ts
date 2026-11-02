@@ -4,7 +4,7 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generatePDF } from '@/lib/pdf/generator';
 import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
 import {
-  checkRateLimit,
+  checkRateLimitPersistent,
   RATE_LIMITS,
   getRequestIdentifier,
 } from '@/lib/security/rate-limiter';
@@ -75,7 +75,7 @@ export async function POST(
     }
 
     // Rate limiting for PDF generation (resource-intensive)
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimitPersistent(
       getRequestIdentifier(userId),
       'pdf-generation',
       RATE_LIMITS.pdfGeneration

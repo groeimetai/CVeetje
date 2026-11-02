@@ -17,6 +17,7 @@ import type {
   ParsedLinkedIn,
   JobVacancy,
 } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 // The CVDispute shape from types/index.ts uses the client Firestore Timestamp
 // type; on the admin SDK we write with AdminTimestamp. We use a loose shape
@@ -60,6 +61,9 @@ export async function POST(
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'cv-dispute', PERSISTENT_RATE_LIMITS.low);
+    if (rateLimited) return rateLimited;
 
     // Parse body
     const body = await request.json();

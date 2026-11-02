@@ -10,6 +10,7 @@ import {
   refundPlatformCredits,
 } from '@/lib/ai/platform-provider';
 import type { ParsedLinkedIn, TokenUsage, OutputLanguage } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 // Schema for LinkedIn-optimized content
 const linkedInExportSchema = z.object({
@@ -81,6 +82,9 @@ export async function POST(
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'linkedin-export', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     const db = getAdminDb();
 

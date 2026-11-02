@@ -2,9 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { createFeedbackGitHubIssue } from '@/lib/github/feedback-issue';
+import { createFeedbackGitHubIssue, isOwnStorageUrl } from '@/lib/github/feedback-issue';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 // GET - List user's own feedback
+const FEEDBACK_FIELD_ALLOWLIST = [
+  'description',
+  'priority',
+  'useCase',
+  'expectedBehavior',
+  'severity',
+  'stepsToReproduce',
+  'actualBehavior',
+  'browserInfo',
+  'category',
+  'message',
+] as const;
+
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -72,8 +86,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const rateLimited = await enforceRateLimit(userId, 'feedback-create', PERSISTENT_RATE_LIMITS.low);
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
-    const { type, title, imageUrls, ...fields } = body;
+    const { type, title, imageUrls } = body;
+    // Security: allow-list i.p.v. `...fields` — voorheen kon de client
+    // vertrouwde velden (userId, userEmail, status, githubIssueUrl) overschrijven
+    // en zo ook de daglimiet omzeilen.
+    const fields: Record<string, string> = {};
+    for (const key of FEEDBACK_FIELD_ALLOWLIST) {
+      const v = body[key];
+      if (typeof v === 'string' && v.trim()) fields[key] = v.slice(0, 5000);
+    }
 
     // Basic validation
     if (!type || !['feature_request', 'bug_report', 'general_feedback'].includes(type)) {
@@ -97,15 +122,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rate limit exceeded. Max 10 submissions per day.' }, { status: 429 });
     }
 
+    const safeImageUrls = Array.isArray(imageUrls) ? imageUrls.filter(isOwnStorageUrl).slice(0, 3) : [];
     const feedbackData = {
+      ...fields,
       type,
       status: 'new',
       userId,
       userEmail,
       userDisplayName,
-      title: title.trim(),
-      imageUrls: Array.isArray(imageUrls) ? imageUrls.slice(0, 3) : [],
-      ...fields,
+      title: String(title).trim().slice(0, 200),
+      imageUrls: safeImageUrls,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
@@ -114,13 +140,12 @@ export async function POST(request: NextRequest) {
 
     // Create GitHub issue (non-blocking — don't fail feedback if this fails;
     // admin can lazy-create later via the comments endpoint).
-    const safeImageUrls = Array.isArray(imageUrls) ? imageUrls.slice(0, 3) : [];
     const ghIssue = await createFeedbackGitHubIssue({
       type,
       title: title.trim(),
       fields,
       imageUrls: safeImageUrls,
-      userEmail,
+      submitterId: userId,
     });
 
     if (ghIssue) {

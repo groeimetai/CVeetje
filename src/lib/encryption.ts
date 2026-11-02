@@ -68,12 +68,39 @@ export function validateEncryptionKey(): void {
 /**
  * Get derived key from encryption key and salt
  */
+let keyValidated = false;
+
+// Afgeleide keys cachen per salt: scryptSync blokkeert de event loop en werd
+// bij elke encrypt/decrypt opnieuw uitgevoerd. Begrensd om geheugen te sparen.
+const derivedKeyCache = new Map<string, Buffer>();
+const DERIVED_KEY_CACHE_MAX = 500;
+
 function getKey(salt: Buffer): Buffer {
   const encryptionKey = process.env.ENCRYPTION_KEY;
   if (!encryptionKey) {
     throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
-  return scryptSync(encryptionKey, salt, KEY_LENGTH);
+  if (!keyValidated) {
+    keyValidated = true;
+    // Security: de sterkte-check werd nergens aangeroepen. We loggen luid i.p.v.
+    // te gooien, zodat een bestaande (zwakke) productie-key niet ineens alle
+    // decrypts breekt — roteer de key als dit in de logs verschijnt.
+    try {
+      validateEncryptionKey();
+    } catch (err) {
+      console.error('[encryption] SECURITY WARNING:', err instanceof Error ? err.message : err);
+    }
+  }
+  const cacheKey = salt.toString('hex');
+  const cached = derivedKeyCache.get(cacheKey);
+  if (cached) return cached;
+  const key = scryptSync(encryptionKey, salt, KEY_LENGTH);
+  if (derivedKeyCache.size >= DERIVED_KEY_CACHE_MAX) {
+    const first = derivedKeyCache.keys().next().value;
+    if (first !== undefined) derivedKeyCache.delete(first);
+  }
+  derivedKeyCache.set(cacheKey, key);
+  return key;
 }
 
 /**

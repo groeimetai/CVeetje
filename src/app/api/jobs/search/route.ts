@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { searchJobs } from '@/lib/jobs/search';
 import type { JobSortOption } from '@/lib/jobs/providers/types';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 export const runtime = 'nodejs';
 export const revalidate = 300;
@@ -42,7 +43,6 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     console.error('[/api/jobs/search]', err);
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: sanitizeError(err, 'jobs-search').message }, { status: 500 });
   }
 }

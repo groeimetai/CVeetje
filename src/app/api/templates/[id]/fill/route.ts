@@ -9,6 +9,7 @@ import { addWatermarkToPdf } from '@/lib/pdf/add-watermark';
 import { resolveProvider, ProviderError } from '@/lib/ai/platform-provider';
 import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import type { PDFTemplate, ParsedLinkedIn, JobVacancy, OutputLanguage, FitAnalysis } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 // POST - Fill a template with profile data
 export async function POST(
@@ -35,6 +36,9 @@ export async function POST(
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'template-fill', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     const db = getAdminDb();
 

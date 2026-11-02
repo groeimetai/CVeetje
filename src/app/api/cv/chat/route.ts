@@ -9,6 +9,8 @@ import { resolveProvider, chargePlatformCredits, ProviderError } from '@/lib/ai/
 import { CHAT_CHAR_LIMIT } from '@/lib/ai/platform-config';
 import type { CVChatContext } from '@/types/chat';
 import type { UIMessage } from 'ai';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 // Build the system prompt with full context
 function buildSystemPrompt(context: CVChatContext): string {
@@ -176,6 +178,9 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'cv-chat', PERSISTENT_RATE_LIMITS.chat);
+    if (rateLimited) return rateLimited;
 
     // Get request body
     const body = await request.json();
@@ -527,7 +532,7 @@ export async function POST(request: NextRequest) {
     }
 
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: sanitizeError(error, 'cv-chat').message }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

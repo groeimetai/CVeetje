@@ -11,7 +11,9 @@ export interface FeedbackIssueInput {
   title: string;
   fields: Record<string, unknown>;
   imageUrls: string[];
-  userEmail: string;
+  /** Firebase uid van de indiener. Bewust GEEN e-mailadres: issues kunnen
+   *  publiek zijn en e-mailadressen zijn persoonsgegevens (AVG). */
+  submitterId: string;
 }
 
 export interface CreatedFeedbackIssue {
@@ -19,16 +21,43 @@ export interface CreatedFeedbackIssue {
   url: string;
 }
 
+/** Neutraliseer @mentions en HTML-tags in door gebruikers aangeleverde tekst. */
+export function sanitizeMarkdown(input: string): string {
+  return input
+    .slice(0, 10000)
+    .replace(/@(?=[A-Za-z0-9-])/g, '@\u200b')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/** Alleen screenshots uit onze eigen Storage-bucket (feedback/upload). */
+export function isOwnStorageUrl(url: unknown): url is string {
+  if (typeof url !== 'string') return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:'
+      && (u.hostname === 'storage.googleapis.com' || u.hostname === 'firebasestorage.googleapis.com')
+      && /\/feedback(\/|%2F)/.test(u.pathname);
+  } catch {
+    return false;
+  }
+}
+
 function buildIssueBody({
   type,
   fields,
   imageUrls,
-  userEmail,
+  submitterId,
 }: FeedbackIssueInput): string {
   const sections: string[] = [];
+  // User-tekst neutraliseren: geen @mentions (notificaties) en geen ruwe HTML.
+  const f = Object.fromEntries(
+    Object.entries(fields).map(([k, v]) => [k, typeof v === 'string' ? sanitizeMarkdown(v) : v]),
+  ) as Record<string, unknown>;
+  fields = f;
 
   sections.push(`**Type:** ${type.replace('_', ' ')}`);
-  sections.push(`**Submitted by:** ${userEmail}`);
+  sections.push(`**Submitted by (uid):** \`${submitterId.replace(/[^A-Za-z0-9_-]/g, '')}\``);
   sections.push('');
 
   if (type === 'feature_request') {
@@ -47,8 +76,9 @@ function buildIssueBody({
     if (fields.message) sections.push(`## Message\n${fields.message}`);
   }
 
-  if (imageUrls.length > 0) {
-    sections.push(`## Screenshots\n${imageUrls.map((url, i) => `![Screenshot ${i + 1}](${url})`).join('\n')}`);
+  const safeImages = imageUrls.filter(isOwnStorageUrl);
+  if (safeImages.length > 0) {
+    sections.push(`## Screenshots\n${safeImages.map((url, i) => `![Screenshot ${i + 1}](${url})`).join('\n')}`);
   }
 
   sections.push('\n---\n*Automatically created from in-app feedback*');
@@ -74,7 +104,7 @@ export async function createFeedbackGitHubIssue(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        title: `[${input.type.replace('_', ' ')}] ${input.title}`,
+        title: `[${input.type.replace('_', ' ')}] ${sanitizeMarkdown(input.title).slice(0, 200)}`,
         body: buildIssueBody(input),
         labels: FEEDBACK_LABELS[input.type] || [],
       }),

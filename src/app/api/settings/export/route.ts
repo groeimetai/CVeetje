@@ -55,6 +55,15 @@ export async function GET() {
   delete (account as Record<string, unknown>).encryptedApiKey;
   delete (account as Record<string, unknown>).apiKeyIv;
   delete (account as Record<string, unknown>).apiKeyTag;
+  // Het daadwerkelijke veld is `apiKey: { provider, encryptedKey, model }` —
+  // provider/model mogen mee, de ciphertext niet.
+  const apiKeyField = (account as Record<string, unknown>).apiKey as
+    | { provider?: string; model?: string }
+    | null
+    | undefined;
+  (account as Record<string, unknown>).apiKey = apiKeyField
+    ? { provider: apiKeyField.provider ?? null, model: apiKeyField.model ?? null }
+    : null;
 
   const serializeDocs = (snap: FirebaseFirestore.QuerySnapshot | null) =>
     snap ? snap.docs.map((d) => ({ id: d.id, ...d.data() })) : [];

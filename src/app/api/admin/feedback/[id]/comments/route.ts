@@ -121,7 +121,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         title: data.title as string,
         fields: data as Record<string, unknown>,
         imageUrls: Array.isArray(data.imageUrls) ? (data.imageUrls as string[]) : [],
-        userEmail: (data.userEmail as string) || '',
+        submitterId: (data.userId as string) || '',
       });
       if (!created) {
         return NextResponse.json(

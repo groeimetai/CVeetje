@@ -4,6 +4,7 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 import { generateMotivationLetterPDF, generateMotivationLetterDOCX } from '@/lib/pdf/motivation-letter-generator';
 import { getDefaultTokens } from '@/lib/cv/html-generator';
 import type { GeneratedMotivationLetter, ParsedLinkedIn, JobVacancy } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 /**
  * POST /api/templates/motivation/download
@@ -24,11 +25,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify token
+    let userId: string;
     try {
-      await getAdminAuth().verifyIdToken(token);
+      userId = (await getAdminAuth().verifyIdToken(token)).uid;
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'template-motivation-download', PERSISTENT_RATE_LIMITS.render);
+    if (rateLimited) return rateLimited;
 
     // Parse request body
     const body = await request.json();

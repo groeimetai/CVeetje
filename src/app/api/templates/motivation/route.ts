@@ -14,6 +14,7 @@ import type {
   JobVacancy,
   OutputLanguage,
 } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 /**
  * POST /api/templates/motivation
@@ -65,6 +66,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'template-motivation', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
 
     // Credit (1) atomisch vooraf afschrijven — voorheen check-then-deduct ná de

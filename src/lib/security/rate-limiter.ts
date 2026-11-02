@@ -152,8 +152,11 @@ export function getClientIP(headers: Headers): string | null {
   // Cloud Run / Load balancer
   const forwardedFor = headers.get('x-forwarded-for');
   if (forwardedFor) {
-    // Take the first IP (client IP)
-    return forwardedFor.split(',')[0].trim();
+    // Security: de Google Front End (Cloud Run) VOEGT het echte client-IP
+    // achteraan toe; eerdere entries komen van de client en zijn spoofbaar.
+    // Daarom het laatste element, niet het eerste.
+    const parts = forwardedFor.split(',').map((p) => p.trim()).filter(Boolean);
+    return parts[parts.length - 1] || null;
   }
 
   // Cloudflare
@@ -165,4 +168,94 @@ export function getClientIP(headers: Headers): string | null {
   if (realIP) return realIP;
 
   return null;
+}
+
+// ============================================================================
+// Persistente (multi-instance) rate limiter
+// ============================================================================
+//
+// Security: de in-memory limiter hierboven is per Cloud Run-instance (max 10
+// instances, reset bij elke cold start) en werd maar op 5 routes gebruikt.
+// Deze variant houdt een fixed-window teller bij in Firestore
+// (`rateLimits/{endpoint}__{identifier}`, Admin-SDK-only via default deny) en
+// is bedoeld voor alle dure AI-/Puppeteer-routes, gekeyd op userId.
+
+/** Extra presets voor de persistente limiter (per user). */
+export const PERSISTENT_RATE_LIMITS = {
+  /** Dure AI-calls (generatie, parsing, enrich, motivatie, template-fill) */
+  ai: { maxRequests: 20, windowMs: 10 * 60 * 1000 },
+  /** Chat-berichten */
+  chat: { maxRequests: 60, windowMs: 10 * 60 * 1000 },
+  /** Puppeteer-renders (PDF/preview/download) */
+  render: { maxRequests: 30, windowMs: 10 * 60 * 1000 },
+  /** Uploads */
+  upload: { maxRequests: 20, windowMs: 10 * 60 * 1000 },
+  /** Account-init / laag-volume acties */
+  low: { maxRequests: 10, windowMs: 10 * 60 * 1000 },
+} as const;
+
+export async function checkRateLimitPersistent(
+  identifier: string,
+  endpoint: string,
+  config: RateLimitConfig,
+): Promise<RateLimitResult> {
+  // Snelle lokale check eerst — bespaart Firestore-calls bij burst-misbruik.
+  const local = checkRateLimit(identifier, endpoint, config);
+  if (!local.allowed) return local;
+
+  try {
+    const { getAdminDb } = await import('@/lib/firebase/admin');
+    const db = getAdminDb();
+    const docId = `${endpoint}__${identifier}`.replace(/[^A-Za-z0-9_:.-]/g, '_').slice(0, 400);
+    const ref = db.collection('rateLimits').doc(docId);
+    const now = Date.now();
+
+    return await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const data = snap.exists ? snap.data()! : null;
+      const windowStart = Number(data?.windowStart ?? 0);
+      const inWindow = now - windowStart < config.windowMs;
+      const count = inWindow ? Number(data?.count ?? 0) : 0;
+      const start = inWindow ? windowStart : now;
+      const resetTime = start + config.windowMs;
+
+      if (count >= config.maxRequests) {
+        return {
+          allowed: false,
+          remaining: 0,
+          resetTime,
+          retryAfter: Math.max(1, Math.ceil((resetTime - now) / 1000)),
+        };
+      }
+      tx.set(ref, { windowStart: start, count: count + 1, expiresAt: new Date(resetTime) });
+      return { allowed: true, remaining: config.maxRequests - count - 1, resetTime };
+    });
+  } catch (err) {
+    // Fail-open op infra-fouten (de lokale limiter blijft gelden).
+    console.error('[rate-limit] persistent check failed:', err);
+    return local;
+  }
+}
+
+/**
+ * Convenience voor routes: geeft een 429-Response terug als de limiet bereikt
+ * is, anders null.
+ */
+export async function enforceRateLimit(
+  userId: string,
+  endpoint: string,
+  config: RateLimitConfig,
+): Promise<Response | null> {
+  const result = await checkRateLimitPersistent(`user:${userId}`, endpoint, config);
+  if (result.allowed) return null;
+  return new Response(
+    JSON.stringify({ error: 'Te veel verzoeken. Probeer het later opnieuw.', retryAfter: result.retryAfter }),
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(result.retryAfter ?? 60),
+      },
+    },
+  );
 }

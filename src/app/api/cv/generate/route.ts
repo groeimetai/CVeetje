@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { generateCV } from '@/lib/ai/cv-generator';
 import {
-  checkRateLimit,
+  checkRateLimitPersistent,
   RATE_LIMITS,
   getRequestIdentifier,
 } from '@/lib/security/rate-limiter';
@@ -18,6 +18,7 @@ import type {
 } from '@/types';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { RequiredItemsSelection } from '@/types/cv';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting for AI generation (expensive operation)
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimitPersistent(
       getRequestIdentifier(userId),
       'cv-generation',
       RATE_LIMITS.aiGeneration
@@ -233,7 +234,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: errorMessage },
+      { error: sanitizeError(error, 'cv-generate').message },
       { status: 500 }
     );
   }

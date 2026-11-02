@@ -9,6 +9,8 @@ import { resolveProvider, refundPlatformCredits, ProviderError } from '@/lib/ai/
 import { recordOperationUsage } from '@/lib/ai/usage-tracker';
 import { getCurrentDateContext } from '@/lib/ai/date-context';
 import type { ProfileInputSource, ParsedLinkedIn } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 // Schema for structured profile extraction via LLM
 // Note: Reduced nullable fields to stay under 16 union parameter limit
@@ -78,13 +80,23 @@ const profileSchema = z.object({
   interests: z.array(z.string()).describe('Personal interests/hobbies — only items literally listed under a "Hobbies", "Interests", "Interesses", or similar heading. Empty array if no such section is present in the source.'),
 });
 
+
+const MAX_BODY_BYTES = 20 * 1024 * 1024;
 export async function POST(request: NextRequest) {
   try {
+    // Body-limiet vóór parsen (base64-bestanden gaan 1-op-1 naar de AI-provider)
+    const contentLength = Number(request.headers.get('content-length') || 0);
+    if (contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: 'Bestanden te groot (max 20MB totaal)' }, { status: 413 });
+    }
     const body = await request.json();
     const sources = body.sources as ProfileInputSource[] | undefined;
     const provider = body.provider as string | undefined;
     const model = body.model as string | undefined;
 
+    if (Array.isArray(sources) && sources.length > 10) {
+      return NextResponse.json({ error: 'Maximaal 10 bronnen' }, { status: 400 });
+    }
     if (!sources || !Array.isArray(sources) || sources.length === 0) {
       return NextResponse.json(
         { error: 'At least one source is required' },
@@ -139,6 +151,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'profile-parse', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
 
     // Resolve AI provider (handles own-key vs platform mode + credit deduction)
     let resolved;
@@ -404,7 +419,7 @@ Be thorough about extracting what IS there. Be empty/null about what ISN'T there
       }
 
       return NextResponse.json(
-        { error: `Failed to extract profile from sources: ${errorMessage}` },
+        { error: `Failed to extract profile from sources: ${sanitizeError(aiError, 'profile-parse').message}` },
         { status: 500 }
       );
     }

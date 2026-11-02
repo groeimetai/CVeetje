@@ -3,6 +3,10 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { queueEmail } from '@/lib/email/send';
 import { renderWelcomeEmail } from '@/lib/email/templates/welcome';
+import { requireRecaptcha } from '@/lib/recaptcha/server';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+
+const STARTER_FREE_CREDITS = 10;
 
 /**
  * POST /api/auth/init-user
@@ -27,12 +31,17 @@ export async function POST(request: NextRequest) {
     const decodedToken = await auth.verifyIdToken(token);
     const uid = decodedToken.uid;
 
+    const rateLimited = await enforceRateLimit(uid, 'init-user', PERSISTENT_RATE_LIMITS.low);
+    if (rateLimited) return rateLimited;
+
     // Optional body: { ageConfirmed: boolean } — recorded on first registration
     // as audit trail for AVG art. 8 (verification of 16+ at consent time).
     let ageConfirmed = false;
+    let captchaToken: string | null = null;
     try {
       const body = await request.json();
       ageConfirmed = body?.ageConfirmed === true;
+      captchaToken = typeof body?.captchaToken === 'string' ? body.captchaToken : null;
     } catch {
       // No body or invalid JSON — treat as not confirmed (OAuth flow today)
     }
@@ -61,6 +70,17 @@ export async function POST(request: NextRequest) {
     // Fetch full Auth user record for reliable profile data
     const authUser = await auth.getUser(uid);
 
+    // Security: starter-credits alleen bij een geslaagde server-side
+    // reCAPTCHA-check. Voorheen kon een bot onbeperkt accounts aanmaken (de
+    // captcha was puur client-side advies) en zo gratis platform-AI farmen.
+    // Zonder geldige token wordt het account wél aangemaakt maar met 0 free
+    // credits; de maandelijkse reset kent ze later alsnog toe.
+    const captcha = await requireRecaptcha(captchaToken, 'init_user', 0.5);
+    const starterCredits = captcha.valid ? STARTER_FREE_CREDITS : 0;
+    if (!captcha.valid) {
+      console.warn(`[Auth Init] captcha failed for ${uid} (score=${captcha.score ?? 'n/a'}) — no starter credits`);
+    }
+
     await userRef.set({
       email: authUser.email || '',
       displayName: authUser.displayName || null,
@@ -68,7 +88,7 @@ export async function POST(request: NextRequest) {
       apiKey: null,
       llmMode: 'platform',
       credits: {
-        free: 10,
+        free: starterCredits,
         purchased: 0,
         lastFreeReset: Timestamp.now(),
       },
@@ -90,7 +110,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       created: true,
-      credits: { free: 10, purchased: 0 },
+      credits: { free: starterCredits, purchased: 0 },
     });
   } catch (error) {
     console.error('[Auth Init] Failed to init user document:', error);

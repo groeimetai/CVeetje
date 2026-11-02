@@ -4,6 +4,8 @@ import { getAdminAuth, getAdminDb, getAdminStorage } from '@/lib/firebase/admin'
 import { getPDFPageCount } from '@/lib/pdf/template-filler';
 import { extractDocxText } from '@/lib/docx/smart-template-filler';
 import type { PDFTemplateSummary, PDFTemplate, TemplateFileType } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { assertDocxSafe } from '@/lib/security/docx-guard';
 
 const MAX_TEMPLATES_PER_USER = 10;
 const MAX_FILE_SIZE_MB = 5;
@@ -128,6 +130,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const rateLimited = await enforceRateLimit(userId, 'template-upload', PERSISTENT_RATE_LIMITS.upload);
+    if (rateLimited) return rateLimited;
+
     const db = getAdminDb();
 
     // Check template limit
@@ -185,6 +190,14 @@ export async function POST(request: NextRequest) {
     const fileBuffer = await file.arrayBuffer();
     const fileBytes = new Uint8Array(fileBuffer);
 
+    if (fileType === 'docx') {
+      try {
+        await assertDocxSafe(fileBuffer);
+      } catch {
+        return NextResponse.json({ error: 'Invalid or unsafe DOCX file' }, { status: 400 });
+      }
+    }
+
     // Get page count
     let pageCount: number;
     const autoAnalyzed = true; // AI handles everything for DOCX
@@ -202,7 +215,7 @@ export async function POST(request: NextRequest) {
           console.error('Failed to extract DOCX text:', extractError);
           console.error('File name:', file.name, 'File type:', file.type, 'File size:', file.size);
           return NextResponse.json(
-            { error: `Invalid DOCX file: ${extractError instanceof Error ? extractError.message : 'Unknown error'}` },
+            { error: 'Invalid DOCX file' },
             { status: 400 }
           );
         }

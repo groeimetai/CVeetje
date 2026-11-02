@@ -6,6 +6,7 @@ import { styleConfigToTokens } from '@/lib/cv/templates/adapter';
 import { getDefaultTokens } from '@/lib/cv/html-generator';
 import type { CVDesignTokens } from '@/types/design-tokens';
 import type { CV, CVStyleConfig, GeneratedMotivationLetter } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
     } catch {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+
+    const rateLimited = await enforceRateLimit(userId, 'motivation-download', PERSISTENT_RATE_LIMITS.render);
+    if (rateLimited) return rateLimited;
 
     // Parse request body
     const body = await request.json();

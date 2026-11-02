@@ -91,7 +91,7 @@ export function RegisterForm() {
       const user = await signInWithGoogle();
       // Set the token cookie before redirect to avoid middleware race condition
       const token = await user.getIdToken();
-      document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
+      document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict${location.protocol === 'https:' ? '; Secure' : ''}`;
       router.push('/dashboard');
     } catch (err: unknown) {
       const errorKey = getFirebaseErrorKey(err);
@@ -109,7 +109,7 @@ export function RegisterForm() {
       const user = await signInWithApple();
       // Set the token cookie before redirect to avoid middleware race condition
       const token = await user.getIdToken();
-      document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict`;
+      document.cookie = `firebase-token=${token}; path=/; max-age=3300; SameSite=Strict${location.protocol === 'https:' ? '; Secure' : ''}`;
       router.push('/dashboard');
     } catch (err: unknown) {
       const errorKey = getFirebaseErrorKey(err);

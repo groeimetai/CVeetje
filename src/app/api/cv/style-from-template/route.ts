@@ -5,11 +5,13 @@ import { decrypt } from '@/lib/encryption';
 import { docxToImage, isValidDocx } from '@/lib/template/docx-to-image';
 import { extractStyleFromTemplate, getTemplateStyleFallbackTokens } from '@/lib/ai/template-style-extractor';
 import {
-  checkRateLimit,
+  checkRateLimitPersistent,
   RATE_LIMITS,
   getRequestIdentifier,
 } from '@/lib/security/rate-limiter';
 import type { LLMProvider } from '@/types';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
+import { assertDocxSafe } from '@/lib/security/docx-guard';
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting for AI generation (expensive operation)
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimitPersistent(
       getRequestIdentifier(userId),
       'template-style',
       RATE_LIMITS.aiGeneration
@@ -96,6 +98,11 @@ export async function POST(request: NextRequest) {
         { error: 'Invalid DOCX file. The file may be corrupted or not a valid Word document.' },
         { status: 400 }
       );
+    }
+    try {
+      await assertDocxSafe(buffer);
+    } catch {
+      return NextResponse.json({ error: 'Invalid or unsafe DOCX file.' }, { status: 400 });
     }
 
     // Get user data with API key
@@ -199,7 +206,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: errorMessage },
+      { error: sanitizeError(error, 'style-from-template').message },
       { status: 500 }
     );
   }

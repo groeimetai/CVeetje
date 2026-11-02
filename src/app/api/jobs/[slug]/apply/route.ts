@@ -6,6 +6,8 @@ import { resolveJobBySlug } from '@/lib/jobs/resolve';
 import { getProvider } from '@/lib/jobs/providers/registry';
 import type { ApplyCandidate } from '@/lib/jobs/providers/types';
 import type { ApplicationRecord } from '@/types/application';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 export const runtime = 'nodejs';
 
@@ -32,6 +34,9 @@ export async function POST(
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const rateLimited = await enforceRateLimit(userId, 'job-apply', PERSISTENT_RATE_LIMITS.low);
+  if (rateLimited) return rateLimited;
 
   const form = await request.formData().catch(() => null);
   if (!form) {
@@ -141,7 +146,7 @@ export async function POST(
       console.error('[apply]', err);
       return {
         ok: false as const,
-        errors: [{ message: err instanceof Error ? err.message : 'Unknown error' }],
+        errors: [{ message: sanitizeError(err, 'job-apply').message }],
       };
     });
 

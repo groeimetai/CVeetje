@@ -14,6 +14,8 @@ import type {
   LinkedInProject,
   TokenUsage,
 } from '@/types';
+import { enforceRateLimit, PERSISTENT_RATE_LIMITS } from '@/lib/security/rate-limiter';
+import { sanitizeError } from '@/lib/security/error-sanitizer';
 
 // ============================================================================
 // Schema
@@ -553,6 +555,9 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    const rateLimited = await enforceRateLimit(userId, 'profile-enrich', PERSISTENT_RATE_LIMITS.ai);
+    if (rateLimited) return rateLimited;
+
     const db = getAdminDb();
 
     const profileDoc = await db
@@ -718,9 +723,8 @@ export async function POST(
       });
     } catch (aiError) {
       console.error('AI enrichment error:', aiError);
-      const errorMessage = aiError instanceof Error ? aiError.message : 'Unknown error';
       return NextResponse.json(
-        { error: `Profiel verrijking mislukt: ${errorMessage}` },
+        { error: `Profiel verrijking mislukt: ${sanitizeError(aiError, 'profile-enrich').message}` },
         { status: 500 }
       );
     }
