@@ -159,3 +159,30 @@ export async function mockAiRequests(): Promise<Array<{ mode: string; schemaKeys
 }
 
 export const STORAGE_EMULATOR = `http://${STORAGE_HOST}`;
+
+/** Seed een vacature in de jobs-cache (Adzuna-bron → geen ATS-enrichment). */
+export async function seedJob(slug = 'senior-frontend-developer-az-acme-12345', overrides: Record<string, unknown> = {}) {
+  await setDoc(`jobs/${slug}`, {
+    sourceProvider: 'adzuna',
+    sourceId: '12345',
+    providerCompanyKey: 'acme',
+    providerCompanyId: null,
+    slug,
+    title: 'Senior Frontend Developer',
+    company: 'Acme BV',
+    location: 'Utrecht',
+    description: 'Wij zoeken een Senior Frontend Developer met ervaring in React en TypeScript.',
+    industry: 'IT',
+    employmentType: 'full_time',
+    salaryMin: 50000,
+    salaryMax: 70000,
+    salaryCurrency: 'EUR',
+    url: 'https://example.com/vacature/12345',
+    postedAt: new Date().toISOString(),
+    supportsInAppApply: false,
+    applyQuestions: [],
+    fetchedAt: new Date(),
+    ...overrides,
+  });
+  return slug;
+}

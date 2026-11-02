@@ -42,7 +42,21 @@ export function getAdminAuth(): Auth {
 
 export function getAdminDb(): Firestore {
   if (!adminDb) {
-    adminDb = getFirestore(getAdminApp());
+    const app = getAdminApp();
+    // Bug-fix: Next bundelt routes los, waardoor een module-instantie de
+    // al-geïnitialiseerde app kan aantreffen (else-tak in getAdminApp) en
+    // getFirestore() dan een instance zónder ignoreUndefinedProperties gaf.
+    // Writes met optionele `undefined`-velden (bv. dispute-regeneratie)
+    // faalden daardoor. initializeFirestore is idempotent bij gelijke
+    // settings; valt terug op getFirestore als de instance al bestaat.
+    try {
+      adminDb = initializeFirestore(
+        app,
+        { ignoreUndefinedProperties: true } as unknown as FirestoreSettings,
+      );
+    } catch {
+      adminDb = getFirestore(app);
+    }
   }
   return adminDb;
 }

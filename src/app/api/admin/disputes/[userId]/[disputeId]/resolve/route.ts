@@ -189,7 +189,7 @@ export async function POST(
 
     await cvRef.update({
       generatedContent: cvResult.content,
-      designTokens: regenTokens,
+      designTokens: JSON.parse(JSON.stringify(regenTokens)),
       creativityLevel: newLevel,
       creativityLevelHistory: FieldValue.arrayUnion(newLevel),
       status: 'generated',

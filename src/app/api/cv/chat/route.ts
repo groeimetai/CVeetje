@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (!messages || !context || !context.currentContent) {
+    if (!Array.isArray(messages) || !context || !context.currentContent || !context.linkedInData?.fullName) {
       return new Response(JSON.stringify({ error: 'Onvolledige request data' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
